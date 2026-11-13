@@ -1,0 +1,51 @@
+name: Build
+
+on:
+  # Needs a self-hosted runner with the retail ROM, the ARM7 BIOS and the
+  # CodeWarrior compilers already in place, which hosted runners cannot
+  # provide. Kept off the push trigger so a public checkout does not queue
+  # runs that can never start; progress is uploaded with
+  # tools/upload_report.py (see docs/BYTEMATCH.md).
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.version }}
+    # The build needs the retail ROM, an ARM7 BIOS dump and the CodeWarrior
+    # compilers, none of which can be committed. Run this on a self-hosted
+    # runner where extract/baserom_tennis_<version>.nds, arm7_bios.bin and
+    # tools/mwccarm/ already exist.
+    runs-on: self-hosted
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [ATOJ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Ninja
+        run: python -m pip install ninja
+
+      - name: Configure
+        run: python tools/configure.py ${{ matrix.version }}
+
+      - name: Build and verify the ROM
+        run: python -m ninja rom sha1
+
+      - name: Generate the objdiff report
+        run: python -m ninja report
+
+      - name: Upload the progress report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.version }}_report
+          path: build/${{ matrix.version }}/report.json
+          if-no-files-found: error

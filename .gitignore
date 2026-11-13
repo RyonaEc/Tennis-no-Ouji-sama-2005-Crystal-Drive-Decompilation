@@ -1,0 +1,32 @@
+# A dump of the cartridge, its extraction and the ARM7 BIOS must never be
+# committed. See docs/SETUP.md.
+/extract/
+*.nds
+*.srl
+arm7_bios.bin
+*.sha1.local
+
+# Build output
+/build/
+/build.ninja
+/build.ninja.d
+*.o
+*.d
+compile_commands.json
+
+# Downloaded toolchain binaries (the CodeWarrior compilers are not redistributable)
+/tools/dsd.exe
+/tools/dsd
+/tools/objdiff-cli.exe
+/tools/objdiff-cli
+/tools/sjiswrap.exe
+/tools/sjiswrap
+/tools/wibo
+/tools/mwccarm/
+/tools/binutils/
+/tools/msvc/
+/tools/wibo-deadbeef/
+
+# Python
+__pycache__/
+*.pyc
