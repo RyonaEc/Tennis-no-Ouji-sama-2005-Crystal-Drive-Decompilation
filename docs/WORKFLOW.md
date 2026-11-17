@@ -88,9 +88,3 @@ Useful `dsd` helpers:
   scratch with the project's includes.
 * **Small steps.** One function per commit keeps the diff reviewable and makes
   regressions easy to bisect.
-
-## Current state
-
-The pipeline is complete but no C has been written yet. The first milestone is
-a clean `ninja check` from the fully delinked build; the second is the first
-matched translation unit.

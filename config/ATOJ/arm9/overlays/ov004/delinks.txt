@@ -27,3 +27,15 @@ src/ov004/func_ov004_0205a744.c:
 src/ov004/func_ov004_0205ca84.c:
     complete
     .text       start:0x0205ca84 end:0x0205ca9c
+
+src/ov004/func_ov004_0204dce4.c:
+    complete
+    .text       start:0x0204dce4 end:0x0204dcfc
+
+src/ov004/func_ov004_020523f8.c:
+    complete
+    .text       start:0x020523f8 end:0x0205240c
+
+src/ov004/func_ov004_02053510.c:
+    complete
+    .text       start:0x02053510 end:0x02053518

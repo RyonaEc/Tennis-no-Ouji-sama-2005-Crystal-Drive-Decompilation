@@ -29,7 +29,7 @@ Target: 8d555a80db47278475ffdfdf808fe80dbd7c48cf; tennis_ATOJ.nds: 8d555a80db472
 tennis_ATOJ.nds: OK
 ```
 
-Decompilation has started. **700 functions** (28,496 bytes) in the ARM9 main module
+Decompilation has started. **703 functions** (28,548 bytes) in the ARM9 main module
 and its overlays are now matching C source, compiled with `mwccarm` 1.2/sp2 and
 linked into the same addresses, and the rebuilt ROM is still byte-identical:
 
@@ -41,8 +41,8 @@ linked into the same addresses, and the rebuilt ROM is still byte-identical:
 | `func_02017af8` | 0x28 | sums a linked list hung off `+0x24` |
 | `func_020180a0` | 0x30 | fills in a packed header, including a self-relative offset |
 
-`ninja report` shows `matched_functions: 700` of 3,806 (18.4%), `matched_code:
-28,496` of 1,841,700 bytes (1.5%); the remaining 3,106 functions are still
+`ninja report` shows `matched_functions: 703` of 3,806 (18.5%), `matched_code:
+28,548` of 1,841,700 bytes (1.6%); the remaining 3,103 functions are still
 delinked assembly.
 
 Everything below requires **your own dump of the cartridge**. No ROM, BIOS or
@@ -116,13 +116,6 @@ tools/              extraction, build and matching tooling
 extract/            your ROM and its extraction (never committed)
 build/ATOJ/         delinked objects, linker script, EFX and the built ROM
 ```
-
-## Playing the result
-
-The output of a matching decompilation is still a Nintendo DS ROM: play it in
-an emulator such as [melonDS](https://melonds.kuribo64.net/) or DeSmuME. A
-native Windows port is a separate reimplementation effort and is not what this
-project produces.
 
 ## Matching notes
 

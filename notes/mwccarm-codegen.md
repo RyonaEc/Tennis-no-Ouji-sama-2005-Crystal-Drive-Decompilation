@@ -135,6 +135,11 @@ idioms; none is a skill gap.
   `volatile`, u64-mask launder (two forms). Blocked: `func_ov002_020633e0`,
   `02063820`, `02063c5c`, `0207a93c` (tail), `0209e44c`/`020ace70` (tail),
   `0204c824` (tail).
+* **Folded halfword address in `return (*p += 1);`.** `func_ov002_02072324`
+  wants `add r1, r0, #0xa; ldrh r0, [r1]; add r0, r0, #1; strh r0, [r1]`,
+  while C folds the base into the load/store (`ldrh r1, [r0, #0xa]`, two
+  accesses, then a reload for the return). Same class as the wall below.
+  Swept: pointer local declared inline and separately, separate assignment.
 * **Predicated if/else with a re-materialised else address.**
   `func_ov002_0204d488` tests `*(u16 *)(b + 0x30048) >= 0x1f`, stores 0 when
   true and otherwise re-loads and increments. Retail builds the test address
