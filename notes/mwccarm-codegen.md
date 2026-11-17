@@ -135,6 +135,15 @@ idioms; none is a skill gap.
   `volatile`, u64-mask launder (two forms). Blocked: `func_ov002_020633e0`,
   `02063820`, `02063c5c`, `0207a93c` (tail), `0209e44c`/`020ace70` (tail),
   `0204c824` (tail).
+* **Predicated if/else with a re-materialised else address.**
+  `func_ov002_0204d488` tests `*(u16 *)(b + 0x30048) >= 0x1f`, stores 0 when
+  true and otherwise re-loads and increments. Retail builds the test address
+  as `add r0, r2, #0x30000; ldrh r1, [r0, #0x48]`, but the else branch loads
+  `0x30048` from the pool, adds it to `b`, and does a fresh `ldrh`/`add`/
+  `strh` instead of reusing the tested value. C CSEs both spellings into one
+  address and keeps the tested value (`addlo r1, r1, #1`). Swept: `> 0x1f`
+  vs `>= 0x1f`, both spellings in both branches, split load/store, `volatile`
+  pointer. Not solved.
 * **Two-load/two-store byte copy with `[rX], #1`.** Blocked: `func_02006be0`,
   `02006c10`, `02006cd0`, `02008a60`, `0200e99c`, `020080d0`, `0200e8f4`,
   `02010248`.
@@ -265,6 +274,10 @@ void func(s32 a0, s32 a1, s32 a2)
 
 Dropping the local (`func(...);` then the RMW) starts the trio at `r0` and
 the unit misses by one register — exactly the §6 "one-register-low" class.
+
+The lever is not tied to the flag RMW: `0204d178` and `0204d1b0` are the same
+shapes with a single `*(u8 *)(t + a0 * 0x1c + 2) = a2;` instead of the OR, and
+they also need the live result (`mov r1, #0x1c` rather than `r0`).
 
 **10.2 `p = t; p += i;` materialises an address C would otherwise fold.**
 Retail emits `add rB, rT, rI` and then offsets from `rB`. Writing `p = t + i`

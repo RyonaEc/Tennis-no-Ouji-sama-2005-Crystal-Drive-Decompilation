@@ -29,7 +29,7 @@ Target: 8d555a80db47278475ffdfdf808fe80dbd7c48cf; tennis_ATOJ.nds: 8d555a80db472
 tennis_ATOJ.nds: OK
 ```
 
-Decompilation has started. **697 functions** (28,276 bytes) in the ARM9 main module
+Decompilation has started. **700 functions** (28,496 bytes) in the ARM9 main module
 and its overlays are now matching C source, compiled with `mwccarm` 1.2/sp2 and
 linked into the same addresses, and the rebuilt ROM is still byte-identical:
 
@@ -41,8 +41,8 @@ linked into the same addresses, and the rebuilt ROM is still byte-identical:
 | `func_02017af8` | 0x28 | sums a linked list hung off `+0x24` |
 | `func_020180a0` | 0x30 | fills in a packed header, including a self-relative offset |
 
-`ninja report` shows `matched_functions: 697` of 3,806 (18.3%), `matched_code:
-28,276` of 1,841,700 bytes (1.5%); the remaining 3,109 functions are still
+`ninja report` shows `matched_functions: 700` of 3,806 (18.4%), `matched_code:
+28,496` of 1,841,700 bytes (1.5%); the remaining 3,106 functions are still
 delinked assembly.
 
 Everything below requires **your own dump of the cartridge**. No ROM, BIOS or

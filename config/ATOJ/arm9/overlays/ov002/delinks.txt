@@ -651,3 +651,15 @@ src/ov002/func_ov002_0204cb44.c:
 src/ov002/func_ov002_0204d2f8.c:
     complete
     .text       start:0x0204d2f8 end:0x0204d350
+
+src/ov002/func_ov002_0204d178.c:
+    complete
+    .text       start:0x0204d178 end:0x0204d1b0
+
+src/ov002/func_ov002_0204d1b0.c:
+    complete
+    .text       start:0x0204d1b0 end:0x0204d1e8
+
+src/ov002/func_ov002_0204e878.c:
+    complete
+    .text       start:0x0204e878 end:0x0204e8e4
