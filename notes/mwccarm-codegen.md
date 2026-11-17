@@ -142,9 +142,10 @@ idioms; none is a skill gap.
   `func_ov002_0207808c`, `020781b4`, `02086020`, `02085ff8`, `02062b20`,
   `0206308c`, `func_02033cb0`.
 * **One-register-low temp trio with an inverted branch.** Still blocked:
-  `func_ov002_0204d09c`, `0204d0e0`, `0204d12c`, `0204d1e8`, `0204d22c`,
-  `0204d270`, `0204d2b4`. (The `0x5c`/`0x60` state-machine sets used to be
-  listed here; they are solved — see §9.)
+  `func_ov002_0204d09c` only. (The rest of that set — `0204d0e0`, `0204d12c`,
+  `0204d1e8`, `0204d22c`, `0204d270`, `0204d2b4`, `0204d2f8` — is solved; the
+  missing lever was the live callee result in §10. The `0x5c`/`0x60`
+  state-machine sets are solved too — see §9.)
 * **Signed word-fill loop.** `func_020048e8` wants `cmp r1, ip; stmlt r1!,
   {r0}; blt` (signed test, store-multiple writeback). C gives `cmp` + `bxhs`
   + `str r0, [r1], #4`. Swept: pointer local, `(s32)` casts on both sides,
@@ -238,6 +239,64 @@ set: `020a542c`, `020e28b8`, `020eac6c`, `020f1a94`, `02099f40`, `0209b8ec`,
 `020a16d8`, `020a17bc`, `020a385c`, `020a67c0`, `020ac768`, `020b2a04`,
 `020b2a64`, `020b5c44`, `020b9b78`, `020b9bd8`, `020bcbc4`, `020c9be8`,
 `020cb768`, `020d1314`, `020d2da0`.
+
+## 10. Solved: the `0x274` per-slot flag setters (8 functions)
+
+Eight ov002 functions index a global table (`B + 0x274`, stride `0x1c`) and
+set a flag word at slot offset `0x18`: `0204d1e8`, `0204d22c`, `0204d270`,
+`0204d2b4`, `0204d0e0`, `0204d12c`, `0204d2f8`, `0204cb44`. Three levers
+carry the set; each one was a wall in §6 before it was found.
+
+**10.1 A live callee result keeps `r0` occupied.** Retail's temp trio starts
+at `r1`, not `r0`, whenever the helper's return value survives to the
+epilogue. Caching the call in a local and returning it makes the allocator
+keep `r0` live and shifts everything up one register:
+
+```c
+void func(s32 a0, s32 a1, s32 a2)
+{
+    u32 r;
+    u8 *t = B + 0x274;
+    r = func_ov002_0204d350(a0, a1, a2);
+    *(u32 *)(t + 0x18 + a0 * 0x1c) |= 0x8;
+    return r;                       /* the lever: r0 must stay live */
+}
+```
+
+Dropping the local (`func(...);` then the RMW) starts the trio at `r0` and
+the unit misses by one register — exactly the §6 "one-register-low" class.
+
+**10.2 `p = t; p += i;` materialises an address C would otherwise fold.**
+Retail emits `add rB, rT, rI` and then offsets from `rB`. Writing `p = t + i`
+as one expression lets the compiler pick `mla` plus a folded immediate, which
+is one instruction shorter. Assigning the base and then incrementing keeps
+the index live for a second use, so the address is really materialised:
+
+```c
+    i = a0 * 0x1c;
+    t = B + 0x274;
+    p = t;
+    p += i;                        /* add rB, rT, rI, no mla */
+    if (a2 == *(u8 *)(p + 2)) ...
+    if (a1 == *(u8 *)(t + i)) ...  /* second use keeps both live */
+```
+
+The same function also wants the index computed *before* the base is loaded,
+which only happens once the pointer increment is spelled out.
+
+**10.3 An inline loop bound is re-read every iteration.** Retail reloads the
+count (`ldrh r0, [sb, #2]`) at the loop tail. Caching it in a local hoists a
+single load and the loop shrinks by 8 bytes:
+
+```c
+    for (i = 0; i < *(u16 *)(a0 + 2); i++, a1 += 0x10) { ... }
+```
+
+`func_ov002_0204c824` is the residue of this family: it wants `mla r0, ...`
+(the slot pointer in `r0`) followed by `add r3, r0, #0x18`, while C puts the
+slot pointer in `r3` and folds `0x18` into the load/store. Swept: pointer
+local, `u32 *p[6]`, `f = p; f += 6;`, split `*f = *f & ~0x400`, separate
+base and slot pointers. Same materialisation wall as §6.
 
 ## 8. Prior art
 
