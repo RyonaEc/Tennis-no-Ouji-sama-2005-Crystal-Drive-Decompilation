@@ -2,8 +2,7 @@
 
 [ByteMatch](https://bytematch.dev) tracks matching-decompilation progress.
 Everything the site needs from this repository is already committed; the rest is
-one-time settings on the project's Manage page, which need a signed-in
-repository admin.
+one-time settings on the project's Manage page.
 
 Project page: `https://bytematch.dev/RyonaEc/Tennis-no-Ouji-sama-2005-Crystal-Drive-Decompilation`
 
@@ -19,7 +18,7 @@ Project page: `https://bytematch.dev/RyonaEc/Tennis-no-Ouji-sama-2005-Crystal-Dr
 | `build/ATOJ/report.json` | The objdiff report, produced by `ninja report` |
 
 ByteMatch links to the images instead of storing them, so both are served from
-this repository. They load once the repository is public.
+this repository.
 
 ## One-time setup (Manage page)
 
@@ -69,8 +68,7 @@ The README uses two:
 
 `measure` accepts `matched_code_percent`, `matched_data_percent`,
 `matched_functions`, `complete_units` and `fuzzy_match_percent`; add
-`&style=flat-square` or `&version=ATOJ` as needed. Until the repository is
-public and the project is registered, every badge renders as
-`ByteMatch: project not found`.
+`&style=flat-square` or `&version=ATOJ` as needed. Until the project is
+registered, every badge renders as `ByteMatch: project not found`.
 
 If the reports do not appear, the Manage page shows the last ingest error.
