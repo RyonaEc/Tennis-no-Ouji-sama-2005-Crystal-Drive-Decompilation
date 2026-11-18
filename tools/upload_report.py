@@ -66,7 +66,11 @@ def main():
     req = urllib.request.Request(
         url,
         data=path.read_bytes(),
-        headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'},
+        # A plain urllib User-Agent is refused by the site's Cloudflare rule
+        # (403, error 1010), so name the tool.
+        headers={'Authorization': f'Bearer {token}',
+                 'Content-Type': 'application/json',
+                 'User-Agent': 'bytematch-upload/1.0'},
         method='POST',
     )
     try:
