@@ -119,3 +119,15 @@ src/ov004/func_ov004_0205a81c.c:
 src/ov004/func_ov004_02051410.c:
     complete
     .text       start:0x02051410 end:0x02051448
+
+src/ov004/func_ov004_0205101c.c:
+    complete
+    .text       start:0x0205101c end:0x0205107c
+src/ov004/func_ov004_020501e8.c:
+    complete
+    .text       start:0x020501e8 end:0x0205024c
+
+src/ov004/func_ov004_020512e8.c:
+    complete
+    .text       start:0x020512e8 end:0x02051348
+
