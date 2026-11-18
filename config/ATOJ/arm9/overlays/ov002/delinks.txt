@@ -751,3 +751,31 @@ src/ov002/func_ov002_02082c30.c:
 src/ov002/func_ov002_0204f7c4.c:
     complete
     .text       start:0x0204f7c4 end:0x0204f808
+
+src/ov002/func_ov002_020d7e0c.c:
+    complete
+    .text       start:0x020d7e0c end:0x020d7e6c
+src/ov002/func_ov002_020dd858.c:
+    complete
+    .text       start:0x020dd858 end:0x020dd8b8
+
+src/ov002/func_ov002_020e27f8.c:
+    complete
+    .text       start:0x020e27f8 end:0x020e2858
+
+src/ov002/func_ov002_020e2858.c:
+    complete
+    .text       start:0x020e2858 end:0x020e28b8
+
+src/ov002/func_ov002_020e5ba8.c:
+    complete
+    .text       start:0x020e5ba8 end:0x020e5c08
+
+src/ov002/func_ov002_020e5c8c.c:
+    complete
+    .text       start:0x020e5c8c end:0x020e5cec
+
+src/ov002/func_ov002_020e80a4.c:
+    complete
+    .text       start:0x020e80a4 end:0x020e8104
+
