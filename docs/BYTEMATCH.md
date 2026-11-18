@@ -10,10 +10,11 @@ Project page: `https://bytematch.dev/RyonaEc/Tennis-no-Ouji-sama-2005-Crystal-Dr
 
 | Path | What it is |
 |---|---|
-| `assets/icon.png` | 256 × 256 game icon, taken from the retail banner |
-| `assets/cover.png` | 1500 × 500 cover, generated from the same icon |
-| `tools/extract_icon.py` | Regenerates `icon.png` from a ROM (`python tools/extract_icon.py <rom>`) |
-| `tools/make_cover.py` | Regenerates `cover.png` from a ROM (`python tools/make_cover.py <rom>`) |
+| `assets/icon.png` | 256 × 256 game icon, cropped from the key art |
+| `assets/cover.png` | 1500 × 500 cover, the game logo on white |
+| `tools/make_assets.py` | Rebuilds both from the artwork (`python tools/make_assets.py <key art> <logo>`) |
+| `tools/extract_icon.py` | Alternative icon straight from a ROM's banner (`python tools/extract_icon.py <rom>`) |
+| `tools/make_cover.py` | Alternative cover drawn around that banner icon (`python tools/make_cover.py <rom>`) |
 | `tools/upload_report.py` | Uploads `build/ATOJ/report.json` to ByteMatch |
 | `build/ATOJ/report.json` | The objdiff report, produced by `ninja report` |
 
