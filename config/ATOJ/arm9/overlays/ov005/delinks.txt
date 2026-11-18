@@ -99,3 +99,11 @@ src/ov005/func_ov005_0204ee0c.c:
 src/ov005/func_ov005_0204ef38.c:
     complete
     .text       start:0x0204ef38 end:0x0204ef68
+
+src/ov005/func_ov005_0204f2ac.c:
+    complete
+    .text       start:0x0204f2ac end:0x0204f2e0
+
+src/ov005/func_ov005_0204f42c.c:
+    complete
+    .text       start:0x0204f42c end:0x0204f464
