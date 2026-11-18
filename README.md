@@ -1,6 +1,10 @@
-# Tennis no Ouji-sama 2005 - Crystal Drive
+<p align="center">
+  <img src="assets/logo.png" width="760" alt="Tennis no Ouji-sama 2005 CRYSTAL DRIVE">
+</p>
 
-[![Progress](https://bytematch.dev/RyonaEc/Tennis-no-Ouji-sama-2005---Crystal-Drive-Decompilation.svg)](https://bytematch.dev/RyonaEc/Tennis-no-Ouji-sama-2005---Crystal-Drive-Decompilation)
+<h1 align="center">Tennis no Ouji-sama 2005 CRYSTAL DRIVE Decompilation</h1>
+
+[![Progress](https://bytematch.dev/RyonaEc/Tennis-no-Ouji-sama-2005-Crystal-Drive-Decompilation.svg)](https://bytematch.dev/RyonaEc/Tennis-no-Ouji-sama-2005-Crystal-Drive-Decompilation)
 
 A work-in-progress matching decompilation of *テニスの王子様 2005 CRYSTAL DRIVE*
 (Nintendo DS, Japan), built on [`ds-decomp`](https://github.com/AetiasHax/ds-decomp).

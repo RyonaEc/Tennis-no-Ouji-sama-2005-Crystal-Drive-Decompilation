@@ -35,6 +35,39 @@ def make_icon(source: Image.Image) -> Image.Image:
     return image.crop((left, top, image.width, top + side)).resize(ICON, Image.LANCZOS)
 
 
+def strip_white(logo: Image.Image, threshold: int = 236) -> Image.Image:
+    """Make the white background transparent, keeping whites inside the artwork.
+
+    Only near-white pixels reachable from the border are cleared, so the white
+    highlights inside the lettering stay opaque. The flood fill runs from every
+    edge pixel with an explicit stack rather than recursion.
+    """
+    logo = logo.convert("RGBA")
+    pixels = logo.load()
+    width, height = logo.size
+    seen = bytearray(width * height)
+
+    def is_white(x, y):
+        r, g, b, _ = pixels[x, y]
+        return r >= threshold and g >= threshold and b >= threshold
+
+    stack = [(x, 0) for x in range(width)] + [(x, height - 1) for x in range(width)]
+    stack += [(0, y) for y in range(height)] + [(width - 1, y) for y in range(height)]
+    while stack:
+        x, y = stack.pop()
+        if not (0 <= x < width and 0 <= y < height):
+            continue
+        index = y * width + x
+        if seen[index]:
+            continue
+        seen[index] = 1
+        if not is_white(x, y):
+            continue
+        pixels[x, y] = (255, 255, 255, 0)
+        stack.extend(((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
+    return logo
+
+
 def make_cover(logo: Image.Image) -> Image.Image:
     """Centre the logo on a white cover, keeping its aspect ratio."""
     cover = Image.new("RGB", COVER, (255, 255, 255))
@@ -51,11 +84,18 @@ def main() -> int:
     parser.add_argument("logo", help="cover source image, alpha allowed")
     parser.add_argument("--icon-out", default="assets/icon.png")
     parser.add_argument("--cover-out", default="assets/cover.png")
+    parser.add_argument("--logo-out", default="assets/logo.png",
+                        help="transparent logo for the README header")
+    parser.add_argument("--no-logo", action="store_true", help="skip the README logo")
     args = parser.parse_args()
 
     icon = make_icon(Image.open(args.keyart))
-    cover = make_cover(Image.open(args.logo))
-    for image, path in ((icon, args.icon_out), (cover, args.cover_out)):
+    source = Image.open(args.logo)
+    cover = make_cover(source)
+    outputs = [(icon, args.icon_out), (cover, args.cover_out)]
+    if not args.no_logo:
+        outputs.append((strip_white(source), args.logo_out))
+    for image, path in outputs:
         out = Path(path)
         out.parent.mkdir(parents=True, exist_ok=True)
         image.save(out, optimize=True)
