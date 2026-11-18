@@ -316,6 +316,39 @@ slot pointer in `r3` and folds `0x18` into the load/store. Swept: pointer
 local, `u32 *p[6]`, `f = p; f += 6;`, split `*f = *f & ~0x400`, separate
 base and slot pointers. Same materialisation wall as §6.
 
+## 11. Solved: the ov003/ov005 stub and thunk set (54 functions)
+
+Whole modules of small units are reachable in one pass once the shapes are
+recognised. Fifty-four units went in together; none needed a lever beyond
+writing the obvious C.
+
+**11.1 `mov r0, #0; bx lr` is `return 0;`.** 23 ov003/ov005 functions are
+8-byte constant returns. A `void` body compiles to a bare `bx lr`, so the
+return type has to be non-void for the `mov` to appear.
+
+```c
+u32 func(void)
+{
+    return 0;
+}
+```
+
+**11.2 `ldr ip, =callee` plus argument moves is a tail call.** `mov r0, #1;
+mov r2, r0; mov r1, #0; bx ip` is exactly `return callee(1, 0, 1);`. A plain
+last-statement call tail-calls too, but returning the result keeps the `u32`
+prototype honest and picks up the value form of the thunk.
+
+**11.3 A small table index in front of a thunk has to stay scaled.**
+`func_ov003_020641c8` loads `data_ov003_020dc744[a1]` and passes it as the
+third argument; the `<< 2` must be written on the index, as in the sibling
+`func_ov003_020641e4`, or the compiler folds the scale into the load and the
+argument order changes.
+
+**11.4 A `== 0` test picking between `sub` and `rsb` is a predicated pair.**
+`func_ov003_020555b4` compares the selector against zero once and emits both
+arms predicated; write the `== 0` arm first (`(a1 << 5) - 0x1000`), then the
+`else` arm as `0x1000 - (a1 << 5)` so it becomes the `rsb`.
+
 ## 8. Prior art
 
 Levers above are cross-checked against, and reusable from:
