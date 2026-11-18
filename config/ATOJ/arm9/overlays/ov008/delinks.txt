@@ -51,3 +51,22 @@ src/ov008/func_ov008_0204e3fc.c:
 src/ov008/func_ov008_0204cdac.c:
     complete
     .text       start:0x0204cdac end:0x0204cddc
+
+src/ov008/func_ov008_0204cf5c.c:
+    complete
+    .text       start:0x0204cf5c end:0x0204cf80
+src/ov008/func_ov008_0204d940.c:
+    complete
+    .text       start:0x0204d940 end:0x0204d970
+
+src/ov008/func_ov008_0204e554.c:
+    complete
+    .text       start:0x0204e554 end:0x0204e584
+src/ov008/func_ov008_0204c894.c:
+    complete
+    .text       start:0x0204c894 end:0x0204c8dc
+
+src/ov008/func_ov008_0204e75c.c:
+    complete
+    .text       start:0x0204e75c end:0x0204e7ac
+
