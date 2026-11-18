@@ -2300,3 +2300,15 @@ src/arm9/func_0202ef50.c:
 src/arm9/func_0202efd8.c:
     complete
     .text       start:0x0202efd8 end:0x0202f020
+
+src/arm9/func_0202b9ac.c:
+    complete
+    .text       start:0x0202b9ac end:0x0202b9f8
+
+src/arm9/func_020269b8.c:
+    complete
+    .text       start:0x020269b8 end:0x020269d0
+src/arm9/func_020269d0.c:
+    complete
+    .text       start:0x020269d0 end:0x020269ec
+
