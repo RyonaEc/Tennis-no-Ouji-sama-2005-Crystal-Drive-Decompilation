@@ -47,3 +47,7 @@ src/ov008/func_ov008_0204df38.c:
 src/ov008/func_ov008_0204e3fc.c:
     complete
     .text       start:0x0204e3fc end:0x0204e434
+
+src/ov008/func_ov008_0204cdac.c:
+    complete
+    .text       start:0x0204cdac end:0x0204cddc
