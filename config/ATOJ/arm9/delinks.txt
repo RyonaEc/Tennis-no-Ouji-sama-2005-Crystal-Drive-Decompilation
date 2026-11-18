@@ -2114,3 +2114,63 @@ src/arm9/func_0202cbc0.c:
 src/arm9/func_02030888.c:
     complete
     .text       start:0x02030888 end:0x020308c4
+
+src/arm9/func_0200ee3c.c:
+    complete
+    .text       start:0x0200ee3c end:0x0200ee58
+
+src/arm9/func_0201bea0.c:
+    complete
+    .text       start:0x0201bea0 end:0x0201bebc
+
+src/arm9/func_0201be3c.c:
+    complete
+    .text       start:0x0201be3c end:0x0201be5c
+
+src/arm9/func_02027f4c.c:
+    complete
+    .text       start:0x02027f4c end:0x02027f74
+
+src/arm9/func_02033170.c:
+    complete
+    .text       start:0x02033170 end:0x0203318c
+
+src/arm9/func_02027488.c:
+    complete
+    .text       start:0x02027488 end:0x020274c4
+
+src/arm9/func_0202be18.c:
+    complete
+    .text       start:0x0202be18 end:0x0202be54
+
+src/arm9/func_0202be6c.c:
+    complete
+    .text       start:0x0202be6c end:0x0202bea8
+
+src/arm9/func_0202bf38.c:
+    complete
+    .text       start:0x0202bf38 end:0x0202bf74
+
+src/arm9/func_0202bfdc.c:
+    complete
+    .text       start:0x0202bfdc end:0x0202c018
+
+src/arm9/func_0202ef98.c:
+    complete
+    .text       start:0x0202ef98 end:0x0202efd8
+
+src/arm9/func_020264b8.c:
+    complete
+    .text       start:0x020264b8 end:0x020264fc
+
+src/arm9/func_0201be5c.c:
+    complete
+    .text       start:0x0201be5c end:0x0201bea0
+
+src/arm9/func_0202f404.c:
+    complete
+    .text       start:0x0202f404 end:0x0202f448
+
+src/arm9/func_02017b60.c:
+    complete
+    .text       start:0x02017b60 end:0x02017ba4
