@@ -779,3 +779,51 @@ src/ov002/func_ov002_020e80a4.c:
     complete
     .text       start:0x020e80a4 end:0x020e8104
 
+src/ov002/func_ov002_020cb970.c:
+    complete
+    .text       start:0x020cb970 end:0x020cb9d0
+
+
+
+
+
+
+
+
+
+src/ov002/func_ov002_0204d09c.c:
+    complete
+    .text       start:0x0204d09c end:0x0204d0e0
+
+src/ov002/func_ov002_0208102c.c:
+    complete
+    .text       start:0x0208102c end:0x02081078
+
+src/ov002/func_ov002_020d2edc.c:
+    complete
+    .text       start:0x020d2edc end:0x020d2f3c
+
+src/ov002/func_ov002_020e41b4.c:
+    complete
+    .text       start:0x020e41b4 end:0x020e4214
+
+src/ov002/func_ov002_020ea844.c:
+    complete
+    .text       start:0x020ea844 end:0x020ea8a4
+
+src/ov002/func_ov002_020ea928.c:
+    complete
+    .text       start:0x020ea928 end:0x020ea988
+
+src/ov002/func_ov002_020ec5f4.c:
+    complete
+    .text       start:0x020ec5f4 end:0x020ec654
+
+src/ov002/func_ov002_020f63d8.c:
+    complete
+    .text       start:0x020f63d8 end:0x020f6438
+
+src/ov002/func_ov002_020f7464.c:
+    complete
+    .text       start:0x020f7464 end:0x020f74c4
+
