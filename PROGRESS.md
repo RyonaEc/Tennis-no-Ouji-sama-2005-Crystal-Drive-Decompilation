@@ -1,13 +1,13 @@
 # Progress
 
-Recompiling the matching C sources with `mwccarm` 1.2/sp2 and linking them back into the original addresses reproduces the retail ROM:
+The matching C sources are compiled with `mwccarm` 1.2/sp2 and linked back into the original addresses. The rebuild is byte-identical to the retail ROM:
 
 ```
 Target: 8d555a80db47278475ffdfdf808fe80dbd7c48cf
 rebuilt: 8d555a80db47278475ffdfdf808fe80dbd7c48cf  -> OK
 ```
 
-The numbers below come from `ninja report` (objdiff) and are written by `python build/progress.py`. `Complete` means a unit whose whole body is matching C; gap units are still delinked assembly.
+The figures come from `ninja report` (objdiff). A complete unit has its whole body in matching C; gap units are still delinked assembly.
 
 ## Overall
 
@@ -15,7 +15,7 @@ The numbers below come from `ninja report` (objdiff) and are written by `python 
 |---|---:|---:|---|
 | Code | 29,512 B | 1,841,700 B | 1.60% `█░░░░░░░░░░░░░░░░░░░░░░░` |
 | Functions | 765 | 3,806 | 20.10% `█████░░░░░░░░░░░░░░░░░░░` |
-| Fuzzy match | 1.60% | — | `█░░░░░░░░░░░░░░░░░░░░░░░` |
+| Fuzzy match | 1.60% | n/a | `█░░░░░░░░░░░░░░░░░░░░░░░` |
 | Data | 0 B | 801,936 B | 0.00% `░░░░░░░░░░░░░░░░░░░░░░░░` |
 | Complete units | 765 | 1,168 | 65.50% `████████████████░░░░░░░░` |
 
@@ -36,6 +36,6 @@ The numbers below come from `ninja report` (objdiff) and are written by `python 
 
 ## Against the whole ROM
 
-765 of 3,806 functions (20.10%) and 29,512 of 1,841,700 code bytes (1.60%) are matching C; the remaining functions are still delinked assembly.
+765 of 3,806 functions (20.10%) and 29,512 of 1,841,700 code bytes (1.60%) are matching C; the rest are still delinked assembly.
 
-Data is reported but not yet started: no `.data`, `.rodata` or `.bss` unit has a matching C definition, so the data figures stay at zero until those units are claimed.
+No `.data`, `.rodata` or `.bss` unit has a matching C definition yet, so the data figures stay at zero.

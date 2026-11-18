@@ -22,15 +22,15 @@ tennis_ATOJ.nds          compared against the base ROM
 ```
 
 A module is matching when the linked output is byte-identical to the
-corresponding region of the base ROM. `ninja check` reports this per module;
+corresponding region of the base ROM. `ninja check` reports this per module and
 `ninja sha1` verifies the rebuilt ROM as a whole.
 
 ## The decompilation loop
 
-1. **Pick a function.** Open `objdiff.json` in objdiff, or run `ninja dis` and
-   read `build/ATOJ/asm/`. Start with small, leaf functions; they are the
-   fastest to match and teach you the compiler's idioms.
-2. **Carve out a translation unit.** Add an entry to
+1. Pick a function. Open `objdiff.json` in objdiff, or run `ninja dis` and read
+   `build/ATOJ/asm/`. Small leaf functions are quick to match and they show you
+   the compiler's idioms early.
+2. Carve out a translation unit by adding an entry to
    `config/ATOJ/arm9/delinks.txt` for the function's address range:
 
    ```
@@ -38,22 +38,22 @@ corresponding region of the base ROM. `ninja check` reports this per module;
        .text start:0x02012345 end:0x020123a8
    ```
 
-   `dsd` derives the delinked object path from the source path, so the file
-   name is the eventual destination of the decompiled code.
-3. **Write C.** Put the function in `src/`. Use `include/` for shared types.
-   The compiler is told the game version through `-d ATOJ` and every file is
-   compiled as C or C++ according to its extension.
-4. **Compare.** `ninja check` (or objdiff) tells you whether the object still
-   matches. Iterate on the C until it does.
-5. **Commit both.** The C and the `delinks.txt`/`symbols.txt` changes belong in
-   the same commit, so the build stays reproducible.
+   `dsd` derives the delinked object path from the source path, so the file name
+   is where the decompiled code will end up.
+3. Write the C in `src/`, with shared types in `include/`. The compiler gets the
+   game version through `-d ATOJ`, and each file is compiled as C or C++ based
+   on its extension.
+4. Compare with `ninja check` or objdiff and keep iterating on the C until the
+   object matches.
+5. Commit the C and the `delinks.txt`/`symbols.txt` changes together so the
+   build stays reproducible.
 
 Once a file matches, mark it `complete` in `delinks.txt`; `dsd lcf` then links
 your object instead of the delinked assembly.
 
 ## Symbols
 
-`symbols.txt` names addresses:
+`symbols.txt` gives addresses their names:
 
 ```
 func_02012345 kind:function(arm,size=0x30) addr:0x02012345
@@ -64,27 +64,30 @@ Naming a function makes its assembly and relocations readable. After a file
 matches, `ninja apply` copies sizes and local/global information from the linked
 ELF back into `symbols.txt`.
 
-Useful `dsd` helpers:
+Two `dsd` helpers are worth knowing:
 
-* `dsd sig list` / `dsd sig apply` — find and rename library functions by
+* `dsd sig list` / `dsd sig apply` find and rename library functions by
   signature, which identifies known SDK routines in the ROM.
-* `dsd diff new` / `dsd diff apply` — compare symbol configuration between two
+* `dsd diff new` / `dsd diff apply` compare symbol configuration between two
   versions of the project.
 
 ## Matching tips
 
-* **Compiler version.** The retail build used one CodeWarrior service pack.
-  Until you confirm which, sweep `--mwcc-version` (for example `1.2/sp2`,
-  `2.0/sp2p2`, `1.2/sp2p3`) on a function you can match confidently, then pin
-  the winner as `DEFAULT_MWCC_VERSION` in `tools/configure.py`.
-* **Flags.** `CC_FLAGS` mirrors the standard DS release configuration
-  (`-O4,p -proc arm946e -interworking -enum int`). Changing one flag changes
-  every file, so do it deliberately.
-* **Data placement.** Matching `.rodata`/`.data` often requires writing
-  declarations in the same order as the original; the delinks ranges tell you
-  exactly how large each object was.
-* **decomp.me.** `ninja objdiff` writes decomp.me scratch metadata (compiler
-  `mwcc_30_131`, the project's C flags). You can also export context for the
-  scratch with the project's includes.
-* **Small steps.** One function per commit keeps the diff reviewable and makes
-  regressions easy to bisect.
+The retail build used one CodeWarrior service pack. Until you have confirmed
+which, sweep `--mwcc-version` (for example `1.2/sp2`, `2.0/sp2p2`, `1.2/sp2p3`)
+on a function you can match confidently, then pin the winner as
+`DEFAULT_MWCC_VERSION` in `tools/configure.py`.
+
+`CC_FLAGS` mirrors the standard DS release configuration (`-O4,p -proc arm946e
+-interworking -enum int`). One changed flag changes every file, so change them
+deliberately.
+
+Matching `.rodata`/`.data` often means writing declarations in the same order as
+the original; the delinks ranges tell you how large each object was.
+
+`ninja objdiff` writes decomp.me scratch metadata (compiler `mwcc_30_131`, the
+project's C flags), and you can export context for the scratch with the
+project's includes.
+
+One function per commit keeps the diff reviewable and makes a regression easy to
+bisect.
