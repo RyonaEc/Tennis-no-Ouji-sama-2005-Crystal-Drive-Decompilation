@@ -79,3 +79,15 @@ src/ov005/func_ov005_020695a4.c:
 src/ov005/func_ov005_0206bfa8.c:
     complete
     .text       start:0x0206bfa8 end:0x0206bfc0
+
+src/ov005/func_ov005_020569a4.c:
+    complete
+    .text       start:0x020569a4 end:0x020569c0
+
+src/ov005/func_ov005_02051a94.c:
+    complete
+    .text       start:0x02051a94 end:0x02051aac
+
+src/ov005/func_ov005_0206ea18.c:
+    complete
+    .text       start:0x0206ea18 end:0x0206ea30

@@ -73,12 +73,4 @@ The README uses two:
 public and the project is registered, every badge renders as
 `ByteMatch: project not found`.
 
-## Going public checklist
-
-1. Make the repository public.
-2. Register the project on bytematch.dev (Manage → Add project).
-3. Paste the icon and cover links, then set the game, franchise and year.
-4. Create an upload token and post the first report with `tools/upload_report.py`.
-5. Check that the badges in the README resolve.
-
 If the reports do not appear, the Manage page shows the last ingest error.

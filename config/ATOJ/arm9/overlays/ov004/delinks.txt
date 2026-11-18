@@ -39,3 +39,35 @@ src/ov004/func_ov004_020523f8.c:
 src/ov004/func_ov004_02053510.c:
     complete
     .text       start:0x02053510 end:0x02053518
+
+src/ov004/func_ov004_02055978.c:
+    complete
+    .text       start:0x02055978 end:0x02055980
+
+src/ov004/func_ov004_020624bc.c:
+    complete
+    .text       start:0x020624bc end:0x020624e0
+
+src/ov004/func_ov004_0205a75c.c:
+    complete
+    .text       start:0x0205a75c end:0x0205a7b4
+
+src/ov004/func_ov004_020528b0.c:
+    complete
+    .text       start:0x020528b0 end:0x020528c0
+
+src/ov004/func_ov004_0204d96c.c:
+    complete
+    .text       start:0x0204d96c end:0x0204d980
+
+src/ov004/func_ov004_0205240c.c:
+    complete
+    .text       start:0x0205240c end:0x02052424
+
+src/ov004/func_ov004_020534f4.c:
+    complete
+    .text       start:0x020534f4 end:0x02053510
+
+src/ov004/func_ov004_02055980.c:
+    complete
+    .text       start:0x02055980 end:0x0205599c
