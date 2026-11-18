@@ -13,18 +13,18 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 | Metric | Matched | Total | Progress |
 |---|---:|---:|---|
-| Code | 42,456 B | 1,841,700 B | 2.31% `█░░░░░░░░░░░░░░░░░░░░░░░` |
-| Functions | 957 | 3,806 | 25.14% `██████░░░░░░░░░░░░░░░░░░` |
-| Fuzzy match | 2.33% | n/a | `█░░░░░░░░░░░░░░░░░░░░░░░` |
+| Code | 42,864 B | 1,841,700 B | 2.33% `█░░░░░░░░░░░░░░░░░░░░░░░` |
+| Functions | 962 | 3,806 | 25.28% `██████░░░░░░░░░░░░░░░░░░` |
+| Fuzzy match | 2.35% | n/a | `█░░░░░░░░░░░░░░░░░░░░░░░` |
 | Data | 0 B | 801,936 B | 0.00% `░░░░░░░░░░░░░░░░░░░░░░░░` |
-| Complete units | 967 | 1,476 | 65.51% `████████████████░░░░░░░░` |
+| Complete units | 972 | 1,482 | 65.59% `████████████████░░░░░░░░` |
 
 ## By module
 
 | Module | Code | Functions | Fuzzy | Data | Complete units |
 |---|---:|---:|---:|---:|---:|
-| ARM9 main | 9.81% (22,028 / 224,616 B) | 586 / 1,377 (42.6%) | 9.83% | 0.00% (0 / 69,856 B) | 587 / 824 |
-| OV002 | 2.18% (15,580 / 715,724 B) | 223 / 1,360 (16.4%) | 2.19% | 0.00% (0 / 34,164 B) | 224 / 374 |
+| ARM9 main | 9.89% (22,208 / 224,616 B) | 589 / 1,377 (42.8%) | 9.91% | 0.00% (0 / 69,856 B) | 590 / 826 |
+| OV002 | 2.21% (15,808 / 715,724 B) | 225 / 1,360 (16.5%) | 2.22% | 0.00% (0 / 34,164 B) | 226 / 378 |
 | OV003 | 0.22% (1,304 / 586,712 B) | 55 / 547 (10.1%) | 0.23% | 0.00% (0 / 64,648 B) | 56 / 103 |
 | OV004 | 1.71% (1,528 / 89,584 B) | 38 / 170 (22.4%) | 1.71% | 0.00% (0 / 27,404 B) | 38 / 61 |
 | OV005 | 0.37% (536 / 142,964 B) | 25 / 166 (15.1%) | 0.41% | 0.00% (0 / 369,132 B) | 26 / 48 |
@@ -36,6 +36,6 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 ## Against the whole ROM
 
-957 of 3,806 functions (25.14%) and 42,456 of 1,841,700 code bytes (2.31%) are matching C; the rest are still delinked assembly.
+962 of 3,806 functions (25.28%) and 42,864 of 1,841,700 code bytes (2.33%) are matching C; the rest are still delinked assembly.
 
 No `.data`, `.rodata` or `.bss` unit has a matching C definition yet, so the data figures stay at zero.
