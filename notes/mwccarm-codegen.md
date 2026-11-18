@@ -349,6 +349,44 @@ argument order changes.
 arms predicated; write the `== 0` arm first (`(a1 << 5) - 0x1000`), then the
 `else` arm as `0x1000 - (a1 << 5)` so it becomes the `rsb`.
 
+## 12. Solved: Thumb units (8 functions)
+
+The BIOS stubs in arm9 are **Thumb**, not ARM: `symbols.txt` marks them
+`kind:function(thumb,...)` and the retail bytes are `swi n` + `bx lr` as
+16-bit instructions. The build needs no extra flags — the source opts in:
+
+```c
+#include "types.h"
+#pragma thumb on
+void SoftReset(void)
+{
+    asm { swi 0x00 }
+}
+```
+
+That reproduces the 4-byte stub exactly, and mwldarm places it at the delinked
+address like any other complete unit. Eight went in this way: `SoftReset`,
+`WaitByLoop`, `HuffUnCompReadByCallback`, `Div`, `IntrWait`,
+`LZ77UnCompReadNormalWrite8bit`, `RLUnCompReadByCallbackWrite16bit`,
+`BitUnPack` — one file per stub, each with its own `swi` number.
+
+**12.1 Thumb units whose address is 2 mod 4 cannot be placed.** Every Thumb
+stub that matched sits at a 4-byte-aligned address; the ones at `4n+2`
+(`Halt` `0x020040e6`, `Sqrt`, `CpuSet`, `GetCRC16`, `CpuFastSet`, `IsDebugger`,
+`RLUnCompReadNormalWrite8bit`, `LZ77UnCompReadByCallbackWrite16bit`,
+`VBlankIntrWait`) all link with the whole ARM9 image shifted four bytes: the
+object's `.text` is a clean 4 bytes with no recorded alignment, yet mwldarm
+pads the section to a word boundary, the entry point moves from `0x2004800` to
+`0x2004804` and every following byte differs. Verified by diffing the linked
+ROM: the first difference is at the stub itself. Not solved.
+
+**12.2 The three Thumb struct initialisers stay uncoloured.**
+`func_0201fcc8`, `0201fce4` and `0201fd00` write nine words of a fixed layout
+(`0x1000` at one slot, `0`, `a1`, `a2`, `-a1` at the others). They are
+4-byte aligned and link fine, but the store order does not fall out of the
+obvious sequence and the sizes match, so the residue is instruction order
+inside the Thumb block, not placement.
+
 ## 8. Prior art
 
 Levers above are cross-checked against, and reusable from:

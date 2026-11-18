@@ -13,17 +13,17 @@ The numbers below come from `ninja report` (objdiff) and are written by `python 
 
 | Metric | Matched | Total | Progress |
 |---|---:|---:|---|
-| Code | 29,480 B | 1,841,700 B | 1.60% `█░░░░░░░░░░░░░░░░░░░░░░░` |
-| Functions | 757 | 3,806 | 19.89% `█████░░░░░░░░░░░░░░░░░░░` |
+| Code | 29,512 B | 1,841,700 B | 1.60% `█░░░░░░░░░░░░░░░░░░░░░░░` |
+| Functions | 765 | 3,806 | 20.10% `█████░░░░░░░░░░░░░░░░░░░` |
 | Fuzzy match | 1.60% | — | `█░░░░░░░░░░░░░░░░░░░░░░░` |
 | Data | 0 B | 801,936 B | 0.00% `░░░░░░░░░░░░░░░░░░░░░░░░` |
-| Complete units | 757 | 1,152 | 65.71% `████████████████░░░░░░░░` |
+| Complete units | 765 | 1,168 | 65.50% `████████████████░░░░░░░░` |
 
 ## By module
 
 | Module | Code | Functions | Fuzzy | Data | Complete units |
 |---|---:|---:|---:|---:|---:|
-| ARM9 main | 7.97% (17,904 / 224,616 B) | 511 / 1,377 (37.1%) | 7.97% | 0.00% (0 / 69,856 B) | 511 / 723 |
+| ARM9 main | 7.99% (17,936 / 224,616 B) | 519 / 1,377 (37.7%) | 7.99% | 0.00% (0 / 69,856 B) | 519 / 739 |
 | OV002 | 1.38% (9,892 / 715,724 B) | 165 / 1,360 (12.1%) | 1.38% | 0.00% (0 / 34,164 B) | 165 / 275 |
 | OV003 | 0.16% (928 / 586,712 B) | 46 / 547 (8.4%) | 0.16% | 0.00% (0 / 64,648 B) | 46 / 85 |
 | OV004 | 0.21% (184 / 89,584 B) | 9 / 170 (5.3%) | 0.21% | 0.00% (0 / 27,404 B) | 9 / 18 |
@@ -36,6 +36,6 @@ The numbers below come from `ninja report` (objdiff) and are written by `python 
 
 ## Against the whole ROM
 
-757 of 3,806 functions (19.89%) and 29,480 of 1,841,700 code bytes (1.60%) are matching C; the remaining functions are still delinked assembly.
+765 of 3,806 functions (20.10%) and 29,512 of 1,841,700 code bytes (1.60%) are matching C; the remaining functions are still delinked assembly.
 
 Data is reported but not yet started: no `.data`, `.rodata` or `.bss` unit has a matching C definition, so the data figures stay at zero until those units are claimed.
