@@ -43,6 +43,7 @@ t10 = load("build/t10.py", "t10")
 from capstone import Cs, CS_ARCH_ARM, CS_MODE_ARM  # noqa: E402
 
 md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
+md.detail = True
 
 
 def text_of(obj: Path) -> bytes:
@@ -78,8 +79,12 @@ def relocs_of(obj: Path) -> list:
     text_index = next((i for i, s in enumerate(sections) if name_at(s[0]) == ".text"), None)
     if text_index is None:
         return []
+    # mwccarm emits .rela.text with 12-byte entries; plain .rel.text uses 8.
     for i, (_, _, _, _, offset, size) in enumerate(sections):
-        if name_at(sections[i][0]) == ".rel.text":
+        name = name_at(sections[i][0])
+        if name == ".rela.text":
+            return [struct.unpack_from("<I", data, offset + k * 12)[0] for k in range(size // 12)]
+        if name == ".rel.text":
             return [struct.unpack_from("<I", data, offset + k * 8)[0] for k in range(size // 8)]
     return []
 
