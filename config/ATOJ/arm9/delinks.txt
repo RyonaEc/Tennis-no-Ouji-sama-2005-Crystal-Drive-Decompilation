@@ -2174,3 +2174,59 @@ src/arm9/func_0202f404.c:
 src/arm9/func_02017b60.c:
     complete
     .text       start:0x02017b60 end:0x02017ba4
+
+src/arm9/func_02006be0.c:
+    complete
+    .text       start:0x02006be0 end:0x02006c10
+
+src/arm9/func_02006c10.c:
+    complete
+    .text       start:0x02006c10 end:0x02006c40
+
+src/arm9/func_02006cd0.c:
+    complete
+    .text       start:0x02006cd0 end:0x02006d00
+
+src/arm9/func_02008a60.c:
+    complete
+    .text       start:0x02008a60 end:0x02008a90
+
+src/arm9/func_0200e99c.c:
+    complete
+    .text       start:0x0200e99c end:0x0200e9cc
+
+src/arm9/func_020080d0.c:
+    complete
+    .text       start:0x020080d0 end:0x02008104
+
+src/arm9/func_0200e8f4.c:
+    complete
+    .text       start:0x0200e8f4 end:0x0200e928
+
+src/arm9/func_02010248.c:
+    complete
+    .text       start:0x02010248 end:0x02010280
+
+src/arm9/func_02010280.c:
+    complete
+    .text       start:0x02010280 end:0x020102b8
+
+src/arm9/func_020102b8.c:
+    complete
+    .text       start:0x020102b8 end:0x020102f0
+
+src/arm9/func_020102f0.c:
+    complete
+    .text       start:0x020102f0 end:0x02010328
+
+src/arm9/func_02010358.c:
+    complete
+    .text       start:0x02010358 end:0x0201038c
+
+src/arm9/func_0201038c.c:
+    complete
+    .text       start:0x0201038c end:0x020103c0
+
+src/arm9/func_020103c0.c:
+    complete
+    .text       start:0x020103c0 end:0x020103f8
