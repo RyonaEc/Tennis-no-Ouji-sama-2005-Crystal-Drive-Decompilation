@@ -13,20 +13,20 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 | Metric | Matched | Total | Progress |
 |---|---:|---:|---|
-| Code | 36,224 B | 1,841,700 B | 1.97% `█░░░░░░░░░░░░░░░░░░░░░░░` |
-| Functions | 880 | 3,806 | 23.12% `██████░░░░░░░░░░░░░░░░░░` |
-| Fuzzy match | 1.99% | n/a | `█░░░░░░░░░░░░░░░░░░░░░░░` |
+| Code | 36,612 B | 1,841,700 B | 1.99% `█░░░░░░░░░░░░░░░░░░░░░░░` |
+| Functions | 885 | 3,806 | 23.25% `██████░░░░░░░░░░░░░░░░░░` |
+| Fuzzy match | 2.01% | n/a | `█░░░░░░░░░░░░░░░░░░░░░░░` |
 | Data | 0 B | 801,936 B | 0.00% `░░░░░░░░░░░░░░░░░░░░░░░░` |
-| Complete units | 890 | 1,359 | 65.49% `████████████████░░░░░░░░` |
+| Complete units | 895 | 1,364 | 65.62% `████████████████░░░░░░░░` |
 
 ## By module
 
 | Module | Code | Functions | Fuzzy | Data | Complete units |
 |---|---:|---:|---:|---:|---:|
-| ARM9 main | 9.05% (20,324 / 224,616 B) | 562 / 1,377 (40.8%) | 9.07% | 0.00% (0 / 69,856 B) | 563 / 795 |
+| ARM9 main | 9.19% (20,636 / 224,616 B) | 566 / 1,377 (41.1%) | 9.21% | 0.00% (0 / 69,856 B) | 567 / 798 |
 | OV002 | 1.65% (11,804 / 715,724 B) | 184 / 1,360 (13.5%) | 1.66% | 0.00% (0 / 34,164 B) | 185 / 306 |
 | OV003 | 0.22% (1,304 / 586,712 B) | 55 / 547 (10.1%) | 0.23% | 0.00% (0 / 64,648 B) | 56 / 103 |
-| OV004 | 1.42% (1,272 / 89,584 B) | 32 / 170 (18.8%) | 1.42% | 0.00% (0 / 27,404 B) | 32 / 54 |
+| OV004 | 1.50% (1,348 / 89,584 B) | 33 / 170 (19.4%) | 1.50% | 0.00% (0 / 27,404 B) | 33 / 56 |
 | OV005 | 0.37% (536 / 142,964 B) | 25 / 166 (15.1%) | 0.41% | 0.00% (0 / 369,132 B) | 26 / 48 |
 | OV006 | 0.00% (0 / 7,324 B) | 0 / 16 (0.0%) | 0.00% | 0.00% (0 / 170,504 B) | 0 / 1 |
 | OV008 | 2.38% (260 / 10,940 B) | 7 / 55 (12.7%) | 3.94% | 0.00% (0 / 480 B) | 12 / 22 |
@@ -36,6 +36,6 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 ## Against the whole ROM
 
-880 of 3,806 functions (23.12%) and 36,224 of 1,841,700 code bytes (1.97%) are matching C; the rest are still delinked assembly.
+885 of 3,806 functions (23.25%) and 36,612 of 1,841,700 code bytes (1.99%) are matching C; the rest are still delinked assembly.
 
 No `.data`, `.rodata` or `.bss` unit has a matching C definition yet, so the data figures stay at zero.

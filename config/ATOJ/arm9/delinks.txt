@@ -2268,3 +2268,17 @@ src/arm9/func_02023f20.c:
     complete
     .text       start:0x02023f20 end:0x02023f7c
 
+src/arm9/func_02021b84.c:
+    complete
+    .text       start:0x02021b84 end:0x02021bd8
+src/arm9/func_02021bd8.c:
+    complete
+    .text       start:0x02021bd8 end:0x02021c2c
+
+src/arm9/func_02021aa8.c:
+    complete
+    .text       start:0x02021aa8 end:0x02021af0
+src/arm9/func_02018248.c:
+    complete
+    .text       start:0x02018248 end:0x02018290
+
