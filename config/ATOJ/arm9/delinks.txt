@@ -2095,3 +2095,14 @@ src/arm9/BitUnPack.c:
     complete
     .text       start:0x02004780 end:0x02004784
 
+src/arm9/func_0202b31c.c:
+    complete
+    .text       start:0x0202b31c end:0x0202b33c
+
+src/arm9/func_0202cc54.c:
+    complete
+    .text       start:0x0202cc54 end:0x0202cc74
+
+src/arm9/func_0201d8b0.c:
+    complete
+    .text       start:0x0201d8b0 end:0x0201d8f0
