@@ -35,6 +35,22 @@ def unit_name(name: str) -> str:
     return MODULES.get(module, f"arm9/{module}")
 
 
+def source_path(unit: dict) -> str:
+    """The C file a unit is built from, derived from its object path.
+
+    dsd already writes ``metadata.source_path`` for units it compiles from
+    source; this is the same answer for a dsd that leaves it out, so ByteMatch
+    can open a unit without searching the repository. ``build/ATOJ/src/arm9/x.o``
+    becomes ``src/arm9/x.c``.
+    """
+    base = unit.get("base_path", "")
+    marker = "src/"
+    index = base.find(marker)
+    if index < 0:
+        return ""
+    return base[index:][: -len(".o")] + ".c"
+
+
 def shape(data: dict) -> dict:
     for unit in data.get("units", []):
         unit["name"] = unit_name(unit["name"])
@@ -43,6 +59,11 @@ def shape(data: dict) -> dict:
         if "base_path" not in unit:
             # Still delinked assembly: there is no source to link to yet.
             metadata.pop("source_path", None)
+            continue
+        if not metadata.get("source_path"):
+            derived = source_path(unit)
+            if derived:
+                metadata["source_path"] = derived
     return data
 
 
