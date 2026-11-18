@@ -884,3 +884,23 @@ src/ov002/func_ov002_020c0a38.c:
 src/ov002/func_ov002_020a66d8.c:
     complete
     .text       start:0x020a66d8 end:0x020a673c
+
+src/ov002/func_ov002_020f2c80.c:
+    complete
+    .text       start:0x020f2c80 end:0x020f2cec
+
+src/ov002/func_ov002_020f2cec.c:
+    complete
+    .text       start:0x020f2cec end:0x020f2d58
+
+src/ov002/func_ov002_020f2d58.c:
+    complete
+    .text       start:0x020f2d58 end:0x020f2dc0
+
+src/ov002/func_ov002_020a00c8.c:
+    complete
+    .text       start:0x020a00c8 end:0x020a012c
+
+src/ov002/func_ov002_020f05e8.c:
+    complete
+    .text       start:0x020f05e8 end:0x020f0654
