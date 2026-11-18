@@ -11,3 +11,7 @@ src/ov010/func_ov010_020524a0.c:
 src/ov010/func_ov010_02052468.c:
     complete
     .text       start:0x02052468 end:0x020524a0
+
+src/ov010/func_ov010_02052220.c:
+    complete
+    .text       start:0x02052220 end:0x02052258
