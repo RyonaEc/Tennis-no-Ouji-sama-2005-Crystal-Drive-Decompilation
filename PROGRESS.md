@@ -13,11 +13,11 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 | Metric | Matched | Total | Progress |
 |---|---:|---:|---|
-| Code | 67,792 B | 1,841,700 B | 3.68% `█░░░░░░░░░░░░░░░░░░░░░░░` |
-| Functions | 1,157 | 3,806 | 30.40% `███████░░░░░░░░░░░░░░░░░` |
+| Code | 67,844 B | 1,841,700 B | 3.68% `█░░░░░░░░░░░░░░░░░░░░░░░` |
+| Functions | 1,158 | 3,806 | 30.43% `███████░░░░░░░░░░░░░░░░░` |
 | Fuzzy match | 3.71% | n/a | `█░░░░░░░░░░░░░░░░░░░░░░░` |
 | Data | 0 B | 801,936 B | 0.00% `░░░░░░░░░░░░░░░░░░░░░░░░` |
-| Complete units | 1,169 | 1,727 | 67.69% `████████████████░░░░░░░░` |
+| Complete units | 1,170 | 1,729 | 67.67% `████████████████░░░░░░░░` |
 
 ## By module
 
@@ -28,7 +28,7 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 | OV003 | 0.63% (3,672 / 586,712 B) | 70 / 547 (12.8%) | 0.63% | 0.00% (0 / 64,648 B) | 71 / 130 |
 | OV004 | 2.20% (1,968 / 89,584 B) | 42 / 170 (24.7%) | 2.20% | 0.00% (0 / 27,404 B) | 42 / 66 |
 | OV005 | 1.54% (2,200 / 142,964 B) | 31 / 166 (18.7%) | 1.58% | 0.00% (0 / 369,132 B) | 32 / 59 |
-| OV006 | 0.00% (0 / 7,324 B) | 0 / 16 (0.0%) | 0.00% | 0.00% (0 / 170,504 B) | 0 / 1 |
+| OV006 | 0.71% (52 / 7,324 B) | 1 / 16 (6.2%) | 0.71% | 0.00% (0 / 170,504 B) | 1 / 3 |
 | OV008 | 6.91% (756 / 10,940 B) | 15 / 55 (27.3%) | 8.47% | 0.00% (0 / 480 B) | 20 / 35 |
 | OV009 | 2.97% (736 / 24,788 B) | 13 / 61 (21.3%) | 3.19% | 0.00% (0 / 9,972 B) | 14 / 27 |
 | OV001 | 0.00% (0 / 13,904 B) | 0 / 21 (0.0%) | 0.00% | 0.00% (0 / 7,872 B) | 0 / 1 |
@@ -36,6 +36,6 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 ## Against the whole ROM
 
-1,157 of 3,806 functions (30.40%) and 67,792 of 1,841,700 code bytes (3.68%) are matching C; the rest are still delinked assembly.
+1,158 of 3,806 functions (30.43%) and 67,844 of 1,841,700 code bytes (3.68%) are matching C; the rest are still delinked assembly.
 
 No `.data`, `.rodata` or `.bss` unit has a matching C definition yet, so the data figures stay at zero.
