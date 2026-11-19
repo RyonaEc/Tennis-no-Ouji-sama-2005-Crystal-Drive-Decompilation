@@ -1236,3 +1236,19 @@ src/ov002/func_ov002_020cfc38.c:
     complete
     .text       start:0x020cfc38 end:0x020cfcb8
 
+src/ov002/func_ov002_0209d2f0.c:
+    complete
+    .text       start:0x0209d2f0 end:0x0209d394
+
+src/ov002/func_ov002_020a15b0.c:
+    complete
+    .text       start:0x020a15b0 end:0x020a1654
+
+src/ov002/func_ov002_020f73c0.c:
+    complete
+    .text       start:0x020f73c0 end:0x020f7464
+
+src/ov002/func_ov002_020facc0.c:
+    complete
+    .text       start:0x020facc0 end:0x020fad64
+
