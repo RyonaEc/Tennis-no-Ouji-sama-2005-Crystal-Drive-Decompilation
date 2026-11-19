@@ -10,7 +10,7 @@ Create a token on the project's Manage page (it is shown once) and export it:
 Reads build/<VERSION>/report.json by default and tags the upload with the
 current commit so ByteMatch can link source lines.
 """
-import argparse, json, os, pathlib, subprocess, sys, urllib.error, urllib.request
+import argparse, gzip, json, os, pathlib, subprocess, sys, urllib.error, urllib.request
 
 OWNER = 'RyonaEc'
 REPO = 'Tennis-no-Ouji-sama-2005-Crystal-Drive-Decompilation'
@@ -63,13 +63,17 @@ def main():
         print('dry run: not uploading')
         return
 
+    # The report grows with every matched unit and passed the server's 1 MiB
+    # request limit at 1058 units, so send it compressed.
+    body = gzip.compress(path.read_bytes(), 9)
     req = urllib.request.Request(
         url,
-        data=path.read_bytes(),
+        data=body,
         # A plain urllib User-Agent is refused by the site's Cloudflare rule
         # (403, error 1010), so name the tool.
         headers={'Authorization': f'Bearer {token}',
                  'Content-Type': 'application/json',
+                 'Content-Encoding': 'gzip',
                  'User-Agent': 'bytematch-upload/1.0'},
         method='POST',
     )
