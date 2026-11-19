@@ -34,7 +34,7 @@ Target: 8d555a80db47278475ffdfdf808fe80dbd7c48cf; tennis_ATOJ.nds: 8d555a80db472
 tennis_ATOJ.nds: OK
 ```
 
-1,106 functions (61,088 bytes) in the ARM9 main module and its overlays now match
+1,109 functions (61,428 bytes) in the ARM9 main module and its overlays now match
 C source compiled with `mwccarm` 1.2/sp2 and linked into the original addresses,
 and the rebuilt ROM still hashes to the retail dump:
 
@@ -46,8 +46,8 @@ and the rebuilt ROM still hashes to the retail dump:
 | `func_02017af8` | 0x28 | sums a linked list hung off `+0x24` |
 | `func_020180a0` | 0x30 | fills in a packed header, including a self-relative offset |
 
-`ninja report` shows `matched_functions: 1106` of 3,806 (29.1%) and
-`matched_code: 61,088` of 1,841,700 bytes (3.3%); the other 2,700 functions are
+`ninja report` shows `matched_functions: 1109` of 3,806 (29.1%) and
+`matched_code: 61,428` of 1,841,700 bytes (3.3%); the other 2,697 functions are
 still delinked assembly. [PROGRESS.md](PROGRESS.md) has the fuller breakdown
 (code, functions, fuzzy match, data, unit completeness, and a per-module table);
 `python build/progress.py` regenerates it.
@@ -133,6 +133,11 @@ signedness), a symptom-to-lever table, the workflow that gates a match, and the
 walls hit so far together with the evidence that they cannot be reached from
 source. It is written to be reusable on other DS titles built with the same
 compiler.
+
+If you are an AI agent contributing to this repository, read
+[`AGENTS.md`](AGENTS.md) first: it states what counts as a finished unit, the
+hard rules that keep the ROM matching, the edit loop and the helper scripts in
+`build/`, and how to commit and publish a batch.
 
 ## See also
 

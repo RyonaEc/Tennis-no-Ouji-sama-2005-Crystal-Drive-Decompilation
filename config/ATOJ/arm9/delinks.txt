@@ -2473,3 +2473,6 @@ src/arm9/func_0201d554.c:
     complete
     .text       start:0x0201d554 end:0x0201d5b8
 
+src/arm9/func_02023358.c:
+    complete
+    .text       start:0x02023358 end:0x020233cc

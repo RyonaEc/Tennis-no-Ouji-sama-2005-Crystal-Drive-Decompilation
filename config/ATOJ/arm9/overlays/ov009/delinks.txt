@@ -43,3 +43,11 @@ src/ov009/func_ov009_0204daf0.c:
 src/ov009/func_ov009_0204dc10.c:
     complete
     .text       start:0x0204dc10 end:0x0204dc48
+
+src/ov009/func_ov009_0204fa10.c:
+    complete
+    .text       start:0x0204fa10 end:0x0204fa80
+
+src/ov009/func_ov009_02051154.c:
+    complete
+    .text       start:0x02051154 end:0x020511c4
