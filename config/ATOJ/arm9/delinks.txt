@@ -2644,3 +2644,19 @@ src/arm9/func_02033a84.c:
 src/arm9/func_0203062c.c:
     complete
     .text       start:0x0203062c end:0x02030660
+
+src/arm9/func_02027308.c:
+    complete
+    .text       start:0x02027308 end:0x02027340
+
+src/arm9/func_0201f8ec.c:
+    complete
+    .text       start:0x0201f8ec end:0x0201f924
+
+src/arm9/func_0203b5a4.c:
+    complete
+    .text       start:0x0203b5a4 end:0x0203b5dc
+
+src/arm9/func_0201fd18.c:
+    complete
+    .text       start:0x0201fd18 end:0x0201fd50
