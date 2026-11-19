@@ -2540,3 +2540,11 @@ src/arm9/func_02021868.c:
 src/arm9/func_02021974.c:
     complete
     .text       start:0x02021974 end:0x02021a00
+
+src/arm9/func_02016a18.c:
+    complete
+    .text       start:0x02016a18 end:0x02016a64
+
+src/arm9/func_02016aa8.c:
+    complete
+    .text       start:0x02016aa8 end:0x02016b04
