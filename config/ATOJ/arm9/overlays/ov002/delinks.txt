@@ -1296,3 +1296,15 @@ src/ov002/func_ov002_020b9e30.c:
     complete
     .text       start:0x020b9e30 end:0x020b9ea4
 
+src/ov002/func_ov002_0209fe90.c:
+    complete
+    .text       start:0x0209fe90 end:0x0209ff1c
+
+src/ov002/func_ov002_020f03d4.c:
+    complete
+    .text       start:0x020f03d4 end:0x020f0464
+
+src/ov002/func_ov002_020f6438.c:
+    complete
+    .text       start:0x020f6438 end:0x020f64c4
+
