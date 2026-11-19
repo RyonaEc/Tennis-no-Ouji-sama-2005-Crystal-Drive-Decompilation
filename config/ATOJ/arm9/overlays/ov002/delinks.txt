@@ -1252,3 +1252,23 @@ src/ov002/func_ov002_020facc0.c:
     complete
     .text       start:0x020facc0 end:0x020fad64
 
+src/ov002/func_ov002_020ae628.c:
+    complete
+    .text       start:0x020ae628 end:0x020ae6bc
+
+src/ov002/func_ov002_020bb1bc.c:
+    complete
+    .text       start:0x020bb1bc end:0x020bb250
+
+src/ov002/func_ov002_020ed438.c:
+    complete
+    .text       start:0x020ed438 end:0x020ed4cc
+
+src/ov002/func_ov002_020b165c.c:
+    complete
+    .text       start:0x020b165c end:0x020b16d4
+
+src/ov002/func_ov002_020e25f0.c:
+    complete
+    .text       start:0x020e25f0 end:0x020e2668
+
