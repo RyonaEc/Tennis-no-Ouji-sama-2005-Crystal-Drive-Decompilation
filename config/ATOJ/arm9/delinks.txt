@@ -2500,3 +2500,11 @@ src/arm9/func_02014618.c:
 src/arm9/func_02014670.c:
     complete
     .text       start:0x02014670 end:0x020146c8
+
+src/arm9/func_02017bb0.c:
+    complete
+    .text       start:0x02017bb0 end:0x02017bfc
+
+src/arm9/func_0201829c.c:
+    complete
+    .text       start:0x0201829c end:0x020182e8
