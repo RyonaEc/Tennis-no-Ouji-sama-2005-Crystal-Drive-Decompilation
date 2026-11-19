@@ -13,7 +13,8 @@ proven shortcut; ignoring the hard rules breaks the build for everyone.
 A function is matched only when **all** of these hold:
 
 1. `python build/t10.py --check <module>` reports `ok` for that module
-   (`dangling=0`, `unlinked=0`, `dupes=0`), and
+   (`dangling=0`, `unlinked=0`, `dupes=0`); without the local tooling, `ninja
+   check` must pass for that module instead, and
 2. `ninja sha1` prints
    `Target: 8d555a80db47278475ffdfdf808fe80dbd7c48cf; tennis_ATOJ.nds: 8d555a80db47278475ffdfdf808fe80dbd7c48cf`
    followed by `tennis_ATOJ.nds: OK`.
@@ -45,25 +46,28 @@ Never commit a unit on the strength of `var3` alone.
 
 ```
 extract/ATOJ/            extracted modules (arm9.bin, overlays, files) - not in git
-config/ATOJ/             per module delinks.txt, symbols.txt, relocs.txt
-src/<module>/*.c         decompiled translation units, one function per file
+config/ATOJ/arm9/        arm9 delinks.txt, symbols.txt, relocs.txt (plus itcm/, dtcm/)
+config/ATOJ/arm9/overlays/<ov>/   the same three files for each overlay
+src/<module>/*.c         decompiled translation units, usually one function per file
 include/                 shared types (types.h is included by every unit)
 build/ATOJ/delinks/      relocatable objects produced by dsd delink
 build/ATOJ/report.json   objdiff's per-unit report, consumed by build/progress.py
 tools/                   dsd/mwccarm wrappers, configure.py, sha1.py, upload_report.py
-docs/                    build documentation (WORKFLOW.md, SETUP.md)
+docs/                    build documentation (SETUP.md, WORKFLOW.md, BYTEMATCH.md)
 ```
 
-Modules are `arm9`, `itcm`, `dtcm`, `ov000` ... `ov010`. Function names are
+Modules are `arm9` and the overlays `ov000` ... `ov010`; `config/ATOJ/arm9/`
+also holds `itcm/` and `dtcm/`. Function names are
 `func_<address>` (`func_020237f8`, `func_ov003_02066de0`); data symbols follow
 `data_<address>`. Keep those names — `symbols.txt`, `delinks.txt` and the
 objdiff configuration all key off them.
 
 ## The edit loop
 
-1. Pick an unmatched function. `build/famsurvey.py` groups unmatched functions
-   by size and mnemonic sequence; groups of identical skeleton are the cheapest
-   wins because one source shape covers every member.
+1. Pick an unmatched function. `build/famsurvey.py` (local tooling only, see
+   the note under the table) groups unmatched functions by size and mnemonic
+   sequence; groups of identical skeleton are the cheapest wins because one
+   source shape covers every member.
 2. Disassemble it: `python build/udis.py <module> 0xADDR [0xADDR ...]`.
 3. Write the C in a scratch file (e.g. `build/cand/name.c`) and compare with
    `python build/var3.py <module> 0xADDR <size> build/cand/name.c`.
@@ -96,6 +100,12 @@ Source files must `#include "types.h"` first, or the compiler emits
 `build/fastmatch.py` is the shared compiler harness: `parse_ins(addr, size)`,
 `retail(mod, addr, size)`, `compile_text(source, name)`, `literal_of(ins)`.
 Literal-pool words are at `ins.address + 8 + imm12`.
+
+`build/` is gitignored, so on a fresh checkout only the two committed helpers
+(`build/fastmatch.py`, `build/sweep.py`) exist; `udis.py`, `var3.py`, `reg.py`,
+`t10.py`, `autorun.py`, `famsurvey.py` and `progress.py` are local tooling.
+Without them, use `ninja dis`, `ninja check`, `ninja report` and objdiff, and
+install a unit by editing `delinks.txt` plus `src/` by hand.
 
 ## Compiler idioms worth knowing
 
@@ -143,9 +153,9 @@ empty names so a file never ends up with two conflicting `extern`s.
 ## Bookkeeping and release
 
 - `PROGRESS.md` is generated; never hand-edit it.
-- `README.md` carries the headline counts (`1,106 functions (61,088 bytes)`,
+- `README.md` carries the headline counts (`1,111 functions`, `61,668 bytes`,
   `matched_functions`, `matched_code`, percentages). Update them when the totals
-  change, nowhere else.
+  change, nowhere else, and keep them identical to `PROGRESS.md`.
 - If you work from a separate build tree, the sync direction is
   **build tree → repository for `src/` and `config/`**, and
   **repository → build tree for `README.md`/`PROGRESS.md`**. Use `cp -r`; do not
