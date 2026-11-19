@@ -2508,3 +2508,11 @@ src/arm9/func_02017bb0.c:
 src/arm9/func_0201829c.c:
     complete
     .text       start:0x0201829c end:0x020182e8
+
+src/arm9/func_0202688c.c:
+    complete
+    .text       start:0x0202688c end:0x020268e0
+
+src/arm9/func_020268e0.c:
+    complete
+    .text       start:0x020268e0 end:0x02026934
