@@ -153,7 +153,7 @@ empty names so a file never ends up with two conflicting `extern`s.
 ## Bookkeeping and release
 
 - `PROGRESS.md` is generated; never hand-edit it.
-- `README.md` carries the headline counts (`1,115 functions`, `62,156 bytes`,
+- `README.md` carries the headline counts (`1,117 functions`, `62,332 bytes`,
   `matched_functions`, `matched_code`, percentages). Update them when the totals
   change, nowhere else, and keep them identical to `PROGRESS.md`.
 - If you work from a separate build tree, the sync direction is

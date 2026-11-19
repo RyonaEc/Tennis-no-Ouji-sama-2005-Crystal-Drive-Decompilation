@@ -2492,3 +2492,11 @@ src/arm9/func_02019d64.c:
 src/arm9/func_02019dc4.c:
     complete
     .text       start:0x02019dc4 end:0x02019e24
+
+src/arm9/func_02014618.c:
+    complete
+    .text       start:0x02014618 end:0x02014670
+
+src/arm9/func_02014670.c:
+    complete
+    .text       start:0x02014670 end:0x020146c8
