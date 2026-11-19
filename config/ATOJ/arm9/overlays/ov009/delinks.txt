@@ -51,3 +51,7 @@ src/ov009/func_ov009_0204fa10.c:
 src/ov009/func_ov009_02051154.c:
     complete
     .text       start:0x02051154 end:0x020511c4
+
+src/ov009/func_ov009_0204c958.c:
+    complete
+    .text       start:0x0204c958 end:0x0204ca2c
