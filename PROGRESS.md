@@ -13,11 +13,11 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 | Metric | Matched | Total | Progress |
 |---|---:|---:|---|
-| Code | 67,700 B | 1,841,700 B | 3.68% `█░░░░░░░░░░░░░░░░░░░░░░░` |
-| Functions | 1,155 | 3,806 | 30.35% `███████░░░░░░░░░░░░░░░░░` |
-| Fuzzy match | 3.70% | n/a | `█░░░░░░░░░░░░░░░░░░░░░░░` |
+| Code | 67,792 B | 1,841,700 B | 3.68% `█░░░░░░░░░░░░░░░░░░░░░░░` |
+| Functions | 1,157 | 3,806 | 30.40% `███████░░░░░░░░░░░░░░░░░` |
+| Fuzzy match | 3.71% | n/a | `█░░░░░░░░░░░░░░░░░░░░░░░` |
 | Data | 0 B | 801,936 B | 0.00% `░░░░░░░░░░░░░░░░░░░░░░░░` |
-| Complete units | 1,167 | 1,724 | 67.69% `████████████████░░░░░░░░` |
+| Complete units | 1,169 | 1,727 | 67.69% `████████████████░░░░░░░░` |
 
 ## By module
 
@@ -25,7 +25,7 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 |---|---:|---:|---:|---:|---:|
 | ARM9 main | 12.04% (27,040 / 224,616 B) | 643 / 1,377 (46.7%) | 12.09% | 0.00% (0 / 69,856 B) | 646 / 879 |
 | OV002 | 4.33% (30,968 / 715,724 B) | 337 / 1,360 (24.8%) | 4.34% | 0.00% (0 / 34,164 B) | 338 / 519 |
-| OV003 | 0.61% (3,580 / 586,712 B) | 68 / 547 (12.4%) | 0.62% | 0.00% (0 / 64,648 B) | 69 / 127 |
+| OV003 | 0.63% (3,672 / 586,712 B) | 70 / 547 (12.8%) | 0.63% | 0.00% (0 / 64,648 B) | 71 / 130 |
 | OV004 | 2.20% (1,968 / 89,584 B) | 42 / 170 (24.7%) | 2.20% | 0.00% (0 / 27,404 B) | 42 / 66 |
 | OV005 | 1.54% (2,200 / 142,964 B) | 31 / 166 (18.7%) | 1.58% | 0.00% (0 / 369,132 B) | 32 / 59 |
 | OV006 | 0.00% (0 / 7,324 B) | 0 / 16 (0.0%) | 0.00% | 0.00% (0 / 170,504 B) | 0 / 1 |
@@ -36,6 +36,6 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 ## Against the whole ROM
 
-1,155 of 3,806 functions (30.35%) and 67,700 of 1,841,700 code bytes (3.68%) are matching C; the rest are still delinked assembly.
+1,157 of 3,806 functions (30.40%) and 67,792 of 1,841,700 code bytes (3.68%) are matching C; the rest are still delinked assembly.
 
 No `.data`, `.rodata` or `.bss` unit has a matching C definition yet, so the data figures stay at zero.
