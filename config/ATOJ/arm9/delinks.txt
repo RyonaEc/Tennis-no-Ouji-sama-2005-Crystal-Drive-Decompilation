@@ -2600,3 +2600,23 @@ src/arm9/func_0202352c.c:
 src/arm9/func_0202436c.c:
     complete
     .text       start:0x0202436c end:0x020243e0
+
+src/arm9/func_0201d5c8.c:
+    complete
+    .text       start:0x0201d5c8 end:0x0201d5e0
+
+src/arm9/func_02029d48.c:
+    complete
+    .text       start:0x02029d48 end:0x02029d74
+
+src/arm9/func_020274c4.c:
+    complete
+    .text       start:0x020274c4 end:0x020274f0
+
+src/arm9/func_0201a04c.c:
+    complete
+    .text       start:0x0201a04c end:0x0201a07c
+
+src/arm9/func_0201cb54.c:
+    complete
+    .text       start:0x0201cb54 end:0x0201cb84
