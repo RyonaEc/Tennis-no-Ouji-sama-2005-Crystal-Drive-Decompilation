@@ -244,3 +244,26 @@ different-but-legitimate build unit.
 Families are still the best leverage on the remaining queue; `famsurvey.py` now
 prints full 8-digit addresses (it used to print `0x206e84` for `0x02066e84`, so
 copying a family address into `udis.py` silently disassembled nothing).
+
+## How much of the backlog is really "other compiler build"? 4.7%, not 30%
+
+I measured every unmatched function in every module (2,490 functions, 1,759,350
+bytes) for two signals. The first pass was misleading:
+
+| signal | functions | bytes |
+|---|---|---|
+| `[rX, rY]` register-offset load *or* `]!` writeback | 749 (30.1%) | 820,556 (46.6%) |
+| `]!` pre-indexed writeback only | **116 (4.7%)** | **138,556 (7.9%)** |
+
+`ldr r0, [r1, r2]` is ordinary codegen for `p[i]`, so the 30% figure was mostly
+false positives. The reliable fingerprint is pre-indexed **writeback** (`ldr r0,
+[r1, r0]!`), and it covers under 5% of the remaining functions.
+
+Per module, writeback counts: arm9 35/592, ov001 4/21, ov002 30/1019, ov003
+22/475, ov004 3/127, ov005 6/133, ov006 3/15, ov008 3/35, ov009 2/46, ov010 8/27.
+
+So "different mwcc build" is a real but small tax. The walls I hit by hand in
+ov002 were mostly **allocation ties and rematerialisation**, which is a source
+problem, not a compiler-version problem — worth another spelling rather than
+being written off. Do not use this section to excuse a function without naming
+the exact instruction that differs.
