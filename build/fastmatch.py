@@ -17,6 +17,7 @@ Usage:
 """
 import argparse
 import importlib.util
+import os
 import struct
 import subprocess
 import sys
@@ -100,8 +101,11 @@ def masked(blob: bytes, relocs) -> bytes:
 
 def compile_text(body: str, name: str) -> bytes:
     """Compile one function definition and return its code bytes."""
-    src = Path("build/_fast.c")
-    obj = Path("build/_fast.o")
+    # Per-process scratch names: a second agent compiling in the same tree
+    # must not clobber this one.
+    stem = f"build/_fast_{os.getpid()}"
+    src = Path(stem + ".c")
+    obj = Path(stem + ".o")
     src.write_text('#include "types.h"\n\n' + body)
     try:
         result = subprocess.run(

@@ -1,0 +1,123 @@
+# Scout brief
+
+You are the **scout** half of a two-agent arrangement. Another agent (the
+installer) owns `M:\Tennis no Ouji-sama 2005 - Crystal Drive Decomp`. You work
+in `M:\ATOJ-scout`, a detached git worktree of the same repository.
+
+Read `AGENTS.md` first — every hard rule there still applies to you. This file
+only adds what is different about the scout role.
+
+## Your job
+
+Find source shapes that compile **byte-identically** to retail for unmatched
+functions, and report them compactly. You do not install anything.
+
+1. Pick unmatched functions from the size band you were given, cheapest first.
+   `python build/famsurvey.py arm9` groups identical-skeleton families; a
+   family is worth more than a single function because one shape covers all
+   its members.
+2. Disassemble: `python build/udis.py arm9 0xADDR [0xADDR ...]`.
+3. Write the candidate in `build/cand/<name>.c` and diff it:
+   `python build/var3.py arm9 0xADDR <size> build/cand/<name>.c`.
+4. Iterate until it prints `MATCH`.
+
+`var3` compares `.text` with relocation bytes masked. That is necessary and
+**not sufficient**: constant pools, pc-relative displacements and literal
+values only come out right in the linked ROM. So `MATCH` here means "hand it to
+the installer", never "done".
+
+## Hard limits on the scout
+
+- **Never run `build/reg.py`, `build/t10.py` (any mode), `ninja`, or
+  `build/autorun.py --register`.** They mutate `config/.../delinks.txt`, the
+  link tree and the ROM, and there is exactly one writer: the installer.
+  A concurrent install is silently rolled back by `t10.try_unit`'s snapshot
+  restore.
+- **Never commit, push, or create branches.** Your tree is a scratch copy.
+- **Never edit `src/`, `config/`, `include/`, `tools/`, `build/*.py`,
+  `AGENTS.md`, `README.md` or `PROGRESS.md`.** Candidates live in
+  `build/cand/` only. If you believe a tool is broken, say so in the report;
+  do not patch it.
+- **Never edit the verification tooling or the expected digest.** Same rule as
+  `AGENTS.md` — do not weaken a check to make a unit pass.
+- Do not skip, stub or approximate a function to match its size. A candidate
+  that drops behaviour is worse than no candidate.
+
+## Report format
+
+Write one file per session, `build/cand/scout-<band>.md`, and mention the path
+in your final message. Keep it terse — the installer's context is the scarce
+resource, so a report is lines, not prose.
+
+One line per byte-exact candidate:
+
+```
+MATCH arm9 0x0201f38c 68 func_0201f38c build/cand/func_0201f38c.c
+```
+
+Optional second line, only if the shape is reusable for a family:
+
+```
+SHAPE arm9 0x0201f38c for-loop over u16 table with 0xffff sentinel; siblings at 0xADDR,0xADDR
+```
+
+One line per function you tried and could not match, with the closest state:
+
+```
+MISS arm9 0x0201c548 68 got=64 first-diff=retail[0x08] ldr r2,[r4,#0x118] / got add r2,r4,#0x118
+```
+
+Never paste disassembly listings or full diffs into the report. If a miss needs
+explanation, one clause, not a paragraph.
+
+## What is known to be unproductive
+
+Do not spend iterations on these; they are recorded walls, mostly mwcc
+heuristic divergence that no source shape reaches:
+
+- Pure register-allocation ties: `func_0201fd50`, `func_0200ec0c`,
+  `func_0200f5f8`, `func_02029cc4`, `func_02026ea4`.
+- Address materialisation: `func_0200fbc0`, `func_0200fc18`,
+  `func_0201f26c` (retail materialises `ptr+K` in `ip`; mwcc folds it into the
+  load), `func_02014c5c`, `func_020289f4`, `func_02017954`.
+- `blx` into 2-mod-4 Thumb/BIOS targets: `func_02025698`, `func_020307c8`.
+- arm9: `func_02023df8`, `func_02024b5c`, `func_02018318`, `func_020135cc`,
+  `func_02015524`, `func_020341f4`, `func_02028920`, `func_02028958`,
+  `func_02032c38`, `func_02018bbc`.
+- ov005 `4x220` family, `func_ov005_0205ac30`, the ov002/ov004 RMW group, the
+  ten BIOS `swi` stubs, `func_ov006_0204df9c`.
+
+Only revisit one if you have a genuinely new lever, and say which in the
+report.
+
+## Levers that have paid off
+
+`notes/mwccarm-codegen.md` is the playbook — read it before a stubborn unit.
+The ones used most recently:
+
+- `stmdb sp!,{lr}; sub sp,#4` is 8-byte stack alignment, not an odd source
+  shape.
+- `for (; p <= e; p++)` branches where `if (p > e) return;` predicates.
+- Explicit zero arguments fix how many stack words retail passes.
+- `x == field` (not `field == x`) sets `cmp` operand order.
+- A local hoisted across a call forces a callee-saved register — write the
+  expression inline instead.
+- Declaration order flips register ties (`r4/r5`, `r5/r6`).
+- `(u32)count - 1` gives `addhi`; `(s32)` gives `addgt`.
+- A pointer local `c = o + 0x118` is computed too early; read
+  `*(u32 *)(o + 0x118)` and let the increment materialise.
+- Families: substitute **only** constants (masks, field offsets, call
+  arguments, mode bytes, callee names, global addresses). Never substitute
+  pc-relative pool offsets or branch targets — the assembler computes those.
+
+## Syncing your tree
+
+The installer's tree is authoritative. Refresh yours before a session:
+
+```
+git -C "M:/ATOJ-scout" reset --hard main
+```
+
+`reset --hard` touches tracked files only, so `tools/`, `extract/` and
+`build/*.py` survive. If `build/*.py` has drifted, re-copy it from the
+installer's tree — do not hand-edit it in yours.
