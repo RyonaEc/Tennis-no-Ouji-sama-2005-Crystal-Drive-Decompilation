@@ -46,8 +46,8 @@ and the rebuilt ROM still hashes to the retail dump:
 | `func_02017af8` | 0x28 | sums a linked list hung off `+0x24` |
 | `func_020180a0` | 0x30 | fills in a packed header, including a self-relative offset |
 
-`ninja report` shows `matched_functions: 1357` of 3,806 (35.65%) and
-`matched_code: 87,552` of 1,841,700 bytes (4.75%); the other 2,449 functions are
+`ninja report` shows `matched_functions: 1361` of 3,806 (35.76%) and
+`matched_code: 88,136` of 1,841,700 bytes (4.79%); the other 2,445 functions are
 still delinked assembly. [PROGRESS.md](PROGRESS.md) has the fuller breakdown
 (code, functions, fuzzy match, data, unit completeness, and a per-module table);
 `python build/progress.py` regenerates it.
