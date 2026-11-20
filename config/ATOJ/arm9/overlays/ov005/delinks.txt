@@ -147,3 +147,19 @@ src/ov005/func_ov005_02051ad4.c:
 src/ov005/func_ov005_0204f064.c:
     complete
     .text       start:0x0204f064 end:0x0204f1c0
+
+src/ov005/func_ov005_0204cf6c.c:
+    complete
+    .text       start:0x0204cf6c end:0x0204cfd8
+
+src/ov005/func_ov005_02051b90.c:
+    complete
+    .text       start:0x02051b90 end:0x02051c1c
+
+src/ov005/func_ov005_020569c0.c:
+    complete
+    .text       start:0x020569c0 end:0x02056a90
+
+src/ov005/func_ov005_0205a8dc.c:
+    complete
+    .text       start:0x0205a8dc end:0x0205a988

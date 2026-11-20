@@ -1149,3 +1149,30 @@ missing zero) which `build/lint_cand.py` flagged before install.
 Running total from harvests: **28 units, 3,980 bytes** that were sitting finished in the helper trees
 and never claimed. The loop is `harvest.py` -> `lint_cand.py` -> `install_helpers.py` (or `reg.py` one at
 a time) at the start of every session; it takes a minute and has paid every time it has been run.
+
+## 2.28 The harvest was blind to every overlay (2026-11-20)
+
+Root cause of three sessions of "the helper trees are drained": `build/harvest.py` and
+`build/install_helpers.py` resolved candidate sizes through `build/auto.py`'s `FUNCS`, and that table
+holds **arm9 only** (1,365 entries). Every `func_ovNNN_*` candidate was silently skipped. delta's
+reports had been claiming ov003/ov004/ov005/ov009 matches for hours and none of them could ever surface.
+
+Fixed by building symbol tables from `config/ATOJ/arm9/symbols.txt` *and* every
+`config/ATOJ/arm9/overlays/*/symbols.txt` (two line formats in use - match both:
+
+    NAME kind:function(arm,size=0x1c) addr:0x02015f40
+    NAME kind:function size=0x1c addr:0x02015f40
+
+Result on the first run: **16 verified candidates, 2,084 bytes**, of which 14 installed (1,820 bytes;
+the two rejects are the fastmatch-passes/digest-fails class - `func_ov004_02061f58` 108 B and
+`func_ov005_02056908` 156 B). Installed: arm9 `0x0201ced4` 160; ov003 `0x0204cd8c` 100, `0x02052100` 96;
+ov004 `0x020500cc` 136, `0x0205a6b0` 148, `0x0205ca30` 84, `0x0205e274` 64, `0x020624e0` 140;
+ov005 `0x0204cf6c` 108, `0x02051b90` 140, `0x020569c0` 208, `0x0205a8dc` 172;
+ov009 `0x0204dc70` 140, `0x0204e8c0` 124.
+
+`install_helpers.py` now also repairs the stale-symbol class automatically before comparing: any
+`data_XXXXXXX`/`func_XXXXXXX` with seven hex digits that is not in the symbol tables is retried with a
+zero after the prefix (`data_204662c` -> `data_0204662c`). That fixed one candidate without manual work.
+
+**Lesson:** any tool that resolves units through `auto.py` is arm9-only. Check the module coverage of the
+tool before concluding a source is exhausted.

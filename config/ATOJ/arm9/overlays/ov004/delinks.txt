@@ -201,3 +201,23 @@ src/ov004/func_ov004_02053264.c:
 src/ov004/func_ov004_0205acfc.c:
     complete
     .text       start:0x0205acfc end:0x0205ad9c
+
+src/ov004/func_ov004_020500cc.c:
+    complete
+    .text       start:0x020500cc end:0x02050154
+
+src/ov004/func_ov004_0205a6b0.c:
+    complete
+    .text       start:0x0205a6b0 end:0x0205a744
+
+src/ov004/func_ov004_0205ca30.c:
+    complete
+    .text       start:0x0205ca30 end:0x0205ca84
+
+src/ov004/func_ov004_0205e274.c:
+    complete
+    .text       start:0x0205e274 end:0x0205e2b4
+
+src/ov004/func_ov004_020624e0.c:
+    complete
+    .text       start:0x020624e0 end:0x0206256c
