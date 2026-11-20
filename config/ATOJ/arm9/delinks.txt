@@ -2707,3 +2707,43 @@ src/arm9/func_020063f8.c:
 src/arm9/func_02019e24.c:
     complete
     .text       start:0x02019e24 end:0x02019e78
+
+src/arm9/func_02019620.c:
+    complete
+    .text       start:0x02019620 end:0x02019668
+
+src/arm9/func_02021f1c.c:
+    complete
+    .text       start:0x02021f1c end:0x02021f60
+
+src/arm9/func_020243e0.c:
+    complete
+    .text       start:0x020243e0 end:0x02024428
+
+src/arm9/func_02020300.c:
+    complete
+    .text       start:0x02020300 end:0x02020348
+
+src/arm9/func_020193fc.c:
+    complete
+    .text       start:0x020193fc end:0x02019444
+
+src/arm9/func_02016f6c.c:
+    complete
+    .text       start:0x02016f6c end:0x02016fb4
+
+src/arm9/func_0202935c.c:
+    complete
+    .text       start:0x0202935c end:0x020293a4
+
+src/arm9/func_02029a5c.c:
+    complete
+    .text       start:0x02029a5c end:0x02029aa0
+
+src/arm9/func_02027bc0.c:
+    complete
+    .text       start:0x02027bc0 end:0x02027c04
+
+src/arm9/func_02027190.c:
+    complete
+    .text       start:0x02027190 end:0x020271d4
