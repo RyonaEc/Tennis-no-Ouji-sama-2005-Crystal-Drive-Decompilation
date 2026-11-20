@@ -121,3 +121,12 @@ ROM. Source docs: `fuddlesworth/pokebw2` `docs/matching.md` and
   same pool slot. The constant is rematerialised rather than copied. Spelling
   the limit as `>`-form, a named variable or an `if/else` all keep the copy.
   See `func_02008178`: 96/96 bytes, one instruction apart.
+- **mwcc folds field offsets into the addressing mode; retail often does not.**
+  Given `p = g + 0x1824; q = p + 0xcc; *q = *q + 1;` mwcc emits
+  `ldr r0, [r2, #0xcc]` / `str r0, [r2, #0xcc]`, while retail materialises the
+  full address once (`add r1, r2, #0xcc`) and indexes `[r1]` three times. The
+  folded form is *shorter*, so a 4-byte gap here is not a missing statement.
+  Pointer variables, `u32` array indices (`q[0x33]`) and two-step bases
+  (`p + 0xb8`) all fold. Distinct from the pool-versus-split case, where both
+  forms are the same length. See `func_ov002_0204f898`,
+  `func_ov002_02052608`.
