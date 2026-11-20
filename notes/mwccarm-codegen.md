@@ -632,3 +632,29 @@ direct form missed by 4 bytes.
 
 There are **57 jump-table switch units** in the ready pools (`addls pc, pc` scan across arm9 and every
 overlay), so this is currently the highest-yield class in the project.
+
+## 2.12 The jump-table scanner and what it wrongly attracts (2026-11-20)
+
+`build/jt.py` walks every ready unit (`auto.FUNCS` minus `src/<mod>/*.c`) and reports each one whose
+body contains `addls pc, pc`, with counts of `mov rN,#imm`, `b` and `bl`. It currently reports **125**
+units - more than twice the 57 I estimated by eye. Filter with `$NF=="bl=0"` and `mov>=3` for the
+high-yield class: a switch that is nothing but a value-to-value map.
+
+Best single hit so far: `func_ov002_02060798`, 256 B, a 23-case mapping over `0..0x16` that matched
+with **zero diffs on the first attempt**. Read the table, write one `case N: r = V; break;` per entry
+in ascending case order, list the zero-cases only if the table needs the range covered, done.
+
+Two traps the scanner also surfaces, both dead ends:
+
+* **Fragments.** Some "ready units" are the middle of a large function: the disassembly starts with a
+  `mov sb, r0` / `cmp r0,#0` and pops `{r4,r5,r6,lr}` that were never pushed. `020271d4`, `0201c59c`
+  and `02032f90` are all this. Skip anything whose first instruction is not a prologue-shaped one and
+  that references `r8`/`sb`/`sl`/`fp` without having set them.
+* **Register-write soup.** Literal-pool hardware addresses (`0x04000204`, `0x027fff60`) plus a long
+  `strh` run at fixed offsets. No C shape reproduces it quickly.
+
+A profitable non-jump-table shape the scan also turned up: `func_02024674` (184 B) is an
+alignment-padding **fall-through cascade** - `switch (a & 3)` with `*p->cur++ = 0;` in cases 1, 2 and 3
+with no `break`, so case 1 performs one store, case 2 two, case 3 three, aligning `a` down to a
+multiple of 4. That reproduces the blocks exactly; only the field-address materialisation
+(`add r2,r0,#4` plus a double load of `p->lim`) is still missing.
