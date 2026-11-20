@@ -130,3 +130,9 @@ ROM. Source docs: `fuddlesworth/pokebw2` `docs/matching.md` and
   (`p + 0xb8`) all fold. Distinct from the pool-versus-split case, where both
   forms are the same length. See `func_ov002_0204f898`,
   `func_ov002_02052608`.
+- **A `u8` local flips the `cmp` operand order.** When retail compares a
+  freshly loaded byte against a parameter and mwcc emits the parameter first
+  (`cmp r6, r0`), loading the byte into a `u8` local and comparing
+  `if (v != a0)` restores retail's `cmp r0, r6`. Confirmed on
+  `func_020145b8` (96 B, matched 2026-11-20). Writing the loaded expression
+  inline gives the wrong order regardless of `!=` or `==` spelling.
