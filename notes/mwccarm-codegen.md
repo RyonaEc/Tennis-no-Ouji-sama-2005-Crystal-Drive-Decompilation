@@ -495,3 +495,49 @@ fixed-point dispatch family": it is the 64-bit compare runtime. That unit, `func
 ten are **not decompilation targets** - their retail bytes came from an assembly runtime, so per the
 project rules they must not be generalised into C. Exclude them when picking work; the decompilable
 ready pool is 205 units / 35,120 bytes, and the largest real prize is `func_0201a57c` (808 B).
+
+## 2.7 Frames and stack usage: measured (2026-11-20)
+
+Experiments with the project's flags, each compiled in isolation:
+
+| source | mwcc |
+|---|---|
+| `void f(u32 *p){ u64 z; z = (u64)*p; *p = (u32)z; }` | 12 B, no frame - the `u64` is eliminated |
+| `void f(u32 *p){ double d; d = 0; *p = (u32)d; }` | 32 B, `push {r4,lr}`, no frame padding |
+| `void f(u32 *p, u32 a, u32 b, u32 c, u32 e){ *p = a; }` (5 declared, `e` unused) | 8 B, no frame |
+| `void f(u32 *p, ... 9 args){ *p = i; }` leaf | 12 B, no frame, stack args at `[sp+0]` |
+| same 9 args, but the body calls something | 28 B, `push {r4,lr}`, stack args at `[sp+0x18]` |
+| `void f(u32 *p, S8 s)` with `typedef struct {u32 a,b;} S8;` | 28 B, `push {r0,r1,r2,r3}` - by-value struct spill |
+
+Conclusions:
+
+1. **Unused locals never leave a frame.** A declared `u64` or `double` that the body does not need
+   disappears entirely, frame included. A surviving stack reservation therefore means something
+   *uses* it.
+2. **Frames come from calls.** A leaf function with stack arguments reads them at `[sp+0]` with no
+   prologue at all; the `stmdb sp!,{lr}` + `sub sp,sp,#4` pair only appears once the function is
+   non-leaf. An unexplained 8-byte frame in a function with no visible `bl` therefore implies a
+   **call that was inlined**, which matches the two units in `build/walls.txt` that carry one
+   (`func_02017954`, `func_0201779c`, `func_02021c70`): their bodies are complete and their logic
+   reproduces exactly, minus the frame.
+3. **`push {r0,r1,r2,r3}` as the first instruction means the function takes a 16-byte struct by
+   value**, not that it has locals - that is the parameter home area.
+4. **Unused stack parameters cost nothing.** Declaring extra parameters to "explain" a frame does
+   not work; mwcc drops them.
+
+## 2.8 What is not decompilable in the ready list
+
+Classifying the 217 ready arm9 units by shape gives:
+
+| class | detect | units | bytes |
+|---|---|---|---|
+| IRQ/asm helpers | `mrs`/`msr`/`swp` | 7 | 664 |
+| soft-float runtime | `clz`/`umull`/`smull`/`smlal`/`umlal` | 11 | 4,036 |
+| 64-bit compare runtime | `mov ip,#0x200000` + `cmn ip,rX,lsl #1` | 1 | 912 |
+| by-value struct entry | `push {r0,r1,r2,r3}` | 5 | 468 |
+
+That is **24 units / 6,080 bytes that cannot become C** (the first three are compiler or SDK
+runtime emitted from assembly; the fourth is decompilable but needs the exact struct type in the
+signature). The realistic candidate pool is **193 units / 33,988 bytes** - not the 217/40,260 that
+the ready count suggests. Filter with these signatures before picking work; three of the largest
+units in the list (`02039630`, `0203a584`, `02024b04`) are in the non-C classes.
