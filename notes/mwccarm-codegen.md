@@ -695,3 +695,57 @@ branch and costs 4 bytes.
 source in one call. `build/jtrun.py` runs it across `build/jt.txt` and reports how many units it could
 parse (currently 2, both fragments). Do not spend a session on the jump-table vein expecting bulk
 yields - it is now a tooling-backed trickle of ~1 unit per pass.
+
+## 2.14 The address-materialisation wall (2026-11-20)
+
+This is the single most common reason a small unit stalls now, and it is worth recognising on sight
+because no source form I have found defeats it.
+
+Retail frequently computes a base+offset address into a register and then accesses through that
+register:
+
+    add r2, r0, #0x24        addne r1, r0, #0x108        add r1, r0, #4
+    str r1, [r2]             ldrne r0, [r1]              ldr r0, [r1]
+    str r0, [r2, #8]         orrne r0, r0, #4            bic r0, r0, #0x80000000
+                             strne r0, [r1]             str r0, [r1]
+
+mwcc in this project's configuration always folds the same access into the addressing mode instead:
+
+    str r1, [r0, #0x24]      ldrne r0, [r1, #0x108]      bic r0, r0, #0x80000000
+    str r0, [r0, #0x2c]      orrne r0, r0, #4            str r0, [r1, #4]
+                             strne r0, [r1, #0x108]
+
+Same instruction count, same bytes except one arm — and unclosable. Forms tried on
+`func_02018318` (arm9, 24 B), which is *one store* from matching:
+
+* a local `u32 *q = (u32 *)(a0 + 0x24)` used twice (and once with `q[2]`);
+* a `u8 *q` with `*(u32 *)(q + 8)`;
+* a struct typedef with `q->a` / `q->c` member access;
+* loading the value into a variable first, then storing;
+* `volatile u32 *`;
+* integer rather than pointer arithmetic (`u32 q = a0 + 0x24;`);
+* spelling the address inline with no variable at all.
+
+Every one produces the folded form. `func_0201f980` (28 B), `func_0203684c` (40 B) and
+`func_02024b5c` (48 B, predication instead) fail in the same way.
+
+**Practical rule: if the only difference is `[rM]` versus `[rM, #imm]`, stop.** Two attempts to
+establish whether the shape is reachable is enough; record it in `build/walls.txt` and move on. This
+is the same category as the register-allocation ties in the main notes, and it is not a sign that the
+source is wrong - mwcc at this version simply does not materialise here.
+
+## 2.15 A census of what is actually left (2026-11-20)
+
+`build/census.py` filters the ready pool down to units that can plausibly be matched as units at all:
+last instruction is a real return (`bx lr`, `ldm sp!`, `pop`), and no `r8`/`sb`/`sl`/`fp` register is
+read without the function having set it up. Result: **201 of the ~2,430 unmatched units**. The rest
+are fragments of larger functions and cannot be matched in place.
+
+Distribution: 42 units under 64 B, 60 at 64-127, 47 at 128-191, 15 at 192-255, 13 at 256-319, 6 at
+320-383, 4 at 384-511, 14 at 512-575.
+
+The list is in `build/ready_clean.txt`, smallest first. Everything examined from it so far (twelve
+units) failed on the materialisation wall (§2.14) or on compiler-generated ldm/stm copy loops, which
+is a different but equally unreachable shape: retail's 3-4 interleaved `ldm r0!,{r2,r3,ip}` /
+`stm r1!,{r2,r3,ip}` pairs come from consecutive 12-byte struct assignments, and mwcc merges them into
+either a counted loop or a frame-carrying memcpy-like sequence, never the straight-line pairs.
