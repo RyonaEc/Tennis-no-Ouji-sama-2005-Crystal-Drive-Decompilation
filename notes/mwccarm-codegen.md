@@ -541,3 +541,31 @@ runtime emitted from assembly; the fourth is decompilable but needs the exact st
 signature). The realistic candidate pool is **193 units / 33,988 bytes** - not the 217/40,260 that
 the ready count suggests. Filter with these signatures before picking work; three of the largest
 units in the list (`02039630`, `0203a584`, `02024b04`) are in the non-C classes.
+
+## 2.9 Switch statements: the bisection tree (2026-11-20)
+
+A retail function that begins by comparing one register against a series of constants with
+`bhi`/`blo`/`bhs`/`beq`, where several branches land on the *same* `mov rK,#imm; bx lr`, is a
+**`switch`**, not an if-chain. mwcc emits a balanced binary search over the sorted case set, so the
+tree shape is fixed by the case values alone and reproduces exactly. Writing the same values as an
+if-chain never matches: it produces a linear compare ladder.
+
+Two rules decide whether the *blocks* match:
+
+1. **Case-block emission order follows the order the labels are written in the source.** Retail's
+   constant blocks appear in source order, which for the decode tables found so far is **ascending by
+   return value**, not by case value. `func_ov003_02051e58` needs
+   `0x40, 0x10, 8, 8, 4, 4, 4, 2, 2, 0x20, 0x20, 1` and `func_ov002_0205fe90` needs
+   `0x100, 0x200, 0x400, 0x800, 0x1000`. Reordering case labels changes nothing but the block
+   addresses, so a 348-byte unit lands within five branch-target diffs of a match purely by getting
+   this order right.
+2. **A `switch` whose arms `return` merges the returns into one shared block per value.** That is the
+   same shared-tail shape the `goto` lever produces: `switch (v) { case a: case b: return 1; } return
+   0;` gives one `mov r0,#1; bx lr` block reached by every matching branch.
+
+Together these make switch-shaped units cheap: identify the tree, read each leaf's constant, write the
+cases in ascending-return order. Six units, 1,692 bytes, matched this way in one session including a
+three-member family that is byte-identical apart from the function name.
+
+`build/ready.py <mod> --frameless` plus a scan for "at least 3 branches to one target and at least 2
+bhi/blo" finds them: 30 were sitting in the ready pool across arm9 and the overlays.
