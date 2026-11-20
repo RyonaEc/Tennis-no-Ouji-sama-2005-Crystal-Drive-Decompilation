@@ -163,3 +163,26 @@ New walls, recorded so they are not reworked:
 - Write the report to `scout-<band>.md.tmp` and `mv` it into place when the band
   is done.
 - The installer's gate skips any function whose `src/<mod>/<name>.c` exists.
+
+## Ready-queue leaves, 2026-11-20 (installer)
+
+Walked `build/ready.py arm9` from the top. These are all decided; do not spend a
+session on them without a new lever:
+
+- `func_02018318` (24) — retail materialises `q = p + 0x24` in `r2` and stores
+  through it; mwcc folds to `[r0, #0x24]`. Pointer copy, `q += 0x24`, and a
+  `struct` pointer all fold.
+- `func_0201f980` (28) — same rematerialisation: retail keeps `r1 = q + 0x108`
+  across the `ldr`/`orr`/`str`, mwcc folds both to `[r1, #0x108]`.
+- `func_020269ec` (24) and `func_020048e8` (20) — retail predicates the loop body
+  (`ldmlt`/`stmlt` or `stmlt` + `blt`); mwcc rotates the loop instead
+  (`ldr`/`str`/`cmp`/`blo`) from `while`, guarded `do/while`, plain `do/while`,
+  and single-member `struct` assignment.
+- `func_0202c430` (24) — spin `while (data_0204ad00 == 1);`. With `volatile` the
+  loop matches but a register and the pool word differ, and the ROM digest
+  rejects it.
+- `func_0202607c` (20) — `mrc p15, 0, r0, c9, c1, 0` (coprocessor read).
+- `func_0203b564` (20), `func_0203b578` (20), `func_0203b58c` (16) — `svc`
+  wrappers.
+- `func_0201fd00`, `func_0201fcc8`, `func_0201fce4` — the bytes at these symbols
+  do not decode as ARM; treat them as data until the boundary is re-derived.
