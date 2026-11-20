@@ -3123,3 +3123,11 @@ src/arm9/func_02006640.c:
 src/arm9/func_02006324.c:
     complete
     .text       start:0x02006324 end:0x020063f8
+
+src/arm9/func_0200efd0.c:
+    complete
+    .text       start:0x0200efd0 end:0x0200f0a4
+
+src/arm9/func_0201746c.c:
+    complete
+    .text       start:0x0201746c end:0x02017544
