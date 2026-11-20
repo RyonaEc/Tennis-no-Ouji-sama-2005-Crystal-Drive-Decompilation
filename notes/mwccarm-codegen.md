@@ -749,3 +749,55 @@ units) failed on the materialisation wall (§2.14) or on compiler-generated ldm/
 is a different but equally unreachable shape: retail's 3-4 interleaved `ldm r0!,{r2,r3,ip}` /
 `stm r1!,{r2,r3,ip}` pairs come from consecutive 12-byte struct assignments, and mwcc merges them into
 either a counted loop or a frame-carrying memcpy-like sequence, never the straight-line pairs.
+
+## 2.16 Two large targets decoded but not closed (2026-11-20)
+
+### The 13x756 ov002 family (9,828 B)
+
+`build/famsurvey.py ov002` reports `13x756 val 9828 0x0208f860 0x0209a5f4 0x0209c728 0x0209eb18
+0x020a8ba0 0x020ad2b0 ...`. I verified the members really are one source: normalising immediates and
+register numbers, each member is **185 of 186 instructions identical** to the first (99%), with the
+same instruction count. So a match on member 1 is worth 9,828 bytes across 13 units - by far the
+largest single prize left in the project.
+
+Decoded structure of `func_ov002_0208f860` (member 1), in order:
+
+* prologue `push {r4-r8,sb,sl,fp,lr}` + `sub sp,#0x44`; the frame holds 8 stack arguments and 6
+  live locals, so expect many slots.
+* `base = *(u8 **)data_ov002_02102070`; entry stride **0x158**; `sl = base + 0x2e4 + idx*0x158`;
+  `t24 = base + 0x1744 + idx*0x38`; `sb = base + 0x1824`.
+* `v = *(u8 *)(base + idx*0x158 + 0x2e6)`; `t28 = (v >> 1) & 0xff`; `fp = (s8)(1 - 2 * (v >> 1))`.
+* 9 calls: `func_0205bf64`, `func_02034148`, `func_02053468`, `func_0205bee4`, `func_0204f770`,
+  `func_020532e4`, `func_0204f6ac`, `func_0203b0c0` (x3), `func_02057068` (3 register + 8 stack
+  args), `func_020780f8`.
+* an if/else on `*(u32 *)(sl + 0x4c) & 4` selecting between a byte at `t24+8` (==2 / ==0) and two bits
+  of `*(u16 *)(sl + 0x50)` (0x10 / 0x20), each adding or subtracting `res` from a s16 accumulator.
+* `/360` via the `0xb60b60b67` magic, then `fp * (r7/360)` masked through `asr #0x10` and `& 0xff`.
+* conditional negations written with the `mvn`/`mul`/`mov` idiom: `if (x < 0) y = -y` becomes
+  `mvnlt r0,#0; mullt r0,r6,r0; movlt r6,r0`.
+* a u16 counter loop to 0x64 computing `c = x*w + w; c = x*t3c + t3c; x++; c -= (x*c)>>1;
+  c += *(u32*)(sb+8);` with two early exits (`c > 0x30000`, counter > 0x64) and `if (x <= 0) x = 0xa;`
+* tail: writes `0x42000000`, `9`, `*(u8*)sl`, `*(u16*)(sl+0x12c)`, idx and three temps as stack
+  arguments to `func_02057068`, then `func_020780f8()`, then clears bit 0 of `*(u32*)(base+0x38)`.
+
+A draft exists at `build/cand/big2.c`: compiles to 548 B of the 756, so roughly two thirds of the
+shape is wrong or missing - it is a starting point only, not close. This unit wants a dedicated
+session; do not expect a family payout until member 1 is byte-exact.
+
+### The 4x196 ov003 family (784 B)
+
+`02066e84 020b8904 020b8e54 020dbad4`. Reconstructed to **164/196 B, 34 differing slots**. The logic
+is not in doubt; three mechanics block it:
+
+1. **Pooled RMW address.** Retail does `ldrlo r0,[pc]=0x897e; addlo r1,r4,r0; ldrhlo; addlo; strhlo`
+   - the constant is pooled *and* the address materialised in r1. Writing
+   `u16 *p = (u16*)(b + 0x897e); *p = *p + 1;` gives the folded form instead.
+2. **Split vs folded condition addresses.** The same field read in the `if` condition must use
+   `add r0,r4,#0x8900` + `ldrh r0,[r0,#0x7e]` (split), i.e. spell it `b + 0x8900 + 0x7e`, while the
+   body uses the pooled `b + 0x897e`. Two different spellings of the same address in one function.
+3. **Base register `r3` vs `ip`** on the shared `b + 0x8900` base used by the 5-argument call.
+
+Separately, `bl func_02021b14` does not verify through `fastmatch`: the object leaves the branch
+offset field as zero (`got bl #0x2066ed0`), even though `func_02021b14` is a valid arm9 symbol and
+other matched ov003 units call arm9 functions. Worth resolving before trusting `variants` on any
+ov003 unit that calls into arm9.
