@@ -108,3 +108,10 @@ ROM. Source docs: `fuddlesworth/pokebw2` `docs/matching.md` and
   pooled `ldr` (address as base); declaring it `extern u8 *data_x` adds a second
   `ldr` to dereference. If retail has exactly one `ldr rN, [pc, #..]` before
   using the address, the symbol is an array.
+- **A 12-byte gap can be one address, not one statement.** When an offset is
+  not encodable as an ARM immediate, mwcc either pools the whole offset
+  (`ldr rN, =0x8736` + `add`) or splits it at the nearest encodable base
+  (`add rN, g, #0x8700` + `[rN, #0x36]`). Both are two instructions and both
+  are correct code. Hoisting the pointer *before* a guard forces the pool form
+  but keeps it live across the guard, which can add a frame
+  (`push {r4, lr}`, +4 bytes). See `func_ov003_020960a4`.
