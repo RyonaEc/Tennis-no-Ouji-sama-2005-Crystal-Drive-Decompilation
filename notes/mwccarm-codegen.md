@@ -936,3 +936,60 @@ Recorded so nobody re-walks them:
   `cmp; stmlt r1!,{r0}; blt` (predicated single-register `stm`, condition at top). mwcc emits a
   rotated loop with `bxhs lr` and a post-index `str r0,[r1],#4`. `#define`-free rephrasings
   (`while`, `for`, `do`, u32/u8/s32 counts) all rotate.
+
+## 2.21 The 13x756 family: structure map for `func_ov002_0208f860` (2026-11-20)
+
+Working draft is `build/cand/big3.c`. It is **not** a match (676 differing bytes) but the whole body is
+now decoded, so the next session starts here instead of at the disassembly. 189 instructions, 756 B,
+frame `sub sp,#0x44` on top of `push {r4-r8,sb,sl,fp,lr}`.
+
+Call order and the stack slots retail keeps:
+
+| slot | holds |
+|---|---|
+| `sp+0x20` | `a0` |
+| `sp+0x24` | pointer `base + 0x1744 + a0*0x38` |
+| `sp+0x28` | `t28 = (v>>1) & 0xff` |
+| `sp+0x2c` | `t2c = *(sl+0x128)`, later `t30 = t2c*sg` |
+| `sp+0x30` | `acc = t34 * hx` |
+| `sp+0x34` | out-param `t34` |
+| `sp+0x38` | second `func_0203b0c0` result |
+| `sp+0x3c` | `t3c` |
+
+Sequence:
+
+1. `v = *(u8*)(base + a0*0x158 + 0x2e6)`, `sl = base + 0x2e4 + a0*0x158`, `sb = base + 0x1824`,
+   `t28 = (v>>1)&0xff`, `sg = (s8)(1 - 2*(v>>1))` (retail builds this as `rsb` after `lsl/sub/lsl/asr`).
+2. `hx = (func_0205bf64(t28) - 0x14) << 16`, `w = 0x760000`,
+   `gX = func_02034148(0xffffbf8c)`, `X = gX + 0x157c` **before** the next call, which passes
+   `gX` (not `X`) and `t2c = *(sl+0x128)`; result is truncated to `s16` by `lsl #16 / asr #16`.
+3. `r = func_0205bee4(0x1e, sl)`; then either `(*(u32*)(sl+0x4c) & 4)` -> `*(u8*)(t24+8)` tested
+   `==2` (add) and `==0` (sub), or `(*(u16*)(sl+0x50) & 0x10/0x20)` -> add/sub. All four are if-converted
+   `addne/lslne/asrne` with `(s16)` wrapping.
+4. `t30 = t2c*sg`; `func_0204f770(t30, (u8)(s16)(sg * ((ang<<8)/360)), &t34)` - the `/360` is the
+   `0xb60b60b7` magic on `ang<<8`.
+5. `if (t28==1) w = -w;` `if ((s32)t34<0) hx = -hx;` `if (t34==0) { if (*(s32*)sb<0) hx = -hx;
+   t30 = func_020532e4(hx, w, &t34, t30); }` then `acc = t34 * hx` (retail multiplies `t34` by
+   **whatever is in r0**, i.e. `hx` when the branch was taken and the call's return otherwise).
+6. `y = 0x2d0000 - *(sb+8); if (y<0) y = 0;` `fa = w - *(sb+4);`
+   `t = func_0204f6ac((y>>8) * ((X>>8)<<1));` `t3c = t<<8;` `x = func_0203b0c0(t3c, X);`
+7. Loop (`0x1f4`..`0x244`): accumulators. `r2 += X` and `r1 += t3c` per iteration with
+   `i = (i+1)&0xffff`, `x++`, `c = *(sb+8) + r1 - (x*r2)/2` (signed `/2` via
+   `add r3,r3,r3,lsr #31; asr #1; rsb`). Exit: `i > 0x64` (`bhi`), `c > 0x30000` (`bgt`, which jumps
+   **back to `add r2,r2,r4`**, i.e. the continue target is mid-body because of the accumulator).
+   After the loop: `if (x <= 0) x = 0xa;`
+8. Tail: `fa = func_0203b0c0(acc, x); fb = func_0203b0c0(fa, x);` then the 11-argument
+   `func_02057068(fa, fb, t3c, 0, 0xffffbf8c, t28, 0x42000000, 9, *(u8*)sl, *(u16*)(sl+0x12c), a0)`
+   (three register args + eight stacked words), `func_020780f8()`, then
+   `t = *(u32*)(base+0x38); t &= ~1; *(u32*)(base+0x38) = t; return t;`
+
+**What blocks it:** register pressure. `big3.c` spills `a0` to `fp` and gets a 0x34 frame where retail
+has 0x44 and keeps `a0`/`t24`/`t28`/`t2c` on the stack. The next step is to name locals to match retail's
+slot assignment exactly (one variable per slot above), especially making `t24` and `t28` stack-resident
+by writing them once and reading them twice.
+
+### `autorun.py` is exhausted for arm9
+
+`python build/autorun.py 45 120 arm9` reports `already tried 465`, `bailed 92`, `testing 0`,
+`generated matches: 0/0`. The generator has no untried patterns left in that size band; more units need
+hand-written reconstruction from `build/ready_funcs.txt`.
