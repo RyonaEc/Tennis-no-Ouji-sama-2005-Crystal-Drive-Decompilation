@@ -29,3 +29,28 @@ only residual is a relocation or literal-pool byte. The report's own
 data, so the two rules already disagree by ~16 units project-wide. Do not hand-
 edit the README to close the gap; if it matters, change the counting rule in
 `progress.py` deliberately and regenerate everything.
+
+## Correction: two separate causes, and one was a real bug in progress.py
+
+The artifact above is real for units whose measures carry `matched_*` and land at
+99.83% fuzzy. But the larger gap had a different, fixable cause: objdiff omits
+the `matched_code` / `matched_functions` keys entirely for some fully complete
+units and emits only `complete_code` / `complete_units`. `progress.py` read
+`m.get('matched_code', '0')` and `m.get('matched_functions', 0)`, so every such
+unit scored **zero functions and zero bytes** despite `fuzzy_match_percent:
+100.0` and a verified ROM digest.
+
+At the time of writing that was **17 units, 17 functions, 1,076 bytes** —
+including all four of Delta's ov004 matches and two ov003 units — invisible in
+the headline counts. The fix is a fallback:
+
+```python
+code  = int(m.get('matched_code',  m.get('complete_code', '0')))
+funcs = m.get('matched_functions', m.get('complete_units', 0))
+```
+
+`PROGRESS.md` then reads 1,318 functions / 83,732 bytes instead of 1,301 /
+82,656. This is a reporting fix only: `build/t10.py` and `ninja sha1` remain the
+authority, and no verification was weakened. `build/` is gitignored, so the
+patched `progress.py` exists only in the working tree — recreate this change if
+the tooling is ever regenerated.
