@@ -1209,3 +1209,29 @@ Two levers, both structural rather than stylistic:
 `build/ready_funcs2.txt` had drifted: it still listed 12 units that were already installed, which is why
 `func_02029fb0` and `func_0202a004` appeared as candidates. Regenerated from `src/` before this batch;
 now 83 entries.
+
+## 2.31 Frame-shift residue: read the prologue, not the body (2026-11-20)
+
+Three family attempts this session all failed the same way, and it is worth naming as a class.
+
+When `diff_summary` reports that *every* offset differs but the pairs are clearly the same instructions
+one slot apart, the code is not wrong - the **frame** is. `func_ov003_02066a54` and its two siblings
+(3 x 180 B) reproduce retail instruction for instruction after the prologue, but retail is
+`push {r4,r5,lr}` followed by `sub sp, sp, #4` while mwcc emits `push {r4,r5,r6,lr}` with no slot.
+mwcc found a register for whatever retail spilled; retail's source therefore had one more
+**address-taken 4-byte local** than the reconstruction does. That is a property of the original
+function's body, and no rearrangement of the loop (`u16 i` + `i % 4`, a `u16 *q` base pointer,
+`u32 i` + `i & 3`) recovers it.
+
+The practical rule: **diff the prologue first.** A one-instruction offset at the start with an
+otherwise identical body means stop rewriting the body and go looking for the missing local. If no
+plausible local exists, the unit is a frame artifact like `0x0202612c` (the 4-byte-frame veneer) and
+should be parked rather than ground at.
+
+Same signature, different cause, in arm9 `0x02023df8`: the whole body is offset by one instruction
+because mwcc hoists the `cmp` above the saves and drops r4/r5. There the tell is a **dead
+`mov r3, r2`** - a value moved into r3 and never read. Dead moves do not come from C, so the 3rd
+parameter is used somewhere we have not found; four formulations failed and it is parked.
+
+All three families are in `build/walls.txt` with their full retail sequences and the closest body, so
+the helper trees can pick them up with the derivation already done.
