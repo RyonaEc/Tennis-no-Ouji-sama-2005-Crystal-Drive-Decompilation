@@ -3027,3 +3027,15 @@ src/arm9/func_0200e76c.c:
 src/arm9/func_02018be8.c:
     complete
     .text       start:0x02018be8 end:0x02018c70
+
+src/arm9/func_02017550.c:
+    complete
+    .text       start:0x02017550 end:0x020175dc
+
+src/arm9/func_0202edbc.c:
+    complete
+    .text       start:0x0202edbc end:0x0202ee48
+
+src/arm9/func_0202f08c.c:
+    complete
+    .text       start:0x0202f08c end:0x0202f118
