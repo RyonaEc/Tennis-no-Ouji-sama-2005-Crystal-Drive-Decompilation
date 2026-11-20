@@ -2660,3 +2660,42 @@ src/arm9/func_0203b5a4.c:
 src/arm9/func_0201fd18.c:
     complete
     .text       start:0x0201fd18 end:0x0201fd50
+
+src/arm9/func_02006d24.c:
+    complete
+    .text       start:0x02006d24 end:0x02006d60
+src/arm9/func_02019584.c:
+    complete
+    .text       start:0x02019584 end:0x020195c0
+
+src/arm9/func_0201dfd8.c:
+    complete
+    .text       start:0x0201dfd8 end:0x0201e014
+
+src/arm9/func_02018208.c:
+    complete
+    .text       start:0x02018208 end:0x02018248
+
+src/arm9/func_0202f3c4.c:
+    complete
+    .text       start:0x0202f3c4 end:0x0202f404
+
+src/arm9/func_0201865c.c:
+    complete
+    .text       start:0x0201865c end:0x020186a0
+
+src/arm9/func_0201ca9c.c:
+    complete
+    .text       start:0x0201ca9c end:0x0201cae0
+
+src/arm9/func_0201f38c.c:
+    complete
+    .text       start:0x0201f38c end:0x0201f3d0
+
+src/arm9/func_0201c548.c:
+    complete
+    .text       start:0x0201c548 end:0x0201c58c
+
+src/arm9/func_0202a598.c:
+    complete
+    .text       start:0x0202a598 end:0x0202a5dc
