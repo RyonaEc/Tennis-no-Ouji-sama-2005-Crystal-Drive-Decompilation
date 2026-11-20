@@ -17,6 +17,7 @@ Usage:
 """
 import argparse
 import importlib.util
+import json
 import os
 import struct
 import subprocess
@@ -155,6 +156,116 @@ def literal_of(ins):
     return value
 
 
+# --- compact iteration -------------------------------------------------------
+# Writing the C is the work; reading listings and diffs is what burns context.
+# These print the least needed to choose the next variant: one line per
+# candidate, and a handful of differing instructions for the closest one.
+
+def diff_summary(mod, addr, size, body):
+    """(ok, compiled bytes, differing slots) for one candidate, compiled once."""
+    blob = compile_text(body, "probe")
+    want = retail(mod, addr, size)
+    ok = False
+    if blob:
+        if blob == want:
+            ok = True
+        else:
+            relocs = compile_text.last_relocs
+            ok = bool(relocs) and masked(blob, relocs) == masked(want, relocs)
+    want_ins = [(i.address - addr, i.mnemonic, i.op_str) for i in parse_ins(addr, size)]
+    got_ins = [(i.address - addr, i.mnemonic, i.op_str) for i in md.disasm(blob, addr)] if blob else []
+    diffs = []
+    for i in range(max(len(want_ins), len(got_ins))):
+        w = want_ins[i] if i < len(want_ins) else None
+        g = got_ins[i] if i < len(got_ins) else None
+        if w is not None and g is not None and w[1:] == g[1:]:
+            continue
+        diffs.append((w, g))
+    return ok, len(blob), diffs
+
+
+def _ins(t):
+    return "(end)" if t is None else t[1] + " " + t[2]
+
+
+def compact_lines(diffs, limit=8):
+    out = []
+    for w, g in diffs[:limit]:
+        off = (w or g)[0]
+        out.append("    %03x want %s | got %s" % (off, _ins(w), _ins(g)))
+    if len(diffs) > limit:
+        out.append("    ... %d more differing slots" % (len(diffs) - limit))
+    return out
+
+
+def run_diff(mod, addr, size, path, limit=12):
+    ok, n, diffs = diff_summary(mod, addr, size, Path(path).read_text())
+    if ok:
+        print("MATCH %dB" % size)
+        return 0
+    print("%dB/%dB, %d differing slots" % (n, size, len(diffs)))
+    print("\n".join(compact_lines(diffs, limit)))
+    return 1
+
+
+def run_variants(mod, addr, size, spec_path, limit=8):
+    """Score many bodies from a JSON {"label": "body"} spec, one line each."""
+    spec = json.loads(Path(spec_path).read_text())
+    best = None
+    for label, body in spec.items():
+        ok, n, diffs = diff_summary(mod, addr, size, body)
+        state = "MATCH" if ok else ("COMPILE-FAIL" if not n else "%dB/%dB" % (n, size))
+        print("  %-20s %-9s %d diff" % (label, state, len(diffs)))
+        if ok:
+            print("WINNER " + label)
+            return 0
+        if best is None or len(diffs) < len(best[2]):
+            best = (label, n, diffs)
+    if best:
+        print("closest %s (%dB/%dB):" % (best[0], best[1], size))
+        print("\n".join(compact_lines(best[2], limit)))
+    return 1
+
+
+def wall_note(mod, addr):
+    path = Path("build/walls.txt")
+    if not path.exists():
+        return None
+    tag = "%s %#x " % (mod, addr)
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.startswith(tag):
+            return line[len(tag):]
+    return None
+
+
+def run_brief(mod, addr, size):
+    """A task card: enough to plan a body without dumping the listing."""
+    auto.set_module(mod)
+    name = auto.SYM.get(addr) or "func_%08x" % addr
+    ins = parse_ins(addr, size)
+    if not ins:
+        print("%s %s %#x %dB: no instructions (stub or data)" % (mod, name, addr, size))
+        return 0
+    ops = {}
+    for i in ins:
+        ops[i.mnemonic] = ops.get(i.mnemonic, 0) + 1
+    print("%s %s %#x %dB %d ins | wall: %s" % (mod, name, addr, size, len(ins), wall_note(mod, addr) or "none"))
+    print("ops: " + " ".join("%s%d" % (k, v) for k, v in sorted(ops.items(), key=lambda kv: -kv[1])))
+    calls = ["%03x:%s" % (i.address - addr, i.op_str.split()[-1]) for i in ins if i.mnemonic in ("bl", "blx")]
+    if calls:
+        print("calls: " + " ".join(calls[:8]))
+    br = ["%03x %s" % (i.address - addr, i.op_str) for i in ins if i.mnemonic.startswith("b") and i.mnemonic not in ("bx", "bl", "blx")]
+    if br:
+        print("branches: " + " ".join(br[:10]))
+    st = ["%03x %s" % (i.address - addr, i.mnemonic) for i in ins if i.mnemonic.startswith("str")]
+    if st:
+        print("stores: " + " ".join(st[:10]))
+    lits = ["%#x" % literal_of(i) for i in ins if "[pc" in i.op_str and i.mnemonic in ("ldr", "ldrh")]
+    if lits:
+        print("pool: " + " ".join(lits[:10]))
+    return 0
+
+
 # --- templates ---------------------------------------------------------------
 
 def two_call_wrapper(name, addr, size, ins):
@@ -279,6 +390,22 @@ def main() -> int:
     one.add_argument("--mod", default="arm9")
     one.add_argument("--addr", required=True, type=lambda v: int(v, 0))
     one.add_argument("--size", required=True, type=lambda v: int(v, 0))
+    d = sub.add_parser("diffc", help="compact diff of one candidate file")
+    d.add_argument("mod")
+    d.add_argument("addr", type=lambda v: int(v, 0))
+    d.add_argument("size", type=lambda v: int(v, 0))
+    d.add_argument("file")
+    d.add_argument("--limit", type=int, default=12)
+    vp = sub.add_parser("variants", help="score a JSON spec of candidate bodies")
+    vp.add_argument("mod")
+    vp.add_argument("addr", type=lambda v: int(v, 0))
+    vp.add_argument("size", type=lambda v: int(v, 0))
+    vp.add_argument("spec")
+    vp.add_argument("--limit", type=int, default=8)
+    bp = sub.add_parser("brief", help="task card for one function")
+    bp.add_argument("mod")
+    bp.add_argument("addr", type=lambda v: int(v, 0))
+    bp.add_argument("size", type=lambda v: int(v, 0))
     sweep = sub.add_parser("scan", help="apply the templates to unmatched functions")
     sweep.add_argument("--limit", type=int, default=400)
     sweep.add_argument("--register", action="store_true", help="keep byte-exact hits")
@@ -298,6 +425,13 @@ def main() -> int:
         where = next((i for i in range(min(len(got), len(want))) if got[i] != want[i]), min(len(got), len(want)))
         print(f"{len(got)} bytes vs {len(want)}, first difference at {where:#x}")
         return 1
+
+    if args.cmd == "diffc":
+        return run_diff(args.mod, args.addr, args.size, args.file, args.limit)
+    if args.cmd == "variants":
+        return run_variants(args.mod, args.addr, args.size, args.spec, args.limit)
+    if args.cmd == "brief":
+        return run_brief(args.mod, args.addr, args.size)
 
     mods = args.mods or ["arm9", "ov002", "ov003", "ov004", "ov005", "ov008", "ov009"]
     return scan(args.limit, mods, args.register)
