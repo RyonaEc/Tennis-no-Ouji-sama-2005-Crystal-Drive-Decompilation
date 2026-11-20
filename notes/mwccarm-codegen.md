@@ -467,3 +467,31 @@ isolation but makes this mwcc emit an internal error (`<string not found>`,
 exit 1) inside a larger function body. `compile_text` returns `b""` for it, and
 `fastmatch variants` reports COMPILE-FAIL, so always sanity-check a
 COMPILE-FAIL spelling in isolation before concluding the body is wrong.
+
+## 2.6 Compiler-runtime units in the ready list (2026-11-20)
+
+A shape scan of the 217 ready arm9 units finds **12 units / 4,948 bytes of mwcc runtime**, not game code:
+
+- `func_02039630` (912 B) - int64
+- `func_02039b54` (896 B) - softfloat
+- `func_02037f0c` (732 B) - softfloat
+- `func_0203a584` (492 B) - softfloat
+- `func_02007e7c` (400 B) - softfloat
+- `func_0201fe0c` (344 B) - softfloat
+- `func_0202aea8` (304 B) - softfloat
+- `func_0201a100` (288 B) - softfloat
+- `func_0200e0ec` (172 B) - softfloat
+- `func_0202e674` (164 B) - softfloat
+- `func_0201ff64` (156 B) - softfloat
+- `func_02024b04` (88 B) - softfloat
+
+Signatures used to spot them: `clz`/`umull`/`smull`/`smlal`/`umlal` (soft-float and 64-bit multiply,
+e.g. the `__mulsf3`-style routine at `0x0203a584` that pushes r0-r3 around a call to read the FP state
+register and does `umull` on the mantissas), and `mov ip, #0x200000` followed by `cmn ip, rX, lsl #1`
+(the sign-normalising trick of a 64-bit signed compare, `__cmpdi2`).
+
+This corrects an earlier note in `build/walls.txt` that called `func_02039630` (912 B) a "generated
+fixed-point dispatch family": it is the 64-bit compare runtime. That unit, `func_0203a584` and the other
+ten are **not decompilation targets** - their retail bytes came from an assembly runtime, so per the
+project rules they must not be generalised into C. Exclude them when picking work; the decompilable
+ready pool is 205 units / 35,120 bytes, and the largest real prize is `func_0201a57c` (808 B).
