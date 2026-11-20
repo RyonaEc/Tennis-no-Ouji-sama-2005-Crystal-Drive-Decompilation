@@ -1115,3 +1115,27 @@ call inside the first `if` and `goto one` from inside it.
 
 Corollary for reading diffs: a first-difference of `want beq | got addeq sp, sp, #…` is this class, not
 a size or arithmetic problem.
+
+## 2.26 `func_02034608` (84 B): a perfect body with a swapped register pair (2026-11-20)
+
+Decoded body, correct to the instruction, differing only in which callee-saved register holds what:
+
+    s32 func_02034608(u32 *p, u32 a1, u32 a2)
+    {
+        u32 n = a2;
+        if (p[2] + n > p[1])
+            n = p[1] - p[2];
+        func_02034494(p[0] + p[2], a1, n);
+        p[2] = p[2] + n;
+        return 1;
+    }
+
+Retail: `mov r5, r0` (p in r5) then `mov r4, r2` (n in r4). mwcc: `mov r4, r0` then `mov r5, r2` -
+the two are exchanged and nothing else differs. Five formulations slide the same way: named local,
+in-place parameter update, `u32 *q = p;` copy, assignment-after-declaration, `n = a2` vs `a2`. This is
+the register-allocation tie class from the top of these notes; parked, body kept here.
+
+Also examined from `ready_funcs2.txt` and left alone: `0x02021ec4` (88 B) and `0x02027080` (88 B) both
+pack eight arguments into one register with a chain of `orr …, lsl #n` before a call, and
+`0x02032aa8` (88 B) does two unaligned u16 reads out of its own argument block. All three need the exact
+argument order of the callees first; they are not guesses worth making without it.
