@@ -1176,3 +1176,20 @@ zero after the prefix (`data_204662c` -> `data_0204662c`). That fixed one candid
 
 **Lesson:** any tool that resolves units through `auto.py` is arm9-only. Check the module coverage of the
 tool before concluding a source is exhausted.
+
+## 2.29 The two "digest rejects" were symbol names again - 264 more bytes (2026-11-20)
+
+Both candidates `install_helpers.py` rejected after harvest #4 turned out to be buildable; the diffs were
+entirely in the literal-pool words (`andeq …` lines at the end of the listing), which is what a wrong
+symbol reference looks like once relocations are masked.
+
+* `func_ov005_02056908` (156 B): used `data_02079900` - the **arm9 spelling** of an overlay symbol. The
+  real name is `data_ov005_02079900`. Renamed, linked, digest match.
+* `func_ov004_02061f58` (108 B): `func_0206256c` -> `func_ov004_0206256c`. Same class.
+
+So the rule from 2.19 holds for overlays too: an overlay unit must reference **its own module's** symbol
+names (`data_ovNNN_*`, `func_ovNNN_*`) even when the address is shared with arm9. `lint_cand.py` catches
+both before install if it is run; `install_helpers.py` now also repairs the seven-digit form
+automatically, but the module prefix needs judgement and is worth checking by hand when a link fails.
+
+Harvest total after 4 rounds: **30 units, 4,244 bytes**.
