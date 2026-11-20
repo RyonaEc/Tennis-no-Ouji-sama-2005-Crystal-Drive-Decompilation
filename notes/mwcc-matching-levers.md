@@ -84,3 +84,10 @@ ROM. Source docs: `fuddlesworth/pokebw2` `docs/matching.md` and
 | `tools/decomp/locals.py` | prints the register/stack slot of every parameter and local, from the object's debug info — would settle the register-tie walls directly, but needs `-g` in our flags |
 | `tools/decomp/try_variants.py --score` | applies `=====`-separated variants and scores aligned diff lines — our `near.py` without the scoring |
 | `tools/decomp/rodata_solver.py` | anneals declaration order until the data layout is forced |
+- **Hoist a computed base before an early-return guard, then advance it with
+  `+=`.** Two spellings of the same address generate different code:
+  `p = b + OFF; if (b[k] == 0) return 0; p += a;` materialises `b + OFF` into
+  a register *before* the guard compare and then does a single `add` for `a`,
+  while `p = b + OFF + a;` after the guard folds the constant into an
+  `add r0, r0, #0x4000` / `ldrb [r0, #0xbc0]` pair. The `+=` form is what
+  retail used in `func_ov002_020b8750` (100 B, matched 2026-11-20).
