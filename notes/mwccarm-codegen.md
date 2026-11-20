@@ -429,3 +429,41 @@ caller scheduling; direct-global accesses instead of cached; pointer-reference
 count flips added-vs-folded), `ReGame-Labs/dwds_decomp` (1.2/sp4 `-O4,p`),
 `6elphegor/acww-decomp` (1.2/base, Thumb), `InusualZ/mhtri-decomp` (subscript vs
 pointer-sum operand order), and the `decomp.wtf` MWCC guide.
+
+## 2.1a Address materialisation: a measured rule (2026-11-20)
+
+The fold-vs-materialise question in 2.1 can be decided by a small experiment
+instead of guessing. Compiling one-statement functions with the project's flags
+gives:
+
+| source | mwcc output |
+|---|---|
+| `((u32 *)p)[9] |= 2;` | `ldr r1,[r0,#0x24]` / `orr` / `str r1,[r0,#0x24]` |
+| `*(u32 *)(p + 0x24) |= 2;` | identical, fully folded |
+| `((u32 *)(p + 0x20))[1] |= 2;` | `add r1,r0,#0x20` / `ldr r0,[r1,#4]` / `orr` / `str r0,[r1,#4]` |
+
+So the rule is:
+
+- A **single constant offset** - whether written as a byte offset or as a large
+  array index, since `9 * 4` folds to `36` - is folded into the load/store
+  offset field. The base register is never materialised.
+- A **constant base plus a scaled index** materialises the base with `add` and
+  folds only `index * sizeof(T)` into the access. mwcc splits the total
+  (`0x20` in the `add`, `4` in the offset); it does not move the whole constant
+  into the `add`.
+
+Consequence for matching: if retail shows `add rX, base, #K` followed by
+`[rX]` with offset 0 (as `func_0201ce4c` and `func_0201cb84` both do for K =
+0x24), no C spelling of a constant-offset RMW reproduces it. Eleven spellings
+were tried on `func_0201ce4c` - plain statements, bound `u32 *`, `u32`-typed
+address, explicit `*q = *q & ~1`, struct member, two 1-bit bitfields,
+`((u32 *)p)[9]`, `((u32 *)(p + 0x20))[1]`, `(u16 *)p + 0x12`, `volatile`
+qualified, and an index variable pinned to 0 - and every one folds to 132 B
+where retail is 136 B. Treat retail's `add #K` + `[rX]` as a build-time
+artefact, record it, and move on.
+
+One practical trap found while bisecting: `((u32 *)p)[9] |= 2;` compiles in
+isolation but makes this mwcc emit an internal error (`<string not found>`,
+exit 1) inside a larger function body. `compile_text` returns `b""` for it, and
+`fastmatch variants` reports COMPILE-FAIL, so always sanity-check a
+COMPILE-FAIL spelling in isolation before concluding the body is wrong.
