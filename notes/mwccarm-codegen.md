@@ -658,3 +658,40 @@ alignment-padding **fall-through cascade** - `switch (a & 3)` with `*p->cur++ = 
 with no `break`, so case 1 performs one store, case 2 two, case 3 three, aligning `a` down to a
 multiple of 4. That reproduces the blocks exactly; only the field-address materialisation
 (`add r2,r0,#4` plus a double load of `p->lim`) is still missing.
+
+## 2.13 Hand-decoding still beats generation for jump tables (2026-11-20)
+
+I tried to automate the pure-map class end to end (`build/jtgen.py`): find the `addls pc, pc`, read the
+table, map each entry to the `mov rD,#imm` it lands on, sort blocks by address (= source order, which
+is the one degree of freedom), emit `case N: r = V; break;` and compile it. Run over all 125 units it
+produced **zero** additional matches. `func_ov002_02060798` remains the only unit that shape covers.
+
+Two reasons the automation has nothing to chew on, both worth recording:
+
+* **Most tables are not maps.** The blocks do stores, calls or several operations, so the generator
+  bails ("block not pure"). That is the common case, not the exception: 118 of 125.
+* **The ready pool contains fragments.** A unit whose first instruction is `bx lr`, or that reads
+  `r8`/`sb`/`sl`/`fp` without having set them, or whose disassembly ends mid-epilogue, is the middle of
+  a larger function and cannot be matched as a unit. Filtering the 125 for "real prologue (`push`/
+  `stmdb`/`cmp` in the first instruction) + table in the first 10 instructions + real return at the
+  end" left exactly **two**.
+
+### A filter that works
+
+That same filter found `func_0200ee58` (arm9, 256 B), which matched in four attempts: a 16-way table
+where only cases 4, 7, 10, 12 and 15 do anything, each `if (func(imm) != 0) return 1; break;`, with
+`return 0;` after the switch. Every one of the five bodies is the *same* shape with a different
+constant, so the switch is really a table of `(case, argument)` pairs - read the arguments off the
+`mov r0,#imm` in each block and the source writes itself.
+
+The one iteration that mattered: the last case must be written with `break;` like the others, not
+`return func(...) != 0;`. The `break` form lets mwcc if-convert it into `addne/movne/ldmne/bxne`
+against the fall-through `return 0`, which is exactly what retail has; the `return` form emits a
+branch and costs 4 bytes.
+
+### Generator status
+
+`build/jtgen.py` is kept because it is correct and cheap; when a genuine map turns up it produces the
+source in one call. `build/jtrun.py` runs it across `build/jt.txt` and reports how many units it could
+parse (currently 2, both fragments). Do not spend a session on the jump-table vein expecting bulk
+yields - it is now a tooling-backed trickle of ~1 unit per pass.
