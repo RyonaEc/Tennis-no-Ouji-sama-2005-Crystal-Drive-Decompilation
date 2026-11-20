@@ -797,7 +797,41 @@ is not in doubt; three mechanics block it:
    body uses the pooled `b + 0x897e`. Two different spellings of the same address in one function.
 3. **Base register `r3` vs `ip`** on the shared `b + 0x8900` base used by the 5-argument call.
 
-Separately, `bl func_02021b14` does not verify through `fastmatch`: the object leaves the branch
-offset field as zero (`got bl #0x2066ed0`), even though `func_02021b14` is a valid arm9 symbol and
-other matched ov003 units call arm9 functions. Worth resolving before trusting `variants` on any
-ov003 unit that calls into arm9.
+CORRECTION (same day): I first concluded that `bl` to a cross-module symbol did not verify through
+`fastmatch` (`got bl #0x2066ed0`). That was wrong. Relocations are masked **per instruction slot**,
+so any unit whose instruction stream is shifted by one instruction during compilation reports a
+`bl` difference at every subsequent slot as well - the unmasked offset is a symptom of the shift, not
+a cause. When the source shape is right the `bl` slot is masked correctly and compares clean. Do not
+chase this again.
+
+## 2.17 Callees that return a 64-bit value (2026-11-20)
+
+`func_02018bbc` (arm9, 44 B) matched only after a wrong first reading. Retail is:
+
+    mov r2, r0
+    add r0, r1, #1
+    ldr r1, [r2, #4]
+    bl func_0203b2cc
+    lsl r0, r1, #0x10
+    lsr r0, r0, #0x10
+
+The `ldr r1` is the second argument, and then `r1` is *read after the call* - which a normal compiler
+cannot do, because r0-r3 are caller-saved. The explanation is not that the callee preserves r1: it is
+that `func_0203b2cc` is an **8-byte function returning a u64**, so the result arrives in `r0:r1` and
+the code keeps only the high word:
+
+    extern u64 func_0203b2cc(u32, u32);
+    u64 v = func_0203b2cc(a1 + 1, *(u32 *)(a0 + 4));
+    return (u16)(v >> 32);
+
+Three spellings of that (named temp, inline expression, and a `u16` return type) all match - the
+lever is the u64 return type of the *callee*, not the expression.
+
+**Generalisation worth using as a search filter:** if a value loaded into `r0`-`r3` *before* a `bl`
+is used *after* it, the callee returns a 64-bit value and the source is taking its high half. mwcc
+would otherwise have to spill to a callee-saved register, so the tell is a missing `push {r4,...}`.
+The callee's symbol size is the confirmation: an 8-byte function in `symbols.txt` returning a u64.
+
+I also corrected an error in section 2.16: the `bl` mismatch I saw there was not a harness bug. Relocs
+are masked per instruction slot, so any unit whose instruction stream is shifted by one instruction
+reports a `bl` difference at that slot; when the shape is right the slot masks cleanly.
