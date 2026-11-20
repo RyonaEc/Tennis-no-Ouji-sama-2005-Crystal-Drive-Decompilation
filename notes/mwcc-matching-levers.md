@@ -91,3 +91,11 @@ ROM. Source docs: `fuddlesworth/pokebw2` `docs/matching.md` and
   while `p = b + OFF + a;` after the guard folds the constant into an
   `add r0, r0, #0x4000` / `ldrb [r0, #0xbc0]` pair. The `+=` form is what
   retail used in `func_ov002_020b8750` (100 B, matched 2026-11-20).
+- **A `u16` loop counter must be initialised before the last guard, not at the
+  top.** In `func_ov003_0205578c` (72 B, matched 2026-11-20) retail emits
+  `cmp r2,#0` / `mov r3,#0` / `ble`, i.e. the `i = 0` sits *between* the guard's
+  compare and its branch. Writing `i = 0;` after `if (n <= 0) return;` puts the
+  `mov` after the `ble` and is 4 bytes longer. The matching order is:
+  `acc = K; if (...) goto end; n = a + 1; i = 0; if (n <= 0) goto end; do {...}
+  while (i < n); end: return acc;` — with `goto end` so both guards share one
+  epilogue, and a `do/while` because retail tests at the loop head.
