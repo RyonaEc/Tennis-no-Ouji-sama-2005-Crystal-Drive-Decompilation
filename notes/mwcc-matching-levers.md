@@ -99,3 +99,12 @@ ROM. Source docs: `fuddlesworth/pokebw2` `docs/matching.md` and
   `acc = K; if (...) goto end; n = a + 1; i = 0; if (n <= 0) goto end; do {...}
   while (i < n); end: return acc;` — with `goto end` so both guards share one
   epilogue, and a `do/while` because retail tests at the loop head.
+- **Unsigned arguments turn signed division fixups into plain shifts.** A
+  `s32` operand dividing by 2/4 emits `asr`/`add`/`lsr` rounding sequences; make
+  the parameter `u32` and the same `/ 2` becomes a single `lsr #1`, and `/ 60`
+  becomes `umull` by `0x88888889` + `lsr #5`. Two bytes per division differ.
+- **A data symbol is either an array or a pointer, and the load count tells you
+  which.** `extern u8 data_x[]` used as `*(s16 *)(data_x + 0x14)` produces one
+  pooled `ldr` (address as base); declaring it `extern u8 *data_x` adds a second
+  `ldr` to dereference. If retail has exactly one `ldr rN, [pc, #..]` before
+  using the address, the symbol is an array.
