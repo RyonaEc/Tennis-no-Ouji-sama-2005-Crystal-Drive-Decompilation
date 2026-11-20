@@ -115,3 +115,9 @@ ROM. Source docs: `fuddlesworth/pokebw2` `docs/matching.md` and
   are correct code. Hoisting the pointer *before* a guard forces the pool form
   but keeps it live across the guard, which can add a frame
   (`push {r4, lr}`, +4 bytes). See `func_ov003_020960a4`.
+- **Reusing a constant register where retail reloads it is a one-instruction
+  tie.** `if (r >= 0x3b9ac9ff) return 0x3b9ac9ff;` gives mwcc `cmp r0, r2` then
+  `movge r0, r2`; retail emits `cmp r0, r2` then `ldrge r0, [pc, #..]` from the
+  same pool slot. The constant is rematerialised rather than copied. Spelling
+  the limit as `>`-form, a named variable or an `if/else` all keep the copy.
+  See `func_02008178`: 96/96 bytes, one instruction apart.
