@@ -1193,3 +1193,19 @@ both before install if it is run; `install_helpers.py` now also repairs the seve
 automatically, but the module prefix needs judgement and is worth checking by hand when a link fails.
 
 Harvest total after 4 rounds: **30 units, 4,244 bytes**.
+
+## 2.30 The `goto` lever is the shape, not the instance (2026-11-20)
+
+`func_0202a004` (92 B) is `func_02029fb0`'s sibling: same 0x24-byte buffer, `func_0202a3a0(buf, a0, a1)`,
+and two early exits that share a tail block. The `&&` formulation if-converts into a single conditional
+and reorders the blocks; the explicit `goto` form reproduces retail instruction for instruction. Both
+callers of `func_0202a3a0` in arm9 are now matched, so the family is complete at two members.
+
+Two levers, both structural rather than stylistic:
+* early-return chains that share a tail need labels (`goto zero; ... zero: return 0; one: ...; return 1;`)
+* `if (f(x) != 0 && g(x) != 0)` and `if (f(x) != 0) { if (g(x) != 0) { ... } } return 0;` are *not*
+  equivalent to mwcc - only the label form emits both `bl`s unconditionally and joins the exits.
+
+`build/ready_funcs2.txt` had drifted: it still listed 12 units that were already installed, which is why
+`func_02029fb0` and `func_0202a004` appeared as candidates. Regenerated from `src/` before this batch;
+now 83 entries.
