@@ -870,3 +870,35 @@ their queues must be re-pointed after every release.
 
 Both files are in `build/`. Run them before concluding a session has nothing to show; the helpers
 produce more than the session log suggests.
+
+## 2.19 Stale symbol tables produce phantom rejects (2026-11-20)
+
+The five candidates that `reg.py` rejected while harvesting (§2.18) were **not** the pool/literal class.
+All five scored `fastmatch` MATCH and failed only because their extern names came from an older
+symbol table. The instruction streams were correct the whole time:
+
+| unit | size | wrong name in candidate | real symbol |
+|---|---|---|---|
+| `0x02029768` | 84 | `data_0204abe8` | `data_0204abec` (4 bytes off) |
+| `0x020065b0` | 144 | `data_2042a68` | `data_02042a68` (missing zero) |
+| `0x0200f638` | 148 | `data_203cb6c`, `data_203cb6e` | `data_0203cb6c`, `data_0203cb6e` |
+| `0x020262cc` | 112 | `func_02048c8` | `func_020248c8` (missing digit) |
+| `0x020146e0` | 160 | `func_02062d84` | `func_ov002_02062d84` (overlay call) |
+
+The first symptom is misleading: `reg.py` prints only the last log line, and `ninja`'s final line is
+`build stopped: subcommand failed`. To see the real cause, reproduce `try_unit` by hand with
+`t10.configure_build()` and print the whole log - it says
+`mwldarm.exe: Undefined : "func_02062d84"` or a plain compile error.
+
+Two lessons:
+
+1. **A symbol 4 bytes off still masks as a reloc.** `data_0204abe8` vs `0x0204abec` changes the linked
+   image, but `fastmatch` masks the pool word, so it reports MATCH. Only the digest catches it.
+2. **arm9 calls into overlays.** `relocs.txt` records `kind:arm_call ... module:overlay(2)`; the extern
+   must use the overlay's symbol name (`func_ov002_02062d84`), not an arm9-style name. Grep
+   `relocs.txt` for `to:<addr>` when a `bl` target has no arm9 symbol.
+
+`build/lint_cand.py` now checks every `extern` name in a candidate against all symbol tables
+(arm9, each overlay, itcm, dtcm) before anything is installed. Run it on every helper hand-over.
+
+All five are now installed: +648 bytes.

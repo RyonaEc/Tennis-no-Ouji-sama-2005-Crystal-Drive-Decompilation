@@ -3295,3 +3295,23 @@ src/arm9/func_0202b33c.c:
 src/arm9/func_0202e718.c:
     complete
     .text       start:0x0202e718 end:0x0202e7c0
+
+src/arm9/func_02029768.c:
+    complete
+    .text       start:0x02029768 end:0x020297bc
+
+src/arm9/func_020065b0.c:
+    complete
+    .text       start:0x020065b0 end:0x02006640
+
+src/arm9/func_0200f638.c:
+    complete
+    .text       start:0x0200f638 end:0x0200f6cc
+
+src/arm9/func_020146e0.c:
+    complete
+    .text       start:0x020146e0 end:0x02014780
+
+src/arm9/func_020262cc.c:
+    complete
+    .text       start:0x020262cc end:0x0202633c
