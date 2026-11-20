@@ -993,3 +993,30 @@ by writing them once and reading them twice.
 `python build/autorun.py 45 120 arm9` reports `already tried 465`, `bailed 92`, `testing 0`,
 `generated matches: 0/0`. The generator has no untried patterns left in that size band; more units need
 hand-written reconstruction from `build/ready_funcs.txt`.
+
+## 2.22 Two levers that turned a near-miss into a match (2026-11-20)
+
+`func_0201fc3c` (60 B) matched after two edits that are worth reusing:
+
+* **Signed compare decides `ldrge` vs `ldrhs`.** `p[2] >= p[3]` on `u32*` emits `ldrhs`; retail has
+  `ldrge`, so the source compares signed values (`(s32)p[2] >= (s32)p[3]`).
+* **Hoisting a field load breaks the early-return predication.** Writing `u32 lo = p[0];` at the top
+  made mwcc load `p[0]` into r4 *before* the compare. Retail loads only `p[2]`/`p[3]` up front,
+  predicates `ldrge r0,[r0,#4] / popge / bxge`, and loads `p[0]` after. Declaring `lo` but assigning
+  it after the `if` reproduces that exactly.
+
+### `func_020124e0` (68 B) - one swapped pair, parked
+
+A bit-test helper: `p = func_0200faa8(a0); if (!p) return 0; return p[a0/8] & (1 << (a0%8));`
+with `s32 a0` (`/8` and `%8` are the signed-div sequence `asr #2 / add ... lsr #29` and
+`lsr #31 / rsb / ror #29`). Everything matches except the schedule: retail computes the **mask**
+before `ldrb`, mwcc computes it after. Four formulations (index/mask variables, `>>3`+`&7`, `/8`+`%8`,
+mask-first) all schedule the load first. Recorded, not chased further.
+
+### `func_02028920` / `func_02028958` (56 B pair) - the COMPILE-FAIL pair is now explained
+
+`p->a28 += p->a34; p->sub->cb40(p->sub, p->a2c, <old a28>);` where `cb40` is `[sub+0x40]` (and `[sub+0x3c]`
+for the second). It compiles fine from C - the old COMPILE-FAIL was a bad candidate. It does not match:
+retail's frame is `push {r4,lr}` (uses r4 for `sub`) while mwcc emits `stmdb {lr}` + `sub sp,#4`, and
+retail materialises `add lr, r0, #0x28` instead of an offset load. Both are the alignment/address-materialisation
+ties already catalogued in 2.14 - not a new class.
