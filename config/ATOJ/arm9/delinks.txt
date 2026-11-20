@@ -2879,3 +2879,11 @@ src/arm9/func_0202e9c4.c:
 src/arm9/func_0201dcb0.c:
     complete
     .text       start:0x0201dcb0 end:0x0201dd10
+
+src/arm9/func_02021640.c:
+    complete
+    .text       start:0x02021640 end:0x020216a0
+
+src/arm9/func_02030448.c:
+    complete
+    .text       start:0x02030448 end:0x020304a8
