@@ -1060,3 +1060,29 @@ consumed by something that requires a register address" - and these four units h
 **Conclusion:** these four need a source shape whose RMW is expressed through a register-held address
 for a reason the compiler cannot fold. Until one is found they stay parked; do not re-derive the bodies,
 they are above.
+
+## 2.24 The folded-offset class is 13.5% of the remaining arm9 work (2026-11-20)
+
+Follow-up to 2.23. Chain of evidence:
+
+1. Four unrelated units (`0x020187b0`, `0x02018818`, `0x0201f26c`, `0x02018318`) fail on one decision:
+   retail materialises `add rX, rY, #imm` and accesses through `rX`; mwcc folds the offset into the
+   memory operand. Every formulation tried folds (`*q = *q - 1`, `q[0]--`, `&p->field`, `volatile`,
+   `((u32*)p + n)`, declaring the pointer early so it must survive a call - the last one *does*
+   materialise, but early and in a callee-saved register, giving `push {r4,r5,lr}` instead of retail's
+   `push {r4,lr}`).
+2. Three more units with the same shape but a global base were decoded and tried
+   (`0x02015040` clear bit, `0x02015068` set bit, `0x02015524` increment + compare) - all fold
+   identically, including the variant that re-reads the global twice.
+3. Searching all **matched** units for the pattern finds 7, every one of them materialising into `ip`
+   in a **post-increment copy loop** (`func_02010248`: `ldrb r2,[ip],#1`). No matched unit materialises
+   a base+const for a plain RMW.
+4. Counting the unmatched arm9 set: **72 of 535 (13.5%) contain the pattern.**
+
+Conclusion: this looks like code built with a different fold heuristic from the object files the other
+1,407 units came from (SDK/library objects, or a different 1.2 service-pack revision). It is not a
+source-shape puzzle we can win by rephrasing - six candidates across four units and five formulations
+say so. Since flags and compiler version are fixed by project rules, these 72 are effectively parked.
+
+**Working queue is now `build/ready_funcs2.txt`**: `ready_funcs.txt` with the folded-offset class and
+everything already in `walls.txt` filtered out. That is the list to pick from.
