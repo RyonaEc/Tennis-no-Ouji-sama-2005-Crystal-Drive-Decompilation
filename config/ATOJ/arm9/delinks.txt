@@ -2983,3 +2983,23 @@ src/arm9/func_0200fd58.c:
 src/arm9/func_0201c848.c:
     complete
     .text       start:0x0201c848 end:0x0201c8c0
+
+src/arm9/func_02018da8.c:
+    complete
+    .text       start:0x02018da8 end:0x02018e24
+
+src/arm9/func_0202d564.c:
+    complete
+    .text       start:0x0202d564 end:0x0202d5e0
+
+src/arm9/func_0201e760.c:
+    complete
+    .text       start:0x0201e760 end:0x0201e7dc
+
+src/arm9/func_02006504.c:
+    complete
+    .text       start:0x02006504 end:0x02006584
+
+src/arm9/func_020165a8.c:
+    complete
+    .text       start:0x020165a8 end:0x02016628
