@@ -1020,3 +1020,43 @@ for the second). It compiles fine from C - the old COMPILE-FAIL was a bad candid
 retail's frame is `push {r4,lr}` (uses r4 for `sub`) while mwcc emits `stmdb {lr}` + `sub sp,#4`, and
 retail materialises `add lr, r0, #0x28` instead of an offset load. Both are the alignment/address-materialisation
 ties already catalogued in 2.14 - not a new class.
+
+## 2.23 The materialisation cluster: four units blocked by one fold decision (2026-11-20)
+
+Four freshly decoded units all fail on the same single decision. Retail materialises `base + small
+offset` into a register and accesses through it; mwcc folds the offset into the load/store immediate.
+
+| unit | size | retail | mwcc |
+|---|---|---|---|
+| `0x020187b0` | 72 | `add r2, r4, #0xc; ldrh r1,[r2]; sub; strh r1,[r2]` | `ldrh r1,[r4,#0xc]; sub; strh r1,[r4,#0xc]` |
+| `0x02018818` | 72 | same shape, `+1`, offset `0xa` | folded |
+| `0x0201f26c` | 68 | `add r2, r4, #0x118; ldr r1,[r2]; add; str r1,[r2]` | folded |
+| `0x02018318` | 24 | `add r2, r0, #0x24; str r1,[r2]; str r0,[r2,#8]` | `str r1,[r0,#0x24]` |
+
+Bodies (all verified by hand, none installed):
+
+* `0x020187b0`: `if (func_02018b90(p)) return 0; *(u16*)(p+8) = func_02018bbc(p, *(u16*)(p+8));
+  *(u16*)(p+0xc) -= 1; return 1;`
+* `0x02018818`: identical with `func_02018ba4`, offset `0xa`, and `+= 1`.
+* `0x0201f26c`: `if (*(u32*)(p+0x118) == 0) { if (func_0201cde8(p) == 0) return 0; }
+  *(u32*)(p+0x118) += 1; return 1;`
+* `0x020289f4`: order + `|= 4` on `p+0xc`, `p+0x2c = p+8`, zero `p+0x34`/`p+0x32`, store `a1` to
+  `p+0x30`, `mov r1,#2`, `bl func_02028af4`. mwcc tail-calls it (`b`) while retail emits `bl` + epilogue,
+  which is the second half of this cluster's problem.
+
+### What the matched units say the trigger is
+
+Scanned every matched arm9 unit for `add rX, rY, #imm` immediately followed by an access through `rX`:
+**7 hits, all materialising into `ip`**, and the cleanest is `func_02010248`:
+
+    u8 *p = *(u8 **)(*(u8 **)(data_02042a68 + 0x10) + 0x158) + a0 * 8 + 0x24;
+    *(Blk *)a1 = *(Blk *)p;      // ldrb r2,[ip],#1 ... loop
+
+There the pointer must live in a register because it feeds a **post-increment copy loop**. Try as I
+might, a plain RMW (`*q = *q - 1`, `q[0]--`, `*(u16*)(p+0xc) -= 1`, `volatile u16 *q`, `((u32*)p + 3)`)
+never produces the materialised form. So the trigger is not "pointer variable" but "the pointer is
+consumed by something that requires a register address" - and these four units have nothing like that.
+
+**Conclusion:** these four need a source shape whose RMW is expressed through a register-held address
+for a reason the compiler cannot fold. Until one is found they stay parked; do not re-derive the bodies,
+they are above.
