@@ -197,3 +197,7 @@ src/ov004/func_ov004_02053518.c:
 src/ov004/func_ov004_02053264.c:
     complete
     .text       start:0x02053264 end:0x02053314
+
+src/ov004/func_ov004_0205acfc.c:
+    complete
+    .text       start:0x0205acfc end:0x0205ad9c

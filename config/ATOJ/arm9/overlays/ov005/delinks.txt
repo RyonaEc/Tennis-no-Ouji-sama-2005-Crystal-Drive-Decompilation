@@ -135,3 +135,11 @@ src/ov005/func_ov005_0204ce98.c:
 src/ov005/func_ov005_0204f3cc.c:
     complete
     .text       start:0x0204f3cc end:0x0204f42c
+
+src/ov005/func_ov005_02051698.c:
+    complete
+    .text       start:0x02051698 end:0x020516fc
+
+src/ov005/func_ov005_02051ad4.c:
+    complete
+    .text       start:0x02051ad4 end:0x02051b90
