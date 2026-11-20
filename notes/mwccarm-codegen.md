@@ -601,3 +601,34 @@ So the rule to try first when a RMW is 4-8 bytes short and retail shows a pooled
 address its own pointer inside the branch, while the *test* keeps the plain expression. Beware the
 knock-on effect on register choice - the local pointer can land in `ip` where retail uses `r3`, which
 is a separate allocation tie.
+
+## 2.11 Jump tables and case order (2026-11-20)
+
+A dense `switch` (values packed into a small range) compiles to `addls pc, pc, rK, lsl #2` followed by
+one `b` per case, with a `b` before the table as the default. Two things decide a match:
+
+1. **Cover the range.** Three cases inside 0..7 make mwcc emit a compare ladder instead; listing
+   `case 0: case 2: case 3: case 4: case 6: break;` alongside them produces the jump table retail has.
+   A grouped `case ...: break;` still costs nothing at run time but changes the table.
+2. **Block order follows the order the labels are written, not the case values.** `func_02014e64`
+   needs its three bodies in the source order `7, 1, 5` - every other permutation of the same three
+   cases lands at the right size with a handful of swapped branch targets. Brute-force the factorial
+   (three cases = six orders, cheap) rather than reasoning about it.
+
+`func_ov002_02060730` shows the easy end of the class: a seven-case mapping with one statement per
+case matched with zero diffs first try.
+
+### Nested inversion, third confirmed use
+
+`if (x == A) { small } else if (x == B) { small }` often produces the *wrong* predication polarity.
+Writing it as
+
+    if (x != A) { if (x == B) { ... } } else { ... }
+
+puts the small if-converted block in the taken path and branches to the other one - which is retail's
+usual layout. This decided `func_ov002_0207b5f4`, `func_ov002_020e4450` (down to 84/84 with one
+`bx`/`bxeq`) and `func_ov002_02061850`, where the requested variant matched on the first try after the
+direct form missed by 4 bytes.
+
+There are **57 jump-table switch units** in the ready pools (`addls pc, pc` scan across arm9 and every
+overlay), so this is currently the highest-yield class in the project.
