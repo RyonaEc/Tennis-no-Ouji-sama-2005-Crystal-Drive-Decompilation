@@ -569,3 +569,35 @@ three-member family that is byte-identical apart from the function name.
 
 `build/ready.py <mod> --frameless` plus a scan for "at least 3 branches to one target and at least 2
 bhi/blo" finds them: 30 were sitting in the ready pool across arm9 and the overlays.
+
+## 2.10 Address materialisation: the pooled form, solved (2026-11-20)
+
+Measured directly, compiling minimal functions with the project's flags.
+
+`*(u16 *)(b + 0x897e)` compiles to a **split** address - `add r0, b, #0x8900` + `[r0, #0x7e]` - in
+every one of these spellings, which were all tried:
+
+    *(u16 *)(b + 0x897e) = *(u16 *)(b + 0x897e) + 1;
+    ((u16 *)(b + 0x8900))[0x3f] = ...;            /* u16 index of an offset base */
+    ((u16 *)b)[0x44bf] = ...;                     /* u16 index of the raw base  */
+    *(volatile u16 *)(b + 0x897e) = ...;
+
+Retail for the same site uses the **pooled** form - `ldr r0, =0x897e` + `add r1, b, r0` + `[r1]`. The
+two spellings that produce it are both of the form *"the full address lives in its own variable"*:
+
+    volatile u16 *p = (volatile u16 *)b + 0x1e6c ... (bound pointer)   -> pooled
+    u32 a = (u32)b + 0x897e;  *(u16 *)a = *(u16 *)a + 1;              -> pooled
+
+and the placement of that variable decides whether the pool load is predicated or hoisted: computed
+**inside** the `if` body, the load is `ldrlo`/`ldrne` exactly like retail; computed before the `if`, it
+is unconditional. Retail's pattern in one function is therefore
+
+    if (*(u16 *)(base + 0x897e) < 0x10) {   /* read: split form, add+offset */
+        p = (u16 *)(base + 0x897e);          /* address: pooled form, inside the branch */
+        *p = *p + 1;
+    }
+
+So the rule to try first when a RMW is 4-8 bytes short and retail shows a pooled constant: give the
+address its own pointer inside the branch, while the *test* keeps the plain expression. Beware the
+knock-on effect on register choice - the local pointer can land in `ip` where retail uses `r3`, which
+is a separate allocation tie.
