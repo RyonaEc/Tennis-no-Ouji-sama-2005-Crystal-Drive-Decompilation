@@ -1139,3 +1139,13 @@ Also examined from `ready_funcs2.txt` and left alone: `0x02021ec4` (88 B) and `0
 pack eight arguments into one register with a chain of `orr …, lsl #n` before a call, and
 `0x02032aa8` (88 B) does two unaligned u16 reads out of its own argument block. All three need the exact
 argument order of the callees first; they are not guesses worth making without it.
+
+## 2.27 Harvest #3: two more 124-byte units (2026-11-20)
+
+`build/harvest.py` found `0x02019974` and `0x02019aa0` (124 B each) in the scout tree. Both installed
+through `reg.py`; `0x02019974` needed the familiar symbol repair (`data_204662c` -> `data_0204662c`,
+missing zero) which `build/lint_cand.py` flagged before install.
+
+Running total from harvests: **28 units, 3,980 bytes** that were sitting finished in the helper trees
+and never claimed. The loop is `harvest.py` -> `lint_cand.py` -> `install_helpers.py` (or `reg.py` one at
+a time) at the start of every session; it takes a minute and has paid every time it has been run.
