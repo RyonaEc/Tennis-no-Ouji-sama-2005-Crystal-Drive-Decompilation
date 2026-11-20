@@ -835,3 +835,38 @@ The callee's symbol size is the confirmation: an 8-byte function in `symbols.txt
 I also corrected an error in section 2.16: the `bl` mismatch I saw there was not a harness bug. Relocs
 are masked per instruction slot, so any unit whose instruction stream is shifted by one instruction
 reports a `bl` difference at that slot; when the shape is right the slot masks cleanly.
+
+## 2.18 Harvesting the helper trees (2026-11-20)
+
+I had been pushing walls, notes and tools **into** the scout/worker/delta trees every session and never
+reading anything back out of them. Doing that once was worth 23 units and 3,084 bytes - more than the
+previous four sessions combined.
+
+**The helper trees accumulate finished work that nobody claims.** Verified against retail from this
+tree's ROM, then installed through `reg.py`:
+
+* delta: ov003 `0x0205e028` (172), `0x02081ecc` (172), `0x0204e5bc` (64) - 408 B.
+* scout + worker: 20 arm9 units, 2,676 B - `0x02004e4c` 140, `0x0200eac4` 136, `0x0200ec0c` 64,
+  `0x0200f0a4` 156, `0x0200f6cc` 100, `0x02012454` 140, `0x0201484c` 232, `0x02014c5c` 68,
+  `0x02014ca0` 148, `0x02014ed8` 144, `0x02015250` 124, `0x020153ec` 232, `0x02016030` 100,
+  `0x02016790` 136, `0x02016934` 116, `0x02016ee8` 132, `0x02017a88` 112, `0x0201a07c` 132,
+  `0x0202b33c` 96, `0x0202e718` 168.
+
+**One fifth of their "MATCH" candidates were wrong.** Of 25 candidates that `fastmatch`/`var3` call
+MATCH, `reg.py` rejected 5 outright on the ROM digest (`0x020065b0` 144, `0x0200f638` 148,
+`0x020146e0` 160, `0x020262cc` 112, `0x02029768` 84). That is the pool/literal class the AGENTS notes
+warn about: the instruction stream matches with relocations masked but the constant pool differs. Never
+install a helper's candidate on its own claim - run `reg.py` here.
+
+**The helper trees are badly stale.** scout and worker are on `4024535` with 1,295 sources here-1,376;
+delta is on `266619a` with 1,363. They are matching units that were installed days of commits ago and
+searching pools that have since changed. Anything they hand over must be re-verified in this tree, and
+their queues must be re-pointed after every release.
+
+### The harvest loop (use it every session)
+
+    python build/harvest.py          # verify every helper cand/*.c against THIS tree's retail
+    python build/install_helpers.py  # reg.py each verified candidate, reject on ROM mismatch
+
+Both files are in `build/`. Run them before concluding a session has nothing to show; the helpers
+produce more than the session log suggests.
