@@ -1086,3 +1086,32 @@ say so. Since flags and compiler version are fixed by project rules, these 72 ar
 
 **Working queue is now `build/ready_funcs2.txt`**: `ready_funcs.txt` with the folded-offset class and
 everything already in `walls.txt` filtered out. That is the list to pick from.
+
+## 2.25 `goto` labels defeat if-conversion and fix block order (2026-11-20)
+
+`func_02029fb0` (84 B) matched only after the two `return`s were expressed as explicit labels:
+
+    s32 func_02029fb0(u32 a0, u32 a1)
+    {
+        u8 buf[0x24];
+        if (func_0202a3a0(buf, a0, a1) == 0)
+            goto zero;
+        if (func_0202a060(buf) != 0)
+            goto one;
+    zero:
+        return 0;
+    one:
+        return 1;
+    }
+
+Retail is `cmp; beq zero; add r0,sp,#0; bl; cmp; bne one;` then the `zero` block, then `one`. Writing the
+same two `if (…) return 0;` / `if (…) return 1;` statements instead makes mwcc **if-convert** the small
+bodies (`addeq sp; moveq r0,#0; ldmeq; bxeq`) and pick the opposite block order, which no amount of
+rephrasing fixed. The `goto tombstones` force real branches and give mwcc the layout retail has.
+
+Use this whenever a unit's failure is `beq/bne` in retail against `…eq`-predicated blocks in your build,
+or when the two exit blocks come out in the wrong order. Variant that also matches: nest the second
+call inside the first `if` and `goto one` from inside it.
+
+Corollary for reading diffs: a first-difference of `want beq | got addeq sp, sp, #…` is this class, not
+a size or arithmetic problem.
