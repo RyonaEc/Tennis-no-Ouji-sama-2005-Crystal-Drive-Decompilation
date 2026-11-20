@@ -13,11 +13,11 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 | Metric | Matched | Total | Progress |
 |---|---:|---:|---|
-| Code | 88,136 B | 1,841,700 B | 4.79% `█░░░░░░░░░░░░░░░░░░░░░░░` |
-| Functions | 1,361 | 3,806 | 35.76% `█████████░░░░░░░░░░░░░░░` |
+| Code | 88,228 B | 1,841,700 B | 4.79% `█░░░░░░░░░░░░░░░░░░░░░░░` |
+| Functions | 1,362 | 3,806 | 35.79% `█████████░░░░░░░░░░░░░░░` |
 | Fuzzy match | 4.79% | n/a | `█░░░░░░░░░░░░░░░░░░░░░░░` |
 | Data | 0 B | 801,936 B | 0.00% `░░░░░░░░░░░░░░░░░░░░░░░░` |
-| Complete units | 1,361 | 1,939 | 70.19% `█████████████████░░░░░░░` |
+| Complete units | 1,362 | 1,941 | 70.17% `█████████████████░░░░░░░` |
 
 ## By module
 
@@ -25,7 +25,7 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 |---|---:|---:|---:|---:|---:|
 | ARM9 main | 18.80% (42,232 / 224,616 B) | 799 / 1,377 (58.0%) | 18.80% | 0.00% (0 / 69,856 B) | 799 / 1,035 |
 | OV002 | 4.38% (31,380 / 715,724 B) | 342 / 1,360 (25.1%) | 4.38% | 0.00% (0 / 34,164 B) | 342 / 525 |
-| OV003 | 0.99% (5,820 / 586,712 B) | 87 / 547 (15.9%) | 0.99% | 0.00% (0 / 64,648 B) | 87 / 153 |
+| OV003 | 1.01% (5,912 / 586,712 B) | 88 / 547 (16.1%) | 1.01% | 0.00% (0 / 64,648 B) | 88 / 155 |
 | OV004 | 3.26% (2,920 / 89,584 B) | 50 / 170 (29.4%) | 3.26% | 0.00% (0 / 27,404 B) | 50 / 79 |
 | OV005 | 1.85% (2,640 / 142,964 B) | 35 / 166 (21.1%) | 1.85% | 0.00% (0 / 369,132 B) | 35 / 63 |
 | OV006 | 0.71% (52 / 7,324 B) | 1 / 16 (6.2%) | 0.71% | 0.00% (0 / 170,504 B) | 1 / 3 |
@@ -36,6 +36,6 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 ## Against the whole ROM
 
-1,361 of 3,806 functions (35.76%) and 88,136 of 1,841,700 code bytes (4.79%) are matching C; the rest are still delinked assembly.
+1,362 of 3,806 functions (35.79%) and 88,228 of 1,841,700 code bytes (4.79%) are matching C; the rest are still delinked assembly.
 
 No `.data`, `.rodata` or `.bss` unit has a matching C definition yet, so the data figures stay at zero.
