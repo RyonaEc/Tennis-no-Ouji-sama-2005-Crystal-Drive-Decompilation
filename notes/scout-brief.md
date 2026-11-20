@@ -221,3 +221,26 @@ and mwcc folds the offset into the load:
     0x0204c7e8  u16 fields + flag at +0x18  4 shapes, 28 B vs 32 B
     0x02062b48  flag field at +0x28         4 shapes, 28 B vs 32 B
     0x02062b68  flag field + byte at +0x2c  5 shapes, 32 B vs 36 B
+
+## Two codegen fingerprints that mean "not our compiler build"
+
+Eleven functions across ov002, ov003 and ov004 show code mwcc 1.2/sp2 does not
+produce from any source shape, and it is always one of two things:
+
+1. **Pre-indexed writeback with a pooled offset**: `ldr r0,[r1,r0]!` where r0 was
+   loaded from a literal pool (`0x1e6c`, `0x47d4`, ...). mwcc always emits
+   `add r0,r0,#0x1000` + `[r0,#0xe6c]` instead.
+2. **Retained dead stores**: `sub sp,#0x10` then six `strh` of zero into stack
+   locals that are never read, then `add sp` / `bx lr`. mwcc deletes them, and
+   with `volatile` it keeps them but addresses them as `[sp,#off]` instead of
+   materialising `add r1,sp,#0`.
+
+These are per-unit fingerprints, not per-module: ov002's matched units and these
+walls sit in the same overlay, and ov004 has both. Treat them as "this unit was
+built by a different mwcc build" — a source-shape hunt will not fix them, and the
+toolchain is pinned, so they are only reachable if someone later proves a
+different-but-legitimate build unit.
+
+Families are still the best leverage on the remaining queue; `famsurvey.py` now
+prints full 8-digit addresses (it used to print `0x206e84` for `0x02066e84`, so
+copying a family address into `udis.py` silently disassembled nothing).
