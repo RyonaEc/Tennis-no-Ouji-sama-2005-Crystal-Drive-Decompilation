@@ -186,3 +186,38 @@ session on them without a new lever:
   wrappers.
 - `func_0201fd00`, `func_0201fcc8`, `func_0201fce4` — the bytes at these symbols
   do not decode as ARM; treat them as data until the boundary is re-derived.
+
+## Not C at all: the small leaves at the top of ready.py
+
+`ready.py` used to rank the 13 Thumb `svc` wrappers in arm9 first (Halt, Sqrt,
+CpuSet, CpuFastSet, Mod, GetCRC16, IsDebugger, VBlankIntrWait, the LZ77/RL
+decompressors...). Dumped, they are 4–6 byte SDK assembly:
+
+    Halt                 06 df 70 47      svc 6;  bx lr
+    Sqrt                 0d df 70 47      svc 0x0d; bx lr
+    CpuSet               0b df 70 47      svc 0x0b; bx lr
+    CpuFastSet           0c df 70 47      svc 0x0c; bx lr
+    VBlankIntrWait       00 22 05 df 70 47  movs r2,#0; svc 5; bx lr
+    Mod                  09 df 08 1c 70 47  svc 9; adds r0,r1,#0; bx lr
+
+C cannot emit `svc`, so no source shape can match them; mwcc does have `-thumb`,
+but changing flags to chase 124 bytes breaks a hard rule. They are now skipped
+by `ready.py` (it reads the `thumb` kind from symbols.txt), as are the arm9
+`svc 0x123456` wrappers at 0x0203b564/0x0203b578/0x0203b58c, the `udf` trap stub
+at 0x02033cb0 and the branch stubs at 0x02033bc0/0x02033c0c/0x0203b2cc.
+
+## Recorded walls now live in build/walls.txt
+
+`ready.py` skips every address listed there and prints how many it skipped, so a
+wall is never offered again to a helper that has not read this brief. Adding a
+line is the cheapest way to stop three agents burning sessions on one function:
+`<module> <addr> <one-line reason>`.
+
+New entries from the ov002 ready head — all four are one instruction short (4 B)
+because retail materialises the address (`add r1, r0, #0xa` then `ldrh r0, [r1]`)
+and mwcc folds the offset into the load:
+
+    0x02072324  u16 increment at +0xa      10 source shapes, all 16 B vs 20 B
+    0x0204c7e8  u16 fields + flag at +0x18  4 shapes, 28 B vs 32 B
+    0x02062b48  flag field at +0x28         4 shapes, 28 B vs 32 B
+    0x02062b68  flag field + byte at +0x2c  5 shapes, 32 B vs 36 B
