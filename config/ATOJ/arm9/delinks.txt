@@ -2871,3 +2871,11 @@ src/arm9/func_0201cf74.c:
 src/arm9/func_02024ae4.c:
     complete
     .text       start:0x02024ae4 end:0x02024af8
+
+src/arm9/func_0202e9c4.c:
+    complete
+    .text       start:0x0202e9c4 end:0x0202ea20
+
+src/arm9/func_0201dcb0.c:
+    complete
+    .text       start:0x0201dcb0 end:0x0201dd10
