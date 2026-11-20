@@ -3111,3 +3111,15 @@ src/arm9/func_0200e9e0.c:
 src/arm9/func_02006710.c:
     complete
     .text       start:0x02006710 end:0x020067dc
+
+src/arm9/func_020156c0.c:
+    complete
+    .text       start:0x020156c0 end:0x02015790
+
+src/arm9/func_02006640.c:
+    complete
+    .text       start:0x02006640 end:0x02006710
+
+src/arm9/func_02006324.c:
+    complete
+    .text       start:0x02006324 end:0x020063f8
