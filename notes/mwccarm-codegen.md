@@ -902,3 +902,37 @@ Two lessons:
 (arm9, each overlay, itcm, dtcm) before anything is installed. Run it on every helper hand-over.
 
 All five are now installed: +648 bytes.
+
+## 2.20 A quarter of the "ready" pool is not functions (2026-11-20)
+
+`build/ready_clean.txt` (201 entries) was built by filtering for units with no external references.
+That filter says nothing about whether the unit is a *function*. Checking the first and last
+instruction of every entry splits the pool:
+
+* **140** start with a prologue (`push`/`stmdb`, or `sub sp`) and end with `bx lr`/`pop`/`ldm` -
+  real functions. Saved as `build/ready_funcs.txt`, smallest first.
+* **61** do not: they are epilogues (`add sp,#4 / pop {r4,r5,lr} / bx lr`), loop tails
+  (`stmlt r1!,{r0}; blt`), mid-function slices (`ldrhne r0,[r1,#-1]; andne ...`) or data
+  (`udf #0xffff`). Saved as `build/ready_frags.txt`.
+
+Fragments cannot be matched from C, ever: there is no function boundary to compile. dsd split them
+out because they are branch targets. Do not spend iterations on them, and prefer
+`ready_funcs.txt` when picking work.
+
+### Three instruction-selection ties found this session
+
+Each of these is one instruction away and resisted every rephrasing tried (4-6 variants each).
+Recorded so nobody re-walks them:
+
+* `0x0202612c` (20 B) - `stmdb sp!,{lr}; bl; bl; ldm sp!,{lr}; bx lr`. mwcc always inserts
+  `sub sp, sp, #4` between the push and the two calls (8-byte call alignment); retail's 4-byte
+  frame has none. Scan of every arm9 unit of 12-32 B found **no other unit with this shape**, so it
+  is a veneer or a non-C stub, not a wrapper someone wrote in C.
+* `0x02018318` (24 B) - every instruction matches except the first store: retail materialises
+  `add r2, r0, #0x24` and stores `[r2]`; mwcc folds it to `str r1, [r0, #0x24]`. Pointer variables,
+  `q[0]`, `*(q+2)`, struct fields and `volatile` all fold the same way (volatile instead spills to
+  the stack and is worse).
+* `0x020048e8` (20 B) / `0x020269ec` (24 B) - the word-fill / word-copy loops. Retail is
+  `cmp; stmlt r1!,{r0}; blt` (predicated single-register `stm`, condition at top). mwcc emits a
+  rotated loop with `bxhs lr` and a post-index `str r0,[r1],#4`. `#define`-free rephrasings
+  (`while`, `for`, `do`, u32/u8/s32 counts) all rotate.
