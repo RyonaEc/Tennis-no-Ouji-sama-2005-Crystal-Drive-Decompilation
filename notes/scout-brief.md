@@ -121,3 +121,45 @@ git -C "M:/ATOJ-scout" reset --hard main
 `reset --hard` touches tracked files only, so `tools/`, `extract/` and
 `build/*.py` survive. If `build/*.py` has drifted, re-copy it from the
 installer's tree — do not hand-edit it in yours.
+
+## Band results so far (2026-11-20)
+
+Installed from the reports: 0x44/0x48 (1), 0x4c/0x50 (11), 0x54/0x58 (13 of 14),
+0x5c/0x60 (7 of 7). Two claims passed `var3` but were rejected by the ROM digest
+because the linked bytes differ — do not re-report them without a new lever:
+
+- `func_02029768` (0x02029768, 84) — object-exact, changes the link
+- `func_0202e274` (0x0202e274, 92) — same
+
+New walls, recorded so they are not reworked:
+
+- `func_020263c0` (12) — an empty `while (n >= 4) n -= 4;` loop; mwcc at `-O4,p`
+  deletes it, retail keeps `subs`/`bhs`.
+- `func_02024af8` (12) — tail call; retail loads the target into `r1`, mwcc
+  insists on `ip`, with and without a forwarded argument.
+- `func_020048e8` (20) — retail predicates the store (`stmlt r1!, {r0}` + `blt`);
+  mwcc rotates the loop into `bxhs`/`str`/`blo` (28 B) from both a `while` and a
+  guarded `do/while`.
+- `func_02033cb0` (8, `udf #0xffff`), `func_0203b2cc` (8, `cmp`/`bxeq` only) and
+  `func_0203b58c` (16, bare `svc`) — library stubs, not expressible as C.
+
+## Tools worth using
+
+- `python build/ready.py arm9 --limit 20` — functions whose callees are all
+  matched. Cheapest work in any band; take these first.
+- `notes/mwcc-matching-levers.md` — levers from two finished NDS decomps: `const`
+  pointer parameters, `volatile` by-value parameters, declaration order, stack
+  slot order, `u64` argument splitting, and the version-mismatch tells.
+- `notes/ghidra-headless.md` — a working headless decompiler. Ask the installer
+  for pseudocode of a wall instead of guessing at its shape.
+- `python build/slots.py <file.c>` — prints the register or stack slot mwcc gave
+  every parameter and local. `-g` is verified not to change `.text`, so this
+  settles "which variable is in r4" directly.
+
+## Handoff
+
+- Processed reports are archived to `build/cand/archive/` in the installer tree;
+  nothing is deleted, so a band can be revisited.
+- Write the report to `scout-<band>.md.tmp` and `mv` it into place when the band
+  is done.
+- The installer's gate skips any function whose `src/<mod>/<name>.c` exists.
