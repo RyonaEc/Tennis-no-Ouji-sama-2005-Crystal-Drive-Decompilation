@@ -528,6 +528,12 @@ Shape: '#include "types.h"' + blank + '#pragma thumb on' + fn + '{ asm { swi N }
     with base = 0x6600000. Best 92B vs 96B: retail materialises 0x6600000 once into ip and reuses it in
     both `add` sites; every spelling (named constant, address variable, hoisted) either folds the
     immediate into each add or merges the two call tails.
+    2026-11-21 retry: rebuilt from the matched sibling idiom (src/arm9/func_020237f8.c) with
+    `u32 ip = 0x06600000;` hoisted and used in both adds - mwcc still folds it to
+    `add r2, r4, #0x6600000` (92B); the immediate is encodable, so retail's hoist costs 1 extra
+    instruction and no build reproduces it. Tried u8*/s32 locals and the bare literal, and all 25
+    vendored builds (b56/sp2/base 92B, sp3/sp4 84B, 2.0/* 72B, dsi/* 68B). The dead `mov r3,r2`
+    is explained: it is `a2` kept in r3 as func_020268e0's 4th argument, as in the siblings.
 0x02063dc0 (152B): ov002 switch/membership test. The switch part matches byte-for-byte (`switch (a0[0])
     { case 7: case 13: case 43: case 50: }` with `default: return 1`); the tail guard does not - retail
     emits `cmp #0 / blt` then `cmp #0x40 / bge` (two branches to one target) where every spelling merges

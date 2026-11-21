@@ -2176,3 +2176,33 @@ Also confirmed two `str lr` / `pop {pc}` / `mov pc, lr` stubs (`0203b564`, `0203
 `0203b58c`) and the `mov r0,#k; b body` selector pairs (`02033bc0`, `02033c0c`,
 `02033c58`) are hand-written non-interworking assembly: the build's fixed `-interworking`
 flag cannot produce those epilogues, and `str lr` is not reachable from an `asm` block.
+
+## 2.71 ov005 2x140 family matched; arm9 2x96 confirmed a wall (2026-11-21)
+
+`func_ov005_02064040` and `func_ov005_0206756c` (140 B each; identical bar the base
+pointer constant and one callee) matched on `1.2/b56`. Three findings:
+
+* **Branch polarity.** Retail if-converts the store block (`movhs`/`strhhs` + `bhs`).
+  Writing `if (*(u16 *)(p + 0xa6) < 0x10) { calls } else { stores }` - large branch
+  first, small branch in the `else` - reproduces it; the natural `>= 0x10` form branches
+  and lands 8 bytes short.
+* **Counter offset.** The tail must be written from the base pointer, not through the
+  `b + 0x4300` pointer: `(*(u16 *)(b + 0x43a6))++` makes b56 pool 0x43a6 and emit
+  `ldr r1,[pc] / mov r0,#1 / add r2,r4,r1`, matching retail. Through the pointer, or
+  with a `u32 off = 0x43a6` local, it folds to `add #0x4300` + `[r1,#0xa6]` and the unit
+  is 4 B short. The same address also appears as `p[0xa6]` in the read - retail uses both
+  materialisations in one function, so the pointer alone cannot serve both.
+* **Head pointer colour.** With the stores addressed as `p + 0x32/0x30/0x88` mwcc puts
+  `p` in r2 (retail r0) and the whole predicated block shifts colour. Writing them as
+  `b + 0x4332/0x4330/0x4388` (same addresses) makes mwcc materialise `p` in r0 and the
+  unit becomes byte-exact. `vprobe`: MATCH under b56; sp2 stays 132 B.
+
+arm9 `0x02023df8` / `0x02023e58` (2x96) re-attempted from the matched sibling idiom
+(`src/arm9/func_020237f8.c`): `u32 ip = 0x06600000;` then
+`r = func_020268e0(data_02042370[0], a0, ip + a1, a2);` else `func_020269ec(a0, ip + a1, a2);`.
+mwcc folds the constant to `add r2, r4, #0x6600000` (92 B - the immediate is encodable as
+a rotated value), retail hoists `mov ip, #0x6600000` (96 B). u8*/s32 locals, the bare
+literal and all 25 vendored builds (b56/sp2/base 92 B, sp3/sp4 84 B, 2.0/* 72 B,
+dsi/* 68 B) never hoist it. Side finding: the dead `mov r3,r2` is `a2` surviving in r3 as
+func_020268e0's 4th argument - the same 4-arg call the matched siblings make, so the shape
+is right and the residue is only the constant hoist. Parked in `walls.txt`.
