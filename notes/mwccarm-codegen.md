@@ -1803,3 +1803,25 @@ source, not just a missing barrier. Parked.
 callee-saved registers, and restoring them before the `bic`/`eor`. Both a no-argument and a
 four-argument callee declaration land on r4/r5 with a frame, so this is an allocation decision made
 before the source can express it. Parked.
+
+## 2.55 Signedness and the address-of-struct local (2026-11-21)
+
+    arm9  0x020279e0 (52B) -> data_0204ab00[a0*12] = a1; [+4] = a2; ([+8])++; return [+8];
+    ov002 0x02084210 (52B) -> data_ov002_02102070[0x36ac + 0..4] = 0 (five byte stores)
+    arm9  0x02015524 (52B) -> counter at *(*(data_02042a68 + 0x14) + 0xc), ++ then threshold
+
+`0x02015524` is the cleanest signedness demonstration yet. The same body written with `u32` for the
+counter emits `movhs`/`movlo` against `cmp r0, #0x12c`; switch the field to `s32` and it becomes
+`movge`/`movlt`, which is what retail has. The *size* is identical - only the condition field of the
+two predicated `mov`s changes - so byte compare catches it, but a mnemonic-only diff does not show a
+length problem and it is easy to read as a scheduling difference.
+
+It also needed the inner pointer split out (`s32 *q = (s32 *)(p + 0xc); *q = *q + 1;`) while the
+second read re-derives the whole chain from the global, which is why retail reloads
+`data_02042a68 + 0x14` instead of reusing the first load.
+
+Struct-by-value returns remain the weak spot: `0x0203684c` (40B) and `0x02032b00` (48B) both want the
+argument copied to the stack with `add r0, sp, #0` and then accessed through a `u8 *` so that mwcc's
+unaligned-load idiom appears for the byte at +7. Every spelling tried either kept the struct in
+registers (36B / 20B) or spilled it differently (44B). Retail is memory-resident where mwcc insists on
+registers; parked.
