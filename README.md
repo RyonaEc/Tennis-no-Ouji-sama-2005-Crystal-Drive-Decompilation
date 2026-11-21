@@ -34,19 +34,22 @@ Target: 8d555a80db47278475ffdfdf808fe80dbd7c48cf; tennis_ATOJ.nds: 8d555a80db472
 tennis_ATOJ.nds: OK
 ```
 
-1,499 units (103,704 bytes) in the ARM9 main module and its overlays are complete:
-their C source, compiled with `mwccarm` 1.2/sp2 (and 1.2/b56 for the units retail
-built with it), links into the original addresses,
-and the rebuilt ROM still hashes to the retail dump. `ninja report` shows `complete_units: 1,497`
-of 2,088 (71.79%) - the 1,499 of 3,806 functions (39.39%) that [PROGRESS.md](PROGRESS.md) counts -
-and `complete_code: 103,704` of 1,841,700 bytes (5.63%); the stricter
-`matched_*` counters, which the badges above display, read `matched_functions: 1,476` of
-3,806 (39.33%) and `matched_code: 103,504` of 1,841,700 bytes (5.62%). Only two units of
-the 1,499 still score below 100% (200 bytes): both have the right relocation already and
-differ only in how mwcc assigned registers, which is queued in `tools/match/walls.txt`. The
-other 2,307 functions are still delinked assembly. [PROGRESS.md](PROGRESS.md) has the fuller breakdown
-(code, functions, fuzzy match, data, unit completeness, and a per-module table);
-`python tools/match/progress.py` regenerates it.
+| | Matching C | Total | Share |
+|---|---:|---:|---:|
+| Functions | 1,499 | 3,806 | 39.39% |
+| Code | 103,704 B | 1,841,700 B | 5.63% |
+| Units | 1,499 | 2,088 | 71.79% |
+
+The badges above use objdiff's stricter pair, `matched_functions` 1,497 (39.33%) and
+`matched_code` 103,504 B (5.62%). Two of the 1,499 units still fall short of 100% there
+(200 bytes): both already carry the correct relocation and differ only in register
+assignment, and both are tracked in `tools/match/walls.txt`.
+
+The remaining 2,307 functions are still delinked assembly. Complete units compile with
+`mwccarm` 1.2/sp2, or 1.2/b56 where retail used it, link at the original addresses, and
+leave the ROM digest unchanged. [PROGRESS.md](PROGRESS.md) has the fuller breakdown - code,
+functions, fuzzy match, data and a per-module table - and `python tools/match/progress.py`
+regenerates it.
 
 Everything below needs your own dump of the cartridge. No ROM or BIOS image is
 included in this repository.
