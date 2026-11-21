@@ -1339,3 +1339,26 @@ This is the §"Register-allocation ties" class from AGENTS.md, and it explains m
 (`0x02066e84` base add, `0x02053468` base in r5, `0x020241dc`-family base in r1). A whole family of tiny
 units can be blocked by one allocation preference, so **derive the body, confirm the instruction mix, and
 park** rather than trying more spellings.
+
+## 2.37 A class where only the *register roles* differ (2026-11-20)
+
+After the getter family (2.36) I searched for units that avoid the RMW pattern entirely - unmatched,
+store-free, <= 1 call, <= 128 B - and found 30. The three smallest are pinned down exactly, and the
+residue is narrower than anything seen so far. `0x0202c430` (24 B):
+
+    retail: ldr ip,[pc] ; ldr r0,[ip] ; cmp r0,#1 ; beq <ldr> ; bx lr
+    mwcc:   ldr r0,[pc] ; ldr r1,[r0] ; cmp r1,#1 ; beq <ldr> ; bx lr
+
+**Same instruction kinds, same count, same control flow - only the register numbers differ.** Retail
+keeps the address in `ip` (r12) and the value in `r0`; mwcc uses `r0`/`r1`. This is not a derivation
+error: `while (data_0204ad00 == 1);` is certainly the source, and a local `volatile u32 *p = &data;`,
+a literal-address form and an unqualified local pointer all compile to the same r0/r1 allocation.
+
+Two other members of the same sweep are not code at all: `0x0201fd00`, `0x0201fcc8`, `0x0201fce4`
+decode to nonsense (`movwhs`, `smlabtvs`, `ldrbmi ... !`) - they are data or Thumb in a region the
+symbol table calls arm functions. Worth knowing before spending time "deriving" them.
+
+Conclusion for planning: the small-unit tail is dominated by register-role ties that no source spelling
+moves, not by unknown logic. Derive, record, park. The productive work left is in larger units where the
+instruction mix itself is still unknown (the lock pair `0x0202ce70`/`0x0202cdc8`, the init sequence
+`0x020263e0`), and in the helper trees.
