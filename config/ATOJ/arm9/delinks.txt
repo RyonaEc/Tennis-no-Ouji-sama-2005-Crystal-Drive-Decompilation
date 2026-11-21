@@ -3483,3 +3483,7 @@ src/arm9/func_02030520.c:
 src/arm9/data_02042240.c:
     complete
     .data       start:0x02042240 end:0x02042264
+
+src/arm9/data_02042384.c:
+    complete
+    .data       start:0x02042384 end:0x020423dc

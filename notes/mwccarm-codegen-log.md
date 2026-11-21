@@ -2440,3 +2440,20 @@ Two pipeline facts worth remembering:
 The remaining question for a bulk data pass is not the pipeline but the shapes: pointer tables
 need symbol references so the rows carry relocations, and large resource blocks may be better
 kept as binary includes. Reported in the README as an open decision.
+
+## 2.81 Data pilot 2: relocations in a pointer table (2026-11-22)
+
+`src/arm9/data_02042384.c` is the case the first pilot did not cover: an 88-byte table of 22
+function pointers (12 of them the same `func_02024890`, the rest the small `func_02024770`..
+`0x020247e0` handlers). Written as `Handler data_02042384[22] = { func_..., ... };` with
+`extern void func_...(void);` for each target, so every row carries an ABS32 relocation to a
+function symbol rather than a copied literal.
+
+Result: links at 0x02042384 with all 22 rows resolved to retail's addresses and `ninja sha1`
+still prints the retail digest; objdiff reports `matched_data 88`, 100%. So the data pipeline
+handles both directions - plain words and symbol-referencing tables - which is what a scripted
+bulk pass needs.
+
+Caveat for scripting: a run of pointer-shaped words is not proof of a table (many of them point
+into `.rodata` strings or into `.data` itself). Only define a unit where the surrounding code or
+an obvious table boundary makes the extent real, and let the digest decide.
