@@ -1747,3 +1747,36 @@ Two of the four resisted and are parked: `0x02026a88` (28B) is a 36-byte ldm/stm
 3x-word loop, a byte loop, nor a 9-word struct assignment reproduces (52B/36B/28B, no ldm/stm at all),
 and `0x0202de8c` (28B) is `ldrh`-test-clear at `0x027fff96` where every spelling differs in all 28
 bytes, i.e. the literal is materialised differently rather than the logic being wrong.
+
+## 2.53 The ldm/stm copy idiom is unreachable from C in mwcc 1.2 (2026-11-21)
+
+Three arm9 functions (`0x02026a88` 28B, `0x02026aa4` 36B, `0x0202474c` 36B) are nothing but
+N repetitions of
+
+    ldm r0!, {r2, r3, ip}
+    stm r1!, {r2, r3, ip}        (0x0202474c: no writeback on r1 at all)
+
+i.e. 12-byte chunk copies, 3 or 4 of them. Every plausible source spelling was tried:
+
+| spelling | result |
+|---|---|
+| `for (i = 0; i < n; i++) dst[i] = src[i]` (u32 words) | 60B, loop not unrolled |
+| `typedef struct { u32 a,b,c; } T;` loop over T | 60B, loop not unrolled |
+| unrolled `dst[0] = src[0]; ...` | 68B / 84B, ldr+str per word |
+| `*dst = src[i]` unrolled (no dst writeback) | 56B, still ldr+str |
+| `memcpy(dst, src, 36)` | 28B, an actual `bl memcpy` |
+
+mwcc 1.2 emits `ldm`/`stm` for aggregate copies only in shapes it never produced here, so the
+original construct (a builtin, a pragma-driven copy, or a type mwcc treats as a block move) stays
+unknown. Three mechanisms, zero matches: parked, with the sizes recorded above so a future attempt
+starts from what was already excluded rather than repeating the loop.
+
+The same pass did yield three units, all b56 and all in the `0x02015000`/`0x02027000` area:
+
+    arm9 0x02027a14 (32B) -> data_0204ab00[a0 * 12 + 8]++
+    arm9 0x02015068 (36B) -> *(u16 *)(*(u32 *)(data_02042a68 + 0x14) + 0x1e) |= 1 << a0
+    arm9 0x02015040 (40B) -> same, &= ~(1 << a0)
+
+The bit set/clear pair is a useful sanity check on `1 << a0` spelling: `|` produces `orr r0, r1, r2, lsl r0`
+and `&~` produces `mvn r0, r2, lsl r0` then `and`, both of which mwcc emits only when the shift is
+applied to the *mask*, not the value.
