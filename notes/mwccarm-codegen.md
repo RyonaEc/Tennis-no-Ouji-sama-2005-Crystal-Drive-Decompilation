@@ -1631,3 +1631,29 @@ First pass down `build/b56_regions.txt`, smallest entries first:
 
 Lesson for the queue: b56 grandfathers in the *address-materialisation* walls only when the source shape
 is otherwise right. The version fixes register-role ties (2.46), not dead code or table copies.
+
+## 2.48 Two mid-size b56 entries decoded exactly, blocked on instruction order (2026-11-21)
+
+Both bodies below are *semantically* the retail function, and the instruction **kinds** line up - the
+remaining difference is pure scheduling (same opcodes, different slots: retail interleaves the
+`(a1+1)/2` arithmetic between the `mla` chain, mwcc emits it in a block). Two declaration orders each,
+no movement, so they are parked rather than ground further.
+
+    ov002 0x0204c884 (148B)
+      idx = ((s32)a1 + 1) / 2;  q = (u32 *)(B + 0x274 + a0 * 0x1c + 0x18);
+      *q |= 0x400;
+      if (idx == 7 || idx == 0x29)  -> table data_ov002_02100a98[a1 * 0x30]
+      else                          -> table data_ov002_02100a94[a1 * 0x30]
+      both then: func_ov002_0204f3cc(word, a0 << 5, 0x20)
+
+    ov002 0x02063bb8 (164B)
+      v = func_02034148(*(u32 *)(B + a0 * 0x158 + 0x2ec));
+      limit = (v >= 0x600000) ? 0
+            : ((*(u32 *)(B + 0x1824 + 0xb8) & 0x40000000) ? 0x40 : 0x10);
+      if (*(u32 *)(B + 0x1824 + 0xb8) & 0x8000000) limit = 0;
+      if (func_ov002_02062dbc(0x100) < limit) *(u32 *)(B + 0x1744 + a0 * 0x38 + 0x24) |= 0x800000;
+      else                                    *(u32 *)(B + 0x1744 + a0 * 0x38 + 0x24) &= ~0x800000;
+
+Useful negative result: `diff_summary` counts differ by *more* than the function size here (164 for a
+148B unit), which means the compared `.text` is longer than the symbol - always read the count against
+the size before treating a wall as "close".
