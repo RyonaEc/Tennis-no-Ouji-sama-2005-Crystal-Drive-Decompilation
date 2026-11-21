@@ -1825,3 +1825,29 @@ argument copied to the stack with `add r0, sp, #0` and then accessed through a `
 unaligned-load idiom appears for the byte at +7. Every spelling tried either kept the struct in
 registers (36B / 20B) or spilled it differently (44B). Retail is memory-resident where mwcc insists on
 registers; parked.
+
+## 2.56 Field-order walls and why "identical twins" are not automatic wins (2026-11-21)
+
+    arm9 0x0201c9e0 (56B) -> func_0201be3c(a0->0x40); func_0201779c(data_02047dcc, a0);
+                             *(u32 *)(a0 + 0x24) &= ~1;
+    arm9 0x020341f4 (56B) -> a field-to-field copy chain plus a subtract of an AND product
+
+`0x020341f4` is worth keeping as a template: retail's order is
+
+    [0x24] = [0x1c]; [0x28] = [0x20]; then *p -= ([0x18] & [0x2c]); then [0x34] = [0x18]
+
+with the `ldr` of `[0x18]` *before* `[0x2c]` even though the AND reads them left to right. Writing the
+statements in exactly retail's order, with a pointer variable for the `0x28` slot, matched first try
+under b56. Statement order matters when the fields alias.
+
+`0x020b6b60` and `0x020b732c` are byte-identical twins (52B, six `strh` zeroing a stack buffer) and
+still would not match: retail is doing something with three separate base pointers where the zero is
+materialised *after* the first `add`, and every array-initialiser or three-pointer spelling I tried let
+mwcc fold the first store to `[sp]` and come out 4-8 bytes short. Identical siblings are only free
+units once one member matches; two twins that both resist cost twice the budget for the same shape.
+
+Also parked: `0x02028920`/`0x02028958` (call with the pre-increment sum; the base register choice is
+r0 in retail, r3 with a frame in every spelling), `0x0201fd50` (five I/O stores; the three-base pooling
+pattern is not reachable from per-address casts), `0x02032c38` (retail hoists `n++/p++` above the test
+and reads the byte through the unaligned idiom; mwcc makes the load the loop condition) and
+`0x0203b698` (table walker whose rotation puts the `cmp p,#0` at the bottom).
