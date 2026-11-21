@@ -1282,3 +1282,21 @@ overlay ones matter because overlay coverage is thin.
 `0x02027f74` (116 B) is a different shape (bit set/clear on `0x027ffc388` guarded by a null test,
 wrapped in `func_02026350`/`func_02026364`) and stops at a register tie: mwcc keeps the array base in
 r0 where retail uses r1, and the else-block comes out one instruction short. PARKED.
+
+## 2.34 Status of the two sweeps, and two more parked units (2026-11-20)
+
+`harvest.py` (arm9 + all overlays, all candidate filenames) and `twins.py` both return **zero** this
+session. The helper trees have no finished-but-unclaimed work left, and every matched unit has been mined
+for twins. The cheap sources are exhausted; what remains in the handle-dispatch family is the hard half:
+
+* `0x0202ce70` (160 B) and `0x0202cdc8` (168 B) are a spinlock acquire/release pair over the object at
+  `0x0204aec0` (`func_02026350`/`func_02026364` bracketing, `func_020263cc` on the retry path,
+  `func_020251c0`/`func_0202514c` on the wait-queue). Multi-exit, retry-shaped: worth doing carefully
+  rather than quickly.
+* `0x020263e0` (168 B) is a 13-call init sequence gated on `*(u16 *)0x027ffc40 == 2`.
+* `0x02032ecc` (108 B) takes a stack buffer, `bic`s the address to 4-byte alignment and fills a
+  five-field struct before one call - the same address-materialisation class that resists elsewhere.
+
+Two more parked with full derivations in `walls.txt`, and one reusable result: **`smulbb` + `asr #15` +
+`add lsr #16` + `asr #16` is a signed `/ 65536`**, not `>> 16`. That distinction is worth remembering -
+`(t * 360) / 65536` reproduces retail, `(t * 360) >> 16` does not.
