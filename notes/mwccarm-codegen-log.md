@@ -2501,3 +2501,39 @@ must be an array (`extern u8 sym[]`) and be used bare. Declaring `extern u32 sym
 pointer stored at sym".
 
 State: 1,503 of 3,806 functions (39.49%), 104,112 B code (5.65%), 124 B data, 1,505 complete units.
+
+## 2.84 ov003 engine-B init: shape found, counter register lost (2026-11-22)
+
+The 3-member `180 B` family (`0x02066a54`, `0x020b85b8`, `0x020db6ec`) is an engine-B screen
+init: two library calls, a DISPCNT read-modify-write at `0x04001000`
+(`(v & 0xffcfffef) | 0x0100010`), then a 0x200-iteration loop that zeroes a u16 slot and writes
+`0x200` as a word every fourth index; the other path reads the u16 at `g+0x86c2` and returns 0.
+
+The reconstruction reaches the exact instruction sequence and length (180 B):
+
+```c
+u16 i;
+if (mode == 0) {
+    func_02009c8(8);
+    func_02008b0(0x100);
+    *(volatile u32 *)0x04001000 = (*(volatile u32 *)0x04001000 & 0xffcfffef) | 0x0100010;
+    for (i = 0; i < 0x200; i++) {
+        *(u16 *)(g + 0x8de8 + i * 2) = 0;
+        if (i % 4 == 0)
+            *(u32 *)(g + 0x8de8 + i * 2) = 0x200;
+    }
+} else {
+    func_0204e46c(*(u16 *)(g + 0x86c2));
+}
+return 0;
+```
+
+Two findings from getting there: the conditional is `i % 4`, not `i & 1` (the loop writes a word
+to a byte offset that grows by 2 per index, so only every fourth index is word-aligned), and the
+counter must stay `u16` for `% 4` to produce retail's `lsr #31 / rsb / ror #30` sequence - `s16`
+shifts by 31 instead and lands at 192 B, `int` at 184 B.
+
+What blocks the match is the counter's register: retail keeps it in `r5` (hence
+`push {r4,r5,lr}` plus a 4-byte frame, with the constant 0 in `lr`), mwcc puts it in `lr` and
+drops the push. Written up in `walls.txt` for all three members - if one flips, the family is a
+single substitution.
