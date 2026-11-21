@@ -739,3 +739,9 @@ ov002 0x0207ccd4 80B -- bounds test with optional mirroring; six arguments, the 
   `mov r0,#1` before the checks with a final `bxle lr`; mwcc negates in place, keeps `movle r0,#1`
   plus `bxle lr` at the end, and reuses `r0` where retail uses `ip`. Also worth checking: the
   y bounds may be (y1, y0) in the source, since retail stores -y0 into the y1 slot.
+arm9 0x020181b0 88B -- list push onto a bump allocator: `List *l = &c->list` (c+0x24),
+  old head, allocate 0x10 bytes, fill four words, relink. Getting mwcc to keep one base
+  register needs the nested `List` struct plus an explicit `List *l = &c->list` local, which
+  reproduces retail's `add r4, r0, #0x24` and `ldr/str [r4,#4]`/`[r4,#8]` accesses exactly.
+  Only residue: retail puts `l` in r4 and the old head in r5; mwcc swaps them. Instruction
+  sequence and every offset already agree, 88 B either way.

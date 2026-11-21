@@ -2599,3 +2599,37 @@ Pattern so far: 7 near-misses, 0 matches since the last data unit, each within a
 register choices. Untried as a class: whether some source construct makes mwcc hoist a global
 address above a loop-invariant shift (`0x020101f8`) - I probed four expression groupings and the
 order never changed, so that lever is not source-expressible by parenthesis or operand order.
+
+## 2.88 Argument pass-through shifts the whole allocation (2026-11-22)
+
+`func_02029cc4` matched. It is a one-shot guard:
+
+```c
+void func_02029cc4(s32 a)
+{
+    if (data_0204abf8 != 0)
+        return;
+    data_0204abf8 = 1;
+    func_02029d94(a);
+}
+```
+
+Nothing about the body is unusual, but the *declaration* of the callee is: retail's first
+use is `ldr r1, [pc]` / `ldr r2, [r1]`, not `r0`/`r1`. Writing `extern void func_02029d94(void)`
+gives r0/r1 and a comparable-looking 60 bytes; writing `extern void func_02029d94(s32)` and
+handing the incoming argument straight through reserves r0 for the call and pushes every
+temporary up one register, which is exactly retail.
+
+The general lesson is worth more than the one function: when an otherwise trivial body comes
+out one register lower than retail across the board, look for a call that inherits an incoming
+argument. `r0` being live into the `bl` is visible in the retail text as a call with no
+preceding `mov r0, ...`, and that is the whole tell.
+
+`0x020181b0` (88 B) came out instruction-for-instruction identical with one structural note:
+the three list fields must be a nested `List` sub-struct addressed through an explicit
+`List *l = &c->list` local, otherwise mwcc keeps `c` and uses 0x28/0x2c immediates instead of
+retail's single `add r4, r0, #0x24` base. The only residue left is `l`/old-head swapping r4/r5,
+so it is parked rather than installed.
+
+I also corrected `progress.py`: it still claimed no data unit had a matching definition, which
+has been false since `data_02042240.c` landed. The sentence now reports the matched data bytes.

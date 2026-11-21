@@ -200,8 +200,13 @@ def render(totals, per, hash_ok, digest):
                  f'({pct(totals["code"], totals["code_total"]):.2f}%) are matching '
                  'C; the rest are still delinked assembly.')
     lines.append('')
-    lines.append('No `.data`, `.rodata` or `.bss` unit has a matching C '
-                 'definition yet, so the data figures stay at zero.')
+    if totals['data']:
+        lines.append(f'{totals["data"]:,} bytes of `.data` are matching C '
+                     'definitions; the rest of the data sections are still '
+                     'raw bytes in the delinked image.')
+    else:
+        lines.append('No `.data`, `.rodata` or `.bss` unit has a matching C '
+                     'definition yet, so the data figures stay at zero.')
     lines.append('')
     return '\n'.join(lines)
 
