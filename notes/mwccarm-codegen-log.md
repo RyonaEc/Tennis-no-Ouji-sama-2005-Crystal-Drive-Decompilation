@@ -2377,3 +2377,26 @@ never been rewritten at all.
 
 State: 1,499 of 1,499 complete units at 100%, so `matched_code` == `complete_code` == 103,704 B
 (5.63%) and `matched_functions` == `complete_units` == 1,499 (39.39% of 3,806).
+
+## 2.78 First matches after the 100% milestone (2026-11-22)
+
+Two new arm9 units, both the same family: a wait-for-condition poller.
+
+`func_0202dd60` (100 B) and `func_02030520` (100 B) are `if (func_02027e98(chan, arg, 0) == 0)
+return; do { WaitByLoop(x); } while (func_02027e98(chan, arg, 0) != 0);` with channel `0xe` vs
+`0xd` and `WaitByLoop(a1)` vs `WaitByLoop(1)`. Both matched `1.2/sp2` on the first try once the
+shape was right; mwcc hoists the two constants into callee-saved registers (`r5` = channel,
+`r4` = 0) exactly as retail does, and the early `return` becomes the `addeq/popeq/bxeq` triple.
+
+Worth recording: retail calls `WaitByLoop` with `blx`, but the compiler emits `bl` for a plain
+`extern void WaitByLoop(u32);` call no matter how the callee is declared - it cannot know the
+target is Thumb. The `blx` in the ROM is the linker's interworking fixup for a `kind:function(thumb)`
+symbol, not a compiler choice. So a `bl` vs `blx` mismatch at a call site is not a source problem
+and not something to chase; the earlier note about `CpuSet` "coming out as blx on its own" (2.68)
+was describing that same linker step, and `func_020307c8` compiles to `bl` today while still
+matching, which confirms it.
+
+Park: `0x02017880` (104 B) list insert, written up in `walls.txt` - retail keeps two loads of the
+offset halfword and two of `p[0]` where every spelling CSEs one of them.
+
+State: 1,501 of 1,501 complete units at 100%, 103,904 B.

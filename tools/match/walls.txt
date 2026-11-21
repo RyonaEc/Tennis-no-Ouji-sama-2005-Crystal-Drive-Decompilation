@@ -659,3 +659,8 @@ dereference and making the operand an address constant is the fix:
 That compiles to retail's exact registers (g in lr, n in r2) and emits the ABS32 relocation
 the delinked object expects. Lesson for the class: when swapping a literal for a symbol, keep
 the expression tree identical (same casts, same dereference); only the operand should change.
+arm9 0x02017880 104B -- list insert: p[0], (u16*)((u8*)p+10) offset, count at (u8*)p+8.
+  Retail loads the offset halfword twice (+36, +64) and p[0] twice (+52, +68), and keeps
+  p+8 in r2 from +40. Every spelling tried CSEs one more load than retail, giving 96 B
+  (one shared local) or 104 B with three loads of the halfword and a different register
+  plan. Needs a form that blocks CSE for exactly two of the three uses.

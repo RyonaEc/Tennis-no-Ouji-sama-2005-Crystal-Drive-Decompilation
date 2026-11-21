@@ -36,15 +36,15 @@ tennis_ATOJ.nds: OK
 
 | | Matching C | Total | Share |
 |---|---:|---:|---:|
-| Functions | 1,499 | 3,806 | 39.39% |
-| Code | 103,704 B | 1,841,700 B | 5.63% |
-| Units | 1,499 | 2,088 | 71.79% |
+| Functions | 1,501 | 3,806 | 39.44% |
+| Code | 103,904 B | 1,841,700 B | 5.64% |
+| Units | 1,501 | 2,088 | 71.89% |
 
 The badges above use objdiff's stricter pair, `matched_functions` and `matched_code`, which
-now agree with the complete counts exactly: every one of the 1,499 units scores 100%, so a
+now agree with the complete counts exactly: every one of the 1,501 units scores 100%, so a
 complete unit and a matched unit are the same thing today.
 
-The remaining 2,307 functions are still delinked assembly. Complete units compile with
+The remaining 2,305 functions are still delinked assembly. Complete units compile with
 `mwccarm` 1.2/sp2, or 1.2/b56 where retail used it, link at the original addresses, and
 leave the ROM digest unchanged. [PROGRESS.md](PROGRESS.md) has the fuller breakdown - code,
 functions, fuzzy match, data and a per-module table - and `python tools/match/progress.py`
