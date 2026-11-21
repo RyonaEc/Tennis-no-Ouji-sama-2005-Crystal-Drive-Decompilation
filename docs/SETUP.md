@@ -38,6 +38,26 @@ The directory must contain `<version>/mwccarm.exe`, for example
 `tools/mwccarm/1.2/sp2/mwccarm.exe`. Select a service pack with
 `--mwcc-version 2.0/sp2p2`.
 
+### Per-unit compiler versions
+
+Retail was not produced by a single mwccarm build: part of the game only
+reproduces with the earlier `1.2/b56` build, while the default remains
+`1.2/sp2`. Units that need a specific build are listed in
+`config/ATOJ/mwcc_versions.txt` (one `<source path> = <version>` per line), and
+`configure.py` gives those edges their own compiler. Keep both builds available:
+
+```
+tools/mwccarm/1.2/b56/mwccarm.exe
+tools/mwccarm/1.2/sp2/mwccarm.exe
+```
+
+A version missing from the tree is a configure error, not a silent fallback. This
+does not relax anything: a unit still only counts as matched when the linked ROM
+hashes to `config/ATOJ/tennis_ATOJ.sha1`, so a unit compiled with the wrong
+build fails the digest instead of passing approximately. Do not change the
+default `--mwcc-version`, and do not add an entry to the map without that
+byte-exact proof.
+
 On Windows the compilers run natively. On Linux, `configure.py` runs them
 through Wibo by default; pass `-w /path/to/wine` to use Wine instead.
 

@@ -1522,3 +1522,23 @@ Nine units installed on the first pass, all confirmed by the ROM hash (not just 
 That is 1,434 -> 1,443 functions and 98,436 -> 98,816 bytes, `ninja sha1` OK, `t10 --check` ok.
 Everything previously parked in the "register-role / address-materialisation tie" bucket is suspect and
 should be re-probed under b56 before any further derivation effort.
+
+## 2.44 Two compilers does not weaken byte-exactness (2026-11-21)
+
+Recorded because it is the obvious objection to 2.42/2.43. Mixing compiler builds per unit cannot
+produce an approximate decompilation, for a structural reason: the only pass condition in this project
+is the digest of the *linked* ROM (`ninja sha1` against `config/ATOJ/tennis_ATOJ.sha1`). Compiler
+version affects one unit's object bytes and nothing else - link order, LCF placement and alignment are
+untouched - so a unit compiled with the wrong build shifts bytes and fails the hash. The per-unit map
+in `config/ATOJ/mwcc_versions.txt` is therefore evidence about how retail was built, not a relaxation:
+it is self-policing, and every one of the nine b56 units was installed through the ROM-hash verifier,
+not the object compare.
+
+It is still the original toolchain: `1.2/b56` is a real shipped CodeWarrior ARM 1.2 build in the same
+family as `1.2/sp2`, not a substitute compiler. The divergence is narrow - 59 of 60 sampled matches are
+byte-identical under both - which is what a mid-project SDK update looks like.
+
+The genuine caveat is toolchain reproducibility, not ROM equality: `tools/mwccarm/` is gitignored, and
+`ninja download_tools` fetches one archive from the mirror. Both `1.2/b56` and `1.2/sp2` must be present
+for the tree to configure; whether the mirror archive ships b56 has **not** been verified. Documented
+in `docs/SETUP.md` under "Per-unit compiler versions".
