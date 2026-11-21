@@ -2419,3 +2419,24 @@ Tooling note: the ov003 Ghidra project is `ATOJOV3`, but the program name inside
 `ov003.bin` - `-process "ov003.bin"` aborts with "Requested project program file(s) not found"
 and the whole headless run takes several minutes before failing. `udis.py` covers ov003 fine,
 so use that unless the program name is read out of the project first.
+
+## 2.80 Data pilot: the pipeline works (2026-11-22)
+
+First data unit matched: `src/arm9/data_02042240.c`, a 36-byte `u32[9]` = {1,2,3,4,5,6,8,9,10}
+at the head of arm9 `.data` (retail then switches to strings, so the array is a clean object).
+The delinks entry `complete` + `.data start:0x02042240 end:0x02042264` makes dsd emit
+`data_02042240.o(.data)` between the gap objects, and `ninja sha1` still prints the retail
+digest. objdiff scores it 100% with `matched_data 36`.
+
+Two pipeline facts worth remembering:
+
+* `build.ninja` regenerates only when `tools/configure.py` or `dsd.exe` changes. A new source
+  file needs an explicit `python tools/configure.py ATOJ` first, otherwise the link fails with
+  "Specified file ... .o not found" even though the LCF already names the object.
+* `progress.py` used `complete_units` as a function-count fallback, which counted this data
+  unit as a function (1,502 vs objdiff's `matched_functions 1,501`). Now the fallback only
+  applies when the unit actually owns functions (`total_functions` non-zero).
+
+The remaining question for a bulk data pass is not the pipeline but the shapes: pointer tables
+need symbol references so the rows carry relocations, and large resource blocks may be better
+kept as binary includes. Reported in the README as an open decision.

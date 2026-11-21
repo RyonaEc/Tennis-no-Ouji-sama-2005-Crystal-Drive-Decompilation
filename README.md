@@ -38,11 +38,18 @@ tennis_ATOJ.nds: OK
 |---|---:|---:|---:|
 | Functions | 1,501 | 3,806 | 39.44% |
 | Code | 103,904 B | 1,841,700 B | 5.64% |
-| Units | 1,501 | 2,088 | 71.89% |
+| Data | 36 B | 801,936 B | 0.00% |
+| Units | 1,502 | 2,092 | 71.80% |
 
 The badges above use objdiff's stricter pair, `matched_functions` and `matched_code`, which
-now agree with the complete counts exactly: every one of the 1,501 units scores 100%, so a
+now agree with the complete counts exactly: every one of the 1,502 units scores 100%, so a
 complete unit and a matched unit are the same thing today.
+
+Data is now matched through the same pipeline as code: a delinks entry with a `.data`
+range and a `.c` file that declares the array links at the original address with the
+digest unchanged, and objdiff scores it (`data_02042240`, 36 B). Adding a source needs a
+`python tools/configure.py ATOJ` re-run because `build.ninja` only lists sources known at
+configure time.
 
 The remaining 2,305 functions are still delinked assembly. Complete units compile with
 `mwccarm` 1.2/sp2, or 1.2/b56 where retail used it, link at the original addresses, and

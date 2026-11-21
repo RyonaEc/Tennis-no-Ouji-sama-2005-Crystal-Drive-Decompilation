@@ -101,8 +101,12 @@ def collect():
         code = int(m.get('matched_code', m.get('complete_code', '0')))
         data = int(round(int(m.get('matched_data_percent', 0)) *
                          data_total / 100.0))
-        funcs = m.get('matched_functions', m.get('complete_units', 0))
-        funcs_total = m.get('total_functions', 0)
+        funcs_total = m.get('total_functions', 0) or 0
+        funcs = m.get('matched_functions')
+        if funcs is None:
+            # a complete unit is a matched function only if it owns functions;
+            # a pure data unit is complete but contributes no function count.
+            funcs = m.get('complete_units', 0) if funcs_total else 0
         b['code'] += code
         b['code_total'] += code_total
         b['data'] += data

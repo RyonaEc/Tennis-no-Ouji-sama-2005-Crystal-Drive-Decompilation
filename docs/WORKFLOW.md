@@ -91,3 +91,30 @@ project's includes.
 
 One function per commit keeps the diff reviewable and makes a regression easy to
 bisect.
+
+## Data units
+
+A data unit is a delinks entry with a `.data` (or `.rodata`) range plus a `.c` file that
+declares the object, for example
+
+```
+src/arm9/data_02042240.c:
+    complete
+    .data       start:0x02042240 end:0x02042264
+```
+
+```c
+#include "types.h"
+
+u32 data_02042240[9] = { 1, 2, 3, 4, 5, 6, 8, 9, 10 };
+```
+
+`dsd` then emits `data_02042240.o(.data)` between the surrounding gap objects in the LCF, so the
+bytes land at the original address; `ninja sha1` proves it. Two things to remember:
+
+* `build.ninja` is only regenerated when `tools/configure.py` or `dsd.exe` changes, so after
+  adding a source run `python tools/configure.py ATOJ` (or delete `build.ninja` and re-run
+  configure) before `ninja`. Skipping this fails the link with
+  `Specified file ...data_02042240.o not found`.
+* `tools/match/progress.py` counts a pure data unit as a complete unit but not as a function;
+  keep that distinction if you touch the aggregation.
