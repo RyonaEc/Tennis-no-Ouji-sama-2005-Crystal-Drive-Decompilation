@@ -2991,3 +2991,26 @@ Nothing in `src/` uses `...` or `va_list` today and `include/types.h` has no std
 matching these needs a decision about how to declare varargs first (mwcc accepts `<stdarg.h>`
 from its own include tree, but the project has never taken that dependency). Worth settling
 before spending iterations on either.
+
+## 3.03 How many times the global is re-read sets the whole shape (2026-11-22)
+
+`ov010 0x020514c8` (172 B, parked) is a useful calibration for a heuristic I have been using
+implicitly. The three spellings differ only in how often `*(u8 **)data_ov010_0205e500` appears in
+the source, and that alone moves the unit 136 -> 168 -> 196 bytes:
+
+| spelling | global reads | size |
+|---|---|---|
+| one `g` local for the whole function, entry pointer too | 1 | 136 |
+| `g` reloaded once per push, address written inline | 5 | 168 |
+| every dereference written out (14 places) | 14 | 196 |
+
+Retail sits at 172: it loads the global once for the count/index pair, again for each address
+base, and once more for the second count - five reads, like the middle spelling, which is four
+bytes short because the allocation lands one register differently (`push {r4,r5,lr}` + `sub sp,#4`
+against `push {r4,lr}`). So when a unit is far off in *size* rather than in instructions, count
+the global/table loads in retail first: the number of times a pointer expression is written in
+the source is the cheapest size knob there is, and it is worth reproducing retail's count exactly
+before chasing the last register.
+
+The decode itself is in `tools/match/walls.txt` (ring buffer, 8-byte `{cmd, arg}` entries,
+0x400-byte blocks, commands 0xc050008a / 0xc090808a with arg 0x5140).
