@@ -2929,3 +2929,30 @@ chained condition and one result, never a chain of early returns.
 The byte-width masking is worth copying too: retail emits four mask ops (`and 0x3f`, `and 0xff`,
 `lsl 2`, `and 0xff`) because the source narrows twice - `u8 a = raw & 0x3f; u8 n = a << 2;`.
 A single `u8 n = (raw & 0x3f) << 2;` emits only three.
+
+## 3.00 The same RMW address class, now with mwcc short by one instruction (2026-11-22)
+
+`ov004 0x02052808` (148 B, parked) finishes the picture from 2.97. Its loop body writes a
+4-bit field in a 6-byte record with two statements:
+
+```c
+*p &= 0xfff;
+*p |= (*(s16 *)(a1 + 0x3c) & 0xf) << 12;
+```
+
+Retail emits two halfword RMWs (`ldrh / and / strh`, then `ldrh / lsl #28 / orr ..., lsr #16 /
+strh`) and materialises the field address once per iteration (`add lr, r3, #4`) so all three
+accesses read `[lr]`. mwcc folds the +4 into the addressing (`ldrh [ip, #4]` ...) and lands at
+144 B, four bytes *short* of retail. So the class cuts both ways: depending on the surrounding
+pressure, mwcc either hoists the `add` out of the predicate (2.97, too long) or folds it away
+(here, too short). In both cases the source cannot ask for the address register directly.
+
+Two other results from the same unit:
+
+- The loop bound must be re-read every iteration: retail ends with
+  `ldrh r3, [r1, #0x90] / cmp r0, r3 / blt`. Hoisting it into a `u16 n` local adds a callee-saved
+  register plus a stack slot (156 B). Write the field expression in the `for` condition.
+- Writing the same field as a bitfield (`{u16 lo : 12; u16 hi : 4;}`) fuses the clear and the
+  set into one RMW and drops to 124 B, so the two-statement spelling is the right one even
+  though the field *is* a 4-bit field: retail's compiler did not fuse them, and matching means
+  reproducing that.

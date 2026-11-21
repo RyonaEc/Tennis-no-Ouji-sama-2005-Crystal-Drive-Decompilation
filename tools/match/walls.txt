@@ -979,3 +979,15 @@ ov004 0x0204fb74 124B -- AABB overlap test: `h = ((*(u16 *)(a0+2) & 0x3f) << 2) 
   164B), single `r = 0` result with a chained `&&` condition (132B), same with an explicit
   `s32 h` local (132B), `u32 *` vs `s32 *` for the two record pointers (same). The 8 bytes are
   the CSE'd shift plus its scheduling.
+ov004 0x02052808 148B -- writes a 4-bit nibble into 6-byte records: `if (a1 == 0) return 0;`,
+  `if (*(u32 *)(a1 + 0x94) == 0) return 0;`, `*(u16 *)(a1 + 0x3c) = a0;`, then for
+  `i < *(u16 *)(a1 + 0x90)` (re-read every iteration, NOT cached) and `p = *(u32 *)(a1 + 0x94)
+  + i * 6 + 4`: `*p &= 0xfff; *p |= (*(s16 *)(a1 + 0x3c) & 0xf) << 12;` - two separate halfword
+  RMWs, which is exactly retail's `ldrh/and/strh` followed by `ldrh/lsl/ lsr/orr/strh`.
+  Nearest spelling is 144B against 148B: retail materialises the field address
+  (`add lr, r3, #4`) and addresses it as `[lr]` three times, mwcc folds the +4 into
+  `[ip, #4]`. Tried: `u16 *p` from the byte base (folded), `u16 *p = &rec[2]` with `rec` a
+  `u16 *` (folded), bitfield `{u16 lo:12; u16 hi:4;}` assignment (fuses the two stores into one,
+  124B), cached `u16 n = *(u16 *)(a1 + 0x90)` (adds a register and a stack slot, 156B). Same
+  address-materialisation class as the ov008 byte RMWs in the log, here with mwcc on the short
+  side of the difference.
