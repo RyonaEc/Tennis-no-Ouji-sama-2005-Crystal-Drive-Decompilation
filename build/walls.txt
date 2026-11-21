@@ -1,4 +1,5 @@
 # Addresses proven unreachable from C under mwcc 1.2/sp2. ready.py skips these.
+# Section numbers refer to notes/mwccarm-codegen-log.md.
 # Format: <module> <addr> <one-line reason>
 arm9 0x02033cb0 UDF trap stub + bx lr (assert/dead code, no C form)
 arm9 0x02033bc0 branch stub: two movs converging on the next unit's first insn
@@ -82,7 +83,7 @@ ov003 0x0208ae70 160B: 152/160B max. Body recovered: b=*data_ov003_020eb720; if(
 02026a50 56B arm9 -- 32-byte block copy + word tail: retail if-converts the body to cmp/ldmlt/stmlt/blt with a 7-reg frame. u8 pointer, struct-B32 pointer, loop-index and B4-tail spellings all give 120B with real loops.
 BAD SPLITS (do not match, re-split first): 0203aeb8 12B ends in a branch past its own extent; 02033c58 48B entry is mov r0,#1 ; b forward into a shared CP15 tail, dead mov r0,#0 block; 02032b00 48B is an unaligned byte-extract from a 16B push-local, likely the tail of a larger helper.
 2026-11-20 batch: examined four ov004 ready units, none matched.
-ov004 0204cbdc 32B -- same two-pool RMW as ov003 0205299c (DTCM flag at data_027c0000 + 0x3ff8). notes/mwccarm-codegen.md 2.4 lever (offset as a u32 local instead of an inline literal) tried here too: still add #0x3000 + [#0xff8] (28B). extern u16 data_027c0000 (the type used by matched func_02024ae4) also tried. Both units stay parked.
+ov004 0204cbdc 32B -- same two-pool RMW as ov003 0205299c (DTCM flag at data_027c0000 + 0x3ff8). notes/mwccarm-codegen-log.md 2.4 lever (offset as a u32 local instead of an inline literal) tried here too: still add #0x3000 + [#0xff8] (28B). extern u16 data_027c0000 (the type used by matched func_02024ae4) also tried. Both units stay parked.
 ov004 0204e8a4 64B -- 64/64 bytes, residue is ONE encoding: retail add r0,r0,r2 where mwcc emits add r0,r2,r0 (same sum, operands swapped), plus the mirrored pair in the addne branch. Shape confirmed correct: base = *(u8**)data_020690a8 ; e = base + a0*0x220 + a1*0x88 ; if (*(u32*)(e+0xf0)) return base + 0xf0 + a0*0x220 + a1*0x88. Hoisting to e+0xf0 instead makes mwcc use mla and drops to 48B, so the recomputed return expression is required.
 ov004 0204d980 60B -- range classifier (1 for 0x81..0x9f or 0xe0..0xef). Retail uses a pre-zeroed flag in r2 with movls r2,r0 and a blo that skips it; every flag spelling tried gives 52B or 68B against 60B.
 ov004 0204cbfc 76B -- 8-slot table scan; retail is frameless with ip as the index (add r1,r3,ip,lsl #3 then add #0x1000), mwcc always builds a frame and hoists base, 108-116B. Tried inline expressions, goto-skip and u32* word indexing.

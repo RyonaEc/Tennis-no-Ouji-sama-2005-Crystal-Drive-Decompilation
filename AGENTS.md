@@ -116,8 +116,10 @@ unmatched queue: `fresh.txt` goes stale as units are installed.
 
 ## Compiler idioms worth knowing
 
-`notes/mwccarm-codegen.md` is the project's codegen playbook and goes into more
-depth than this section; read it before spending iterations on a stubborn unit.
+`notes/mwccarm-codegen.md` is the project's codegen playbook (a short lever
+table); `notes/mwccarm-codegen-log.md` holds the dated evidence behind it. Read
+the playbook before spending iterations on a stubborn unit, and the log when you
+need to know whether a shape has already been tried.
 
 - **Magic-number division.** `smull` + `asr` + sign fixup with
   `0x66666667` (shift 1) is `/5`; `0xb60b60b7` with `add hi, hi, n, lsl #8` then

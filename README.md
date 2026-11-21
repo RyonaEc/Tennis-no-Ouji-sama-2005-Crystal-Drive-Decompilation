@@ -121,12 +121,12 @@ build/ATOJ/         delinked objects, linker script, EFX and the built ROM
 ## Matching notes
 
 [`notes/mwccarm-codegen.md`](notes/mwccarm-codegen.md) is the project's codegen
-playbook: which source shapes make `mwccarm` emit which instructions on this
-title (addressing modes, register colouring, branch versus predication,
-signedness), a symptom-to-lever table, the workflow that gates a match, and the
-walls hit so far together with the evidence that they cannot be reached from
-source. It is written to be reusable on other DS titles built with the same
-compiler.
+playbook: a short symptom-to-lever table for the source shapes that make
+`mwccarm` emit which instructions on this title (addressing modes, register
+colouring, branch versus predication, signedness), the workflow that gates a
+match, and the classes that are not reachable from C. The dated evidence behind
+it - measured diffs, bodies tried and per-family histories - is kept apart in
+[`notes/mwccarm-codegen-log.md`](notes/mwccarm-codegen-log.md).
 
 If you are an AI agent contributing to this repository, read
 [`AGENTS.md`](AGENTS.md) first: it states what counts as a finished unit, the

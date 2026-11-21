@@ -99,7 +99,8 @@ image. The ROM digest is the only gate.
 Getting `mwccarm` to emit retail's instruction sequence is the actual work.
 [notes/mwccarm-codegen.md](notes/mwccarm-codegen.md) is the project's codegen
 playbook — branch versus predication, magic-number division, `u16` counters,
-address materialisation, register-allocation walls — and
+address materialisation, register-allocation walls — with the dated evidence in
+[notes/mwccarm-codegen-log.md](notes/mwccarm-codegen-log.md), and
 [docs/WORKFLOW.md](docs/WORKFLOW.md) describes the delink/compile/link loop.
 When a function cannot be reached from any source shape you have tried, leave it
 delinked and record the evidence instead of committing an approximation.
