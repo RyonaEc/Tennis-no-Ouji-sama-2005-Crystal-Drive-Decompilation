@@ -1980,3 +1980,20 @@ Three codegen lessons from getting the body from 224B to exactly 212B:
    in r6 and lost the load.
 
 Residue is one folded RMW (`|=` never materialises its address here) and one displaced load shape.
+
+## 2.62 fresh.txt was misparsed for three batches (2026-11-21)
+
+The remaining-candidate list `build/fresh.txt` is `mod addr size name`, so the address is field 1, not
+0. Two batches of "fresh.txt is exhausted / all 38 candidates are walled" were wrong for that reason:
+the script was reading the module name as the address and matching every row against `walls.txt` as
+`0x0`. With the parse fixed, arm9 still has 38 untouched small functions (28B-88B), which is where the
+two installs this batch came from (`func_020279e0` 52B, `func_0201fc1c` 32B).
+
+Two shapes from this batch worth reusing:
+
+- **`func_0201fc1c`**: `if (s->a < s->b) s->a = s->a + 1;` on a struct with a `u8 pad0[8]` head matches
+  only when written with the struct (b56), not with `s32 *p = (s32*)(a0+8)` (28B vs 32B). The struct
+  form keeps the `add r1, a0, #8` materialisation that the pointer form folds away.
+- **`func_020279e0`**: a 12-byte-stride table increment. `*q = *q + 1; return p[8];` with `q = p + 8`
+  and the return reading `p[8]` is what produces retail's `ldrb` reload after the `strb`; using `q` for
+  both the store and the load drops the reload and 4 bytes.
