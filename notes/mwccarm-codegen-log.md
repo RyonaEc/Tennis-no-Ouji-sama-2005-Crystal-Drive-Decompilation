@@ -2686,3 +2686,29 @@ The `0x02023df8`/`0x02023e58` pair is the same lesson - the dead-looking `mov r3
 forwarded fourth argument - but it stalls on a hoist: retail keeps the base in `ip` and adds it
 per branch, mwcc folds the constant into each `add`, 92 B against 96. All 25 builds fold, so the
 source is still not right rather than the compiler being different.
+
+## 2.91 The 0x0202d158 pair: two deltas around a spin lock (2026-11-22)
+
+`famsurvey arm9` lists five identical-skeleton groups; the largest is
+`0x0202d158`/`0x0202d22c` at 212 bytes each. The body is fully decoded - six arguments, a
+token/lock handshake, five context fields written, an optional callback arm, then a launch call
+and a `*(u32 *)g->f0 == 0` result. Written out it compiles to 208 bytes with everything from
+`func_02026364` onward identical, and exactly two deltas, both in the four instructions around
+the spin lock:
+
+1. retail tests the lock with `ldr r1, [r6, #0x34]` directly; mwcc emits `mov r1, r6` first,
+   because it is CSE-ing the `f34` address against the `|= 4` that follows the loop;
+2. retail performs that `|= 4` through a computed base (`add r2, r6, #0x34`), mwcc through the
+   immediate offset form (`ldr r1,[r6,#0x34]` / `str r1,[r6,#0x34]`).
+
+Both deltas are the same disagreement seen from two sides: whether the field address is worth a
+register. Seven spellings were tried and recorded in walls.txt - pointer local at top (228),
+pointer in a nested block (208), byte-offset cast (208), `volatile` cast (208), nested `Flags`
+sub-struct (208), `for (;;)` with break (192), `goto` loop (192). Since every spelling that keeps
+the shape also keeps mwcc's CSE, the source difference is probably not in these four lines at
+all; the loop may not be a `while` over the flag but a call that returns the flag.
+
+Worth noting for later: this is the biggest single family left (424 bytes), and the other three
+groups from `famsurvey` are `0x0202d158`'s neighbours in size only - `0x020208b0`/`0x0202093c`
+(140 each), `0x02033bd0`/`0x02033c1c` (60 each, pure inline-assembly CPSR wrappers, which the
+hard rules keep as assembly), and `0x02028920`/`0x02028958` (56 each, already parked).

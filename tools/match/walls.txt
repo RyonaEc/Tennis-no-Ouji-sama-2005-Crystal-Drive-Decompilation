@@ -775,3 +775,38 @@ arm9 0x020181b0 88B -- list push onto a bump allocator: `List *l = &c->list` (c+
   reproduces retail's `add r4, r0, #0x24` and `ldr/str [r4,#4]`/`[r4,#8]` accesses exactly.
   Only residue: retail puts `l` in r4 and the old head in r5; mwcc swaps them. Instruction
   sequence and every offset already agree, 88 B either way.
+arm9 0x0202d158 / 0x0202d22c 212B each -- context arm/launch pair on data_0204aec0. Six
+  arguments (a3 in r3, s4/s5 on the stack at [sp+0x20]/[sp+0x24]). Shape, 208 B against retail's
+  212 (the only two deltas are marked below):
+
+      s32 func_0202d158(u32 a0, u32 a1, u32 a2, u32 a3, u32 s4, u32 s5)
+      {
+          Ctx *g = &data_0204aec0;
+          u32 tok = func_02026350();
+          while (g->f34 & 4)                        /* delta 1: mwcc emits an extra mov r1,r6 */
+              func_020251c0(g->f_d4);               /*   before `ldr r0,[r1,#0x34]`             */
+          g->f34 |= 4;                              /* delta 2: retail is `add r2,r6,#0x34` then */
+          func_02026364(tok);                       /*   ldr/orr/str through r2; mwcc uses the    */
+          g->f18 = a1;                              /*   immediate offset form in the ldr/str     */
+          g->f1c = a0;
+          g->f20 = a2;
+          g->f28 = a3;
+          g->f2c = s4;
+          if (s5 != 0) {
+              func_0202cf10(func_0202d300);
+              return 1;
+          }
+          g->fd0 = data_02048d3c[2];
+          func_0202d300(g);
+          return *(u32 *)g->f0 == 0;
+      }
+
+  Field offsets used: f0, 0x18, 0x1c, 0x20, 0x28, 0x2c, 0x34, 0xd0, 0xd4 (the spin-lock's
+  argument). Pool words: data_0204aec0 (context), func_0202d300 (passed to func_0202cf10),
+  data_02048d3c (its word 2 is copied to the context at 0xd0). Everything from `func_02026364`
+  onwards already agrees instruction for instruction; both deltas are in the four instructions
+  around the spin lock.
+  Tried for the RMW address register: `u32 *fl = &g->f34` at top (228), inside a nested block
+  (208), `(u32 *)((u8 *)g + 0x34)` (208), `volatile` cast (208), nested `Flags` sub-struct (208),
+  `for (;;)` + break (192), `goto`-based loop (192) - so the `add` is not reachable by pointer
+  spelling here. The extra `mov r1,r6` is mwcc CSE-ing `g->f34` against the later `|=`.
