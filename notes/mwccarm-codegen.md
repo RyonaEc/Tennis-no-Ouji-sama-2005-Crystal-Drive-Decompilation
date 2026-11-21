@@ -2002,7 +2002,7 @@ Two shapes from this batch worth reusing:
 
 Four installs from the untouched tail of `fresh.txt`, and in this band **every** match came from
 `1.2/b56`, none from sp2: `func_020289f4` (68B), `func_020298e4` (76B), `func_02028c98` (72B),
-`func_020187b0` (72B). The b56 map in `config/TOJ/mwcc_versions.txt` therefore keeps growing with
+`func_020187b0` (72B). The b56 map in `config/ATOJ/mwcc_versions.txt` therefore keeps growing with
 names the original toolchain evidently compiled with the b56 build - when a 68-76B candidate is
 exactly sized but permuted, test b56 before rewriting the source.
 
