@@ -2712,3 +2712,24 @@ Worth noting for later: this is the biggest single family left (424 bytes), and 
 groups from `famsurvey` are `0x0202d158`'s neighbours in size only - `0x020208b0`/`0x0202093c`
 (140 each), `0x02033bd0`/`0x02033c1c` (60 each, pure inline-assembly CPSR wrappers, which the
 hard rules keep as assembly), and `0x02028920`/`0x02028958` (56 each, already parked).
+
+## 2.92 Two more families decoded, both blocked on register choice (2026-11-22)
+
+`0x020208b0`/`0x0202093c` (140 B each) is now fully reconstructed and the whole control flow
+matches: u16 pair update on `data_02048c74`, then a mode branch that clears bit 31 of
+`0x04001000` at mode 0 or sets it and writes `0x83` to `0x04000249` at mode 0x100, then
+`func_0201538(g->f0)`. Two details were needed: the guard must be written inverted
+(`if (a0 != 0) { ... } else ...`) or mwcc if-converts the clear path instead of branching, and
+the final call has to read through the global rather than the local pointer, which is what makes
+mwcc emit retail's second pool load of the same address.
+
+What is left is five instructions' worth of register naming at the top: retail computes `~a0`
+into `ip` and keeps the two halfwords in `r2`/`r3`, mwcc uses `r3` for the complement and `ip`
+for one halfword. Both vendored builds emit the identical five words, so it is not a version
+choice, and four mask/declaration spellings do not move it.
+
+This is the third family in a row (with `0x02017880` and `0x0202d158`) where the residue is a
+scratch-register choice rather than a code shape. The common thread is `ip`: retail is willing to
+park a value in `ip` across the arm9 register allocator's preferred low registers, and mwcc 1.2
+avoids it whenever a low register is free. Nothing in the source shapes tried so far changes
+that preference, so these are recorded rather than chased.
