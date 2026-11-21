@@ -1300,3 +1300,42 @@ for twins. The cheap sources are exhausted; what remains in the handle-dispatch 
 Two more parked with full derivations in `walls.txt`, and one reusable result: **`smulbb` + `asr #15` +
 `add lsr #16` + `asr #16` is a signed `/ 65536`**, not `>> 16`. That distinction is worth remembering -
 `(t * 360) / 65536` reproduces retail, `(t * 360) >> 16` does not.
+
+## 2.35 A false MATCH from a failed compile - always guard the compile (2026-11-20)
+
+While probing the ov002 getter/setter family I got a `diffs 0` result that I briefly read as a match. It
+was not: the body declared a local *after* a statement
+
+    p += 0xa;
+    u32 v = p[0];      /* C89: declaration after statement */
+
+mwcc rejects that, `compile_text` returns `b""`, and `diff_summary` then reports zero differing bytes
+because there is nothing to compare. **Zero diffs is indistinguishable from a silent compile failure** -
+exactly the `parse_ins`-without-`retail()` trap from §2.2, in a new place.
+
+Rule: before trusting any `diff_summary` result, assert the compile produced code:
+
+    if not fm.compile_text(body, "guard"):        # empty bytes -> the compile failed
+        return "COMPILE-FAIL"
+
+`fm.compare()` is safe because it returns False on an empty object; `diff_summary()` is not, and it is the
+function I reach for when inspecting *why* something failed. Every "diffs 0" should be confirmed with
+`compare()` before it is believed.
+
+## 2.36 The ov002 getter/setter family is a register-tie class, not a derivation problem
+
+Scanning overlays for small unmatched units (size <= 132, <= 2 calls) found **130 candidates**; the ten
+smallest are all one-line bit setters/getters over `*(u8 **)data_ov002_02102070` (and one over
+`0x027c0000`). Fully derived, none match. Representative case, `0x02062b48` (32 B):
+
+    retail: ldr r0,[pc] ; ldr r0,[r0] ; add r1,r0,#0x28 ; ldr r0,[r1] ; bic r0,r0,#4 ; str r0,[r1]
+    mwcc:   ldr r0,[pc] ; ldr r1,[r0] ; ldr r0,[r1,#0x28] ; bic r0,r0,#4 ; str r0,[r1,#0x28]
+
+Same semantics, one instruction fewer, base in r1 instead of r0. Retail materialises the address; mwcc
+folds it into both accesses. Tried: direct expression, typed pointer with `+=`, value-into-a-local,
+`volatile` pointer, struct-style access, and byte/word pointer mixes - all give the same folded form.
+
+This is the §"Register-allocation ties" class from AGENTS.md, and it explains most of today's dead ends
+(`0x02066e84` base add, `0x02053468` base in r5, `0x020241dc`-family base in r1). A whole family of tiny
+units can be blocked by one allocation preference, so **derive the body, confirm the instruction mix, and
+park** rather than trying more spellings.
