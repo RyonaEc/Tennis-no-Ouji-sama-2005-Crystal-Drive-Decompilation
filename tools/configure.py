@@ -324,12 +324,35 @@ def add_disassemble_build(n: ninja_syntax.Writer, project: Project, dsd: str) ->
     n.newline()
 
 
+def mwcc_version_overrides() -> dict[str, str]:
+    """Per-file compiler versions.
+
+    Retail was not produced by a single mwccarm: a number of translation units
+    only reproduce with an earlier 1.2 build. A source file may therefore name
+    its own compiler in config/ATOJ/mwcc_versions.txt; everything else uses
+    --mwcc-version (1.2/sp2).
+    """
+    path = ROOT / "config" / "ATOJ" / "mwcc_versions.txt"
+    overrides: dict[str, str] = {}
+    if not path.is_file():
+        return overrides
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.split("#", 1)[0].strip()
+        if not line or "=" not in line:
+            continue
+        source, version = (part.strip() for part in line.split("=", 1))
+        overrides[source.replace("\\", "/")] = version
+    return overrides
+
+
 def add_mwcc_builds(n: ninja_syntax.Writer, project: Project, args, platform: Platform) -> None:
     includes = " ".join(f"-i {rel(path)}" for path in include_dirs())
     mwcc_cmd = (
-        f'{args.wine} "{args.sjiswrap}" "{args.mwcc}" {CC_FLAGS} {includes} '
+        f'{args.wine} "{args.sjiswrap}" "$mwcc_exe" {CC_FLAGS} {includes} '
         "$cc_flags -d $game_version -MD -c $in -o $basedir"
     )
+    overrides = mwcc_version_overrides()
+    compiler_root = Path(args.compiler) if args.compiler else TOOLS_DIR / "mwccarm"
     mwcc_implicit = [args.mwcc, args.sjiswrap]
     if platform.system != "windows":
         transform_dep = rel(TOOLS_DIR / "transform_dep.py")
@@ -345,9 +368,18 @@ def add_mwcc_builds(n: ninja_syntax.Writer, project: Project, args, platform: Pl
         object_path = project.game_build / source.with_suffix(".o")
         lang = "-lang=c++" if source.suffix == ".cpp" else "-lang=c"
         base = Path(rel(object_path)).with_suffix("")
+        version = overrides.get(rel(ROOT / source), args.mwcc_version)
+        if version == args.mwcc_version:
+            mwcc_exe = args.mwcc
+        else:
+            exe = compiler_root / version / "mwccarm.exe"
+            if not exe.is_file():
+                raise SystemExit(f"{rel(ROOT / source)}: unknown mwccarm version {version!r}")
+            mwcc_exe = tool(rel(exe))
+        implicit = mwcc_implicit if mwcc_exe in mwcc_implicit else [*mwcc_implicit, mwcc_exe]
         n.build(
             inputs=rel(ROOT / source),
-            implicit=mwcc_implicit,
+            implicit=implicit,
             rule="mwcc",
             outputs=rel(object_path),
             variables={
@@ -355,6 +387,7 @@ def add_mwcc_builds(n: ninja_syntax.Writer, project: Project, args, platform: Pl
                 "cc_flags": lang,
                 "basedir": base.parent.as_posix(),
                 "basefile": base.as_posix(),
+                "mwcc_exe": mwcc_exe,
             },
         )
         n.newline()

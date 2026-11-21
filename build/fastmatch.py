@@ -100,8 +100,20 @@ def masked(blob: bytes, relocs) -> bytes:
     return bytes(out)
 
 
-def compile_text(body: str, name: str) -> bytes:
-    """Compile one function definition and return its code bytes."""
+MWCC_EXE = "tools/mwccarm/1.2/sp2/mwccarm.exe"
+
+
+def mwcc_path(version: str) -> str:
+    """Compiler executable for a version tag such as "1.2/b56"."""
+    return f"tools/mwccarm/{version}/mwccarm.exe"
+
+
+def compile_text(body: str, name: str, compiler: str | None = None) -> bytes:
+    """Compile one function definition and return its code bytes.
+
+    `compiler` selects an mwccarm build; retail mixes 1.2/b56 with 1.2/sp2, so
+    a unit that only reproduces under one of them must be probed with that one.
+    """
     # Per-process scratch names: a second agent compiling in the same tree
     # must not clobber this one.
     stem = f"build/_fast_{os.getpid()}"
@@ -110,7 +122,7 @@ def compile_text(body: str, name: str) -> bytes:
     src.write_text('#include "types.h"\n\n' + body)
     try:
         result = subprocess.run(
-            ["./tools/sjiswrap.exe", "tools/mwccarm/1.2/sp2/mwccarm.exe", *MWCC_FLAGS,
+            ["./tools/sjiswrap.exe", compiler or MWCC_EXE, *MWCC_FLAGS,
              "-c", str(src), "-o", str(obj)],
             capture_output=True, text=True,
         )
@@ -124,9 +136,9 @@ def compile_text(body: str, name: str) -> bytes:
         obj.unlink(missing_ok=True)
 
 
-def compare(body: str, mod: str, addr: int, size: int) -> bool:
+def compare(body: str, mod: str, addr: int, size: int, compiler: str | None = None) -> bool:
     """Is this body byte-exact for the function, ignoring linker-filled words?"""
-    got = compile_text(body, "probe")
+    got = compile_text(body, "probe", compiler)
     want = retail(mod, addr, size)
     if not got:
         return False

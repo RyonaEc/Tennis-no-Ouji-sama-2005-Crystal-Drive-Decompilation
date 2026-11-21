@@ -1504,3 +1504,21 @@ Regenerate the sweep with `build/sweep/mk.py`; matched bodies are saved in `buil
 
 Note the corollary for the loop: **any wall that is "structure solved, register roles / address
 materialisation only" must be re-tested under b56 before being parked.** That is now step 0 of triage.
+
+## 2.43 Per-file compiler selection is now in the build (2026-11-21)
+
+Adopted after owner approval. `config/ATOJ/mwcc_versions.txt` maps a source path to a version tag; the
+mwcc ninja rule now takes the compiler from the edge (`$mwcc_exe`, defaulting to `--mwcc-version`), and
+`tools/configure.py` adds a non-default compiler to that edge's implicit deps so a compiler swap
+rebuilds the unit. `build/fastmatch.py` grew `compile_text(..., compiler=)` / `compare(..., compiler=)`
+so a candidate can be probed with the build's compiler before install; `build/fm_<tag>.py` remain the
+quick per-version harness copies used for sweeping.
+
+Nine units installed on the first pass, all confirmed by the ROM hash (not just the object compare):
+
+    ov002 0x02062b48 0x02062b68 0x0207808c 0x020781b4 0x02060ca0 0x02062b20 0x0204c7e8 0x02063434
+    ov004 0x020534cc
+
+That is 1,434 -> 1,443 functions and 98,436 -> 98,816 bytes, `ninja sha1` OK, `t10 --check` ok.
+Everything previously parked in the "register-role / address-materialisation tie" bucket is suspect and
+should be re-probed under b56 before any further derivation effort.

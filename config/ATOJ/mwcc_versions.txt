@@ -1,0 +1,18 @@
+# Per-file mwccarm versions.
+#
+# Retail was built with more than one 1.2 build of mwccarm: these units are
+# byte-exact under 1.2/b56 and cannot be reproduced by 1.2/sp2, which is the
+# default for everything not listed here. A version tag must exist under
+# tools/mwccarm/<tag>/mwccarm.exe.
+#
+# Format: <source path> = <version tag>
+
+src/ov002/func_ov002_0204c7e8.c = 1.2/b56
+src/ov002/func_ov002_02060ca0.c = 1.2/b56
+src/ov002/func_ov002_02062b20.c = 1.2/b56
+src/ov002/func_ov002_02062b48.c = 1.2/b56
+src/ov002/func_ov002_02062b68.c = 1.2/b56
+src/ov002/func_ov002_02063434.c = 1.2/b56
+src/ov002/func_ov002_0207808c.c = 1.2/b56
+src/ov002/func_ov002_020781b4.c = 1.2/b56
+src/ov004/func_ov004_020534cc.c = 1.2/b56
