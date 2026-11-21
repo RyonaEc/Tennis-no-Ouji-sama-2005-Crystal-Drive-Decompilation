@@ -612,7 +612,6 @@ arm9 0x0202ae08 116B -- getter twin of 0x0202ad9c: reads the same five sound reg
   108B when the address is a loaded variable. The pass sees the constant as one
   value; retail saw four. Needs a spelling that defeats that CSE without adding a
   variable.
-ov008 0x0204d970 108B -- bit-scan over the u32 at data_ov008_0204f440: the same code,
   3 pool/reloc word identical, but registers permute (retail keeps the address in
   r0 and the pointer in lr, uses r2=n/ip=m/r3=i; every declaration order tried puts
   the pointer in r2 and n in r3, 108B in both). A pure register-assignment residue,
@@ -638,29 +637,6 @@ arm9 0x020049a0 112B -- flush routine over the five-word table at data_02004a0c:
   to get `mi` blocks the post-index walk, and the pointer spelling gives `lo` on the copy
   loop: 164B against 112B. Needs the mixed signed/unsigned shape expressed without
   losing the table walk.
-## 2026-11-21 last below-100% unit: ov008 0x0204d970 108B (99.81%)
-The ov003 twin 0x02050460 is solved: with prototypes declared `u8 *p` and the array
-`data_ov003_020e6fe4` passed directly, mwcc rematerialises the address per call instead of
-CSE-ing it into r4, and the object is identical to the delinked one (92B, pool
-[data, 0xe740, 0xef40]). The lesson generalises: an address passed to a `u32` parameter is
-CSE'd into a callee-saved register, the same address passed to a `u8 *` parameter is not.
-
-0x0204d970 remains. The body is instruction-for-instruction identical to retail except that
-two values swap registers:
-
-    retail            mine
-    ldr  lr, [r0]     ldr  r2, [r0]     ; g = data_ov008_0204f440
-    ldrb r2, [lr,#0xb] ldrb lr,[r2,#0xb] ; n = g[0xb]
-    ... cmp r3, r2 / cmp r3, lr ; strbne r1,[lr,#0x21] / [r2,#0x21]
-
-So retail allocated the pointer to lr and the count to r2; 1.2 allocates the count to lr and
-the pointer to r2. Tried and rejected: every declaration order of {g,n,m} with i first or
-last (24 variants), g assigned through a `u8 **pp` temp, `*(u8 **)&sym`, n/m read from the
-symbol with g assigned last, while-loop and do-while forms, index form (`g[i*2+0x10]`),
-`u32`/`s32` mixes, and all 25 vendored mwccarm builds (1.2 base/b56/sp2/sp2p3/sp3/sp4,
-2.0 x10, dsi x9 - the 1.2 family lands on 108B with this residue, 2.0 on 84B, dsi on 80B).
-This is the register-allocation tie class: the algorithm is settled and the object already
-carries the right relocation, so the remaining 108 bytes are pure allocation.
 ## 2026-11-22 b56-neighbour probe (arm9 0x02018330, 124B)
 First test of the "compiler version is a per-region property" idea: this unit sits 0x18 from
 0x02018318, a b56 win. The body is a 3-argument reserve/shrink with a call to the stmlt/ldmlt
@@ -670,3 +646,16 @@ here; the residue is that retail spills a zero through the stack before the call
 straight into r0. Tried: `volatile u32 z = 0`, a plain `u32 z = 0`, an address-taken `u32 z[1]`,
 and the flag read spelled as `((u8 *)p)[-4]` and `((u16 *)p)[-2]`; all 108B under both compilers.
 The flag field itself is a u8 at p-4 (retail does `ldr r0,[r5,#-4]; and r0,#0xff`).
+## 2026-11-22 solved: ov008 0x0204d970 (108B, was 99.81%)
+The last below-100% unit. The allocation was never wrong - the source was still writing the
+raw address `*(u8 **)0x0204f440`, so the object held a literal where retail holds a relocation,
+and every earlier attempt to introduce the symbol rewrote the expression to `g = sym`, which
+changed the allocation to the swapped shape and looked like an unfixable tie. Keeping the
+dereference and making the operand an address constant is the fix:
+
+    extern u8 data_ov008_0204f440[];      /* array, not a pointer variable */
+    u8 *g = *(u8 **)data_ov008_0204f440;
+
+That compiles to retail's exact registers (g in lr, n in r2) and emits the ABS32 relocation
+the delinked object expects. Lesson for the class: when swapping a literal for a symbol, keep
+the expression tree identical (same casts, same dereference); only the operand should change.

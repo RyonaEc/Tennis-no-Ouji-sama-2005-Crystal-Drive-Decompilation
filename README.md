@@ -40,11 +40,9 @@ tennis_ATOJ.nds: OK
 | Code | 103,704 B | 1,841,700 B | 5.63% |
 | Units | 1,499 | 2,088 | 71.79% |
 
-The badges above use objdiff's stricter pair, `matched_functions` 1,498 (39.36%) and
-`matched_code` 103,596 B (5.63%). One of the 1,499 units still falls short of 100% there
-(108 bytes, `ov008/func_ov008_0204d970`): it already carries the correct relocation and
-differs only in which register holds the pointer, and it is tracked in
-`tools/match/walls.txt`.
+The badges above use objdiff's stricter pair, `matched_functions` and `matched_code`, which
+now agree with the complete counts exactly: every one of the 1,499 units scores 100%, so a
+complete unit and a matched unit are the same thing today.
 
 The remaining 2,307 functions are still delinked assembly. Complete units compile with
 `mwccarm` 1.2/sp2, or 1.2/b56 where retail used it, link at the original addresses, and

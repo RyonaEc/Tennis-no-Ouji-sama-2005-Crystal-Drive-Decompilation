@@ -2349,3 +2349,31 @@ Three were held back, with reasons:
 Also worth keeping: the review's observation that the 0x158-stride records should become typed
 structs is the same conclusion 2.74 reached from the other side, and is the natural next step
 for readability *if* a struct spelling reproduces the same bytes - which is testable per unit.
+
+## 2.77 The last below-100% unit, and why it looked like a register tie (2026-11-22)
+
+`ov008 0x0204d970` was the only unit left under 100% (108 B, 99.81%). Its body was
+instruction-for-instruction identical to retail except that `g` and `n` swapped registers, and
+I had filed it as an allocation tie after roughly 35 spellings and all 25 compilers. That
+diagnosis was wrong.
+
+The source still contained `u8 *g = *(u8 **)0x0204f440;` - a raw address. Every attempt to
+introduce the symbol rewrote the whole expression to `u8 *g = data_ov008_0204f440;`, and *that*
+rewrite is what changed the allocation: the compiler sees a load of a pointer variable rather
+than an address constant plus a dereference, and colours the intervals differently. So the
+"tie" was manufactured by my own edit, not by mwcc.
+
+The fix keeps the tree and changes only the operand:
+
+```c
+extern u8 data_ov008_0204f440[];          /* array => address constant, not a pointer var */
+u8 *g = *(u8 **)data_ov008_0204f440;      /* same casts and dereference as before */
+```
+
+Byte-identical to retail, relocation present, digest unchanged. The same shape applies to the
+other `*(T *)0x...` / `*(T **)0x...` conversions from 2.74 and 2.75: those already kept the
+dereference (that is why they matched first time), and this unit was the one where the file had
+never been rewritten at all.
+
+State: 1,499 of 1,499 complete units at 100%, so `matched_code` == `complete_code` == 103,704 B
+(5.63%) and `matched_functions` == `complete_units` == 1,499 (39.39% of 3,806).
