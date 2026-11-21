@@ -888,3 +888,13 @@ ov003 0x02066a54 / 0x020b85b8 / 0x020db6ec 180B each (famsurvey 3x180, 540B tota
   (including the `b` to the shared tail) with the same ip/lr swap in the loop: retail keeps the
   hoisted zero in lr and b+i*2 in ip, mwcc the reverse. Blocked by the same allocator preference
   as 0x020d72f8, so all five units in this cluster (2x164 + 3x180 = 868 B) stand or fall together.
+ov001 0x0204d8f4 148B -- VCOUNT vs BG scroll setup. Full body: `v = *(volatile u16 *)0x04000006;
+  q = (u32 *)(data_027c0000 + 0x3ff8); *q |= 2; g = data_ov001_02051cc0;
+  if (!(g[0xa] & 4)) return; t = v < 0x3a ? 0x3a - v : v > 0x72 ? v - 0x72 : -1;
+  if (t < 0) { *(volatile u16 *)0x04001052 = 0x10; return; }
+  *(volatile u16 *)0x04001052 = t < 0x11 ? (u16)((0x10 - t) | (t << 8)) : 0x1000;`
+  Body reproduces exactly except the DTCM flag: retail pools 0x027c0000 and 0x3ff8 SEPARATELY
+  and materialises the sum (`ldr r1,=0x027c0000 ; ldr r0,=0x3ff8 ; add r2,r1,r0`), mwcc folds them
+  into one pooled absolute 0x027c3ff8 (136-140B). Four spellings tried: `(u32 *)(sym + 0x3ff8)`,
+  `u8 *b = sym; (u32 *)(b + 0x3ff8)`, `(u32 *)sym + 0xffe`, and a scalar `extern u32` with
+  `&sym` - every one pools the single absolute. Same two-pool class as ov003 0x0205299c.

@@ -2793,3 +2793,22 @@ zeroes +0x4388; then it increments the guard halfword and returns 1. Two shape n
 The same-test cluster at `0x020d72f8`/`0x02066a54` is still blocked by the ip/lr preference
 (§2.93); the 3x180 members have the identical loop and swap, so those five units (868 B) are a
 single wall.
+
+## 2.95 Four ov001/ov003 units match; the DTCM two-pool wall is confirmed again (2026-11-22)
+
+`func_ov001_0204efa0` (88 B) matched first try. The table `data_0203d908` is a s16 sine table
+whose element index is an *angle* divided by 8, and the source spells the angle as
+`(0x20 - a0) << 9`: `idx = (angle << 9) >> 4; v = t[idx * 2]; v = (v << 8) >> 12;` then writes
+`(v + 10) & 0x1ff` to 0x04000014 and `(0x100 - v) & 0x1ff` to 0x04000010. The `<< 9` plus
+`>> 4` plus `lsl #2` chain is what `idx * 2` on a s16 table looks like; writing it as
+`t[(0x20 - a0) * 64]` would not produce `mul`.
+
+`func_ov001_0204ebb0` (152 B) matched first try as well: the `a0 > 0x40` arm builds the angle as
+`0x28 - (a0 - 0x40)` (two instructions: `sub` then `rsb`, which is why the source must keep the
+parenthesised subtraction), multiplies it by 0x199, does `>> 4` and `t[idx * 2]`, then
+`(s16)v * 0x120 >> 12` and masks `<< 16` with 0x1ff0000 into 0x04000018 / 0x04001018.
+
+`func_ov001_0204d8f4` (148 B) does not match for the known reason: the DTCM flag at
+`data_027c0000 + 0x3ff8` is pooled by retail as two words and added, while mwcc 1.2 folds the
+pair into the absolute 0x027c3ff8 and pools that. Four base spellings behave the same, so the
+unit joins ov003 0x0205299c in that class.

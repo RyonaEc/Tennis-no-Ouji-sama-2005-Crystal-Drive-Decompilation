@@ -7,3 +7,11 @@
 src/ov001/func_ov001_0204fb34.c:
     complete
     .text       start:0x0204fb34 end:0x0204fb84
+
+src/ov001/func_ov001_0204efa0.c:
+    complete
+    .text       start:0x0204efa0 end:0x0204eff8
+
+src/ov001/func_ov001_0204ebb0.c:
+    complete
+    .text       start:0x0204ebb0 end:0x0204ec48
