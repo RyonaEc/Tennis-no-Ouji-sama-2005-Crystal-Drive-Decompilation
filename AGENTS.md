@@ -70,9 +70,8 @@ objdiff configuration all key off them.
 
 ## The edit loop
 
-1. Pick an unmatched function. `build/famsurvey.py` (local tooling only, see
-   the note under the table) groups unmatched functions by size and mnemonic
-   sequence; groups of identical skeleton are the cheapest wins because one
+1. Pick an unmatched function. `build/famsurvey.py` groups unmatched functions
+   by size and mnemonic sequence; groups of identical skeleton are the cheapest wins because one
    source shape covers every member.
 2. Disassemble it: `python build/udis.py <module> 0xADDR [0xADDR ...]`.
 3. Write the C in a scratch file (e.g. `build/cand/name.c`) and compare with
@@ -107,11 +106,13 @@ Source files must `#include "types.h"` first, or the compiler emits
 `retail(mod, addr, size)`, `compile_text(source, name)`, `literal_of(ins)`.
 Literal-pool words are at `ins.address + 8 + imm12`.
 
-`build/` is gitignored, so on a fresh checkout only the two committed helpers
-(`build/fastmatch.py`, `build/sweep.py`) exist; `udis.py`, `var3.py`, `reg.py`,
-`t10.py`, `autorun.py`, `famsurvey.py` and `progress.py` are local tooling.
-Without them, use `ninja dis`, `ninja check`, `ninja report` and objdiff, and
-install a unit by editing `delinks.txt` plus `src/` by hand.
+The helper scripts in `build/` are committed: `fastmatch.py` (harness),
+`vprobe.py` (all compilers in one run), `udis.py`, `var3.py`, `reg.py`, `t10.py`,
+`autorun.py`, `famsurvey.py`, `permute.py`, `progress.py` and the analysis
+scripts around them. Only their output is ignored - `build/ATOJ/` (delinked
+objects and the built ROM), `build/cand/` (scratch candidates), logs, probes and
+backup copies of patched scripts. `build/true_fresh.txt` is the trusted
+unmatched queue: `fresh.txt` goes stale as units are installed.
 
 ## Compiler idioms worth knowing
 

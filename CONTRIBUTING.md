@@ -44,7 +44,7 @@ Follow [README.md](README.md#setup) and [docs/SETUP.md](docs/SETUP.md):
 
 ```shell
 python -m pip install ninja
-# put your decrypted dump at extract/baserom_tennis_ATOJ.nds
+# put your decrypted dump under extract/ (any .nds file name works)
 python tools/init.py
 python tools/configure.py ATOJ
 ninja

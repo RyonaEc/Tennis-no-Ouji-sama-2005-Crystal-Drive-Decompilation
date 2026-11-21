@@ -1,32 +1,23 @@
 # A dump of the cartridge, its extraction and the ARM7 BIOS must never be
-# committed. See docs/SETUP.md.
+# committed. See docs/SETUP.md. Everything else in this repository, including
+# tools/, is meant to be redistributed.
 /extract/
 *.nds
 *.srl
 arm7_bios.bin
 *.sha1.local
 
-# Build output
-/build/
+# Build output. Only the helper scripts and their rosters are tracked, so
+# everything else under build/ - delinked objects, the built ROM, scratch
+# candidates, logs, probes, Ghidra dumps and backup copies - stays out.
+/build/*
+!/build/*.py
+!/build/*.txt
 /build.ninja
 /build.ninja.d
 *.o
 *.d
 compile_commands.json
-
-# Downloaded toolchain binaries. The CodeWarrior ARM compilers under
-# tools/mwccarm/ are vendored in the repository so a clean checkout builds with
-# the exact builds retail used (see docs/SETUP.md).
-/tools/dsd.exe
-/tools/dsd
-/tools/objdiff-cli.exe
-/tools/objdiff-cli
-/tools/sjiswrap.exe
-/tools/sjiswrap
-/tools/wibo
-/tools/binutils/
-/tools/msvc/
-/tools/wibo-deadbeef/
 
 # Python
 __pycache__/

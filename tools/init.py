@@ -13,7 +13,9 @@ The ROM and ARM7 BIOS are never committed; see docs/SETUP.md.
 Usage:
     python tools/init.py [ROM] [--arm7-bios arm7_bios.bin]
 
-The default ROM path is extract/baserom_tennis_ATOJ.nds.
+The ROM may have any file name: pass it explicitly, or put a single .nds file
+under extract/ and it is found automatically. The path is recorded in
+config/ATOJ/rom.txt so the build does not need a fixed name either.
 """
 
 import argparse
@@ -27,7 +29,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 GAME_ID = "ATOJ"
 GAME = "tennis"
-DEFAULT_ROM = ROOT / "extract" / f"baserom_{GAME}_{GAME_ID}.nds"
 EXTRACT_DIR = ROOT / "extract" / GAME_ID
 ARM7_BIOS = ROOT / "arm7_bios.bin"
 CONFIG_DIR = ROOT / "config"
@@ -37,6 +38,10 @@ EXPECTED_TITLE_FRAGMENT = "KCEJ"
 
 def rel(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
+
+
+def dumps() -> list[Path]:
+    return sorted(p for p in (ROOT / "extract").glob("*.nds") if p.is_file())
 
 
 def read_header(rom: Path) -> dict[str, object]:
@@ -81,20 +86,33 @@ def run(command: list[str], *, dry_run: bool) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Initialise the project from a base ROM")
-    parser.add_argument("rom", type=Path, nargs="?", default=DEFAULT_ROM, help="Path to the base ROM")
+    parser.add_argument("rom", type=Path, nargs="?", help="Path to the base ROM (default: the only .nds under extract/)")
     parser.add_argument("--arm7-bios", type=Path, help="ARM7 BIOS dump, needed for encrypted ROMs")
     parser.add_argument("--dsd", type=Path, help="Path to the dsd CLI (default: ./dsd)")
     parser.add_argument("--dry-run", action="store_true", help="Print the commands without running them")
     args = parser.parse_args()
 
     rom: Path = args.rom
+    if rom is None:
+        found = dumps()
+        if len(found) == 1:
+            rom = found[0]
+        elif not found:
+            print("error: no .nds file under extract/", file=sys.stderr)
+            print(
+                "Put your own decrypted dump there (any file name works) or "
+                "pass its path: python tools/init.py path/to/dump.nds",
+                file=sys.stderr,
+            )
+            return 1
+        else:
+            print("error: more than one .nds file under extract/", file=sys.stderr)
+            for path in found:
+                print(f"  {rel(path)}", file=sys.stderr)
+            print("Pass the one to use: python tools/init.py <path>", file=sys.stderr)
+            return 1
     if not rom.is_file():
         print(f"error: no ROM at {rom}", file=sys.stderr)
-        print(
-            "Place your own dump at extract/baserom_tennis_ATOJ.nds "
-            "(or pass a path) and run this again.",
-            file=sys.stderr,
-        )
         return 1
 
     header = read_header(rom)
@@ -141,6 +159,7 @@ def main() -> int:
         return 1
 
     checksum_file = CONFIG_DIR / GAME_ID / f"{GAME}_{GAME_ID}.sha1"
+    rom_record = CONFIG_DIR / GAME_ID / "rom.txt"
     if args.dry_run:
         print(f"\nWould write {rel(checksum_file)} with the SHA-1 of {rel(rom)}")
     else:
@@ -148,6 +167,7 @@ def main() -> int:
         from sha1 import sha1_of
 
         checksum_file.parent.mkdir(parents=True, exist_ok=True)
+        rom_record.write_text(rel(rom) + "\n", encoding="utf-8")
         checksum_file.write_text(f"{sha1_of(rom)} {rom.name}\n", encoding="utf-8")
         print(f"\nRecorded SHA-1 in {rel(checksum_file)}")
 

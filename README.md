@@ -37,24 +37,14 @@ tennis_ATOJ.nds: OK
 1,475 functions (101,376 bytes) in the ARM9 main module and its overlays now match
 C source compiled with `mwccarm` 1.2/sp2 (and 1.2/b56 for the units retail built
 with it) and linked into the original addresses,
-and the rebuilt ROM still hashes to the retail dump:
-
-| Function | Size | What it does |
-|---|---|---|
-| `func_02017770` | 0x14 | reads a field, or dereferences the offset stored at `+0xa` |
-| `func_02017784` | 0x18 | same, plus a `+4` bias on the dereferenced field |
-| `func_02017994` | 0x18 | zero-initialises a small header and stores a `u16` |
-| `func_02017af8` | 0x28 | sums a linked list hung off `+0x24` |
-| `func_020180a0` | 0x30 | fills in a packed header, including a self-relative offset |
-
-`ninja report` shows `matched_functions: 1,475` of 3,806 (38.75%) and
+and the rebuilt ROM still hashes to the retail dump. `ninja report` shows `matched_functions: 1,475` of 3,806 (38.75%) and
 `matched_code: 101,376` of 1,841,700 bytes (5.50%); the other 2,331 functions are
 still delinked assembly. [PROGRESS.md](PROGRESS.md) has the fuller breakdown
 (code, functions, fuzzy match, data, unit completeness, and a per-module table);
 `python build/progress.py` regenerates it.
 
-Everything below needs your own dump of the cartridge. No ROM, BIOS or Nintendo
-SDK binary is included in this repository.
+Everything below needs your own dump of the cartridge. No ROM or BIOS image is
+included in this repository.
 
 ## Setup
 
@@ -69,10 +59,11 @@ The 32-bit CodeWarrior compilers are downloaded automatically. See
 
 ### 1. Provide the base ROM
 
-Place a decrypted dump at:
+Put a decrypted dump anywhere under `extract/` - the file name does not matter -
+or pass its path explicitly:
 
-```
-extract/baserom_tennis_ATOJ.nds
+```shell
+python tools/init.py "extract/Tennis no Ouji-sama 2005 CRYSTAL DRIVE.nds"
 ```
 
 If your dump is encrypted, you also need your own `arm7_bios.bin` in the
@@ -140,16 +131,9 @@ If you are an AI agent contributing to this repository, read
 hard rules that keep the ROM matching, the edit loop and the helper scripts in
 `build/`, and how to commit and publish a batch.
 
-## See also
-
-* [`AetiasHax/ds-decomp`](https://github.com/AetiasHax/ds-decomp): the DS decompilation toolkit
-* [`encounter/objdiff`](https://github.com/encounter/objdiff): object diffing
-* [`decompals/wibo`](https://github.com/decompals/wibo): Wine wrapper for the 32-bit compilers
-* [`encounter/sjiswrap`](https://github.com/encounter/sjiswrap): argument encoding shim
-
 ## Legal
 
 This project reverse-engineers the game for preservation and research. It ships
-no game code, assets, ROMs or BIOS images, and distributes no Nintendo SDK
-binaries. You must supply your own legally obtained dump. *Tennis no Ouji-sama*
+no game code, assets, ROMs or BIOS images. You must supply your own legally
+obtained dump. *Tennis no Ouji-sama*
 and all related marks are property of their respective owners.

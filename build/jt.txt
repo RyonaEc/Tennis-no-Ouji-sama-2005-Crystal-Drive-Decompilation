@@ -1,0 +1,126 @@
+125 jump-table units
+     36B ov002  0x02020830 func_02020830                      mov= 0 b= 1 bl=0
+     40B ov002  0x020280f4 func_020280f4                      mov= 0 b= 7 bl=0
+     40B ov004  0x02030584 func_02030584                      mov= 0 b= 6 bl=0
+     44B ov003  0x02022224 func_02022224                      mov= 0 b= 8 bl=0
+     48B ov002  0x02021b54 func_02021b54                      mov= 0 b= 5 bl=0
+     48B ov003  0x020180a0 func_020180a0                      mov= 0 b= 4 bl=0
+     48B ov003  0x0202250c func_0202250c                      mov= 0 b= 6 bl=0
+     52B ov002  0x02027104 func_02027104                      mov= 0 b=10 bl=0
+     64B ov002  0x0200ff30 func_0200ff30                      mov= 0 b= 7 bl=1
+     72B ov002  0x02010150 func_02010150                      mov= 1 b= 7 bl=1
+     72B ov002  0x02018818 func_02018818                      mov= 0 b= 9 bl=0
+     72B ov003  0x02016b04 func_02016b04                      mov= 3 b= 9 bl=0
+     76B ov002  0x0202330c func_0202330c                      mov= 0 b= 3 bl=0
+     88B ov002  0x02025228 func_02025228                      mov= 1 b= 6 bl=0
+     88B ov002  0x02027080 func_02027080                      mov= 1 b=10 bl=0
+     88B ov002  0x02032f38 func_02032f38                      mov= 0 b= 8 bl=0
+     88B ov004  0x0203b640 func_0203b640                      mov= 0 b= 3 bl=0
+     92B ov002  0x02016aa8 func_02016aa8                      mov= 0 b= 7 bl=0
+     96B ov002  0x02008178 func_02008178                      mov= 0 b= 7 bl=0
+     96B ov003  0x020145b8 func_020145b8                      mov= 3 b= 1 bl=4
+    100B ov004  0x02030520 func_02030520                      mov= 0 b=11 bl=0
+    112B ov002  0x020271d4 func_020271d4                      mov= 4 b= 4 bl=0
+    112B ov003  0x02037718 func_02037718                      mov= 0 b=16 bl=2
+    112B ov004  0x02037718 func_02037718                      mov= 0 b= 6 bl=0
+    120B ov004  0x020304a8 func_020304a8                      mov= 0 b= 7 bl=0
+    124B ov004  0x02033ab8 func_02033ab8                      mov= 1 b=11 bl=0
+    136B ov002  0x02025d24 func_02025d24                      mov= 4 b=10 bl=1
+    140B ov003  0x02033b34 func_02033b34                      mov= 5 b= 7 bl=1
+    148B ov002  0x02018ee8 func_02018ee8                      mov= 3 b= 8 bl=3
+    148B ov002  0x02025b88 func_02025b88                      mov= 2 b= 7 bl=3
+    152B ov002  0x02028888 func_02028888                      mov= 0 b= 6 bl=2
+    156B ov002  0x0203a244 func_0203a244                      mov= 2 b= 7 bl=1
+    156B ov003  0x020276e8 func_020276e8                      mov= 1 b=10 bl=0
+    156B ov004  0x0203a244 func_0203a244                      mov= 5 b= 4 bl=2
+    160B ov002  0x0201c59c func_0201c59c                      mov= 3 b= 7 bl=0
+    168B arm9   0x020151a8 func_020151a8                      mov= 2 b= 9 bl=5
+    168B ov002  0x020151a8 func_020151a8                      mov= 1 b= 6 bl=0
+    168B ov003  0x0201df30 func_0201df30                      mov= 0 b= 3 bl=2
+    172B arm9   0x02025e48 func_02025e48                      mov= 4 b= 8 bl=0
+    180B arm9   0x020150d8 func_020150d8                      mov= 3 b=11 bl=6
+    184B arm9   0x02024674 func_02024674                      mov= 4 b= 5 bl=0
+    188B ov002  0x02028a38 func_02028a38                      mov= 6 b=12 bl=3
+    196B arm9   0x0201a98c func_0201a98c                      mov= 0 b= 6 bl=2
+    196B ov002  0x02019170 func_02019170                      mov= 5 b=11 bl=3
+    196B ov003  0x02019170 func_02019170                      mov= 1 b= 8 bl=0
+    200B arm9   0x0202424c func_0202424c                      mov= 1 b=14 bl=1
+    204B ov003  0x0202d3f0 func_0202d3f0                      mov= 5 b= 9 bl=2
+    208B ov002  0x0200f748 func_0200f748                      mov= 2 b= 7 bl=1
+    208B ov004  0x02036c18 func_02036c18                      mov= 1 b= 0 bl=4
+    208B ov004  0x02037590 func_02037590                      mov= 0 b= 6 bl=1
+    220B arm9   0x02015e64 func_02015e64                      mov= 9 b= 5 bl=6
+    232B arm9   0x020153ec func_020153ec                      mov= 2 b=14 bl=7
+    232B arm9   0x0201a8a4 func_0201a8a4                      mov= 1 b= 6 bl=3
+    232B ov002  0x02004a14 func_02004a14                      mov= 0 b= 8 bl=3
+    240B ov002  0x02028db8 func_02028db8                      mov= 8 b=15 bl=5
+    256B arm9   0x0200ee58 func_0200ee58                      mov=10 b=17 bl=5
+    260B ov002  0x020236f4 func_020236f4                      mov= 6 b= 7 bl=6
+    276B arm9   0x02014d50 func_02014d50                      mov= 8 b=11 bl=8
+    280B ov002  0x02005300 func_02005300                      mov= 1 b= 7 bl=5
+    304B ov002  0x02026b88 func_02026b88                      mov= 7 b=14 bl=6
+    320B arm9   0x02005578 func_02005578                      mov= 4 b= 6 bl=10
+    320B arm9   0x02020b10 func_02020b10                      mov= 6 b=18 bl=1
+    328B arm9   0x02016bd4 func_02016bd4                      mov= 7 b= 5 bl=11
+    348B ov006  0x020227c0 func_020227c0                      mov= 7 b=13 bl=3
+    352B ov002  0x02029b2c func_02029b2c                      mov= 7 b=13 bl=5
+    360B arm9   0x02016628 func_02016628                      mov= 6 b= 5 bl=9
+    364B arm9   0x02021114 func_02021114                      mov=10 b=13 bl=1
+    364B ov002  0x02037da0 func_02037da0                      mov=12 b= 9 bl=8
+    364B ov006  0x02021114 func_02021114                      mov= 3 b=15 bl=8
+    388B arm9   0x02010440 func_02010440                      mov= 2 b=15 bl=9
+    396B arm9   0x0200f46c func_0200f46c                      mov= 1 b=19 bl=12
+    400B arm9   0x02007e7c func_02007e7c                      mov= 3 b=22 bl=4
+    420B arm9   0x02028af4 func_02028af4                      mov= 4 b=14 bl=4
+    456B arm9   0x0200ec74 func_0200ec74                      mov=12 b= 8 bl=12
+    468B ov003  0x02019e78 func_02019e78                      mov= 8 b=11 bl=6
+    492B ov003  0x0203a584 func_0203a584                      mov= 7 b= 9 bl=7
+    496B ov003  0x02022e28 func_02022e28                      mov= 6 b=14 bl=8
+    516B arm9   0x02020d44 func_02020d44                      mov=22 b=26 bl=1
+    516B ov002  0x020136e4 func_020136e4                      mov= 9 b=12 bl=12
+    524B ov004  0x0203b0c0 func_0203b0c0                      mov=14 b= 7 bl=12
+    548B arm9   0x02005734 func_02005734                      mov= 5 b= 5 bl=6
+    600B ov002  0x02036ce8 func_02036ce8                      mov= 7 b= 8 bl=5
+    600B ov004  0x02036ce8 func_02036ce8                      mov= 8 b=16 bl=7
+    668B arm9   0x02005958 func_02005958                      mov=11 b= 6 bl=13
+    684B arm9   0x0200e198 func_0200e198                      mov=23 b=46 bl=15
+    704B arm9   0x0202b65c func_0202b65c                      mov=12 b=10 bl=1
+    728B ov003  0x02032438 func_02032438                      mov=28 b=18 bl=9
+    732B ov004  0x02037f0c func_02037f0c                      mov=17 b=20 bl=12
+    740B ov003  0x02036934 func_02036934                      mov=10 b=22 bl=17
+    808B arm9   0x02014934 func_02014934                      mov=15 b=20 bl=30
+    836B arm9   0x020081d8 func_020081d8                      mov=14 b=27 bl=16
+    896B ov003  0x02039b54 func_02039b54                      mov=24 b=14 bl=11
+    920B ov003  0x02032710 func_02032710                      mov=28 b=19 bl=7
+    992B arm9   0x02036f40 func_02036f40                      mov=11 b=44 bl=26
+    992B ov004  0x02036f40 func_02036f40                      mov=13 b= 8 bl=14
+   1020B ov004  0x0202fb2c func_0202fb2c                      mov= 0 b=10 bl=2
+   1048B ov003  0x0201b8bc func_0201b8bc                      mov=16 b=13 bl=17
+   1096B ov010  0x0203aa70 func_0203aa70                      mov=19 b=32 bl=18
+   1156B arm9   0x02012a24 func_02012a24                      mov=26 b=42 bl=1
+   1168B arm9   0x020105c4 func_020105c4                      mov=11 b=36 bl=34
+   1232B arm9   0x02008c90 func_02008c90                      mov= 2 b=16 bl=4
+   1304B arm9   0x0200a3ec func_0200a3ec                      mov=35 b=19 bl=2
+   1312B arm9   0x02010a54 func_02010a54                      mov= 5 b=64 bl=30
+   1340B ov002  0x02033520 func_02033520                      mov=27 b= 9 bl=27
+   1340B ov003  0x02033520 func_02033520                      mov=74 b=16 bl=37
+   1436B arm9   0x0202c4dc func_0202c4dc                      mov=12 b=40 bl=18
+   1436B ov002  0x02037804 func_02037804                      mov=28 b=14 bl=30
+   1436B ov004  0x02037804 func_02037804                      mov=36 b=28 bl=31
+   1456B arm9   0x02013900 func_02013900                      mov=46 b=21 bl=12
+   1456B ov002  0x02013900 func_02013900                      mov=37 b=20 bl=26
+   1500B arm9   0x02035f24 func_02035f24                      mov=27 b=63 bl=0
+   1560B arm9   0x02013fa0 func_02013fa0                      mov=38 b=14 bl=27
+   1560B ov003  0x02013fa0 func_02013fa0                      mov=51 b=22 bl=30
+   1620B ov004  0x02038fdc func_02038fdc                      mov=29 b=20 bl=20
+   1624B ov004  0x02034e98 func_02034e98                      mov=16 b=28 bl=10
+   1636B arm9   0x02010f74 func_02010f74                      mov=10 b=43 bl=12
+   2108B arm9   0x0203465c func_0203465c                      mov= 5 b=59 bl=13
+   2108B ov004  0x0203465c func_0203465c                      mov=39 b=31 bl=22
+   3160B arm9   0x020091dc func_020091dc                      mov=14 b=12 bl=10
+   3592B arm9   0x020115d8 func_020115d8                      mov=18 b=115 bl=4
+   4380B arm9   0x02006d60 func_02006d60                      mov=61 b=65 bl=18
+   4960B arm9   0x02030b1c func_02030b1c                      mov=27 b=98 bl=28
+   4960B ov004  0x02030b1c func_02030b1c                      mov=51 b=28 bl=39
+  14312B arm9   0x0200a904 func_0200a904                      mov=352 b=280 bl=154
+  14312B ov003  0x0200a904 func_0200a904                      mov=120 b=63 bl=81

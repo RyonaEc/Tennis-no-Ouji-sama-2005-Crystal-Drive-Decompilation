@@ -142,6 +142,31 @@ def include_dirs() -> list[Path]:
 # ---------------------------------------------------------------------------
 
 
+def find_baserom(version: str) -> str:
+    """Path of the dump this project was initialised from.
+
+    tools/init.py records the path in config/<version>/rom.txt, so the dump may
+    have any file name. The dump is only located when the build graph is
+    generated, so `ninja download_tools` still works before a dump is present.
+    """
+    record = CONFIG_DIR / version / "rom.txt"
+    candidates: list[Path] = []
+    if record.is_file():
+        recorded = Path(record.read_text(encoding="utf-8").strip())
+        candidates.append(recorded if recorded.is_absolute() else ROOT / recorded)
+    candidates.extend(sorted(p for p in EXTRACT_DIR.glob("*.nds") if p.is_file()))
+    candidates.append(EXTRACT_DIR / f"baserom_{GAME}_{version}.nds")
+    for path in candidates:
+        if path.is_file():
+            return rel(path)
+    print(
+        f"warning: no base ROM found for {version}; put a dump under extract/ "
+        "and run python tools/init.py",
+        file=sys.stderr,
+    )
+    return rel(EXTRACT_DIR / f"baserom_{GAME}_{version}.nds")
+
+
 class Project:
     def __init__(self, version: str, platform: Platform, delinks_json: Any | None):
         self.version = version
@@ -165,7 +190,7 @@ class Project:
         return rel(self.game_config / "arm9" / "config.yaml")
 
     def baserom(self) -> str:
-        return rel(EXTRACT_DIR / f"baserom_{GAME}_{self.version}.nds")
+        return find_baserom(self.version)
 
     def baserom_config(self) -> str:
         return rel(self.game_extract / "config.yaml")

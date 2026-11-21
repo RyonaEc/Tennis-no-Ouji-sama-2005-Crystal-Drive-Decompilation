@@ -3,7 +3,7 @@
 ## How the build works
 
 ```
-extract/baserom_tennis_ATOJ.nds
+extract/<your dump>.nds
         |  dsd rom extract
         v
 extract/ATOJ/            arm9.bin, arm7.bin, overlays, files, banner

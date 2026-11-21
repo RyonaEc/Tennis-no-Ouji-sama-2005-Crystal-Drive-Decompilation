@@ -4,8 +4,9 @@
 
 This project never ships game data. You need:
 
-* `extract/baserom_tennis_ATOJ.nds`, a decrypted dump of the Japanese cartridge
-  (`NTR-ATOJ-JPN`, 64 MiB).
+* A decrypted dump of the Japanese cartridge (`NTR-ATOJ-JPN`, 64 MiB), placed
+  anywhere under `extract/`. The file name does not matter: `tools/init.py`
+  finds a single `.nds` there, or you pass the path explicitly.
 * `arm7_bios.bin`, and only if your dump is encrypted. `dsd` uses it to decrypt
   secure-area blobs. Dump it from your own console; see the
   [DS homebrew wiki](https://wiki.ds-homebrew.com/ds-index/ds-bios-firmware-dump).
@@ -13,8 +14,9 @@ This project never ships game data. You need:
 Do not commit either file; `.gitignore` covers both.
 
 `tools/init.py` records the SHA-1 of the dump you use in
-`config/ATOJ/tennis_ATOJ.sha1`. A matching build reproduces that exact revision,
-so keep the file in version control once you have verified the rebuild.
+`config/ATOJ/tennis_ATOJ.sha1` and the path in `config/ATOJ/rom.txt`. A matching
+build reproduces that exact revision, so keep both files in version control once
+you have verified the rebuild.
 
 ## Toolchain
 
@@ -85,8 +87,9 @@ ninja
 
 ## Troubleshooting
 
-If `extract/baserom_tennis_ATOJ.nds` is missing, copy your dump to exactly that
-path. The name comes from `GAME` and the game code in `tools/configure.py`.
+If the build says no base ROM was found, put your dump under `extract/` or pass
+its path to `tools/init.py`; the recorded path lives in `config/ATOJ/rom.txt`.
+`baserom_tennis_ATOJ.nds` is only a fallback name for older checkouts.
 
 `error: expected game code ATOJ` means the image is a different region or a
 different Prince of Tennis title.
