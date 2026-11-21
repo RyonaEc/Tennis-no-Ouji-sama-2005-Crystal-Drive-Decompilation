@@ -1542,3 +1542,43 @@ The genuine caveat is toolchain reproducibility, not ROM equality: `tools/mwccar
 `ninja download_tools` fetches one archive from the mirror. Both `1.2/b56` and `1.2/sp2` must be present
 for the tree to configure; whether the mirror archive ships b56 has **not** been verified. Documented
 in `docs/SETUP.md` under "Per-unit compiler versions".
+
+## 2.45 BIOS SWI stubs: object compare says MATCH, the ROM says no (2026-11-21)
+
+Chasing the "use dsd sig / stop hand-matching SDK code" advice: `dsd sig list` knows only two
+signatures (`FS_LoadOverlay`, `FS_UnloadOverlay`), so signature matching has essentially no yield in
+this ROM. But the SDK side is already named: 21 non-`func_` symbols in `symbols.txt`, of which nine
+(`SoftReset`, `WaitByLoop`, `HuffUnCompReadByCallback`, `Div`, `IntrWait`,
+`LZ77UnCompReadNormalWrite8bit`, `RLUnCompReadByCallbackWrite16bit`, `BitUnPack`,
+`AutoloadCallback`) were already matched. Their accepted shape is the project precedent for BIOS calls:
+
+    #include "types.h"
+
+    #pragma thumb on
+    void BitUnPack(void)
+    {
+        asm { swi 0x10 }
+    }
+
+The ten remaining ones decode cleanly as THUMB (capstone, CS_MODE_THUMB):
+
+    Halt                                svc #6      Sqrt            svc #0xd
+    RLUnCompReadNormalWrite8bit         svc #0x14   IsDebugger      svc #0xf
+    LZ77UnCompReadByCallbackWrite16bit  svc #0x12   CpuSet          svc #0xb
+    GetCRC16                            svc #0xe    CpuFastSet      svc #0xc
+    VBlankIntrWait   movs r2,#0; svc #5            Mod   svc #9; adds r0,r1,#0
+
+All ten reproduce **byte-exactly at object level** in that style (for `Mod` the `svc #9` must be
+followed by `mov r0, r1`, which mwcc encodes as `adds r0, r1, #0`). **None of them installs**: `reg.py`
+returns False, and a manual delinks entry plus `ninja delink` changes the ROM digest
+(`ca26365219e43669ea6ee8df59a33927b73812b1`). So this is not a stale-gap-label problem and re-delinking
+does not fix it - carving a stub out of the surrounding blob shifts the bytes that follow it. The tree
+was restored and re-verified (`sha1` OK, `t10 --check arm9` ok).
+
+Triage rule this establishes: if a function's address has **no explicit entry in `delinks.txt`**, it
+lives inside a synthesized gap blob, and an object-level MATCH there is not actionable - only the ROM
+hash decides. Splitting a gap means changing how the module is delinked, which is a config change
+outside a byte-match batch.
+
+Worth keeping in view for the rest of this class: these are 4- and 6-byte functions, so the entire
+remaining BIOS stub set is under 50 bytes. Not worth a config fight.
