@@ -3037,3 +3037,29 @@ the *repetition* of the full expression is load-bearing.
 Also fixed: `tools/match/ready.py` now tolerates a trailing colon (and any junk) after the address
 in a `walls.txt` line instead of crashing, which unblocked the ov002 and ov004 rosters - the two
 malformed lines were section-internal notes rather than wall entries.
+
+## 3.05 Copy the neighbouring module's spelling of an IO helper (2026-11-22)
+
+`ov002 0x0204f654` (88 B) matched on the first attempt because it is the same hardware division
+helper arm9 already has three of (`func_0201fd18`, `func_0201fd8c`, `func_0201fdc8`):
+
+```c
+    volatile u32 *p = (volatile u32 *)0x04000290;   /* DIV_NUMER */
+    volatile u32 *q = (volatile u32 *)0x04000298;   /* DIV_DENOM */
+
+    *(volatile u16 *)0x04000280 = 0;                /* arm9 writes 1 here, this one 0 */
+    p[0] = a0;
+    q[0] = a1;
+    q[1] = 0;
+    while (*(volatile u16 *)0x04000280 & 0x8000) {
+    }
+    return *(volatile u32 *)0x040002a0;             /* DIV_RESULT low word */
+```
+
+Two things made it a one-shot. First, the pool words decoded to `0x04000280/90/98/a0`, which is
+the divider block, and the project already has a matched spelling for that block - including the
+`<volatile u16>` cast on the status register that is required for the busy loop not to be hoisted.
+Second, the arm9 versions differ from this one only in the control write (1 vs 0) and in how much
+of the 64-bit result they read, so the shape was already proven. Before decoding an unknown IO
+helper from scratch, grep the matched tree for its register address: the sibling function usually
+hands over the exact local-pointer style mwcc needs.
