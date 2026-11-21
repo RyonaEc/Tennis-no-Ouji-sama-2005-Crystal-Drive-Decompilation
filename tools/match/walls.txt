@@ -898,3 +898,16 @@ ov001 0x0204d8f4 148B -- VCOUNT vs BG scroll setup. Full body: `v = *(volatile u
   into one pooled absolute 0x027c3ff8 (136-140B). Four spellings tried: `(u32 *)(sym + 0x3ff8)`,
   `u8 *b = sym; (u32 *)(b + 0x3ff8)`, `(u32 *)sym + 0xffe`, and a scalar `extern u32` with
   `&sym` - every one pools the single absolute. Same two-pool class as ov003 0x0205299c.
+arm9 0x0202474c 36B -- four 12-byte block copies with a fixed destination (`ldm r0!,{r2,r3,ip}` /
+  `stm r1,{r2,r3,ip}` x4). mwcc always keeps the source pointer in ip and the destination in r3,
+  emits `mov ip,r0 / mov r3,r1` and rematerialises `add r0, ip, #0xc` between copies (56B).
+  Tried: unrolled `*dst = src[0..3]` with volatile dst, the same with `*src++`, and a real
+  4-iteration loop (mwcc adds a counted loop and a frame). Retail's ldm writeback means mwcc
+  would have to keep the source in r0 across all four copies; no spelling does.
+arm9 0x02026aa4 / 0x02026ac8 36B / 44B -- same 12-byte block copies with both pointers advancing
+  (0x02026ac8 adds a final 16-byte copy). Same ip/r3 source-copy residue as 0x0202474c, plus a
+  `stmdb sp!` frame from the pointer pair.
+arm9 0x0203684c 40B -- `push {r0,r1,r2,r3}` then `q.w1 &= ~0x80000000` through the spilled stack
+  slot, returning [sp] and [sp+4] in r0/r1. An 8-byte struct return makes mwcc use r0 as the sret
+  pointer; a `u64` return gives the right registers but mwcc folds the mask without the stack
+  write-back and adds two `orr #0` conversions (32B). Not reachable from either type.
