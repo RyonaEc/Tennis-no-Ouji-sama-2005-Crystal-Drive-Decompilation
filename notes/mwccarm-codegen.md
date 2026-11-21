@@ -1362,3 +1362,39 @@ Conclusion for planning: the small-unit tail is dominated by register-role ties 
 moves, not by unknown logic. Derive, record, park. The productive work left is in larger units where the
 instruction mix itself is still unknown (the lock pair `0x0202ce70`/`0x0202cdc8`, the init sequence
 `0x020263e0`), and in the helper trees.
+
+## 2.38 The seven-digit symbol trap cost a match again - and how to stop losing it (2026-11-20)
+
+`func_020263e0` (168 B) is matched. It first failed `reg.py` with `link/compile issue` because six of its
+nine callees were named from the disassembly listing:
+
+    udis prints          bl #0x2024b04
+    the symbol table has func_02024b04   (addr:0x02024b04)
+
+`0x2024b04` is the same number as `0x02024b04` - seven hex digits instead of eight - so a name built
+straight from the listing is missing its leading zero: `func_0204b04`, which exists nowhere. `lint_cand.py`
+flagged all six immediately (`6 bad extern name(s)`); the mistake was reading `reg.py`'s one-line
+"link/compile issue" and moving on instead of running the lint first.
+
+**Rule: after writing any body, run `python build/lint_cand.py <file>` before `reg.py`, and treat
+`link/compile issue` as "wrong symbol name" until proven otherwise.** The repair is mechanical: if
+`func_XXXXXXXX`/`data_XXXXXXXX` is not in the tables, try inserting a zero after the prefix.
+
+The body, for the record (note the `do/while` around `func_020263b4` and the `u16` local - a `u32` local
+compiles to a different loop):
+
+    void func_020263e0(u32 a0)
+    {
+        u16 n;
+        if (*(volatile u16 *)0x027ffc40 == 2) func_020263cc();
+        n = (u16)func_02024b04();
+        if (func_02024bd4(n) != 0) { do { func_020263b4(); } while (func_02024bd4(n) != 0); }
+        func_020266c0(0); func_020266c0(1); func_020266c0(2); func_020266c0(3);
+        func_02024948(0x40000); func_02024894(-1);
+        *(volatile u32 *)0x027ffc20 = a0;
+        func_02026488(0x10);
+        func_01ff840c();
+    }
+
+`func_01ff840c` is a real itcm symbol (it resolves correctly); the arm9-vs-itcm split is not the problem,
+the digit count is.
