@@ -14,7 +14,9 @@ arm7_bios.bin
 *.d
 compile_commands.json
 
-# Downloaded toolchain binaries (the CodeWarrior compilers are not redistributable)
+# Downloaded toolchain binaries. The CodeWarrior ARM compilers under
+# tools/mwccarm/ are vendored in the repository so a clean checkout builds with
+# the exact builds retail used (see docs/SETUP.md).
 /tools/dsd.exe
 /tools/dsd
 /tools/objdiff-cli.exe
@@ -22,7 +24,6 @@ compile_commands.json
 /tools/sjiswrap.exe
 /tools/sjiswrap
 /tools/wibo
-/tools/mwccarm/
 /tools/binutils/
 /tools/msvc/
 /tools/wibo-deadbeef/

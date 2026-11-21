@@ -39,8 +39,10 @@ Never commit a unit on the strength of `var3` alone.
 - **Never weaken verification.** Do not edit `build/t10.py`, `tools/sha1.py`,
   the expected SHA-1, or the objdiff configuration to make a check pass. Do not
   delete tests or skip modules in `--check`.
-- **Never commit the ROM, BIOS dumps or `tools/mwccarm/`** — `.gitignore` covers
-  them and this project must stay free of copyrighted binaries.
+- **Never commit the ROM or BIOS dumps** — `.gitignore` covers them and this
+  project must stay free of copyrighted game binaries. The CodeWarrior ARM
+  compilers under `tools/mwccarm/` *are* tracked: the build needs the exact
+  versions retail used, so they are vendored.
 - **No AI attribution.** Commit as the project owner; do not add
   `Co-Authored-By`, "Generated with ..." trailers, or bot co-authors.
 - **Do not kill processes by pattern** (`pkill -f`, `killall`). A long build may

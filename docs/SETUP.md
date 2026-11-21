@@ -26,9 +26,10 @@ so keep the file in version control once you have verified the rebuild.
 | `objdiff-cli` | Object diffing and progress reports | `ninja download_tools` |
 | `wibo` | Runs the 32-bit Windows tools on Linux | `ninja download_tools` |
 
-`mwccarm` is proprietary and is not part of this repository. It is fetched into
-`tools/mwccarm/` on first use so the project builds on a clean checkout. If you
-already have a CodeWarrior installation, point at it with:
+The CodeWarrior ARM compilers are vendored under `tools/mwccarm/` (one directory
+per build, e.g. `1.2/sp2`), so a clean checkout configures without downloading
+them. `ninja download_tools` only fetches mwccarm when the tree has none. If you
+prefer an installation elsewhere, point at it with:
 
 ```shell
 python tools/configure.py ATOJ --compiler /path/to/mwccarm
