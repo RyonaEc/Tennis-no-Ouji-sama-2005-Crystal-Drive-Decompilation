@@ -920,3 +920,22 @@ ov008 0x0204cc94 140B -- slot allocator: reads `slot = *(u32 *)(p + 0xc10 + idx 
   guard-first (144B: spills to r7 plus a stack slot), table-before-guard (132B), explicit
   `u8 *hdr = base + 0x40` pointer (136B: hoists the `add` past the guard and reloads through the
   folded address). Residue is allocation/CSE, not the shape.
+ov008 0x0204d9dc 124B -- direction/percentage update: `if (flags == 0 || flags == 0x40) dir *= -1;`
+  then `flags += dir; v = (flags * 10) / 64;` and two strh into `func_ov008_0204ed50()`'s object
+  (+6 = 0x90, +0xa = v), with v computed BEFORE the call (retail keeps it in a callee-saved
+  register). Fields are `u8` at base+0xd and `s8` at base+0xe. Retail materialises `base+0xe`
+  inside the negate block and `base+0xd` inside the add block (`add r2/r3, r4, #k`) and uses
+  immediate offsets for the plain loads; mwcc either folds all of them into the ldrb/strb
+  (112B) or, with `u8 *flags = base+0xd; s8 *dir = base+0xe;` locals, hoists both `add`s above
+  the compares (124B, allocation differs). Volatile on the RMWs does not change either behaviour.
+  Same class as 0x0204cf80 below: retail's `add` for a byte RMW carries the branch predicate.
+ov008 0x0204cf80 136B -- metre/slot picker: `if (*(u8 *)(base+0x30) < 0xc) ++` the byte, then
+  `v = (*(u8 *)(base+0x30) * 0x10) / 12` (`smull 0x2aaaaaab` + `asr #1`, i.e. /12 on a*16),
+  `if (a0 == 0) v = 0x10 - v;`, then `obj = func_ov008_0204ed50()`, `*(u16*)(obj+6) = 0x150`,
+  `*(u16*)(obj+8) = (0x10 - v) | (v << 8)`, return `*(u8*)(base+0x30) == 0xc`.
+  Nearest spelling: `u8 *cnt = &base[0x30]; if (*cnt < 0xc) (*cnt)++;` with the rest reading
+  `*(u8 *)(base + 0x30)` - 136B, every instruction identical except the address: retail emits
+  `cmp r1, #0xc` then `addlo r2, r5, #0x30`, mwcc emits the `add` unconditionally before the
+  `cmp` and predicates only the ldrb/strb. Tried: plain expression (folds to immediate, 128B),
+  volatile expression (folds, 132B), pointer declared inside the `if` (folds, 128B), inverted
+  `if/else` (hoists, 132B). One instruction of predication decides the unit.

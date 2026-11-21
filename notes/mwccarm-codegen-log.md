@@ -2851,3 +2851,34 @@ first step, with symbols unchanged. The rename was rehearsed on a mirror tree (c
 the mirror has been deleted. `--apply` refuses a tree containing `.git` without
 `--allow-live-tree`, which is the gate that keeps the recorded names from being applied while
 matching is under way.
+
+## 2.97 Byte-field RMW: retail predicates the address, mwcc hoists or folds it (2026-11-22)
+
+Three ov008 units in this session turned on the same four-byte question, so the class is
+worth naming. For a read-modify-write on a byte field of a struct reached through a base
+pointer, retail materialises the field address in a register (`add r2, r4, #0xe`) and, when the
+RMW sits in a small `if`, the `add` carries the same condition as the `ldrb`/`strb`
+(`addlo ... / ldrblo ... / addlo ... / strblo ...`). mwcc 1.2/sp2 does one of two other things:
+
+- folds the offset straight into `ldrb [r4, #0xe]` / `strb [r4, #0xe]`, saving the `add`
+  (112B and 128B spellings below), or
+- materialises the address through an address-taken pointer (`u8 *p = &base[k];`) but hoists
+  the `add` *above* the compare, so it is unconditional and only the load/store are predicated
+  (136B, but the whole function minus that one instruction).
+
+`volatile` on the field changes neither behaviour (it merely forces the reload). Declaring the
+pointer inside the `if` block is folded away again.
+
+Measured cases:
+
+- `ov008 0x0204cf80` (136 B) - nearest spelling is exact except `add` vs `addlo` on the counter
+  increment; see `tools/match/walls.txt`.
+- `ov008 0x0204d9dc` (124 B) - both RMWs (`dir *= -1` inside the guard, `flags += dir` after it)
+  want the predicated/inside-block address; mwcc hoists both `add`s above the compares (124 B
+  but with a different allocation and a different division placement).
+- `ov008 0x0204cc94` (140 B) - same residue in a non-branching form: retail loads the index
+  byte twice and keeps `base + 0x40` in a register, mwcc CSEs the reads and folds the offset.
+
+The lesson for the queue: a byte RMW through a struct pointer is not a shape problem. If the
+only difference is an `add` that retail predicates and mwcc hoists, stop - no spelling reaches
+it, and the wall note should say which side of the predicate the `add` ended up on.
