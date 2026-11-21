@@ -678,3 +678,14 @@ arm9 0x02028920 / 0x02028958 56B -- add a delta into a struct word, then call a 
   Tried: local v, obj local, compound +=, field-pointer local, fn-pointer local, rhs-first, delta
   local, plus a null guard. Best is 56 B but it copies e to r3 and saves lr on the stack
   (`stmdb sp!/sub sp,#4`) where retail pushes {r4,lr} and keeps e in r0 the whole way.
+arm9 0x0201f3d0 104B -- bit-2 gate then re-init. Retail tests with lsl/asr on the flags word
+  (`ldr r3,[r4,#0x108]; mov r2,r1; lsl r1,r3,#30; asrs r1,r1,#31`) and passes that 0/-1 value to
+  func_0201f38c at both call sites, so arg lands in r2 and the bit in r1. Every spelling that
+  produces the 0/-1 value puts the bit in r2 and the arg in r1 - a straight register swap; the
+  versions that avoid it (passing constants 0/1, masked truth test, signed bitfield) diverge in
+  the test instruction instead. Parked as an allocation tie.
+
+arm9 0x02025550 104B -- sorted linked-list insert. Semantically identical C (while-loop over
+  cur/prev, head at 0x02048d3c+0xc) compiles to 104 B with every instruction matching except that
+  retail keeps prev in ip and cur in lr and mwcc always swaps them. Tried: declaration order,
+  assignment order, for-loop form and a comma expression - all 104 B, all swapped.

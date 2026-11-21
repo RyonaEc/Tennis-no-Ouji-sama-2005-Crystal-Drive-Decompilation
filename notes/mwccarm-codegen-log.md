@@ -2457,3 +2457,24 @@ bulk pass needs.
 Caveat for scripting: a run of pointer-shaped words is not proof of a table (many of them point
 into `.rodata` strings or into `.data` itself). Only define a unit where the surrounding code or
 an obvious table boundary makes the extent real, and let the digest decide.
+
+## 2.82 One match, two allocation ties (2026-11-22)
+
+`func_020251c0` (104 B) matched on `1.2/sp2`: `tok = func_02026350()`, the object behind
+`data_02048d34`, `if (p) *p |= 1 << o->f6c`, `o->f64 = 0`, then `func_02025024()` and
+`func_02026364(tok)`. The whole body matched instruction for instruction on the first try; only
+the three call targets differed, which are relocations.
+
+Two near-misses went to `walls.txt` instead of being committed:
+
+* `0x0201f3d0` - retail derives a 0/-1 value from bit 2 of the flags word with `lsl #30` /
+  `asrs #31` and passes it to `func_0201f38c` at both call sites. Any spelling that yields that
+  value puts the bit in `r1` and the argument in `r2`; mwcc insists on the opposite. The
+  variants that flip the registers (constant 0/1 arguments, `ands` truth test, signed bitfield)
+  diverge in the test itself, so this is a genuine tie rather than a wrong source.
+* `0x02025550` - sorted list insert, 104 B and instruction-identical except retail keeps `prev`
+  in `ip` and `cur` in `lr` where mwcc always swaps them. Declaration order, assignment order,
+  `for` form and comma expression all produce the same 104 B with the same swap.
+
+State: 1,502 of 3,806 functions (39.46%), 104,008 B code (5.65%), 124 B data, 1,504 complete
+units, all at 100%.
