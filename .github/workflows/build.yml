@@ -1,10 +1,10 @@
 name: Build
 
 on:
-  # Needs a self-hosted runner with the retail ROM, the ARM7 BIOS and the
-  # CodeWarrior compilers already in place, which hosted runners cannot
-  # provide. Kept off the push trigger so a public checkout does not queue
-  # runs that can never start; progress is uploaded with
+  # Needs a self-hosted runner with the retail ROM and the ARM7 BIOS already in
+  # place, which hosted runners cannot provide. Kept off the push trigger so a
+  # public checkout does not queue runs that can never start; progress is
+  # uploaded with
   # tools/upload_report.py (see docs/BYTEMATCH.md).
   workflow_dispatch:
 
@@ -15,10 +15,10 @@ concurrency:
 jobs:
   build:
     name: ${{ matrix.version }}
-    # The build needs the retail ROM, an ARM7 BIOS dump and the CodeWarrior
-    # compilers, none of which can be committed. Run this on a self-hosted
-    # runner where extract/baserom_tennis_<version>.nds, arm7_bios.bin and
-    # tools/mwccarm/ already exist.
+    # The build needs the retail ROM and an ARM7 BIOS dump, which cannot be
+    # committed. Run this on a self-hosted runner where
+    # extract/baserom_tennis_<version>.nds and arm7_bios.bin already exist; the
+    # compilers come from the checkout.
     runs-on: self-hosted
     strategy:
       fail-fast: false

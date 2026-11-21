@@ -54,8 +54,10 @@ included in this repository.
 * [Ninja](https://ninja-build.org/) (`python -m pip install ninja`)
 * Windows, or Linux with [Wibo](https://github.com/decompals/wibo) (downloaded automatically)
 
-The 32-bit CodeWarrior compilers are downloaded automatically. See
-[docs/SETUP.md](docs/SETUP.md) if you would rather supply your own.
+The 32-bit CodeWarrior compilers are vendored under `tools/mwccarm/`,
+including the `1.2/sp2` and `1.2/b56` builds retail used, so a clean checkout
+builds without downloading them. See [docs/SETUP.md](docs/SETUP.md) if you
+would rather use an installation elsewhere.
 
 ### 1. Provide the base ROM
 
@@ -104,7 +106,7 @@ layout before any C is written.
 | `ninja delink` | Re-delink the base ROM after editing `delinks.txt` |
 | `ninja dis` | Disassemble the base ROM into `build/ATOJ/asm/` |
 | `ninja apply` | Copy symbol data from the linked ELF back into `symbols.txt` |
-| `ninja download_tools` | Fetch `dsd`, `mwccarm`, `sjiswrap`, `objdiff` (and `wibo`) |
+| `ninja download_tools` | Fetch `dsd`, `sjiswrap`, `objdiff` (and `wibo`); `mwccarm` only if the tree has none |
 
 ## Layout
 
@@ -113,7 +115,7 @@ config/ATOJ/        dsd configuration: per-module delinks, symbols, relocs
 src/                decompiled C/C++ (one translation unit per delinked file)
 include/            shared headers
 libs/               vendored libraries (headers are added to the include path)
-tools/              extraction, build and matching tooling
+tools/              extraction, build and matching tooling, vendored `mwccarm`
 extract/            your ROM and its extraction (never committed)
 build/ATOJ/         delinked objects, linker script, EFX and the built ROM
 ```

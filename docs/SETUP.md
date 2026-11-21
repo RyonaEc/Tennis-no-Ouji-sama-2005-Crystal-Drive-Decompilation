@@ -33,7 +33,7 @@ you have verified the rebuild.
 | Tool | Purpose | Obtained by |
 |---|---|---|
 | `dsd` | ROM extraction, delinking, LCF and ROM building | `ninja download_tools` (GitHub release) |
-| `mwccarm` / `mwldarm` | CodeWarrior ARM compiler and linker | `ninja download_tools` (archive mirror) |
+| `mwccarm` / `mwldarm` | CodeWarrior ARM compiler and linker | vendored under `tools/mwccarm/` |
 | `sjiswrap` | Passes Shift-JIS arguments to the compiler | `ninja download_tools` |
 | `objdiff-cli` | Object diffing and progress reports | `ninja download_tools` |
 | `wibo` | Runs the 32-bit Windows tools on Linux | `ninja download_tools` |
@@ -104,9 +104,11 @@ its path to `tools/init.py`; the recorded path lives in `config/ATOJ/rom.txt`.
 `error: expected game code ATOJ` means the image is a different region or a
 different Prince of Tennis title.
 
-If the compiler download fails, download the CodeWarrior archive by hand,
-extract it so that `tools/mwccarm/1.2/sp2/mwccarm.exe` exists, and re-run
-`configure.py`.
+If `configure.py` reports a missing compiler, check that the version directory
+exists in your checkout (`tools/mwccarm/1.2/sp2/mwccarm.exe`,
+`tools/mwccarm/1.2/b56/mwccarm.exe`) and re-run it. To restore the directory,
+`python tools/download_tool.py mwccarm latest --path tools/mwccarm` fetches the
+archive mirror.
 
 Link errors about `Entry` or missing symbols usually mean the linker script is
 out of date. It is generated from `config/ATOJ/arm9/delinks.txt`, so re-run

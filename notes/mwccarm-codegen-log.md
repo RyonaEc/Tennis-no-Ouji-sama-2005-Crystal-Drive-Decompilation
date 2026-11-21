@@ -1508,10 +1508,9 @@ It is still the original toolchain: `1.2/b56` is a real shipped CodeWarrior ARM 
 family as `1.2/sp2`, not a substitute compiler. The divergence is narrow - 59 of 60 sampled matches are
 byte-identical under both - which is what a mid-project SDK update looks like.
 
-The genuine caveat is toolchain reproducibility, not ROM equality: `tools/mwccarm/` is gitignored, and
-`ninja download_tools` fetches one archive from the mirror. Both `1.2/b56` and `1.2/sp2` must be present
-for the tree to configure; whether the mirror archive ships b56 has **not** been verified. Documented
-in `docs/SETUP.md` under "Per-unit compiler versions".
+Toolchain reproducibility is not a caveat: `tools/mwccarm/` is committed, so both `1.2/b56` and
+`1.2/sp2` are present in a clean checkout and the tree configures without a download. Documented in
+`docs/SETUP.md` under "Per-unit compiler versions".
 
 ## 2.45 BIOS SWI stubs: object compare says MATCH, the ROM says no (2026-11-21)
 
