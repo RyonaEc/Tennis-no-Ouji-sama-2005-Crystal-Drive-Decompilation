@@ -32,6 +32,10 @@ without a ROM-digest match.
 * Solved families do not need re-deriving: if `src/` already has the unit, its
   bytes are settled. The log's §9-§13 are history, not a to-do list.
 
+Volatile used for a stack spill is a match-shape hack, not the original source. Mark those lines
+`/* match-shape: volatile only forces retail's stack spill */`. Volatiles on hardware registers
+(`extern volatile`, or an MMIO cast) are genuine and stay unmarked.
+
 ## Symptom → lever
 
 | What the diff shows | Try first | Log |
@@ -45,6 +49,7 @@ without a ROM-digest match.
 | Retail pools a constant you split (or the reverse) | keep the value in a local when it survives across statements; a one-expression constant is a literal | 2.10, 2.14, 2.23 |
 | RMW lands four bytes short | compound assignment on a freshly computed lvalue (`*(u16 *)(p + 0xc) -= 1;`) | 2.63 |
 | Retail stores a constant to the stack and reloads it (`str r1,[sp]; ldr r0,[sp]`) | the value is a `volatile` local; a plain literal emits none of the spill | 2.65 |
+| A local `volatile` exists only to force a spill | keep it, and tag the line `/* match-shape: ... */` so cleanup can find it | 2.65 |
 | Retail re-materialises the address at the write | re-derive it at the store instead of keeping the base live | 2.60 |
 | You get `movhs`/`movlo`, retail `movge`/`movlt` | the compared operands must be signed (`s32`) | 3.3, 2.55 |
 | `and rX, rN, #0xff` hoisted to the caller | declare the callee parameter narrow and let the call convert | 3.2 |

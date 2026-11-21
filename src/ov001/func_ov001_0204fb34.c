@@ -8,6 +8,7 @@ extern void func_02026a04(u32 a, u8 *p, u32 b);
 
 void func_ov001_0204fb34(void)
 {
+    /* match-shape: volatile only forces retail's stack spill (notes 2.65) */
     volatile u32 v = 0xc0;
 
     func_02026a04(v, data_ov001_02051cc0 + 0x134c, 0x400);
