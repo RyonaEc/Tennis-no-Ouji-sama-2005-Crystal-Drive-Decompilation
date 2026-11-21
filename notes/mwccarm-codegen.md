@@ -1902,3 +1902,27 @@ Three spellings of the flags test identified the exact form (word load, `& 0xff`
 not `ldrh`), but retail additionally stores the zero constant to `[sp]` and reloads it for the call -
 the only memory-resident-partial I have seen in this codebase - which no spelling reproduced. Best
 copies: 112B and 116B against 124B, 108B against 128B. Parked with the body shape written down.
+
+## 2.59 Bitfields, and a note on the helper trees (2026-11-21)
+
+Two idioms worth remembering from `0x0201f6c0` (172B, parked at exact size):
+
+**A 1-bit bitfield test is not `tst`.** `ldr r0, [p, #0x108] / lsl r0, r0, #0x1f / asrs r0, r0, #0x1f /
+beq` is mwcc extracting a bitfield member, and the `asr` (not `lsr`) says the member is declared
+**signed** (`s32 b : 1`). With `u32 b : 1` the same source emits `lsrs` and the unit never matches.
+The write side then comes out as `bic #1 / orr #1`, which is the giveaway that the read and the write
+are the same bit of the same field.
+
+**Compute the pointer after the guard call.** Retail keeps `a1` in a callee-saved register across
+`func_0201f8c8()` because the element address `data_02048760 + a1 * 0x144` is only formed afterwards.
+Declaring that pointer before the `if` lets mwcc fold the `mla` into the prologue and drops a register
+(144B). This is the same lesson as 2.58 (a value that is live across a call has to be written as one).
+
+That unit still will not match: retail permutes the saved registers and re-materialises the `+0x108`
+address at the bitfield write, while every spelling keeps it in a register or folds it. Exact size,
+identical instruction count, different allocation - the same wall class as 2.46.
+
+**Helper trees.** The scout and opencode workers are paused indefinitely for usage reasons, so the
+per-batch `cp` of `notes/`, `build/walls.txt` and the generators to `/m/ATOJ-scout`,
+`/m/ATOJ-worker` and `/m/ATOJ-delta` is suspended until further notice. All work stays in this tree;
+nothing in the release procedure changes apart from dropping that copy step.
