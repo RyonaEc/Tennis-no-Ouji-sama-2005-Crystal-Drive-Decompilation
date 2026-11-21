@@ -1235,3 +1235,27 @@ parameter is used somewhere we have not found; four formulations failed and it i
 
 All three families are in `build/walls.txt` with their full retail sequences and the closest body, so
 the helper trees can pick them up with the derivation already done.
+
+## 2.32 Matched-twins: mine the units that are already done (2026-11-20)
+
+Twenty-odd turns were spent deriving bodies from scratch for functions that had a **twin already in the
+tree**. `build/twins.py` fixes the target selection: it groups every function in every module by
+`(module, size, mnemonic multiset)` and reports the groups that contain both a matched and an unmatched
+member. Those are the cheapest possible wins - the C is already written, only constants differ.
+
+Two found on the first run, both installed first try:
+
+* arm9 `0x02024168` (116 B) - twin of the matched `0x0202352c`. Different body shape though: 2 params
+  not 3, `data_02048cbc + 0x20000` instead of `data_02048c94 + a1`, but the same
+  `if (handle != 0xffffffff) func_02026738(...) else func_020269ec(...)` skeleton.
+* ov002 `0x020a9b48` (156 B) - twin of the matched `0x020a663c`. Only the field mask (0x10 not 0x8),
+  the callee (`0204d270` not `0204d22c`), three constants (0x2d/0x2e, 5, 0x80) and one absent global
+  write differ. The `#define B (*(u8 **)data_ov002_02102070)` idiom carried over verbatim.
+
+An exact mnemonic *sequence* signature finds nothing here - mwcc reorders the prologue between twins
+(`mov r3,r2` dead move, compare hoisting), so register order differs while the instruction mix does not.
+The **multiset** is the right granularity: same instruction counts, different schedule.
+
+Caveat worth remembering: the twin's source still has to be re-derived where the *shape* differs
+(parameter count, the address expression). Substituting constants blindly is right for the operands,
+not for the control flow.
