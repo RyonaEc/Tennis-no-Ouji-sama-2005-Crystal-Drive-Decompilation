@@ -22,3 +22,5 @@ src/ov002/func_ov002_0204c824.c = 1.2/b56
 src/ov002/func_ov002_020780b0.c = 1.2/b56
 src/ov002/func_ov002_02063bb8.c = 1.2/b56
 src/ov002/func_ov002_02063c5c.c = 1.2/b56
+src/arm9/func_02018318.c = 1.2/b56
+src/arm9/func_0201f980.c = 1.2/b56

@@ -1727,3 +1727,23 @@ Practical rule: a cross-module twin is a free unit only when the matched body re
 symbols (`data_ovNNN_*` / `func_ovNNN_*`). If it does, the body has to be respelled with the target
 module's names, and then it is twins.py work, not a copy. This makes crosstwin cheap to re-run after
 every batch (it takes one pass over the symbols files) but not a large source of units.
+
+## 2.52 b56 code exists in arm9 too, so the region map must cover every module (2026-11-21)
+
+Switching from discovery (all three generators drained) back to hand decompilation, the four smallest
+fresh targets gave two matches, and **both were arm9 units that only match under 1.2/b56**:
+
+    arm9 0x02018318 (24B) -> s32 f(u8 *p) { u32 *q = (u32 *)(p + 0x24);
+                                           *q = *(u32 *)(p + 0x18); q[2] = 0; return 0; }
+    arm9 0x0201f980 (28B) -> void f(u8 **a0) { u8 *p = *a0;
+                                               if (p) { u32 *q = (u32 *)(p + 0x108); *q |= 4; } }
+
+That corrects an assumption baked into 2.46/2.47: I had built `b56_regions.txt` from overlay anchors
+only, because the first twelve b56 units happened to be ov002/ov004. The map now scans **every module**,
+and arm9 contributes its own neighbourhoods. Always regenerate from the version map, never from where
+the previous wins were found.
+
+Two of the four resisted and are parked: `0x02026a88` (28B) is a 36-byte ldm/stm copy that neither a
+3x-word loop, a byte loop, nor a 9-word struct assignment reproduces (52B/36B/28B, no ldm/stm at all),
+and `0x0202de8c` (28B) is `ldrh`-test-clear at `0x027fff96` where every spelling differs in all 28
+bytes, i.e. the literal is materialised differently rather than the logic being wrong.
