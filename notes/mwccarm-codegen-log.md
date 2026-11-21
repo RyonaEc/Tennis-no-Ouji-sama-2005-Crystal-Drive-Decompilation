@@ -2044,6 +2044,26 @@ The ldm/stm copy family got one more shape: a 12-byte struct assignment
 36/48 B struct assignment) does not reach retail's frameless
 `ldm r0!`/`stm r1!` pairs.
 
+## 2.66 Wall re-probe under b56 (2026-11-21)
+
+`walls.txt` was written when sp2 was assumed universal, so every parked unit carried a
+"unreachable under 1.2/sp2" label that stopped being true on the b56 discovery. `tools/match/wallprobe.py`
+parses the wall list, skips units that now have a source, finds their stored bodies in `build/cand` by
+address, and probes each under `1.2/b56` then `1.2/sp2` with relocations masked.
+
+First run over 190 wall addresses: 28 already installed, 26 without a `FUNCS` entry, 45 with no stored
+body, 110 bodies compiled, **2 matches, both b56-only**:
+
+* `func_0201842c` (arm9, 80 B) - copy constructor: `func_020179c8(obj, 0x46524d48, p + 0xc, a, b)` then
+  three word copies from `+0x18/+0x1c` and a zero. The park note blamed the `add r4, a0, #0x24` hoist;
+  under b56 the same body reproduces it. Installed, `mwcc_versions.txt` entry added.
+* `0x02085ff8` (ov002, 40 B) - was already matched, under a source file named
+  `func_ov002_0202085ff8.c` (duplicated `020`). Renamed to `func_ov002_02085ff8.c`, delinks entry
+  follows, and it is b56 in the version map.
+
+Both were installed through `reg.py` and confirmed by `ninja sha1`. Lesson: a park is a result for the
+compiler it was probed with, so re-probe the wall list whenever the version model changes.
+
 ## 2.65 Nine small units, and four walls that are pure colour (2026-11-21)
 
 Swept the unwalled 16-84B band with `vprobe` (b56 first). All nine below matched

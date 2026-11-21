@@ -1,4 +1,6 @@
-# Addresses proven unreachable from C under mwcc 1.2/sp2. ready.py skips these.
+# Parked units: no source shape reached them under 1.2/sp2 or 1.2/b56.
+# tools/match/wallprobe.py re-probes the stored bodies under both compilers
+# and flags entries that already have a source; prune those by hand.
 # Section numbers refer to notes/mwccarm-codegen-log.md.
 # Format: <module> <addr> <one-line reason>
 arm9 0x02033cb0 UDF trap stub + bx lr (assert/dead code, no C form)
@@ -14,7 +16,6 @@ arm9 0x0202607c mrc p15 (coprocessor access, no C form)
 arm9 0x020048e8 retail predicated stmlt/ldmlt loop; mwcc rotates
 arm9 0x020269ec retail predicated stmlt/ldmlt loop; mwcc rotates
 arm9 0x02018318 rematerialisation: mwcc folds q+off, retail keeps register
-arm9 0x0201842c rematerialisation: mwcc folds q+off, retail keeps register
 arm9 0x0201f980 rematerialisation: mwcc folds q+off, retail keeps register
 arm9 0x02029768 var3 matches, ROM digest rejects (do not re-report)
 arm9 0x0202e274 var3 matches, ROM digest rejects (do not re-report)
@@ -31,7 +32,6 @@ ov002 0x020781b4 same pre-index writeback shape as 0x0207808c
 ov002 0x02086020 same pre-index writeback shape (ldrb with register offset)
 ov002 0x02060ca0 retail materialises p=b+0x35 (add r3,ip,#0x35) and uses a separate base for +0x34; mwcc offsets both (8 shapes)
 ov002 0x02062b20 pre-index writeback ldr r0,[r1,#0x28]! vs mwcc ldr/orr/str at [r1,#0x28] (3 shapes, same size)
-ov002 0x02085ff8 pre-index writeback with register offset (mvn/and shape)
 ov003 0x020b6b60 retains dead stores to non-escaping stack locals; mwcc drops them (plain and volatile shapes tried)
 ov003 0x020b732c same as 0x020b6b60 (family twin)
 ov004 0x020534cc rematerialisation on the +0x58 flag field (4 shapes, 32B vs 40B)
