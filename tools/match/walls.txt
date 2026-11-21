@@ -1002,3 +1002,12 @@ arm9 0x02018ee8 148B -- growable-array append: `if (!func_020194a8((u32)(arr + 4
   (140B), single `r` result with an enclosing `if` (136B), early return plus an address-taken
   `u16 *n = (u16 *)(arr + 8)` (144B). Both differences are the if-conversion/address classes
   already recorded, on a unit where they cancel out to four bytes.
+arm9 0x02024b5c 48B -- interrupt-enable bit setter: `if (bit >= 0x60) { p++; bit -= 0x60; } else
+  bit -= 0x40;` with `p = (u32 *)0x027fffb0` (two 32-bit enable words), then
+  `*p |= 0x80000000 >> bit` (logical shift, so the shift amount is `bit` not `31 - bit`).
+  Nearest spelling is 44B against 48B: retail materialises the mask
+  (`mov r1,#0x80000000 / lsr r1,r1,r0`) and then does a plain `orr r2,r2,r1`; mwcc folds the
+  shift into the orr as an operand shift (`orr r0, r2, r1, lsr r0`) and drops the `mov`+`lsr`
+  pair. Tried: `*p = *p | (0x80000000 >> bit)` (fused, 44B), a `u32 m = 0x80000000 >> bit;`
+  local (fused, 44B), `s32` parameter to get pl/mi instead of hs/lo (same size, flags fixed).
+  The fused operand shift is the same lever as 2.99, seen from the other side.

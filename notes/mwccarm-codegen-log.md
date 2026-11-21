@@ -2970,3 +2970,24 @@ unit "matched" - but the file already existed and was already matched. The rewri
 byte-equivalent churn on matched code and has been reverted. `ready.py`'s callee list can name a
 symbol that a `src/` file already covers; check `ls src/<mod>/<name>.c` before writing a candidate
 for a callee-sized address, not just the ready list.
+
+## 3.02 Operand-shift fusion, and two units that need varargs (2026-11-22)
+
+`arm9 0x02024b5c` (48 B, parked) is the interrupt-enable bit setter for the two enable words at
+`0x027fffb0`. Retail builds the mask in a register (`mov r1,#0x80000000 / lsr r1,r1,r0`) and ORs
+it plainly; mwcc always folds the variable shift into the `orr` operand
+(`orr r0, r2, r1, lsr r0`), which is one instruction shorter and unfixable from the source -
+naming the mask in a local does not stop it. This is 2.99's lever again (an expression that is
+cheaper as a repeated operand shift in retail and as a CSE'd register in mwcc), so the class now
+has both directions on record.
+
+Two arm9 units near it are varargs functions and are out of reach of the current source style:
+
+- `0x02034594` (116 B) builds a 12-byte `{buf, size, 0}` descriptor on the stack and calls
+  `0x0203465c(&fmt, &descriptor)`, then terminates the buffer - a `vsnprintf`-shaped helper.
+- `0x02034560` (52 B) is its wrapper: it passes `-1` as the size and the caller's vararg pointer.
+
+Nothing in `src/` uses `...` or `va_list` today and `include/types.h` has no stdarg shim, so
+matching these needs a decision about how to declare varargs first (mwcc accepts `<stdarg.h>`
+from its own include tree, but the project has never taken that dependency). Worth settling
+before spending iterations on either.
