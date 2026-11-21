@@ -2537,3 +2537,25 @@ What blocks the match is the counter's register: retail keeps it in `r5` (hence
 `push {r4,r5,lr}` plus a 4-byte frame, with the constant 0 in `lr`), mwcc puts it in `lr` and
 drops the push. Written up in `walls.txt` for all three members - if one flips, the family is a
 single substitution.
+
+## 2.85 ov005 engine-B init: everything matches but one scratch pair (2026-11-22)
+
+The 4-member `220 B` family reuses the ov003 shape with different offsets and an extra tail. Two
+details worth keeping:
+
+* Writing the loop address as `u8 *p = g + i * 2;` and then `*(u16 *)(p + 0x4a58)` is what makes
+  the counter land in `r5` like retail (`push {r4,r5,lr}` plus a frame). Folding the constant into
+  the expression (`g + 0x4a58 + i * 2`) instead hoists the constant, costs two instructions and
+  puts the counter in `lr` - the same trap as the ov003 member.
+* The mode!=0 path has no body: retail branches straight to the shared `return 0`, so the source is
+  `if (mode == 0) { ...init... } return 0;` without an `else`.
+
+What remains is one scratch pair. Retail zeroes into `lr` and keeps the loop pointer in `ip`;
+mwcc does the reverse, and the two values are interchangeable, so the instruction stream is
+identical apart from those two registers.
+
+I swept all 25 vendored mwccarm builds on this candidate rather than assuming: `1.2/{b56,base,
+sp2,sp2p3}` all produce the same swapped 220 B, `1.2/sp3` and `1.2/sp4` give 216 B, `2.0/*` 200 B
+and `dsi/*` 204 B. None matches, so the overlay was not built with a different compiler build -
+the divergence is in the source shape, exactly as the project concluded for the relocation class
+earlier.

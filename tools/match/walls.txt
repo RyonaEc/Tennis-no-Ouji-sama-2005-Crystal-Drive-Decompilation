@@ -701,3 +701,16 @@ ov003 0x02066a54 / 0x020b85b8 / 0x020db6ec 180B -- engine-B init: clear 0x200 u1
   always allocates it to lr instead, dropping one push. Every other instruction matches, so this
   is a counter-register tie, not a shape error. (s16 i gives the same sequence with a different
   modulo shift and 192 B; int i gives 184 B.)
+ov005 0x020614a4 / 0x020656d8 / 0x020695bc / 0x0206bfc0 220B -- same engine-B init as the ov003
+  0x02066a54 family with different offsets (clear 0x200 u16 slots at g+0x4a58, word 0x200 every
+  fourth index) plus a tail: if (*(u16 *)(g + 0x4388) < 0x1f4) { func_02025c94(g + 0x4658, 0x400);
+  func_02026a50(g + 0x4658, 0x7000000, 0x400); }. The mode!=0 path does nothing and falls into the
+  shared `return 0` (there is no else body).
+  Shape that matches everything except one scratch pair (220 B):
+      u16 i; u8 *p;  ...  p = g + i * 2;
+      *(u16 *)(p + 0x4a58) = 0;
+      if (i % 4 == 0) *(u32 *)(p + 0x4a58) = 0x200;
+  With `p` as a local the counter does land in r5 as retail does, and the whole loop, the tail and
+  the prologue match; only the two scratch values swap: retail zeroes into lr and puts p in ip,
+  mwcc does the reverse. All 25 vendored mwccarm builds produce the same swap (1.2/* at 220 B,
+  1.2/sp3-sp4 216, 2.0/* 200, dsi/* 204), so this is not a compiler-version artifact.
