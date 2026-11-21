@@ -662,3 +662,26 @@ arm9 0x020049a0 112B -- flush routine over the five-word table at data_02004a0c:
   to get `mi` blocks the post-index walk, and the pointer spelling gives `lo` on the copy
   loop: 164B against 112B. Needs the mixed signed/unsigned shape expressed without
   losing the table walk.
+## 2026-11-21 last below-100% unit: ov008 0x0204d970 108B (99.81%)
+The ov003 twin 0x02050460 is solved: with prototypes declared `u8 *p` and the array
+`data_ov003_020e6fe4` passed directly, mwcc rematerialises the address per call instead of
+CSE-ing it into r4, and the object is identical to the delinked one (92B, pool
+[data, 0xe740, 0xef40]). The lesson generalises: an address passed to a `u32` parameter is
+CSE'd into a callee-saved register, the same address passed to a `u8 *` parameter is not.
+
+0x0204d970 remains. The body is instruction-for-instruction identical to retail except that
+two values swap registers:
+
+    retail            mine
+    ldr  lr, [r0]     ldr  r2, [r0]     ; g = data_ov008_0204f440
+    ldrb r2, [lr,#0xb] ldrb lr,[r2,#0xb] ; n = g[0xb]
+    ... cmp r3, r2 / cmp r3, lr ; strbne r1,[lr,#0x21] / [r2,#0x21]
+
+So retail allocated the pointer to lr and the count to r2; 1.2 allocates the count to lr and
+the pointer to r2. Tried and rejected: every declaration order of {g,n,m} with i first or
+last (24 variants), g assigned through a `u8 **pp` temp, `*(u8 **)&sym`, n/m read from the
+symbol with g assigned last, while-loop and do-while forms, index form (`g[i*2+0x10]`),
+`u32`/`s32` mixes, and all 25 vendored mwccarm builds (1.2 base/b56/sp2/sp2p3/sp3/sp4,
+2.0 x10, dsi x9 - the 1.2 family lands on 108B with this residue, 2.0 on 84B, dsi on 80B).
+This is the register-allocation tie class: the algorithm is settled and the object already
+carries the right relocation, so the remaining 108 bytes are pure allocation.
