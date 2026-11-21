@@ -968,3 +968,14 @@ ov004 0x0204d8ec 128B -- binary search over the same overlay's table: `if (key >
   (`bhi`, then `blt`/`ble` to the shared one at the end) and enters the loop through a `b test`.
   Tried: tab local before the guard (136B), tab inline after the guard (136B), single-exit
   `r = 0x6b; ... break; return r` (136B). The rotation/duplication is mwcc's, not the source's.
+ov004 0x0204fb74 124B -- AABB overlap test: `h = ((*(u16 *)(a0+2) & 0x3f) << 2) << 12`,
+  `dx = a1[5] - a2[1]`, `dy = a1[4] - a2[0]`, then `dx + h > 0`, `dx - h < a2[3]`,
+  `dy + h > 0`, and the result is `dy - h < a2[2]`. The count field is masked twice at byte
+  width (`and #0x3f`, `and #0xff`, `lsl #2`, `and #0xff`), so the source has two u8 steps:
+  `u8 a = *(u16 *)(a0 + 2) & 0x3f; u8 n = a << 2;`. Residue: retail repeats the shift at all
+  four use sites as an operand shift (`add r0, r1, r4, lsl #12`, `sub ip, r1, r4, lsl #12`, ...)
+  with n in r4; mwcc CSEs `n << 12` into one register (`lsl ip, r3, #0xc`) and then uses plain
+  register operands, 132B. Tried: early `return 0` chain (if-converted to movle/ldmle/bxle,
+  164B), single `r = 0` result with a chained `&&` condition (132B), same with an explicit
+  `s32 h` local (132B), `u32 *` vs `s32 *` for the two record pointers (same). The 8 bytes are
+  the CSE'd shift plus its scheduling.

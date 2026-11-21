@@ -2907,3 +2907,25 @@ declaration order - all pick the other assignment, so it is parked as a register
 `func_ov004_0204d8ec` (128 B) is the binary search over that same table; the shape is decoded
 and written up in `tools/match/walls.txt`, and the only residue is mwcc duplicating the
 `mov r0, #0x6b` epilogue where retail branches both exits to one copy.
+
+## 2.99 Operand shifts are not CSE'd in retail, and early returns get if-converted (2026-11-22)
+
+Two more ov004 spellings worth recording.
+
+`func_ov004_0204fb74` (124 B, parked) repeats `n << 12` at four sites in retail, as an operand
+shift (`add r0, r1, r4, lsl #12`, `sub ip, r1, r4, lsl #12`), so the half-extent never gets its
+own register. mwcc CSEs the identical expression into `lsl ip, r3, #0xc` and then uses plain
+registers, which costs 8 bytes (132 B). No spelling reproduced the repetition: a named `h` local,
+an inline `n << 12`, and both with an `s32` or `u32` field pointer all gave 132 B. Operand-level
+shifts are the one place where "the same expression four times" is cheaper than a variable.
+
+The same unit shows the if-conversion boundary: `if (...) return 0;` three times in a row gets
+if-converted into `movle r0,#0 / pople {r4,lr} / bxle lr` blocks (164 B) instead of branching to
+a shared epilogue. Writing the conditions as one chained `&&` around a single result variable
+drops it to 132 B and single-exit form, which is the shape retail has (`ble` to the shared
+`mov r0,#0`), just with the CSE'd shift left over. So for a multi-clause range test, write one
+chained condition and one result, never a chain of early returns.
+
+The byte-width masking is worth copying too: retail emits four mask ops (`and 0x3f`, `and 0xff`,
+`lsl 2`, `and 0xff`) because the source narrows twice - `u8 a = raw & 0x3f; u8 n = a << 2;`.
+A single `u8 n = (raw & 0x3f) << 2;` emits only three.
