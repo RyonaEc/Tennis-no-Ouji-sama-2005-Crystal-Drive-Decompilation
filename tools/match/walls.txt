@@ -664,13 +664,24 @@ arm9 0x02017880 104B -- list insert: p[0], (u16*)((u8*)p+10) offset, count at (u
   p+8 in r2 from +40. Every spelling tried CSEs one more load than retail, giving 96 B
   (one shared local) or 104 B with three loads of the halfword and a different register
   plan. Needs a form that blocks CSE for exactly two of the three uses.
-arm9 0x02023df8 / 0x02023e58 96B -- open-handle dispatch (data_02042370, -1 = unopened).
-  func_020268e0(h, a0, 0x6600000|0x6400000 + a1) when opened, else func_020269ec(a0, base + a1).
-  Retail keeps both args in callee-saved r4/r5, holds the handle in lr, materialises the base with
-  mov ip,#0x6600000, and begins with a dead `mov r3, r2` (a third parameter copied and never used).
-  Straight 2- and 3-parameter forms both give 88 B with lr/ip as the args - the missing 8 bytes are
-  exactly that r4/r5 pair, so the source needs something that extends a0/a1 across the branch.
+arm9 0x02023df8 / 0x02023e58 96B -- open-handle dispatch on data_02042370 (-1 = unopened).
+  Both take three arguments and forward a FOURTH, unchanged, to a four-argument callee; the
+  `mov r3, r2` that looked like a dead copy is that fourth argument (a2 -> r3). Shape:
 
+      void func_02023df8(u32 a0, u32 a1, u32 a2, u32 a3)
+      {
+          s32 h = data_02042370;
+          if (h == -1)
+              func_020269ec(a0, 0x06600000 + a1, a2, a3);
+          else
+              func_020268e0(h, a0, 0x06600000 + a1, a2, a3);
+      }
+
+  (0x02023e58 is identical with base 0x06400000.) Residue: retail hoists the base with
+  `mov ip, #0x6600000` and then does `add r2, ip, r4`, while mwcc folds the constant into each
+  add (`add r2, r4, #0x6600000`), costing 92 B instead of 96. A `u32 base` local, a `u8 *`
+  pointer form, `|` instead of `+`, and precomputing `base + a1` all still fold; all 25 vendored
+  compilers give 92 B, so this is not a toolchain difference.
 arm9 0x02028920 / 0x02028958 56B -- add a delta into a struct word, then call a function pointer.
   Retail: lr = e+0x28, ip = *lr, r4 = e->obj(+8), r2 = e->f28, r1 = e->f2c, *lr = ip + e->f34,
   ip = [r4+0x40], r0 = r4, blx ip. So the third argument is the PRE-increment value and the

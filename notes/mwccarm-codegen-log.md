@@ -2657,3 +2657,32 @@ differ, so it is not installed.
 General note for boundary suspicions: check whether the "undefined" registers form a clean
 argument sequence (r0..r3, then [sp], [sp+4]) before concluding the delinks range is wrong. Here
 they did, exactly.
+
+## 2.90 Forwarded argument and a seven-argument call (2026-11-22)
+
+`func_02029f54` matched (76 B). Reading it as anything else failed by exactly the amount that
+made it look hopeless:
+
+```c
+s32 func_02029f54(u32 a0, u32 a1, u32 a2, u32 a3)
+{
+    func_0202d5ec(data_0204ac00, a2, a1, a3, func_02029fa0, a0, 1);
+    return 6;
+}
+```
+
+The call passes seven arguments. The fourth is `a3`, forwarded untouched - which is why retail
+has no instruction setting `r3` before the `bl`, and why a three-parameter version put the
+callback in `r3` and shifted the stack words. `a0` and the constant 1 land in the sixth and
+seventh slots. Two earlier readings both compiled to 76 B and both were wrong: one dereferenced
+`data_0204ac00` twice, the other tried to pass a 12-byte struct by value (which pulls in the
+whole `mov fp, sp` copy machinery, 112 B).
+
+Two checks paid for themselves again: count the stack slots to infer arity (three words = three
+arguments past `r3`, so seven total), and prefer "this argument is forwarded unchanged" over
+"this `mov` is dead".
+
+The `0x02023df8`/`0x02023e58` pair is the same lesson - the dead-looking `mov r3, r2` is a
+forwarded fourth argument - but it stalls on a hoist: retail keeps the base in `ip` and adds it
+per branch, mwcc folds the constant into each `add`, 92 B against 96. All 25 builds fold, so the
+source is still not right rather than the compiler being different.
