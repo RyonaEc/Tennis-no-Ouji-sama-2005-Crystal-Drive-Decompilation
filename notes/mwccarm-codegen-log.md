@@ -2044,6 +2044,24 @@ The ldm/stm copy family got one more shape: a 12-byte struct assignment
 36/48 B struct assignment) does not reach retail's frameless
 `ldm r0!`/`stm r1!` pairs.
 
+## 2.68 BIOS-call wrapper and two more parks (2026-11-21)
+
+`func_020307c8` (arm9, 64 B) is a one-shot wrapper: `u32 v = 0; CpuSet(&v, data_0204c180, 0x05000001);
+*(u16 *)((u8 *)data_0204c180 + 2) = func_02024b04();`. The thumb callee (`CpuSet`, `kind:function(thumb)`)
+comes out as `blx` on its own, and the local is only there so `CpuSet` has a source address - the 4-byte
+frame pair is real here, unlike the `0x020208b0` park. Matched first try on `1.2/b56`.
+
+Parks from the same band:
+
+* `0x0202497c` (76 B) - `p[idx] = a`, `q[idx] = b`, then `third[idx] = func_02024910(1 << (idx + 8)) &
+  (1 << (idx + 8))` with the three arrays at `data_02048ccc`, `data_02048cd4`, `data_02048cd0` and a
+  `cmp`-style stride of 12. Byte-exact except one schedule: mwcc hoists the `data_02048cd4` address load
+  above `add r4, r0, #8` / `mov r5, #1` / `lsl`, retail keeps it after the mask. Three spellings.
+* `0x02029f54` (76 B) - `func_0202d5ec(data_0204ac00, q, r, {func_02029fa0, p, 1}); return 6;`. Retail
+  writes the three struct words straight to `[sp]`, `[sp+4]`, `[sp+8]` under `sub sp,#0xc` with only `lr`
+  saved. Struct-by-value and a compound literal both force `push {r4,r5,lr}` and 100B; six scalar
+  arguments collapse the stack block to 60B. The literal copy is what mwcc will not do here.
+
 ## 2.67 A 4x196 channel-reset family, and the u32 accumulator trap (2026-11-21)
 
 `famsurvey.py` listed `ov003` 0x02066e84 / 0x020b8904 / 0x020b8e54 / 0x020dbad4 as one 196-byte skeleton.
