@@ -2155,3 +2155,24 @@ pair and eq/ne blocks both inverted), `02029cc4` (guard colouring), `0207be2c`
 (base/q addressing split), `02068c78` (frameless double reload of the module
 pointer), `020882d4` (index loop: C hoists the element pointer or spills to
 r7/r8).
+
+## 2.70 Small-band sweep: one match, six parks (2026-11-22)
+
+Re-ran the small-band queue after pruning units that already had sources (`true_fresh.txt`
+is stale: it still listed several units matched in `f2028a1`). New this pass:
+
+* `func_02018818` (arm9, 72 B) - `if (func_02018ba4(p)) return 0;` then
+  `*(u16 *)(p + 0xa) = func_02018bbc(p, *(u16 *)(p + 0xa));` and `++*(u16 *)(p + 0xc)`,
+  `return 1`. Matched first try under b56; the argument order of `func_02018bbc`
+  (pointer first, field second) is what keeps the `ldrh` in `r1` before the call.
+
+Parked with residues in `walls.txt`: `02024b5c` (`ge/lt` vs retail's `pl/mi` condition
+encodings - not reachable from C), `020248c8` (retail's 4-byte frame and dead DISPSTAT
+re-read), ov004 `0204d980` (lead-byte test colouring), ov004 `0204e8a4` (`mul` vs `mla`),
+ov008 `0204ce20` (pre-indexed reload on the decrement path), ov002 `02052608` (constant
+folding of `0x1824+0xb8`).
+
+Also confirmed two `str lr` / `pop {pc}` / `mov pc, lr` stubs (`0203b564`, `0203b578`,
+`0203b58c`) and the `mov r0,#k; b body` selector pairs (`02033bc0`, `02033c0c`,
+`02033c58`) are hand-written non-interworking assembly: the build's fixed `-interworking`
+flag cannot produce those epilogues, and `str lr` is not reachable from an `asm` block.
