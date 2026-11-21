@@ -3,6 +3,10 @@
 # and flags entries that already have a source; prune those by hand.
 # Section numbers refer to notes/mwccarm-codegen-log.md.
 # Format: <module> <addr> <one-line reason>
+# Pruned 2026-11-22: 28 entries whose source now scores 100%
+# were removed (the b56 wins from log 2.42 and the symbol-reference passes).
+# Unless a line says otherwise it was tried under both 1.2/sp2 and 1.2/b56;
+# record the compiler in the reason when it matters.
 arm9 0x02033cb0 UDF trap stub + bx lr (assert/dead code, no C form)
 arm9 0x02033bc0 branch stub: two movs converging on the next unit's first insn
 arm9 0x02033c0c branch stub: two movs converging on the next unit's first insn
@@ -12,61 +16,34 @@ arm9 0x0203b578 svc 0x123456 SDK wrapper (str lr / movs / svc / ldr pc)
 arm9 0x0203b58c svc 0x123456 SDK wrapper
 arm9 0x02024af8 tail call in ip vs retail r1
 arm9 0x020263c0 empty loop deleted at -O4,p
-arm9 0x0202607c mrc p15 (coprocessor access, no C form)
 arm9 0x020048e8 retail predicated stmlt/ldmlt loop; mwcc rotates
 arm9 0x020269ec retail predicated stmlt/ldmlt loop; mwcc rotates
-arm9 0x02018318 rematerialisation: mwcc folds q+off, retail keeps register
-arm9 0x0201f980 rematerialisation: mwcc folds q+off, retail keeps register
-arm9 0x02029768 var3 matches, ROM digest rejects (do not re-report)
 arm9 0x0202e274 var3 matches, ROM digest rejects (do not re-report)
 arm9 0x0202c430 var3 matches, ROM digest rejects (volatile spin)
 arm9 0x02033f40 6-arg dispatcher; 5 source shapes tried
-ov002 0x02072324 rematerialisation: retail add r1,r0,#0xa then ldrh/strh [r1]; mwcc folds to [r0,#0xa] (10 shapes, all 4B short)
-ov002 0x0204c7e8 rematerialisation: same fold on the +0x18 flag field (4 shapes, 4B short)
-ov002 0x02062b48 rematerialisation: same fold on the +0x28 flag field (4 shapes, 4B short)
-ov002 0x02062b68 rematerialisation: same fold on the +0x28 flag field (5 shapes, 4B short)
 arm9 0x02026a88 three 12-byte struct copies; mwcc always frames (mov lr/ip), retail uses ldm r0!/stm r1! with no frame (6 shapes)
-arm9 0x0202de8c allocation tie: retail pointer in r1 / value in r0, mwcc swaps (4 shapes, 28B vs 28B)
-ov002 0x0207808c retail pools the 0x1e6c offset and uses ldr r0,[r1,r0]! (register pre-index writeback); mwcc emits add #0x1000 + [r0,#0xe6c]
-ov002 0x020781b4 same pre-index writeback shape as 0x0207808c
-ov002 0x02086020 same pre-index writeback shape (ldrb with register offset)
-ov002 0x02060ca0 retail materialises p=b+0x35 (add r3,ip,#0x35) and uses a separate base for +0x34; mwcc offsets both (8 shapes)
-ov002 0x02062b20 pre-index writeback ldr r0,[r1,#0x28]! vs mwcc ldr/orr/str at [r1,#0x28] (3 shapes, same size)
 ov003 0x020b6b60 retains dead stores to non-escaping stack locals; mwcc drops them (plain and volatile shapes tried)
 ov003 0x020b732c same as 0x020b6b60 (family twin)
-ov004 0x020534cc rematerialisation on the +0x58 flag field (4 shapes, 32B vs 40B)
 arm9 0x0200fcac scout: **140/148.** `*(u32 *)(d + 0xc) = *(u32 *)(d + 0xc) + a0;` and the same for `+8`
-arm9 0x02014ca0 scout: **124/148.** Guard is `lsl r0,r0,#0x1f` / `lsrs r0,r0,#0x1f` / `addeq`, i.e. a r
 arm9 0x02022368 scout: **520/148** (plain stores) and **588/148** (struct assignment). Retail is 32 *id
 arm9 0x0202915c scout: **124/152.** `ands r0,r0,#0x100` / `movne r0,#1` / `moveq r0,#0` / `cmp r0,#0` /
-arm9 0x0200fe9c scout: **152/148** (4 bytes long). Index term is `lsl #3` on `a0` into `data_0203bbe8`;
-arm9 0x0200f638 scout: **156/148** (8 bytes long). Loop stores `t` into `*(u16 *)((u8 *)a1 + n * 2 + 2)
 arm9 0x02018ee8 scout: **140/148.** `if (func_020194a8(a0 + 4, 1) == 0) return 0;` then `func_02019494`
 arm9 0x02025b88 scout: **140/148.** `func_02026350()` / `func_02026364(r)` bracket an infinite loop ove
-ov002 0x02084210 retail materialises base+0x36ac once (pooled offset) and stores [r0]..[r0,#4]; mwcc splits into add #0x3000 + [r1,#0x6ac] (6 shapes)
-ov002 0x02058998 retail re-materialises the +0x138 field in the branch (addgt/ldrshgt); mwcc hoists it (6 shapes, 48-52 of 56B)
 ov002 0x0206308c pre-index writeback after two calls (ldr r0,[r1,r0]!)
 ov002 0x02082090 allocation tie: retail keeps base in ip / q in r2 / p in r3 and materialises q before the load; mwcc puts base in r3, folds q[0] and gives p the ip slot. 8 body shapes + all 24 declaration orders land at exactly 96B, never matching
 ov002 0x0204f98c frame regression: mwcc uses lr as the base pointer and emits push/sub sp/epilogue (128B); retail is frameless with base in ip (104B). 10 shapes: cast, struct members, inner pointer, !guard, single-expression base
 ov002 0x02068c78 register-shift cascade: retail base in ip, record in r2, target in r1; mwcc shifts the whole chain down one (r3/r2/r1). (((u32)e[0x2e6] >> 1) fixes asr->lsr but not the allocation)
-ov002 0x0205ffe8 RMW kept folded: retail materialises b+0x260 in a register (addlo/ldrlo/addlo/strlo) while mwcc always folds the offset into the load and store (3 instrs, 56B vs 60B); own pointer variable, read-then-store split and negated guard all still fold
 ov002 0x0207be2c tail tie: retail builds q=b+a in r0 and keeps the zero in r1; mwcc swaps them (q in r1, zero in r0). Literal 0, u8 zero, u32 zero and declaration reorder all land at exactly 72B
-ov002 0x020780b0 offset split: retail keeps t=b+0x1e6c in one register (pooled add) serving both the u32 RMW and the byte stores; mwcc splits it as b+0x1000 + [#0xe6c] and address the bytes off the base (76B vs 72B)
-ov002 0x0209e44c offset-split: 6 zero stores then one masked clear. p derived from s (s+0xb8) folds into [base,#0xb8] (68B); deriving it from b (b+0x18dc) materialises but as add base,#0x1000 + [#0x8dc] (72B, wrong split). Retail: add r1, r0(s), #0xb8 then ldr/bic/str through r1. 6 spellings
-ov002 0x020ace70 same body as 0x0209e44c (identical listing), same offset-split wall
 ov005 0x020614a4 4x220 family lr/ip tie: 220/220 instruction-exact; retail keeps 0 in lr and g+i*2 in ip, mwcc swaps them. 16 shapes (delta) + 6 (mine: g hoisted above the guard, u16 zero variable local and hoisted, (u16)0 cast, word store) all identical or worse
 ov005 0x020656d8 same 4x220 body as 0x020614a4, same lr/ip tie
 ov005 0x020695bc same 4x220 body as 0x020614a4, same lr/ip tie
 ov005 0x0206bfc0 same 4x220 body as 0x020614a4, same lr/ip tie
-ov003 0x02089b64 u16 clamp, register tie: retail base in r1 / field in r2, mwcc the reverse (r2/r1); identical otherwise at 64B. u16/u32 c, declaration order and inlined compare all give the same swap
 ov003 0x02050f2c degenerate: `cmp/ moveq r0,#0 / movne r0,#0` returns 0 on both paths; no non-degenerate source expresses it, skip
 ov003 0x020b6c88 flag guard + 3 predicated u16 stores, register tie: retail base in r0 / counter in r1, mwcc the reverse; identical at 76B across declaration order, u32 counter and inlined flag loads
 ov003 0x020960a4 120B: all 8 stores reproduce; only the tail counter ip+0x8736 differs - retail pools 0x8736 (ldr =0x8736 + add) while mwcc splits #0x8700 + [#0x36] (108B). Computing the counter pointer before the if forces the pool but adds push {r4,lr} (124B). Both encodings are 2 instructions; register pressure decides
 arm9 0x02008178 96B: whole body reproduces; retail reloads the limit from the pool (`ldrge r0,[pc]`) where mwcc copies the register (`movge r0,r2`). Same-value CSE tie; gt/if-else/lim-variable spellings all give 96-100B with the copy
 arm9 0x02005418 32B: retail splits 0x027c3ff8 into base 0x027c0000 + offset 0x3ff8 (`ldr r0,[r1,r0]!` writeback then `str [r1]`), mwcc pools the whole address (24B). Same address-materialisation split class as ov003 0x020960a4
-ov002 0x0204f898 64B: retail materialises p+0xcc into r1 and indexes [r1] three times; mwcc folds it into [r2,#0xcc] and is 4B short (60B). u32-index, pointer-variable and separate-q spellings all fold
 ov002 0x02052608 72B: same class - retail keeps p+0xb8 in r2 (`add r2, r0, #0xb8`) across the mask/orr RMW pair and the tail call; mwcc folds to [r2,#0xb8] (68B). Two-statement RMW order is confirmed correct
-ov003 0x02052100 96B: halfword field insert ((h&0xff00)|(a2&0xff), (h&0xfe00)|(a1&0x1ff)). Retail keeps a second pointer (add r3,r0,#2), a 3-reg frame and redundant lsl#16/lsr#16 truncations; plain u16 temps, two pointer locals and both bitfield structs give 72-84B. Retail's shape needs its exact source types
 ov003 0x020c1ab0 128B: 124/128B, ONE instruction short. Working body (frame+pool+arithmetic+tail all exact): extern u8 *data_ov003_020eb720; {u8*b,*p;s32 t,n,h;u16*q;b=data_ov003_020eb720;p=b+0xb8dc;t=*(s16*)(p+0x44);h=(t*64)*t/2;n=(s16)(h/8);if(n>0x100)n=0x100;if(t<0x20)(*(s16*)(p+0x44))++;q=(u16*)(b+0xae00);q[2]=-n;q[3]=0;return 0;} -> only delta: retail emits addlt r2,lr,#0x44 before the branch RMW (4 instrs) where mwcc folds ldrshlt/strhlt [lr,#0x44] (3). Retail keeps p in lr AND materialises &p[0x44] in r2; every spelling that materialises the RMW also un-folds the *first* load (or forces both through one pointer). Tried: cast-deref x6, struct member h->cnt (++ and =+1), static inline helper taking s16*, u16 index 22 form, volatile (both inline and via pointer: exact 128B but load splits to b+0xb900+0x20 and RMW uses [lr]), tmp-var RMW, if-invert. Dead end per AGENTS.md address-materialisation note; needs the original's exact pointer variable set
 ov003 0x02052160 140B: 104/140B. Shape is settled: 4 args, a3 packs two halves — lo=(u16)a3 read via ldrh [sp+0x1c], hi=(s16)(a3>>16) via ldrsh [sp+0x1e] (both out of the spilled r3). Body: if(a0==0)return; a0[0]=((a2-hi)&0xff)|(a0[0]&0xff00); a0[1]=((a1-lo)&0x1ff)|(a0[1]&0xfe00). Missing 9 instrs are retail's push {r0,r1,r2,r3} argument spill plus repeated lsl#16/lsr#16 staging on each halfword op. Tried: u32/u16/s16 param types, u16/s16 temps, inline casts, both lo/hi assignment orders — all 104B. Needs the source that makes mwcc spill all four incoming args (empty 8-byte frame + full spill); not an arithmetic question
 ov003 0x0208ae70 160B: 152/160B max. Body recovered: b=*data_ov003_020eb720; if(*(u16*)(b+0x86ce)==2){ func_02021b14((u32*)0x04001050,0xe,0x24,*(u16*)(b+0x897e),*(u16*)(b+0x8986)); if(*(u16*)(b+0x897e)!=0) dec; if(*(u16*)(b+0x8986)<0x10) inc; } return 0;  LEVER FOUND: a `static` helper taking u16* forces retail's materialised address (ldr r0,[pc]=0x897e; add r0,r4,r0) but mwcc emits a real bl (152B); `static inline` folds the address back into [r0,#0x7e] (128B). Retail has the materialised form AND no call, i.e. the pointer escaped inlining without becoming a call. Same class as 0x020c1ab0
@@ -626,7 +603,6 @@ arm9 0x0202ae08 116B -- getter twin of 0x0202ad9c: reads the same five sound reg
   reused `u32 *q` folds the +4 correctly but adds the phantom `stmdb sp!,{lr}`/`sub sp,#4`
   frame (132B). Same class as its writer twin, same 2 spellings.
 ## 2026-11-21 residual relocation pass: two parks
-ov003 0x02050460 92B -- four calls (02025c94 x2, 02023df8 x2) with the data address
   data_ov003_020e6fe4 passed as arg 0 and 0x800 as the length. Retail keeps NO
   callee-saved register: it re-loads the address from the pool before each call
   (ldr r0,[pc] x4 over one shared pool word) and its frame is the bare
@@ -685,3 +661,12 @@ symbol with g assigned last, while-loop and do-while forms, index form (`g[i*2+0
 2.0 x10, dsi x9 - the 1.2 family lands on 108B with this residue, 2.0 on 84B, dsi on 80B).
 This is the register-allocation tie class: the algorithm is settled and the object already
 carries the right relocation, so the remaining 108 bytes are pure allocation.
+## 2026-11-22 b56-neighbour probe (arm9 0x02018330, 124B)
+First test of the "compiler version is a per-region property" idea: this unit sits 0x18 from
+0x02018318, a b56 win. The body is a 3-argument reserve/shrink with a call to the stmlt/ldmlt
+helper 0x020048e8. Both 1.2/b56 and 1.2/sp2 give 108B, so the compiler is not what is missing
+here; the residue is that retail spills a zero through the stack before the call -
+`mov r0,#0; str r0,[sp]; ldr r0,[sp]; mov r1,r4; bl` - while mwcc folds the constant argument
+straight into r0. Tried: `volatile u32 z = 0`, a plain `u32 z = 0`, an address-taken `u32 z[1]`,
+and the flag read spelled as `((u8 *)p)[-4]` and `((u16 *)p)[-2]`; all 108B under both compilers.
+The flag field itself is a u8 at p-4 (retail does `ldr r0,[r5,#-4]; and r0,#0xff`).
