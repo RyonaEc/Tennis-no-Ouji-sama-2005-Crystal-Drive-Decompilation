@@ -2229,3 +2229,25 @@ Two 108 B leaves were derived to an exact body and parked in `walls.txt`:
 Note for future attempts: on this ROM, a phantom `stmdb sp!,{lr}` + `sub sp,#4` with no
 call and no `[sp]` access appears when a source mixes a cached pointer with a re-deref of
 the same expression.
+
+## 2.73 Two arm9 leaves from the Ghidra decompiler (2026-11-21)
+
+Used the documented headless setup (`notes/ghidra-headless.md`, `M:\ATOJ-tools`) rather than
+reading disassembly by hand: `analyzeHeadless ... -process arm9.bin -noanalysis -postScript
+dump_decomp.py <addrs>`. Cheap (~10 s for four functions) and it hands back the expression
+tree with load/store order already resolved, which is what took the most guessing before.
+
+* `func_020221b8` (108 B) matched first try under b56 from the dump: `a0[1] = a0[1] + a1 * 4;`
+  `a0[0] = a0[0] + 1;` then `if ((a0[0] & 3) != 0) return;`, the `a0[4]` block loading the old
+  `a0[1]` into a pointer *before* bumping it, then `v = a0[1]; a0[1] = a0[1] + 4; a0[0] = v;`.
+  No pool, no frame - the whole unit is 27 instructions.
+* `func_02028f68` (124 B), 8-argument setter. **The 4-byte trap:** assigning back into the
+  incoming parameter (`if (a6 == 0) a6 = ...; p[0xf] = a6;`) makes mwcc spill the 7th/8th
+  (stack-passed) arguments back to their caller slots (`streq r1,[sp,#8]`) and reload them,
+  costing 16 B. Writing the default as a ternary (`p[0xf] = a6 != 0 ? a6 : (u32)func_020296dc;`)
+  or through a local temp keeps them in registers and matches. Both forms are byte-exact;
+  the ternary is the one installed.
+
+`0x0202ae08` (116 B, the getter twin of parked `0x0202ad9c`) decompiled cleanly but hit the
+same wall: per-address `[0]`/`[1]` indexing turns the `+4` half into extra pool words (140 B),
+a reused pointer folds it but adds the phantom frame (132 B). Parked with both spellings.

@@ -619,3 +619,9 @@ arm9 0x0201aaa0 108B -- DMA-ish setup around data_020475c4. Body (frameless, 23 
   missing 4th byte. Every spelling that re-derefs a0[0] (alone or mixed with p) makes mwcc
   emit `stmdb sp!,{lr}` + `sub sp,#4` and grow to 136B although the body has no call and
   never touches [sp]. Same phantom-frame class as arm9 02017954 / 0201779c.
+arm9 0x0202ae08 116B -- getter twin of 0x0202ad9c: reads the same five sound registers into
+  p[0..5] plus the two masked halves at p+0x18 (0x04000280 & 3) and p+0x1a (0x040002b0 & 1).
+  Retail is frameless with 5 pool words, each base serving [base] and [base,#4]. Per-address
+  [0]/[1] indexing makes mwcc materialise 0x...294/0x...29c as extra pool words (140B); a
+  reused `u32 *q` folds the +4 correctly but adds the phantom `stmdb sp!,{lr}`/`sub sp,#4`
+  frame (132B). Same class as its writer twin, same 2 spellings.
