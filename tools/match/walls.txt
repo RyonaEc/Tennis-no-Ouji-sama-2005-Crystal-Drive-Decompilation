@@ -602,3 +602,20 @@ ov004 0x0204d980 60B -- Shift-JIS lead-byte test (`0x81-0x9f` or `0xe0-0xef`). R
 ov004 0x0204e8a4 64B -- strided getter: `mul` 0x220 and 0x88, `ldr [base+off+0xf0]`, return `base+0xf0+off` when non-zero. Retail emits two `mul`s and recomputes the address three `add`s later; C folds to `mla`/`add #0xf0` (52B, both duplicate-expression and pointer-local spellings).
 ov008 0x0204ce20 68B -- `if (p[0x34]) { p[0x34]--; return 0; } if (p[0x3c] & 0x400) { p[0x34] = 8; return 1; } return 0;`. Retail's taken path is a pre-indexed reload `ldrbne r1,[r2,#0x34]!`; mwcc always materialises `add r1,r0,#0x34` or reuses the loaded byte, giving 64B (4 spellings: value local, pointer local, reload, declaration swap).
 ov002 0x02052608 72B -- `data+0x1824`, `*(u32*)(p+0xb8)` twice (`& 0xfffa3c0f`, `| 0x800`) then tail-call 0x0207808c. mwcc folds 0x1824+0xb8 into one pooled offset and uses `ldr r0,[r2,r0]!` (64B on b56, 60B on sp2); retail keeps `add r0,r2,r0; add r2,r0,#0xb8`. Struct, pointer-local and duplicated-expression spellings all fold; all 25 compilers checked.
+
+## 2026-11-21 leaf pass (tools/match/leafq.py): two mid-size parks
+arm9 0x0202ad9c 108B -- sound-channel MMIO writer. Five address groups: 0x04000290/+4,
+  0x04000298/+4, 0x04000280 (u16), 0x040002b8/+4, 0x040002b0 (u16); sources are a0[0..5]
+  plus the u16s at a0+0x18/+0x1a. Retail is frameless with 5 pool words, each base serving
+  1-2 stores with the second folded to +4. Tried: one base pointer p=0x04000290 with
+  p[0..3],p[10],p[11] (92B); five literal addresses (132B, 8 pool words); five named
+  pointer locals (124B + phantom 8-byte frame); one reused pointer d (124B + frame);
+  per-address [0]/[1] indexing with no locals (132B). Every frameless spelling lands on
+  7-8 pool words instead of 5; grouping the addresses costs a register and mwcc frames.
+arm9 0x0201aaa0 108B -- DMA-ish setup around data_020475c4. Body (frameless, 23 insns):
+  data_020475c4 = a0; if (a0[0][5]) return; [0x04000440]=0; [0x04000444]=0;
+  [0x04000470]=-a0[0][0]; [0x04000470]=-a0[0][1]; [0x04000470]=0; [0x04000440]=1;
+  Best 104B with p=a0[0] cached - retail re-derefs a0[0] for the second group, which is the
+  missing 4th byte. Every spelling that re-derefs a0[0] (alone or mixed with p) makes mwcc
+  emit `stmdb sp!,{lr}` + `sub sp,#4` and grow to 136B although the body has no call and
+  never touches [sp]. Same phantom-frame class as arm9 02017954 / 0201779c.

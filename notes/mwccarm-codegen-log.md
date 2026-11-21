@@ -2206,3 +2206,26 @@ literal and all 25 vendored builds (b56/sp2/base 92 B, sp3/sp4 84 B, 2.0/* 72 B,
 dsi/* 68 B) never hoist it. Side finding: the dead `mov r3,r2` is `a2` surviving in r3 as
 func_020268e0's 4th argument - the same 4-arg call the matched siblings make, so the shape
 is right and the residue is only the constant hoist. Parked in `walls.txt`.
+
+## 2.72 Mid-size leaf queue; two 108 B parks (2026-11-21)
+
+Added `tools/match/leafq.py`: unmatched functions in a size band with no `bl`/`blx`,
+excluding anything with a source under `src/` or an address in `walls.txt`, so the output
+is a live queue rather than a stored list. Of the 96-320 B band it reports 124 leaves, 59
+of them free of `ldm`/`stm`/`mul`/`mla`. The 100-400 B band is where most remaining bytes
+sit, and leaves need no callee signatures.
+
+Two 108 B leaves were derived to an exact body and parked in `walls.txt`:
+
+* `0x0202ad9c` (sound-channel MMIO writer, five address groups). The body is certain; the
+  residue is the pool layout - retail keeps 5 words with each base reused for a `+4`
+  store, while every frameless spelling gives 7-8 words and every grouped spelling makes
+  mwcc emit a phantom 8-byte frame.
+* `0x0201aaa0` (`data_020475c4` + three writes to `0x04000470`). 104 of 108 B with the
+  callee pointer cached; the missing instruction is retail's re-read of `a0[0]` between
+  the two groups, and every spelling that re-reads it triggers the same phantom frame
+  (136 B) as `0x02017954`.
+
+Note for future attempts: on this ROM, a phantom `stmdb sp!,{lr}` + `sub sp,#4` with no
+call and no `[sp]` access appears when a source mixes a cached pointer with a re-deref of
+the same expression.
