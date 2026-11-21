@@ -1417,3 +1417,28 @@ with the condition inverted. Two formulations each; parked rather than ground fu
 **Reading diffs note:** the first four differences reported for both units were `bl` targets, which are
 unrelocated and must be ignored. Only the offset shift *after* them was real. When a diff looks like
 "everything moved by one instruction", strip the `bl` lines first and see what is actually left.
+
+## 2.40 Short-circuit guard vs early return - read where the branches actually go (2026-11-20)
+
+`func_ov002_02088b0c` (212 B) cost three attempts, and the first two were wrong for a reason that is easy
+to repeat: I read four consecutive conditional branches as four early `return`s. They are not. **Every one
+of them targets the same address**, and that address is *past* the call they guard - so they are one
+short-circuit `&&` around a single call:
+
+    if (a == 0 && b == -1 && c != 0 && d != 0)
+        func_ov002_02088be0();
+
+written as early returns, mwcc emits `popne {r4,r5,r6,lr} ; bxne lr` and the whole tail shifts. Written
+as the `&&`, retail's instruction stream is reproduced from offset 0 up to 0x84.
+
+Two more levers from the same unit:
+* `if (st == 0 || st == 1)` collapses to `cmp r0,#1 ; pophi` - a range check. The only form that keeps
+  retail's two separate compares is the label version: `if (st==0) goto body; if (st!=1) return;`
+  (the 2.30 lever again, now with a two-value OR instead of a shared tail).
+* the final `if (*(s8 *)(p+0x379) == 0)` must **reload** the field rather than reuse the local `st`;
+  retail re-reads it at 0xa4.
+
+What is left is the byte increment at 0x84 - retail pools `0x37a` and does `add r1,r6,r0 ; ldrb ;
+add ; strb` through r1 where mwcc folds to `ldrb r0,[r6,#0x37a] ; add ; strb`. That is the same
+address-materialisation tie as the ov002 getters (2.36), so the unit is parked with the body recorded
+rather than ground further.
