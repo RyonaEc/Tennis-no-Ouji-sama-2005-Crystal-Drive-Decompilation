@@ -2478,3 +2478,26 @@ Two near-misses went to `walls.txt` instead of being committed:
 
 State: 1,502 of 3,806 functions (39.46%), 104,008 B code (5.65%), 124 B data, 1,504 complete
 units, all at 100%.
+
+## 2.83 Teardown path, and the array-symbol rule again (2026-11-22)
+
+`func_0201f0d0` (104 B, `1.2/sp2`) matched first try once the declaration matched retail's shape:
+`(u32 id, u32 unused, T *t)` - the handle is the THIRD parameter (retail starts `mov r4, r2` and
+never reads `r1`), and the shared pointer argument is `extern u8 data_02047f34[]` passed bare, so
+it is an address constant loaded straight from the pool.
+
+```c
+if (id != t->f124) return;
+func_02025b88(data_02047f34);
+func_0201f38c(t);
+t->f124 = 0; t->f128 = 0; t->f11c = 0;
+if (t->f118 > 0) { func_0201cdb8(t); t->f118 = 0; }
+func_02025b14(data_02047f34);
+```
+
+Same trap as 2.77, and worth stating as a rule: when the pool word holds an ADDRESS, the symbol
+must be an array (`extern u8 sym[]`) and be used bare. Declaring `extern u32 sym;` and passing
+`sym` emits an extra `ldr r0,[r0]` and breaks the match, because that form means "load the
+pointer stored at sym".
+
+State: 1,503 of 3,806 functions (39.49%), 104,112 B code (5.65%), 124 B data, 1,505 complete units.
