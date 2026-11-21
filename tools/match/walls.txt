@@ -714,3 +714,17 @@ ov005 0x020614a4 / 0x020656d8 / 0x020695bc / 0x0206bfc0 220B -- same engine-B in
   the prologue match; only the two scratch values swap: retail zeroes into lr and puts p in ip,
   mwcc does the reverse. All 25 vendored mwccarm builds produce the same swap (1.2/* at 220 B,
   1.2/sp3-sp4 216, 2.0/* 200, dsi/* 204), so this is not a compiler-version artifact.
+arm9 0x020101f8 80B -- fill 4 bytes with 0x45 then one with 0x17 at
+  data_02042a68.inner->f158 + idx*8 + k + 0x24, re-evaluating the global chain every iteration:
+      s32 k;
+      for (k = 0; k < 4; k++)
+          *(u8 *)(data_02042a68.inner->f158 + idx * 8 + k + 0x24) = 0x45;
+      *(u8 *)(data_02042a68.inner->f158 + idx * 8 + k + 0x24) = 0x17;
+  That form gives exactly 80 B with the same instruction sequence; only the hoisted pieces are
+  ordered/allocated differently: retail loads the pool word, then ip=0, then the idx*8 shift and
+  0x45 into r3, using r1/r2/r3; mwcc emits the shift first and permutes to r0/r3/r2. Hoisting the
+  chain into a local drops it to 68 B, so the inline form is right.
+
+arm9 0x02022554 84B -- boundary suspect: the body reads r1/r2/r3 without defining them before
+  `strh r3, [r0]`, which no compiler emits for a normal function. Check the delinks range / whether
+  this address is the middle of a larger function before spending effort.

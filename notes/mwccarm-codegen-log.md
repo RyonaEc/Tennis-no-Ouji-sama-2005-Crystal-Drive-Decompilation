@@ -2559,3 +2559,25 @@ sp2,sp2p3}` all produce the same swapped 220 B, `1.2/sp3` and `1.2/sp4` give 216
 and `dsi/*` 204 B. None matches, so the overlay was not built with a different compiler build -
 the divergence is in the source shape, exactly as the project concluded for the relocation class
 earlier.
+
+## 2.86 Six near-misses in a row: allocation, not shape (2026-11-22)
+
+Since the ov005 family, every candidate has landed on the same failure: the instruction sequence
+and length come out right and only the scratch registers differ.
+
+| unit | size | divergence |
+|---|---|---|
+| arm9 `0x0201f3d0` | 104 | bit in `r1` / arg in `r2` swapped |
+| arm9 `0x02025550` | 104 | `prev`/`cur` between `ip` and `lr` |
+| ov003 `0x02066a54` x3 | 180 | loop counter `r5` vs `lr` |
+| ov005 `0x020614a4` x4 | 220 | zero and pointer between `lr` and `ip` |
+| arm9 `0x020101f8` | 80 | pool load / shift order, `r1r2r3` vs `r0r3r2` |
+
+Two checks make this a source-shape problem rather than a toolchain one: the 1,503 units already
+matched prove our flags and compiler reproduce retail's codegen in general, and a sweep of all 25
+vendored mwccarm builds on the ov005 candidate gave 220/216/200/204 B with none matching.
+
+One detail worth trying next time on `0x020101f8`: retail's first instruction is the pool load,
+so its source referenced the global before the `idx * 8` shift, while mwcc hoists the shift above
+the load. Anything that makes the global access syntactically earlier in the loop body may fix the
+order; hoisting the chain into a local instead drops the function to 68 B, so it must stay inline.
