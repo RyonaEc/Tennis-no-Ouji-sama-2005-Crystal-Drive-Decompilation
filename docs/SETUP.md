@@ -4,14 +4,24 @@
 
 This project never ships game data. You need:
 
-* A decrypted dump of the Japanese cartridge (`NTR-ATOJ-JPN`, 64 MiB), placed
-  anywhere under `extract/`. The file name does not matter: `tools/init.py`
-  finds a single `.nds` there, or you pass the path explicitly.
-* `arm7_bios.bin`, and only if your dump is encrypted. `dsd` uses it to decrypt
-  secure-area blobs. Dump it from your own console; see the
-  [DS homebrew wiki](https://wiki.ds-homebrew.com/ds-index/ds-bios-firmware-dump).
+* A dump of the Japanese cartridge (`NTR-ATOJ-JPN`, 64 MiB), placed anywhere
+  under `extract/`. The file name does not matter: `tools/init.py` finds a
+  single `.nds` there, or you pass the path explicitly. An encrypted dump is
+  accepted as it is.
+* An ARM7 BIOS, only when your dump is encrypted. `tools/init.py` reads the
+  secure area ID at `0x4000`: if it is still encrypted, the KEY1 key table from
+  an ARM7 BIOS is needed to decrypt the first 2 KiB, and the same BIOS re-encrypts
+  the rebuilt ROM so its digest matches. A decrypted dump needs no BIOS.
 
-Do not commit either file; `.gitignore` covers both.
+`init.py` looks for the BIOS at `arm7_bios.bin`, `bios7.bin` or
+`extract/arm7_bios.bin`, and `--arm7-bios PATH` overrides that. It is the 16 KiB
+ARM7 BIOS (`bios7.bin`, `BIOSNDS7.ROM`); dump it from your own console with
+[`dsbf_dump`](https://github.com/DS-Homebrew/dsbf_dump), see the
+[DS homebrew wiki](https://wiki.ds-homebrew.com/ds-index/ds-bios-firmware-dump).
+If it is missing for an encrypted dump, `init.py` stops and says so rather than
+extracting a garbled secure area.
+
+Do not commit the ROM or the BIOS; `.gitignore` covers both.
 
 `tools/init.py` records the SHA-1 of the dump you use in
 `config/ATOJ/tennis_ATOJ.sha1` and the path in `config/ATOJ/rom.txt`. A matching

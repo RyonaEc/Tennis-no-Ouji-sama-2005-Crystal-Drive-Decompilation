@@ -44,7 +44,7 @@ Follow [README.md](README.md#setup) and [docs/SETUP.md](docs/SETUP.md):
 
 ```shell
 python -m pip install ninja
-# put your decrypted dump under extract/ (any .nds file name works)
+# put your dump under extract/ (any .nds file name works; encrypted is fine)
 python tools/init.py
 python tools/configure.py ATOJ
 ninja

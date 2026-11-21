@@ -16,6 +16,11 @@ Usage:
 The ROM may have any file name: pass it explicitly, or put a single .nds file
 under extract/ and it is found automatically. The path is recorded in
 config/ATOJ/rom.txt so the build does not need a fixed name either.
+
+The dump may be encrypted or already decrypted. An encrypted one is detected
+from its secure area and decrypted with an ARM7 BIOS, found at arm7_bios.bin,
+bios7.bin or extract/arm7_bios.bin (--arm7-bios overrides). A decrypted dump
+needs no BIOS.
 """
 
 import argparse
@@ -26,11 +31,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from rom_info import find_arm7_bios, secure_area_encrypted
+
 ROOT = Path(__file__).resolve().parent.parent
 GAME_ID = "ATOJ"
 GAME = "tennis"
 EXTRACT_DIR = ROOT / "extract" / GAME_ID
-ARM7_BIOS = ROOT / "arm7_bios.bin"
 CONFIG_DIR = ROOT / "config"
 BUILD_DIR = ROOT / "build"
 EXPECTED_TITLE_FRAGMENT = "KCEJ"
@@ -114,6 +121,7 @@ def main() -> int:
     if not rom.is_file():
         print(f"error: no ROM at {rom}", file=sys.stderr)
         return 1
+    rom = rom.resolve()
 
     header = read_header(rom)
     print(f"ROM:     {rom}")
@@ -139,6 +147,37 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
+    encrypted = secure_area_encrypted(rom)
+    bios = find_arm7_bios(ROOT, args.arm7_bios)
+    if bios is not None:
+        bios = bios.resolve()
+    print("Secure area: " + ("encrypted" if encrypted else "decrypted"))
+    if args.arm7_bios and bios is None:
+        print(f"error: no ARM7 BIOS at {args.arm7_bios}", file=sys.stderr)
+        return 1
+    if encrypted and bios is None:
+        print(
+            "error: the secure area is encrypted and no ARM7 BIOS was found",
+            file=sys.stderr,
+        )
+        print(
+            "Put your own 16 KiB ARM7 BIOS dump at arm7_bios.bin (or bios7.bin, "
+            "or pass --arm7-bios PATH).",
+            file=sys.stderr,
+        )
+        print(
+            "Dump it from your own console; see "
+            "https://wiki.ds-homebrew.com/ds-index/ds-bios-firmware-dump",
+            file=sys.stderr,
+        )
+        print(
+            "It is only needed for encrypted dumps: a decrypted dump extracts "
+            "without one.",
+            file=sys.stderr,
+        )
+        return 1
+    if encrypted:
+        print(f"ARM7 BIOS:   {rel(bios)} (decrypts the secure area)")
     if EXPECTED_TITLE_FRAGMENT not in str(header["title"]).upper():
         print(
             f"warning: title {header['title']!r} does not look like Crystal Drive; continuing",
@@ -180,9 +219,8 @@ def main() -> int:
         "--output-path",
         rel(EXTRACT_DIR),
     ]
-    arm7_bios = args.arm7_bios or (ARM7_BIOS if ARM7_BIOS.is_file() else None)
-    if arm7_bios:
-        extract_command += ["--arm7-bios", rel(arm7_bios)]
+    if encrypted:
+        extract_command += ["--arm7-bios", rel(bios)]
     run(extract_command, dry_run=args.dry_run)
 
     run(

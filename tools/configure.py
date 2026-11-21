@@ -96,7 +96,7 @@ LIBS_DIR = ROOT / "libs"
 INCLUDE_DIR = ROOT / "include"
 EXTRACT_DIR = ROOT / "extract"
 TOOLS_DIR = ROOT / "tools"
-ARM7_BIOS = ROOT / "arm7_bios.bin"
+from rom_info import find_arm7_bios, secure_area_encrypted
 
 
 def rel(path: Path) -> str:
@@ -549,8 +549,13 @@ def add_configure_build(n: ninja_syntax.Writer, args) -> None:
 
 def write_rules(n: ninja_syntax.Writer, args) -> None:
     n.variable("python", sys.executable)
-    if ARM7_BIOS.is_file():
-        n.variable("arm7_bios_flag", f"--arm7-bios {rel(ARM7_BIOS)}")
+    baserom = Path(find_baserom(args.version))
+    bios = find_arm7_bios(ROOT)
+    # The BIOS is only needed when the dump is encrypted: it decrypts the
+    # secure area on extract and re-encrypts it on build. Passing it for a
+    # decrypted dump would encrypt the rebuilt ROM and break the digest.
+    if baserom.is_file() and bios is not None and secure_area_encrypted(baserom):
+        n.variable("arm7_bios_flag", f"--arm7-bios {rel(bios)}")
     else:
         n.variable("arm7_bios_flag", "")
     n.newline()

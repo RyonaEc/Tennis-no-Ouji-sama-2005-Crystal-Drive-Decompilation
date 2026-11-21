@@ -59,15 +59,17 @@ The 32-bit CodeWarrior compilers are downloaded automatically. See
 
 ### 1. Provide the base ROM
 
-Put a decrypted dump anywhere under `extract/` - the file name does not matter -
-or pass its path explicitly:
+Put your dump anywhere under `extract/` - the file name does not matter, and an
+encrypted dump is fine - or pass its path explicitly:
 
 ```shell
 python tools/init.py "extract/Tennis no Ouji-sama 2005 CRYSTAL DRIVE.nds"
 ```
 
-If your dump is encrypted, you also need your own `arm7_bios.bin` in the
-repository root. See [docs/SETUP.md](docs/SETUP.md#roms-and-bios).
+`init.py` checks the secure area: an encrypted dump is decrypted with your
+`arm7_bios.bin` (also looked for as `bios7.bin` or `extract/arm7_bios.bin`), and
+an already-decrypted dump needs no BIOS at all. See
+[docs/SETUP.md](docs/SETUP.md#roms-and-bios).
 
 ### 2. Extract and initialise
 
