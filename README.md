@@ -34,11 +34,11 @@ Target: 8d555a80db47278475ffdfdf808fe80dbd7c48cf; tennis_ATOJ.nds: 8d555a80db472
 tennis_ATOJ.nds: OK
 ```
 
-1,485 functions (102,028 bytes) in the ARM9 main module and its overlays now match
+1,489 functions (102,812 bytes) in the ARM9 main module and its overlays now match
 C source compiled with `mwccarm` 1.2/sp2 (and 1.2/b56 for the units retail built
 with it) and linked into the original addresses,
-and the rebuilt ROM still hashes to the retail dump. `ninja report` shows `matched_functions: 1,485` of 3,806 (39.02%) and
-`matched_code: 102,028` of 1,841,700 bytes (5.54%); the other 2,321 functions are
+and the rebuilt ROM still hashes to the retail dump. `ninja report` shows `matched_functions: 1,489` of 3,806 (39.12%) and
+`matched_code: 102,812` of 1,841,700 bytes (5.58%); the other 2,317 functions are
 still delinked assembly. [PROGRESS.md](PROGRESS.md) has the fuller breakdown
 (code, functions, fuzzy match, data, unit completeness, and a per-module table);
 `python tools/match/progress.py` regenerates it.

@@ -2044,6 +2044,24 @@ The ldm/stm copy family got one more shape: a 12-byte struct assignment
 36/48 B struct assignment) does not reach retail's frameless
 `ldm r0!`/`stm r1!` pairs.
 
+## 2.67 A 4x196 channel-reset family, and the u32 accumulator trap (2026-11-21)
+
+`famsurvey.py` listed `ov003` 0x02066e84 / 0x020b8904 / 0x020b8e54 / 0x020dbad4 as one 196-byte skeleton.
+The body is: read the u16 at `0x04001048`, `bic #0x3f`, `orr #0x1f`, `orr #0x20` (two separate ORs, per the
+playbook row), store it back; call `func_02021b14(0x04001050, 0xe, 0x24, *(u16 *)(b + 0x897e),
+*(u16 *)(b + 0x8986))` with `b = data_ov003_020eb720`; then the predicated `++` under `< 0x10` and `--` under
+`!= 0`; then `*(u32 *)0x04001000 = (word & ~0x1f00) | <tail>`, returning 0. The siblings differ only in that
+tail constant (`0x1500` in three, `0x100` in `0x020b8904`).
+
+**Trap:** writing the register value as `u16 v` makes every statement truncate (`lsl r1,r1,#0x10` /
+`lsr r1,r1,#0x10`) and the unit lands at 204B. Retail keeps one 32-bit value in a register across
+`bic`/`orr`/`orr` and only truncates at the `strh`, so the local must be `u32 v = *(u16 *)0x04001048;`.
+That single declaration took the body from 204B to an exact 196B match on `1.2/b56`. All four installed.
+
+Parks from the same sweep: `0x020208b0`/`0x0202093c` (140 B pair - exact at 136 B but retail carries a
+4-byte frame pair with no stack access, plus a three-register rotation) and `0x02028920`/`0x02028958`
+(56 B on b56 with a load-order and callback-register swap). Both are in `walls.txt` with their residues.
+
 ## 2.66 Wall re-probe under b56 (2026-11-21)
 
 `walls.txt` was written when sp2 was assumed universal, so every parked unit carried a

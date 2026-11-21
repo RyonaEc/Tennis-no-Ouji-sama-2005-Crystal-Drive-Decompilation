@@ -387,3 +387,19 @@ src/ov003/func_ov003_020556b8.c:
 src/ov003/func_ov003_02089b64.c:
     complete
     .text       start:0x02089b64 end:0x02089ba4
+
+src/ov003/func_ov003_02066e84.c:
+    complete
+    .text       start:0x02066e84 end:0x02066f48
+
+src/ov003/func_ov003_020b8904.c:
+    complete
+    .text       start:0x020b8904 end:0x020b89c8
+
+src/ov003/func_ov003_020b8e54.c:
+    complete
+    .text       start:0x020b8e54 end:0x020b8f18
+
+src/ov003/func_ov003_020dbad4.c:
+    complete
+    .text       start:0x020dbad4 end:0x020dbb98
