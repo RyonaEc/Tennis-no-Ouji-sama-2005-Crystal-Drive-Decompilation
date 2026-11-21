@@ -1688,3 +1688,21 @@ whereas calling the function in both branches emits the tail twice. It now diffe
 roles (retail keeps the field address in `lr` and the value in `ip`; mwcc swaps them), so it is parked
 as a genuine allocation tie - and it is worth re-reading 2.48's "opcodes match" claim with suspicion:
 a diff count above the symbol size means the object is longer, i.e. duplicated code, not reordering.
+
+## 2.50 Twins found the sibling, and the family shares shape but NOT constants (2026-11-21)
+
+`build/harvest.py` returned two overlay units (ov005 `0x02056820`, ov009 `0x0204e650`, both 232B) and
+`build/twins.py` found one unmatched twin of an installed unit: `func_ov002_020633e0` (matched, b56)
+-> `func_ov002_02063c5c`. All three installed.
+
+The twin is the interesting one, because I had already failed on it twice by assuming it shared its
+neighbour `0x02063820`'s constants. Its own disassembly says otherwise:
+
+    0x02063820: test 0x8000000, ORR 0x4000000, BIC 0x8000000   (ORR first)
+    0x02063c5c: test 0x00080000, BIC 0x00080000, ORR 0x00040000 (BIC first)
+
+So the two ops also swap order - the 020633e0/02063820 pattern is "set one bit, clear another", and the
+sibling does "clear then set". Reading the twin's bytes instead of its family's made it a one-shot match.
+
+Rule for `twins.py` output: take the **shape** from the matched unit, always take the **values and
+statement order** from the unmatched unit's own disassembly.
