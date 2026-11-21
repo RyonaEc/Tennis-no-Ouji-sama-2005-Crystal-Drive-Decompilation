@@ -1607,3 +1607,27 @@ Two loop changes came out of it:
 * `build/b56_regions.txt` lists every unmatched function within +-0x400 of an installed b56 unit
   (30 candidates after this batch). That is the probe order for the next pass: read the neighbour's
   version, then derive.
+
+## 2.47 Walking the b56 queue: 1 of 5, and why the other four resist (2026-11-21)
+
+First pass down `build/b56_regions.txt`, smallest entries first:
+
+* **ov002 0x020780b0 (72B) MATCH under b56** - `p = B + 0x1e6c; *p |= 2; p[0x58]=0; p[0x59]=0xa;
+  p[0x5a]=0; *p &= ~4;`. Installed; totals 1,447 / 99,152.
+* ov002 0x0206308c (56B): retail loads **two** pool constants (`0x027c0000` and `0x3ff8`) and uses
+  `ldr r0,[r1,r0]!`; every spelling I tried makes mwcc fold the sum into one address. Same
+  address-materialisation family as before, just with a register addend. Parked.
+* ov002 0x020638f4 (88B): retail copies a 3-word table (`ldm`/`stm` through the stack) from
+  `data_ov002_020fdc30`, then indexes it with a byte from the slot. Neither `u32 v[3]` assignment nor
+  a direct `((const u32*)table)[byte]` emits the stack copy; both land far off. Parked.
+* ov002 0x020630f4 (116B): starts with a **dead pool load** of `func_02005418` into `r1` that nothing
+  uses, plus a discarded `ldrh` of `0x04000208` before the zero store. C cannot be talked into emitting
+  dead loads, so this one is only reachable if the original wrote something like an unused
+  `(u32)func_02005418;` statement. Parked with the reasoning noted.
+* ov002 0x02078208 (124B): logic is clear (set bit 0 on `B+0x1e6c`, three byte stores, then
+  `func_ov002_0204f3cc(table[slot[1]*0x30] + 0x20, 0xe0, 0x20)`) but the emitted code lands 120 of 124
+  bytes off, i.e. the whole body shifts - the `a0 * 0x158` slot pointer and the byte-indexed table read
+  both materialise differently. Parked for a shaped retry rather than a blind one.
+
+Lesson for the queue: b56 grandfathers in the *address-materialisation* walls only when the source shape
+is otherwise right. The version fixes register-role ties (2.46), not dead code or table copies.

@@ -19,3 +19,4 @@ src/ov004/func_ov004_020534cc.c = 1.2/b56
 src/ov002/func_ov002_020633e0.c = 1.2/b56
 src/ov002/func_ov002_02063820.c = 1.2/b56
 src/ov002/func_ov002_0204c824.c = 1.2/b56
+src/ov002/func_ov002_020780b0.c = 1.2/b56
