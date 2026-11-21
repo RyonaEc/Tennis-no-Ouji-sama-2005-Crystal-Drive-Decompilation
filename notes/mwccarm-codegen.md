@@ -1780,3 +1780,26 @@ The same pass did yield three units, all b56 and all in the `0x02015000`/`0x0202
 The bit set/clear pair is a useful sanity check on `1 << a0` spelling: `|` produces `orr r0, r1, r2, lsl r0`
 and `&~` produces `mvn r0, r2, lsl r0` then `and`, both of which mwcc emits only when the shift is
 applied to the *mask*, not the value.
+
+## 2.54 Two more b56 units, and the argument-block push (2026-11-21)
+
+    ov002 0x02085ff8 (40B) -> *(u8 *)(data_ov002_02102070 + 0x47d4) &= ~a0
+    arm9  0x020135cc (48B) -> q = *((u8 **)(*(u32 *)(data_02042a68 + 0x14) + 0x104));
+                              q[1] = a0; *(u16 *)(q + 4) = a1; *(u16 *)(q + 2) = func_02017360();
+
+The second one repeats the lesson from 2.51 in a different place: retail computes `u8 *r = q + 2`
+and stores through `[r]` and `[r, #2]`, while `*(u16 *)(q + 4) = ...; *(u16 *)(q + 2) = ...` lets
+mwcc fold both stores onto the single base `q` and comes out four bytes short. When two stores differ
+by a field offset, give the inner offset its own pointer variable; the fold is otherwise automatic and
+invisible in the sizes of the surrounding code.
+
+`0x02024b5c` shows a fold of a different kind: `*p |= 0x80000000 >> a0` compiles to a single
+`orr r2, r2, r1, lsr r0`, while retail keeps the shift in a separate instruction. A temp variable does
+not stop it, and a volatile mask balloons the function to 64B. Retail also picks PL/MI where the
+obvious signed source gives GE/LT, so the condition spelling is wrong too - a genuinely different
+source, not just a missing barrier. Parked.
+
+`0x0203b4e4` has retail saving its arguments with `push {r0, r1, r2, ip, lr}` rather than allocating
+callee-saved registers, and restoring them before the `bic`/`eor`. Both a no-argument and a
+four-argument callee declaration land on r4/r5 with a frame, so this is an allocation decision made
+before the source can express it. Parked.
