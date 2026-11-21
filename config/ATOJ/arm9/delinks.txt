@@ -3419,3 +3419,19 @@ src/arm9/func_020186a0.c:
 src/arm9/func_0201fc1c.c:
     complete
     .text       start:0x0201fc1c end:0x0201fc3c
+
+src/arm9/func_020289f4.c:
+    complete
+    .text       start:0x020289f4 end:0x02028a38
+
+src/arm9/func_020298e4.c:
+    complete
+    .text       start:0x020298e4 end:0x02029930
+
+src/arm9/func_02028c98.c:
+    complete
+    .text       start:0x02028c98 end:0x02028ce0
+
+src/arm9/func_020187b0.c:
+    complete
+    .text       start:0x020187b0 end:0x020187f8

@@ -38,3 +38,7 @@ src/arm9/func_02018018.c = 1.2/b56
 src/arm9/func_020186a0.c = 1.2/b56
 src/arm9/func_020279e0.c = 1.2/b56
 src/arm9/func_0201fc1c.c = 1.2/b56
+src/arm9/func_020289f4.c = 1.2/b56
+src/arm9/func_020298e4.c = 1.2/b56
+src/arm9/func_02028c98.c = 1.2/b56
+src/arm9/func_020187b0.c = 1.2/b56

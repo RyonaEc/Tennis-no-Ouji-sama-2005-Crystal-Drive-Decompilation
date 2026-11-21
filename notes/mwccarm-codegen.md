@@ -1997,3 +1997,20 @@ Two shapes from this batch worth reusing:
 - **`func_020279e0`**: a 12-byte-stride table increment. `*q = *q + 1; return p[8];` with `q = p + 8`
   and the return reading `p[8]` is what produces retail's `ldrb` reload after the `strb`; using `q` for
   both the store and the load drops the reload and 4 bytes.
+
+## 2.63 b56 swept the 68-76B band (2026-11-21)
+
+Four installs from the untouched tail of `fresh.txt`, and in this band **every** match came from
+`1.2/b56`, none from sp2: `func_020289f4` (68B), `func_020298e4` (76B), `func_02028c98` (72B),
+`func_020187b0` (72B). The b56 map in `config/TOJ/mwcc_versions.txt` therefore keeps growing with
+names the original toolchain evidently compiled with the b56 build - when a 68-76B candidate is
+exactly sized but permuted, test b56 before rewriting the source.
+
+`func_020187b0` also settled the compound-assignment question from 2.61: `*(u16 *)(a0 + 0xc) -= 1;`
+works (72B, b56) where `u16 *cnt = (u16 *)(a0 + 0xc); *cnt = *cnt - 1;` costs 12 extra bytes (84B) by
+keeping the pointer live across the earlier call. Compound assignment on a fresh computed lvalue lets
+mwcc rematerialise the address after the call, which is what retail does.
+
+`func_02028c98` is the same lesson from the other side: the HAL lock pattern
+`h = func_02026350(); work; func_02026364(h);` keeps `h` in a callee-saved register without spilling,
+and the `&= ~0xf` on a field between two calls must stay a compound assignment on `*(u32 *)(a0 + 0xc)`.
