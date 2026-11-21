@@ -41,7 +41,7 @@ and the rebuilt ROM still hashes to the retail dump. `ninja report` shows `match
 `matched_code: 101,948` of 1,841,700 bytes (5.54%); the other 2,322 functions are
 still delinked assembly. [PROGRESS.md](PROGRESS.md) has the fuller breakdown
 (code, functions, fuzzy match, data, unit completeness, and a per-module table);
-`python build/progress.py` regenerates it.
+`python tools/match/progress.py` regenerates it.
 
 Everything below needs your own dump of the cartridge. No ROM or BIOS image is
 included in this repository.
@@ -118,6 +118,7 @@ libs/               vendored libraries (headers are added to the include path)
 tools/              extraction, build and matching tooling, vendored `mwccarm`
 extract/            your ROM and its extraction (never committed)
 build/ATOJ/         delinked objects, linker script, EFX and the built ROM
+build/              untracked scratch: candidates, logs, probes
 ```
 
 ## Matching notes
@@ -132,8 +133,8 @@ it - measured diffs, bodies tried and per-family histories - is kept apart in
 
 If you are an AI agent contributing to this repository, read
 [`AGENTS.md`](AGENTS.md) first: it states what counts as a finished unit, the
-hard rules that keep the ROM matching, the edit loop and the helper scripts in
-`build/`, and how to commit and publish a batch.
+hard rules that keep the ROM matching, the edit loop and the matching tools in
+`tools/match/`, and how to commit and publish a batch.
 
 ## Legal
 

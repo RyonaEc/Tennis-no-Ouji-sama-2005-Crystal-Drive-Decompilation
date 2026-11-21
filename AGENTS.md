@@ -12,14 +12,14 @@ proven shortcut; ignoring the hard rules breaks the build for everyone.
 
 A function is matched only when **all** of these hold:
 
-1. `python build/t10.py --check <module>` reports `ok` for that module
+1. `python tools/match/t10.py --check <module>` reports `ok` for that module
    (`dangling=0`, `unlinked=0`, `dupes=0`); without the local tooling, `ninja
    check` must pass for that module instead, and
 2. `ninja sha1` prints
    `Target: 8d555a80db47278475ffdfdf808fe80dbd7c48cf; tennis_ATOJ.nds: 8d555a80db47278475ffdfdf808fe80dbd7c48cf`
    followed by `tennis_ATOJ.nds: OK`.
 
-A unit whose object diff looks close is **not** done. `build/var3.py` compares
+A unit whose object diff looks close is **not** done. `tools/match/var3.py` compares
 disassembly with relocation bytes masked; it can say `MATCH` while the linked
 ROM still differs (constant pools, pc-relative displacements, literal values).
 Never commit a unit on the strength of `var3` alone.
@@ -36,7 +36,7 @@ Never commit a unit on the strength of `var3` alone.
   pre-existing mwccarm build in `config/ATOJ/mwcc_versions.txt` (retail mixes
   `1.2/b56` with the default `1.2/sp2`), and only when the full ROM digest still
   matches. Never guess a version; the sha1 gate, not the object diff, decides.
-- **Never weaken verification.** Do not edit `build/t10.py`, `tools/sha1.py`,
+- **Never weaken verification.** Do not edit `tools/match/t10.py`, `tools/sha1.py`,
   the expected SHA-1, or the objdiff configuration to make a check pass. Do not
   delete tests or skip modules in `--check`.
 - **Never commit the ROM or BIOS dumps** — `.gitignore` covers them and this
@@ -57,8 +57,9 @@ config/ATOJ/arm9/overlays/<ov>/   the same three files for each overlay
 src/<module>/*.c         decompiled translation units, usually one function per file
 include/                 shared types (types.h is included by every unit)
 build/ATOJ/delinks/      relocatable objects produced by dsd delink
-build/ATOJ/report.json   objdiff's per-unit report, consumed by build/progress.py
+build/ATOJ/report.json   objdiff's per-unit report, consumed by tools/match/progress.py
 tools/                   dsd/mwccarm wrappers, configure.py, sha1.py, upload_report.py
+tools/match/             matching tools, harness and rosters (see its README)
 docs/                    build documentation (SETUP.md, WORKFLOW.md, BYTEMATCH.md)
 ```
 
@@ -70,18 +71,18 @@ objdiff configuration all key off them.
 
 ## The edit loop
 
-1. Pick an unmatched function. `build/famsurvey.py` groups unmatched functions
+1. Pick an unmatched function. `tools/match/famsurvey.py` groups unmatched functions
    by size and mnemonic sequence; groups of identical skeleton are the cheapest wins because one
    source shape covers every member.
-2. Disassemble it: `python build/udis.py <module> 0xADDR [0xADDR ...]`.
+2. Disassemble it: `python tools/match/udis.py <module> 0xADDR [0xADDR ...]`.
 3. Write the C in a scratch file (e.g. `build/cand/name.c`) and compare with
-   `python build/var3.py <module> 0xADDR <size> build/cand/name.c`.
+   `python tools/match/var3.py <module> 0xADDR <size> build/cand/name.c`.
 4. When `var3` says `MATCH`, install it with
-   `python build/reg.py <module> <func_name> 0xADDR <size> build/cand/name.c`.
+   `python tools/match/reg.py <module> <func_name> 0xADDR <size> build/cand/name.c`.
    `reg.py` adds the delinks entry, rebuilds the ROM and only keeps the unit if
    the digest still matches; on a miss it restores the tree.
-5. Re-verify: `python build/t10.py --check <module>` and `ninja sha1`.
-6. Regenerate `PROGRESS.md` (`rm -f build/ATOJ/report.json && python build/progress.py`),
+5. Re-verify: `python tools/match/t10.py --check <module>` and `ninja sha1`.
+6. Regenerate `PROGRESS.md` (`rm -f build/ATOJ/report.json && python tools/match/progress.py`),
    update the counts in `README.md`, and commit source plus
    `config/.../delinks.txt` together.
 
@@ -92,27 +93,27 @@ Source files must `#include "types.h"` first, or the compiler emits
 
 | Command | Purpose |
 |---|---|
-| `python build/udis.py <mod> <addr>...` | disassemble retail functions with sizes |
-| `python build/var3.py <mod> <addr> <size> <file.c>` | compile a candidate and diff it against retail |
-| `python build/reg.py <mod> <name> <addr> <size> <file.c>` | install a candidate, rebuild, keep only on ROM match |
-| `python build/t10.py --check <mod>...` | self-check delinks/source bookkeeping |
-| `python build/t10.py --repair <mod>` | drop dangling entries, relink orphan sources, drop duplicates |
-| `python build/autorun.py <limit> <maxsize> <mod>...` | try auto-generated candidates (`build/tried.txt` remembers them) |
-| `python build/famsurvey.py <mod>...` | list unmatched identical-skeleton groups |
-| `python build/progress.py` | regenerate `PROGRESS.md` from objdiff's report |
+| `python tools/match/udis.py <mod> <addr>...` | disassemble retail functions with sizes |
+| `python tools/match/var3.py <mod> <addr> <size> <file.c>` | compile a candidate and diff it against retail |
+| `python tools/match/reg.py <mod> <name> <addr> <size> <file.c>` | install a candidate, rebuild, keep only on ROM match |
+| `python tools/match/t10.py --check <mod>...` | self-check delinks/source bookkeeping |
+| `python tools/match/t10.py --repair <mod>` | drop dangling entries, relink orphan sources, drop duplicates |
+| `python tools/match/autorun.py <limit> <maxsize> <mod>...` | try auto-generated candidates (`tools/match/tried.txt` remembers them) |
+| `python tools/match/famsurvey.py <mod>...` | list unmatched identical-skeleton groups |
+| `python tools/match/progress.py` | regenerate `PROGRESS.md` from objdiff's report |
 | `ninja report` / `ninja sha1` / `ninja check` | objdiff numbers, ROM digest, per-module check |
 
-`build/fastmatch.py` is the shared compiler harness: `parse_ins(addr, size)`,
+`tools/match/fastmatch.py` is the shared compiler harness: `parse_ins(addr, size)`,
 `retail(mod, addr, size)`, `compile_text(source, name)`, `literal_of(ins)`.
 Literal-pool words are at `ins.address + 8 + imm12`.
 
-The helper scripts in `build/` are committed: `fastmatch.py` (harness),
-`vprobe.py` (all compilers in one run), `udis.py`, `var3.py`, `reg.py`, `t10.py`,
-`autorun.py`, `famsurvey.py`, `permute.py`, `progress.py` and the analysis
-scripts around them. Only their output is ignored - `build/ATOJ/` (delinked
-objects and the built ROM), `build/cand/` (scratch candidates), logs, probes and
-backup copies of patched scripts. `build/true_fresh.txt` is the trusted
-unmatched queue: `fresh.txt` goes stale as units are installed.
+The matching tools live in `tools/match/`, which has its own README:
+`fastmatch.py` (harness), `vprobe.py` (all compilers in one run), `udis.py`,
+`var3.py`, `reg.py`, `t10.py`, `autorun.py`, `famsurvey.py`, `permute.py`,
+`progress.py` and the analysis scripts around them. `build/` is output only -
+delinked objects and the built ROM (`build/ATOJ/`), scratch candidates
+(`build/cand/`), logs and probes - and is gitignored in full.
+`tools/match/true_fresh.txt` is the trusted unmatched queue.
 
 ## Compiler idioms worth knowing
 
@@ -176,9 +177,9 @@ empty names so a file never ends up with two conflicting `extern`s.
 
 ## When something goes wrong
 
-- `build/t10.py --check` reports `dangling` (delinks entry with no source),
+- `tools/match/t10.py --check` reports `dangling` (delinks entry with no source),
   `unlinked` (source with no entry) or `dupes`. Fix with
-  `python build/t10.py --repair <module>`; it is safe to run at any time.
+  `python tools/match/t10.py --repair <module>`; it is safe to run at any time.
 - A killed process cannot leave a half-linked unit: `try_unit` restores the tree
   in a `finally` block. If you suspect a manual edit broke the tree, run
   `--repair`, then `ninja sha1`.

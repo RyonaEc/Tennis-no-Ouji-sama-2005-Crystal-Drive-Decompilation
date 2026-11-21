@@ -1,7 +1,0 @@
-src/arm9/func_0200851c.c
-src/arm9/func_0200ec4c.c
-src/arm9/func_0200ec5c.c
-src/arm9/func_0200f45c.c
-src/arm9/func_0200f730.c
-src/arm9/func_0201c50c.c
-src/ov004/func_ov004_0205a57c.c

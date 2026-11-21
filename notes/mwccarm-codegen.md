@@ -5,7 +5,7 @@ allocator: a lever is an axis to move, and every candidate still has to be
 compiled and byte-diffed before it counts. Evidence for each row - measured
 diffs, bodies tried, verdicts - is in
 [`mwccarm-codegen-log.md`](mwccarm-codegen-log.md); section numbers in
-`build/walls.txt` and commit messages point there.
+`tools/match/walls.txt` and commit messages point there.
 
 Toolchain: CodeWarrior `mwccarm`, `-O4,p`, ARM mode, struct alignment 4.
 Retail is a **split build**: `1.2/sp2` for most units and `1.2/b56` for the ones
@@ -17,7 +17,7 @@ without a ROM-digest match.
 * The digest is the only proof: `ninja sha1` must print the retail hash. An
   object diff, `t10.try_unit` alone, or a `MATCH` with relocations masked does
   not close a unit.
-* Probe compilers before rewriting. `python build/vprobe.py <mod> <addr> <size>
+* Probe compilers before rewriting. `python tools/match/vprobe.py <mod> <addr> <size>
   <file.c>` runs `1.2/b56` then `1.2/sp2` and masks relocations. In the small
   bands every recent hit was b56-only.
 * Work from the live queue, not a stored list: a unit is unmatched only if
@@ -28,7 +28,7 @@ without a ROM-digest match.
 * Reference globals by symbol. An absolute address can compile to identical
   bytes and then fail to link.
 * Park after about two spellings. Record the body and the exact residue in
-  `build/walls.txt`, then move on; a wall is a result, not a failure.
+  `tools/match/walls.txt`, then move on; a wall is a result, not a failure.
 * Solved families do not need re-deriving: if `src/` already has the unit, its
   bytes are settled. The log's §9-§13 are history, not a to-do list.
 
@@ -84,12 +84,12 @@ without a ROM-digest match.
 * **BIOS SWI stubs**: 4-6 byte wrappers whose object compare can pass while the
   linked ROM does not.
 
-Each has a body and a diff summary in `build/walls.txt`.
+Each has a body and a diff summary in `tools/match/walls.txt`.
 
 ## Where to look
 
 * `notes/mwccarm-codegen-log.md` - dated evidence, superseded rules, per-unit
   bodies and the walls as they were found.
-* `build/walls.txt` - every parked unit, one line each, with the exact residue.
+* `tools/match/walls.txt` - every parked unit, one line each, with the exact residue.
 * `AGENTS.md`, `CONTRIBUTING.md` - the hard rules, the edit loop and the
   release procedure.

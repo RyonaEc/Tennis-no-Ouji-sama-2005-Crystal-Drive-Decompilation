@@ -3,9 +3,11 @@
 Dated record behind `notes/mwccarm-codegen.md`. The playbook has the lever
 table; this file has the measurements, the bodies that were tried, the exact
 diffs and the verdicts. Section numbers here (`2.60`, `9.1`, ...) are the ones
-quoted by `build/walls.txt`, commit messages and the playbook.
+quoted by `tools/match/walls.txt`, commit messages and the playbook.
 
 Later entries supersede earlier ones when they contradict: read the date, and
+paths below are as they were written - the matching tools have since moved from
+`build/` to `tools/match/`.
 treat the newest statement of a rule as the current one.
 
 ---
@@ -197,17 +199,17 @@ source idioms; none is a skill gap.
 
 ```sh
 # one candidate: compile, diff reloc-aware, accept only on exact match
-python build/t10.py --try <name>            # try_unit(...) from Python
+python tools/match/t10.py --try <name>            # try_unit(...) from Python
 
 # gates, in order
 python -m ninja sha1                        # whole-ROM digest
-python build/t10.py --check arm9 ov002 ...  # delink link-state sanity
+python tools/match/t10.py --check arm9 ov002 ...  # delink link-state sanity
 python -m ninja report                      # progress numbers
 ```
 
-`build/cdiff.py <mod> <name>=<file.c>` compiles one file and prints a
+`tools/match/cdiff.py <mod> <name>=<file.c>` compiles one file and prints a
 reloc-aware instruction diff against retail without touching the tree, which is
-the fastest way to read a residue. `build/auto.py` exposes `set_module`, `FUNCS`
+the fastest way to read a residue. `tools/match/auto.py` exposes `set_module`, `FUNCS`
 (addr → name, size), `SYM` and `disasm(addr, size)`.
 
 ## 9. Solved: the per-slot state-machine family (21 functions)
@@ -460,7 +462,7 @@ e.g. the `__mulsf3`-style routine at `0x0203a584` that pushes r0-r3 around a cal
 register and does `umull` on the mantissas), and `mov ip, #0x200000` followed by `cmn ip, rX, lsl #1`
 (the sign-normalising trick of a 64-bit signed compare, `__cmpdi2`).
 
-This corrects an earlier note in `build/walls.txt` that called `func_02039630` (912 B) a "generated
+This corrects an earlier note in `tools/match/walls.txt` that called `func_02039630` (912 B) a "generated
 fixed-point dispatch family": it is the 64-bit compare runtime. That unit, `func_0203a584` and the other
 ten are **not decompilation targets** - their retail bytes came from an assembly runtime, so per the
 project rules they must not be generalised into C. Exclude them when picking work; the decompilable
@@ -487,7 +489,7 @@ Conclusions:
 2. **Frames come from calls.** A leaf function with stack arguments reads them at `[sp+0]` with no
    prologue at all; the `stmdb sp!,{lr}` + `sub sp,sp,#4` pair only appears once the function is
    non-leaf. An unexplained 8-byte frame in a function with no visible `bl` therefore implies a
-   **call that was inlined**, which matches the two units in `build/walls.txt` that carry one
+   **call that was inlined**, which matches the two units in `tools/match/walls.txt` that carry one
    (`func_02017954`, `func_0201779c`, `func_02021c70`): their bodies are complete and their logic
    reproduces exactly, minus the frame.
 3. **`push {r0,r1,r2,r3}` as the first instruction means the function takes a 16-byte struct by
@@ -537,7 +539,7 @@ Together these make switch-shaped units cheap: identify the tree, read each leaf
 cases in ascending-return order. Six units, 1,692 bytes, matched this way in one session including a
 three-member family that is byte-identical apart from the function name.
 
-`build/ready.py <mod> --frameless` plus a scan for "at least 3 branches to one target and at least 2
+`tools/match/ready.py <mod> --frameless` plus a scan for "at least 3 branches to one target and at least 2
 bhi/blo" finds them: 30 were sitting in the ready pool across arm9 and the overlays.
 
 ## 2.10 Address materialisation: the pooled form, solved (2026-11-20)
@@ -605,7 +607,7 @@ overlay), so this is currently the highest-yield class in the project.
 
 ## 2.12 The jump-table scanner and what it wrongly attracts (2026-11-20)
 
-`build/jt.py` walks every ready unit (`auto.FUNCS` minus `src/<mod>/*.c`) and reports each one whose
+`tools/match/jt.py` walks every ready unit (`auto.FUNCS` minus `src/<mod>/*.c`) and reports each one whose
 body contains `addls pc, pc`, with counts of `mov rN,#imm`, `b` and `bl`. It currently reports **125**
 units - more than twice the 57 I estimated by eye. Filter with `$NF=="bl=0"` and `mov>=3` for the
 high-yield class: a switch that is nothing but a value-to-value map.
@@ -631,7 +633,7 @@ multiple of 4. That reproduces the blocks exactly; only the field-address materi
 
 ## 2.13 Hand-decoding still beats generation for jump tables (2026-11-20)
 
-I tried to automate the pure-map class end to end (`build/jtgen.py`): find the `addls pc, pc`, read the
+I tried to automate the pure-map class end to end (`tools/match/jtgen.py`): find the `addls pc, pc`, read the
 table, map each entry to the `mov rD,#imm` it lands on, sort blocks by address (= source order, which
 is the one degree of freedom), emit `case N: r = V; break;` and compile it. Run over all 125 units it
 produced **zero** additional matches. `func_ov002_02060798` remains the only unit that shape covers.
@@ -661,8 +663,8 @@ branch and costs 4 bytes.
 
 ### Generator status
 
-`build/jtgen.py` is kept because it is correct and cheap; when a genuine map turns up it produces the
-source in one call. `build/jtrun.py` runs it across `build/jt.txt` and reports how many units it could
+`tools/match/jtgen.py` is kept because it is correct and cheap; when a genuine map turns up it produces the
+source in one call. `tools/match/jtrun.py` runs it across `tools/match/jt.txt` and reports how many units it could
 parse (currently 2, both fragments). Do not spend a session on the jump-table vein expecting bulk
 yields - it is now a tooling-backed trickle of ~1 unit per pass.
 
@@ -700,13 +702,13 @@ Every one produces the folded form. `func_0201f980` (28 B), `func_0203684c` (40 
 `func_02024b5c` (48 B, predication instead) fail in the same way.
 
 **Practical rule: if the only difference is `[rM]` versus `[rM, #imm]`, stop.** Two attempts to
-establish whether the shape is reachable is enough; record it in `build/walls.txt` and move on. This
+establish whether the shape is reachable is enough; record it in `tools/match/walls.txt` and move on. This
 is the same category as the register-allocation ties in the main notes, and it is not a sign that the
 source is wrong - mwcc at this version simply does not materialise here.
 
 ## 2.15 A census of what is actually left (2026-11-20)
 
-`build/census.py` filters the ready pool down to units that can plausibly be matched as units at all:
+`tools/match/census.py` filters the ready pool down to units that can plausibly be matched as units at all:
 last instruction is a real return (`bx lr`, `ldm sp!`, `pop`), and no `r8`/`sb`/`sl`/`fp` register is
 read without the function having set it up. Result: **201 of the ~2,430 unmatched units**. The rest
 are fragments of larger functions and cannot be matched in place.
@@ -724,7 +726,7 @@ either a counted loop or a frame-carrying memcpy-like sequence, never the straig
 
 ### The 13x756 ov002 family (9,828 B)
 
-`build/famsurvey.py ov002` reports `13x756 val 9828 0x0208f860 0x0209a5f4 0x0209c728 0x0209eb18
+`tools/match/famsurvey.py ov002` reports `13x756 val 9828 0x0208f860 0x0209a5f4 0x0209c728 0x0209eb18
 0x020a8ba0 0x020ad2b0 ...`. I verified the members really are one source: normalising immediates and
 register numbers, each member is **185 of 186 instructions identical** to the first (99%), with the
 same instruction count. So a match on member 1 is worth 9,828 bytes across 13 units - by far the
@@ -868,7 +870,7 @@ Two lessons:
    must use the overlay's symbol name (`func_ov002_02062d84`), not an arm9-style name. Grep
    `relocs.txt` for `to:<addr>` when a `bl` target has no arm9 symbol.
 
-`build/lint_cand.py` now checks every `extern` name in a candidate against all symbol tables
+`tools/match/lint_cand.py` now checks every `extern` name in a candidate against all symbol tables
 (arm9, each overlay, itcm, dtcm) before anything is installed. Run it on every helper hand-over.
 
 All five are now installed: +648 bytes.
@@ -960,7 +962,7 @@ by writing them once and reading them twice.
 
 ### `autorun.py` is exhausted for arm9
 
-`python build/autorun.py 45 120 arm9` reports `already tried 465`, `bailed 92`, `testing 0`,
+`python tools/match/autorun.py 45 120 arm9` reports `already tried 465`, `bailed 92`, `testing 0`,
 `generated matches: 0/0`. The generator has no untried patterns left in that size band; more units need
 hand-written reconstruction from `build/ready_funcs.txt`.
 
@@ -1114,7 +1116,7 @@ argument order of the callees first; they are not guesses worth making without i
 
 `build/harvest.py` found `0x02019974` and `0x02019aa0` (124 B each) in the scout tree. Both installed
 through `reg.py`; `0x02019974` needed the familiar symbol repair (`data_204662c` -> `data_0204662c`,
-missing zero) which `build/lint_cand.py` flagged before install.
+missing zero) which `tools/match/lint_cand.py` flagged before install.
 
 Running total from harvests: **28 units, 3,980 bytes** that were sitting finished in the helper trees
 and never claimed. The loop is `harvest.py` -> `lint_cand.py` -> `install_helpers.py` (or `reg.py` one at
@@ -1123,7 +1125,7 @@ a time) at the start of every session; it takes a minute and has paid every time
 ## 2.28 The harvest was blind to every overlay (2026-11-20)
 
 Root cause of three sessions of "the helper trees are drained": `build/harvest.py` and
-`build/install_helpers.py` resolved candidate sizes through `build/auto.py`'s `FUNCS`, and that table
+`build/install_helpers.py` resolved candidate sizes through `tools/match/auto.py`'s `FUNCS`, and that table
 holds **arm9 only** (1,365 entries). Every `func_ovNNN_*` candidate was silently skipped. delta's
 reports had been claiming ov003/ov004/ov005/ov009 matches for hours and none of them could ever surface.
 
@@ -1203,13 +1205,13 @@ because mwcc hoists the `cmp` above the saves and drops r4/r5. There the tell is
 `mov r3, r2`** - a value moved into r3 and never read. Dead moves do not come from C, so the 3rd
 parameter is used somewhere we have not found; four formulations failed and it is parked.
 
-All three families are in `build/walls.txt` with their full retail sequences and the closest body, so
+All three families are in `tools/match/walls.txt` with their full retail sequences and the closest body, so
 the helper trees can pick them up with the derivation already done.
 
 ## 2.32 Matched-twins: mine the units that are already done (2026-11-20)
 
 Twenty-odd turns were spent deriving bodies from scratch for functions that had a **twin already in the
-tree**. `build/twins.py` fixes the target selection: it groups every function in every module by
+tree**. `tools/match/twins.py` fixes the target selection: it groups every function in every module by
 `(module, size, mnemonic multiset)` and reports the groups that contain both a matched and an unmatched
 member. Those are the cheapest possible wins - the C is already written, only constants differ.
 
@@ -1346,7 +1348,7 @@ straight from the listing is missing its leading zero: `func_0204b04`, which exi
 flagged all six immediately (`6 bad extern name(s)`); the mistake was reading `reg.py`'s one-line
 "link/compile issue" and moving on instead of running the lint first.
 
-**Rule: after writing any body, run `python build/lint_cand.py <file>` before `reg.py`, and treat
+**Rule: after writing any body, run `python tools/match/lint_cand.py <file>` before `reg.py`, and treat
 `link/compile issue` as "wrong symbol name" until proven otherwise.** The repair is mechanical: if
 `func_XXXXXXXX`/`data_XXXXXXXX` is not in the tables, try inserting a zero after the prefix.
 
@@ -1421,7 +1423,7 @@ SDK-era compiler. That is **wrong**, and the check is one line:
     grep -c "flags|cflags|cpp_args" config/ATOJ/arm9/delinks.txt   ->  0
 
 `delinks.txt` carries only section ranges and `complete` markers; every unit is compiled with the single
-`MWCC_FLAGS` in `build/fastmatch.py` (`-O4,p -inline on,noauto ...`). There is no per-unit override
+`MWCC_FLAGS` in `tools/match/fastmatch.py` (`-O4,p -inline on,noauto ...`). There is no per-unit override
 anywhere in the build. So retail's small units were produced by the same compiler with the same flags as
 the 1,434 units that match, and **any remaining difference is a source-shape difference, not a toolchain
 one.** That is the more hopeful conclusion and it changes the plan: keep probing shapes rather than
@@ -1441,7 +1443,7 @@ This supersedes 2.41's conclusion that the small-unit class is a pure source-sha
 The repo ships **25 mwccarm builds** under `tools/mwccarm/` (1.2: b56, base, sp2, sp2p3, sp3, sp4;
 2.0: base, sp1..sp2p4; dsi: 1.1..1.3p1). I swept derived bodies across them with the *identical*
 `MWCC_FLAGS`, comparing through the normal masked harness (`build/fm_<tag>.py` are copies of
-`build/fastmatch.py` with only the compiler path substituted):
+`tools/match/fastmatch.py` with only the compiler path substituted):
 
     unit                    b56   sp2
     ov002 0x02062b48         Y     -
@@ -1480,7 +1482,7 @@ materialisation only" must be re-tested under b56 before being parked.** That is
 Adopted after owner approval. `config/ATOJ/mwcc_versions.txt` maps a source path to a version tag; the
 mwcc ninja rule now takes the compiler from the edge (`$mwcc_exe`, defaulting to `--mwcc-version`), and
 `tools/configure.py` adds a non-default compiler to that edge's implicit deps so a compiler swap
-rebuilds the unit. `build/fastmatch.py` grew `compile_text(..., compiler=)` / `compare(..., compiler=)`
+rebuilds the unit. `tools/match/fastmatch.py` grew `compile_text(..., compiler=)` / `compare(..., compiler=)`
 so a candidate can be probed with the build's compiler before install; `build/fm_<tag>.py` remain the
 quick per-version harness copies used for sweeping.
 
@@ -1568,7 +1570,7 @@ session to 12 b56 units; totals 1,446 functions / 99,080 bytes.
 
 Two loop changes came out of it:
 
-* `build/reg.py` now takes an optional trailing version (`... file.c 1.2/b56`). It records the override
+* `tools/match/reg.py` now takes an optional trailing version (`... file.c 1.2/b56`). It records the override
   in `config/ATOJ/mwcc_versions.txt` and re-runs `configure.py` *before* `try_unit`, because try_unit
   links the ROM with whatever the build graph says - installing a b56 body while the map still says
   sp2 fails the digest for the wrong reason. This is the bug that made the first three installs report
@@ -1629,10 +1631,10 @@ the size before treating a wall as "close".
 
 ## 2.49 Statement order is NOT the scheduling axis; two structural levers that are (2026-11-21)
 
-Built `build/permute.py` (marks a line with `// P`, permutes every ordering, scores by `diff_summary`,
+Built `tools/match/permute.py` (marks a line with `// P`, permutes every ordering, scores by `diff_summary`,
 prints the best, installs nothing):
 
-    python build/permute.py <mod> <addr> <size> <file.c> [version] [--top N]
+    python tools/match/permute.py <mod> <addr> <size> <file.c> [version] [--top N]
 
 It answered the question it was built for, negatively: **all 6 orders of 0x0204c884's declarations and
 all 120 orders of 0x02063bb8's scored identically.** For these bodies mwcc ignores declaration order
@@ -1661,7 +1663,7 @@ a diff count above the symbol size means the object is longer, i.e. duplicated c
 ## 2.50 Twins found the sibling, and the family shares shape but NOT constants (2026-11-21)
 
 `build/harvest.py` returned two overlay units (ov005 `0x02056820`, ov009 `0x0204e650`, both 232B) and
-`build/twins.py` found one unmatched twin of an installed unit: `func_ov002_020633e0` (matched, b56)
+`tools/match/twins.py` found one unmatched twin of an installed unit: `func_ov002_020633e0` (matched, b56)
 -> `func_ov002_02063c5c`. All three installed.
 
 The twin is the interesting one, because I had already failed on it twice by assuming it shared its
@@ -1678,7 +1680,7 @@ statement order** from the unmatched unit's own disassembly.
 
 ## 2.51 Cross-module twins: a small but real seam, and why it is small (2026-11-21)
 
-`build/crosstwin.py` hashes each function's instruction *shape* (mnemonics with every immediate
+`tools/match/crosstwin.py` hashes each function's instruction *shape* (mnemonics with every immediate
 masked to `#` and every register collapsed to `R`) across all twelve modules and reports groups that
 have both a matched and an unmatched member. Over everything <= 0x200 bytes it finds only **4 groups /
 6 open functions** - the overlays are less duplicated than their sizes suggest.
@@ -1999,13 +2001,13 @@ the file. Three of the first five candidates this round (`0x02018318`,
 `0x0201f980`, `0x02027a14`) already had `src/arm9/<name>.c` and matched; the
 "install" only rewrote their bodies with an equivalent spelling, which is a
 cosmetic change to matching code and had to be reverted. The queue to trust is
-`build/true_fresh.txt`, regenerated from the live tree: every entry of
+`tools/match/true_fresh.txt`, regenerated from the live tree: every entry of
 `auto.FUNCS` whose `src/<module>/<name>.c` does not exist. Also check the
 symbol name, not just the address: `0x02085ff8` is `func_ov002_0202085ff8` in
 `symbols.txt` (the nine-digit name trap, 2.38), and passing the eight-digit
 form creates a new file and a duplicate delinks entry that fails to link.
 
-**Probe all retail compilers in one call.** `build/vprobe.py <mod> <addr>
+**Probe all retail compilers in one call.** `tools/match/vprobe.py <mod> <addr>
 <size> <file.c>...` compiles each candidate with `1.2/b56` then `1.2/sp2` and
 prints `MATCH` or the first six differing instructions for each, masking
 relocations before the compare. This removes the manual "test b56 before
@@ -2072,7 +2074,7 @@ Two levers worth keeping:
 link: the callee is `func_0203b640`, not `func_02033b640`. Same seven-digit trap
 as §2.38; the compile succeeded because the name was only a relocation.
 
-Parked after 3-6 spellings each, all in `build/walls.txt` now: `0203b4b0`
+Parked after 3-6 spellings each, all in `tools/match/walls.txt` now: `0203b4b0`
 (mwcc always adds a 4-byte frame slot), `02036650` (string loop peeling),
 `02032be8` (loop entry check orientation), `020202b4` (DISPSTAT update: register
 pair and eq/ne blocks both inverted), `02029cc4` (guard colouring), `0207be2c`

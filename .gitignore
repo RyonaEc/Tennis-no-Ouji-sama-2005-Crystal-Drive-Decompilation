@@ -7,12 +7,9 @@
 arm7_bios.bin
 *.sha1.local
 
-# Build output. Only the helper scripts and their rosters are tracked, so
-# everything else under build/ - delinked objects, the built ROM, scratch
-# candidates, logs, probes, Ghidra dumps and backup copies - stays out.
+# Build output and scratch. Everything under build/ - delinked objects, the
+# built ROM, scratch candidates, logs, probes and Ghidra dumps - stays out.
 /build/*
-!/build/*.py
-!/build/*.txt
 /build.ninja
 /build.ninja.d
 *.o

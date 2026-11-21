@@ -4,7 +4,7 @@ Two ov004 units installed from Delta (`func_ov004_0205a63c`, 116 B and
 `func_ov004_02051148`, 120 B) link to the exact target ROM
 (`8d555a80...`, `ninja sha1` prints `OK`) and pass `t10 --check`, yet the
 objdiff report scores them `fuzzy_match_percent: 99.83` with
-`complete_code_percent: 100.0`. `build/progress.py` credits a function only at
+`complete_code_percent: 100.0`. `tools/match/progress.py` credits a function only at
 100% fuzzy, so they add nothing to `PROGRESS.md`/`README.md`.
 
 I disassembled the compiled object against retail to see which bytes differ:
@@ -16,7 +16,7 @@ I disassembled the compiled object against retail to see which bytes differ:
 
 The single "difference" is an unresolved call relocation: the object holds a
 `bl` with a zero offset (disassembles as `function + 0x48`), and the linker
-fills the real target. `build/var3.py` masks relocation bytes by design, which
+fills the real target. `tools/match/var3.py` masks relocation bytes by design, which
 is why the gate accepted both units; objdiff compares relocatable objects and
 counts those bytes.
 
@@ -50,7 +50,7 @@ funcs = m.get('matched_functions', m.get('complete_units', 0))
 ```
 
 `PROGRESS.md` then reads 1,318 functions / 83,732 bytes instead of 1,301 /
-82,656. This is a reporting fix only: `build/t10.py` and `ninja sha1` remain the
+82,656. This is a reporting fix only: `tools/match/t10.py` and `ninja sha1` remain the
 authority, and no verification was weakened. `build/` is gitignored, so the
 patched `progress.py` exists only in the working tree — recreate this change if
 the tooling is ever regenerated.

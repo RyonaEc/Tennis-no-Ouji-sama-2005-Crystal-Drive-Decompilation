@@ -128,5 +128,5 @@ Open an issue for build or tooling problems. Include your OS, the output of
 the ROM, BIOS dumps, extracted game files or compiler archives to an issue.
 
 For AI agents working in this repository, [AGENTS.md](AGENTS.md) restates the
-same rules as a step-by-step loop, including the local matching helpers under
-`build/`.
+same rules as a step-by-step loop, including the matching tools under
+`tools/match/`.
