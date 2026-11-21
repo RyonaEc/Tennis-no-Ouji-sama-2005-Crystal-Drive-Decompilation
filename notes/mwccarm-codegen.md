@@ -1926,3 +1926,34 @@ identical instruction count, different allocation - the same wall class as 2.46.
 per-batch `cp` of `notes/`, `build/walls.txt` and the generators to `/m/ATOJ-scout`,
 `/m/ATOJ-worker` and `/m/ATOJ-delta` is suspended until further notice. All work stays in this tree;
 nothing in the release procedure changes apart from dropping that copy step.
+
+## 2.60 Five exact-size near-misses in one session (2026-11-21)
+
+The discovery tools were re-run now that more units are matched. `twins.py` reports nothing (every
+same-skeleton pair has one matched member already); `crosstwin.py` finds only the BIOS SWI stubs; but
+`famsurvey.py` turned up five *unmatched* identical-skeleton pairs, which is where the remaining cheap
+work is. Two of them are now understood to the instruction and blocked on register naming alone:
+
+    0x020208b0 / 0x0202093c (140B x2)   set/clear of a media bit, 5 constant differences
+    0x02023df8 / 0x02023e58 (96B x2)    two-way dispatch on a stored handle
+    0x0202d158 / 0x0202d22c (212B x2)   not yet decoded
+    0x02033bd0 / 0x02033c1c (60B x2)    APSR I/T-bit toggles - mrs/msr, needs asm, skip
+    0x02028920 / 0x02028958 (56B x2)    parked earlier (2.56)
+
+Three findings worth keeping:
+
+**Branch-vs-if-conversion depends on nesting, not on the condition.** For `0x020208b0` the source
+`if (a0 == 0) { clear } else if (a0 == 0x100) { set }` is if-converted into `ldreq/biceq/streq`
+(136B). Writing it inverted - `if (a0 != 0) { if (a0 == 0x100) { set } } else { clear }` - produces
+retail's actual branch to the clear block and exactly 140B. So when retail *branches* to a small block,
+nest the condition instead of writing the small block first.
+
+**The register a scratch value lands in follows load order.** In both 140B twins retail computes `~a0`
+into ip *first* and then loads the two u16 fields into r2/r3; mwcc here computes `~a0` into r3 and
+loads into ip/r2. Five spellings (separate temps, a `mask` variable, a slot pointer, a fully inline
+expression, declaration-order changes) all land on the same wrong allocation. This is the 2.46 wall
+class; exact size is not close enough to commit.
+
+**`famsurvey` is the right tool now.** The scatter-gun over 90 small targets yielded one match per six
+attempts; the same effort spent on a 2-member skeleton group is worth 280-424 bytes. Future batches
+should start from `famsurvey.py` output and only fall back to `fresh.txt` when the groups are exhausted.
