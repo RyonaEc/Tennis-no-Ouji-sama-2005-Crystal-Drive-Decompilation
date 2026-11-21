@@ -1957,3 +1957,26 @@ class; exact size is not close enough to commit.
 **`famsurvey` is the right tool now.** The scatter-gun over 90 small targets yielded one match per six
 attempts; the same effort spent on a 2-member skeleton group is worth 280-424 bytes. Future batches
 should start from `famsurvey.py` output and only fall back to `fresh.txt` when the groups are exhausted.
+
+## 2.61 The 212B famsurvey pair decoded (2026-11-21)
+
+`0x0202d158` / `0x0202d22c` are not constant-twin variants: they are two *different* state setters that
+share a skeleton (same prologue, same spin-wait, same five field stores) and differ in the order of the
+first two stores and in which tail function they install (`func_0202d300` vs `func_0202d3f0`). Both are
+6-argument functions, so the 5th/6th args arrive at `[sp+0x20]`/`[sp+0x24]` after the 8-register push;
+mixing those up silently swaps which argument selects the tail path.
+
+Three codegen lessons from getting the body from 224B to exactly 212B:
+
+1. A `u32 *flag` local that is live across two calls costs a callee-saved register (`fp`) and a 4-byte
+   frame - 224B instead of 212B. Retail recomputes `*(u32 *)(b + 0x34)` from the base each time, so the
+   source must not cache it.
+2. `if (a5 == 0) { tail } else { return 1; }` compiles to `bne` with the tail out of line. Writing
+   `if (a5) { func_0202cf10(...); return 1; }` *first* and the zero path as the fall-through gives
+   retail's `beq` to the out-of-line zero block. Same rule as 2.60: retail's condition is the one that
+   *jumps away*, so it belongs on the small `if`, not on the `else`.
+3. Referring to the global again (`*(u32 *)(data_0204aec0 + 0xd0) = ...`) instead of `b` makes mwcc
+   reload the base for that one store, which is what retail does. Using `b` throughout kept the base
+   in r6 and lost the load.
+
+Residue is one folded RMW (`|=` never materialises its address here) and one displaced load shape.
