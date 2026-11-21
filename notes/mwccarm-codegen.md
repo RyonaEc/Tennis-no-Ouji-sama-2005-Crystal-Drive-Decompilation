@@ -1851,3 +1851,26 @@ r0 in retail, r3 with a frame in every spelling), `0x0201fd50` (five I/O stores;
 pattern is not reachable from per-address casts), `0x02032c38` (retail hoists `n++/p++` above the test
 and reads the byte through the unaligned idiom; mwcc makes the load the loop condition) and
 `0x0203b698` (table walker whose rotation puts the `cmp p,#0` at the bottom).
+
+## 2.57 A sibling can differ in reload policy, not source (2026-11-21)
+
+    ov002 0x020636b4 (108B) -> q = data_ov002_02102070 + 0x1744 + a0 * 0x38;
+                               if (*(u32 *)(base + 0x18dc) & 0x40000000)
+                                   if (func_ov002_02062dbc(0xa) == 0) q[9] |= 0x10000000;
+                                   else                              q[9] &= ~0x10000000;
+
+Straight shape: a `data_ov002_02102070 + k` base, a `* 0x38` element stride (the `mla`), a guard
+against a bit in another global, and a set/clear pair driven by a call result. Matched first try under
+b56.
+
+Its sibling `0x02063874` (128B) has the same skeleton with different constants (`== 2` guard,
+`0x8000000` bit, `0x100` argument, `< 8` threshold) and would not match at any of three spellings.
+The reason is visible in the disassembly: retail writes `add r4, #0x24` *before* each of the three RMW
+sites, while mwcc folds the slot into the store as `[r4, #0x24]`. In the matched sibling the same
+`q[9]` spelling *did* produce a separate `add`. So the two functions were compiled with different
+reload/re-materialisation behaviour for what looks like identical source structure - which means one
+of the two sources differs in a way the instruction pattern does not reveal (most likely a macro or an
+inline accessor that expands differently at one site).
+
+Practical consequence: matching a sibling does not guarantee the next one, even when the instruction
+shapes agree; treat each as its own unit once a spelling fails twice.

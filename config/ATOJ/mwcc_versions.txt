@@ -34,3 +34,4 @@ src/ov002/func_ov002_02084210.c = 1.2/b56
 src/arm9/func_02015524.c = 1.2/b56
 src/arm9/func_0201c9e0.c = 1.2/b56
 src/arm9/func_020341f4.c = 1.2/b56
+src/ov002/func_ov002_020636b4.c = 1.2/b56
