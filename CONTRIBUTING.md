@@ -113,8 +113,7 @@ delinked and record the evidence instead of committing an approximation.
   digest line that proves it. Do not claim a match you did not verify.
 * Commit messages describe the batch and why the shape works, in the imperative
   mood, e.g. `Match two replay-state helpers and two running-sum loops.` Group a
-  batch into one commit; do not add AI attribution, `Co-Authored-By` trailers or
-  bot co-authors.
+  batch into one commit.
 * Do not force-push `main` or rewrite published history. The maintainer keeps
   `main` as a single linear series of batches, so a merged pull request may be
   squashed.

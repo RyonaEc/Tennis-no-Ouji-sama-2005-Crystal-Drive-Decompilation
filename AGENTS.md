@@ -43,8 +43,6 @@ Never commit a unit on the strength of `var3` alone.
   project must stay free of copyrighted game binaries. The CodeWarrior ARM
   compilers under `tools/mwccarm/` *are* tracked: the build needs the exact
   versions retail used, so they are vendored.
-- **No AI attribution.** Commit as the project owner; do not add
-  `Co-Authored-By`, "Generated with ..." trailers, or bot co-authors.
 - **Do not kill processes by pattern** (`pkill -f`, `killall`). A long build may
   be running; kill the exact PID you started, or nothing at all.
 
@@ -170,8 +168,8 @@ empty names so a file never ends up with two conflicting `extern`s.
   **build tree → repository for `src/` and `config/`**, and
   **repository → build tree for `README.md`/`PROGRESS.md`**. Use `cp -r`; do not
   use `rsync`.
-- Commit in one squashed commit per batch, as the project owner, then
-  `git push --force origin HEAD:main`, then upload the objdiff report:
+- Commit in one squashed commit per batch, then `git push --force origin
+  HEAD:main`, then upload the objdiff report:
   `python tools/upload_report.py <build>/report.json --commit $(git rev-parse HEAD)`
   with `BYTEMATCH_TOKEN` in the environment.
 

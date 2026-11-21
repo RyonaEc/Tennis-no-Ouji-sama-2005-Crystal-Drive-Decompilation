@@ -61,3 +61,6 @@ src/ov003/func_ov003_020b8e54.c = 1.2/b56
 src/ov003/func_ov003_020dbad4.c = 1.2/b56
 src/arm9/func_020307c8.c = 1.2/b56
 src/arm9/func_0201f170.c = 1.2/b56
+src/arm9/func_0202607c.c = 1.2/b56
+src/ov004/func_ov004_0206256c.c = 1.2/b56
+src/ov008/func_ov008_0204c7c0.c = 1.2/b56
