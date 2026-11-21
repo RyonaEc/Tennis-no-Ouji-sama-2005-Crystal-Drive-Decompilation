@@ -295,7 +295,7 @@ FAMILY ov002 getters/setters (130 small overlay candidates; 10 smallest derived)
     ov002 0x2086020: u8 *p=(u8*)B; p+=0x47d4; v=p[0]; p[0]=v|a0;
     ov002 0x2062b68: r+=0xa; r[0]|=4; b[0x2c]=a0;   0x2062b20: p[0x30]=0; p[0x32]=a0; (u32*)(p+0x28) |= 8;
     ov002 0x2060ca0: q=p+0x35; q[0]|=a0; p[0x34]=0;  0x204c7e8: q[3]=0; q[2]=a1; r+=6; r[0]|=2;
-    ov004 0x204cbdc: (u8*)0x027c0000 + 0x3ff8 |= 1;  0x20534cc: if(!*(u32*)p)return; p[0x30]=a1;p[0x32]=a2;(u32*)(p+0x58)|=8;
+    ov004 0x204cbdc -> (u8*)0x027c0000 + 0x3ff8 |= 1;  0x20534cc: if(!*(u32*)p)return; p[0x30]=a1;p[0x32]=a2;(u32*)(p+0x58)|=8;
 
 CLASS register-role ties (identical instruction kinds AND count, only register numbers differ):
   arm9 0x202c430 (24B) spin-wait `while (data_0204ad00 == 1);`: retail addr in ip, value in r0;
@@ -939,3 +939,12 @@ ov008 0x0204cf80 136B -- metre/slot picker: `if (*(u8 *)(base+0x30) < 0xc) ++` t
   `cmp` and predicates only the ldrb/strb. Tried: plain expression (folds to immediate, 128B),
   volatile expression (folds, 132B), pointer declared inside the `if` (folds, 128B), inverted
   `if/else` (hoists, 132B). One instruction of predication decides the unit.
+ov009 0x0204db84 140B -- two packed-field updates on a u16 pair: `p[0] = (p[0] & 0xff00) |
+  ((a2 - v.hi) & 0xff)` and `p[1] = (p[1] & 0xfe00) | ((a1 - v.lo) & 0x1ff)` with `if (p == 0)
+  return;` before any use; 0x1ff is pooled (word at 0x0204dc0c). `v` is a 4-byte struct passed
+  by value (u16 at +0, s16 at +2) - that is why retail starts with `push {r0,r1,r2,r3}` (all
+  four argument registers homed). Retail then adds `push {r4,r5,lr}` + `sub sp,#4` and reads both
+  halves back from the home space (`ldrsh r4,[sp,#0x1e]` hoisted above the null check,
+  `ldrh r5,[sp,#0x1c]`), while mwcc homes the registers but keeps the struct in r3 and shifts it
+  (`lsl/lsr`), giving 100B. By-value spellings cannot ask for the home-space reload; the shape
+  is recorded here so a later pass can try an explicit `&v` or a caller-side layout.
