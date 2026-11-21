@@ -2633,3 +2633,27 @@ so it is parked rather than installed.
 
 I also corrected `progress.py`: it still claimed no data unit had a matching definition, which
 has been false since `data_02042240.c` landed. The sentence now reports the matched data bytes.
+
+## 2.89 0x02022554 is a four-argument function, not a delinks boundary (2026-11-22)
+
+The entry had been parked as a suspected boundary because the body writes `r3` and reads `r1`/`r2`
+before defining them. That reading was wrong: it is an ordinary four-argument function, and the
+"undefined" registers are its parameters. Two things had hidden it — the body writes a state word
+from `a3` before touching the others, and the delinked size includes the 12-byte literal pool, so
+four of the trailing words look like code (`streq r0, [r0], #-0x60`) when they are actually
+`{0x04000060, 0xcf7f, 0x0400035c}`.
+
+The shape now reproduces all 18 instructions in retail's order with retail's registers. Both
+details were needed: `v` as u32 (u16 inserts the lsl/lsr pair), and the guard inverted with the
+mask in the `else`, which is what makes mwcc if-convert it to ldreq/strheq/bxeq instead of
+branching.
+
+What is left is two imm12s, and they come from literal-pool *ordering*: retail lays the pool out
+{0x04000060, 0xcf7f, 0x0400035c}, mwcc {0x04000060, 0x0400035c, 0xcf7f}. Explicit right-hand
+side, `&=`, and a mask temporary in the else branch all keep mwcc's order. This is the closest
+near-miss in the project so far - 18 of 18 instructions, 2 of 4 pool slots - but the bytes still
+differ, so it is not installed.
+
+General note for boundary suspicions: check whether the "undefined" registers form a clean
+argument sequence (r0..r3, then [sp], [sp+4]) before concluding the delinks range is wrong. Here
+they did, exactly.
