@@ -1,8 +1,10 @@
 #include "types.h"
 
+extern u32 data_ov002_02102070;
+
 void func_ov002_02088c4c(s32 i)
 {
-    u8 *b = (u8 *)*(u32 *)0x02102070;
+    u8 *b = (u8 *)data_ov002_02102070;
     s32 v;
     u8 *q;
 

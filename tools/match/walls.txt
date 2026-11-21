@@ -625,3 +625,19 @@ arm9 0x0202ae08 116B -- getter twin of 0x0202ad9c: reads the same five sound reg
   [0]/[1] indexing makes mwcc materialise 0x...294/0x...29c as extra pool words (140B); a
   reused `u32 *q` folds the +4 correctly but adds the phantom `stmdb sp!,{lr}`/`sub sp,#4`
   frame (132B). Same class as its writer twin, same 2 spellings.
+## 2026-11-21 residual relocation pass: two parks
+ov003 0x02050460 92B -- four calls (02025c94 x2, 02023df8 x2) with the data address
+  data_ov003_020e6fe4 passed as arg 0 and 0x800 as the length. Retail keeps NO
+  callee-saved register: it re-loads the address from the pool before each call
+  (ldr r0,[pc] x4 over one shared pool word) and its frame is the bare
+  stmdb {lr}/sub sp,#4 pair. Every symbol spelling tried (u8[] with (u32)data,
+  (u32)(u8*)data, (u32)&data, extern u8 *, extern u32) makes mwcc CSE the address
+  into r4 and push it: 88B with r4 for the address forms plus a shifted pool, or
+  108B when the address is a loaded variable. The pass sees the constant as one
+  value; retail saw four. Needs a spelling that defeats that CSE without adding a
+  variable.
+ov008 0x0204d970 108B -- bit-scan over the u32 at data_ov008_0204f440: the same code,
+  3 pool/reloc word identical, but registers permute (retail keeps the address in
+  r0 and the pointer in lr, uses r2=n/ip=m/r3=i; every declaration order tried puts
+  the pointer in r2 and n in r3, 108B in both). A pure register-assignment residue,
+  not a spelling error; the object already carries the right relocation.

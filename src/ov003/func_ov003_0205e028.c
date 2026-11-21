@@ -1,8 +1,10 @@
 #include "types.h"
 
+extern u8 *data_ov003_020eb720;
+
 s32 func_ov003_0205e028(u32 a0, u32 a1)
 {
-    u8 *g = *(u8 **)0x20eb720;
+    u8 *g = data_ov003_020eb720;
     u8 *p;
     if (a1 == 0) {
         if (a0 == 1) {

@@ -2288,3 +2288,31 @@ Remaining 23, by pattern (for the next pass):
 
 Do not touch the objdiff configuration to close this; converting the sources to symbols is
 the only honest route and it also makes the units link-safe.
+
+## 2.75 The rest of the below-100% units (2026-11-21)
+
+Two things made the first sweep miss 23 of the 33: the sources write the address
+without a leading zero (`0x204f440`, `0x20eb720`, `0x2019e78`), which a `0x02......`
+search never sees, and the address is often nested one level deeper than the simple
+dereference, as `(u8 *)*(u32 *)0x020690a0` or a bare argument such as
+`func_02025c94(0x020e6fe4, 0x800)`.
+
+A second pass with a wider literal pattern and three shapes (dereference of a pointer to
+pointer, dereference of pointer to value, bare address) moved 21 more units to 100%:
+arm9 `02019aa0`, `02030888`; ov002 `02088c4c`; ov003 `0204e5bc`, `02053b30`, `0205e028`,
+`02081ecc`; ov004 `02053518`, `0205acfc`, `0205ca30`, `0205e274`; ov005 `0204cf6c`,
+`0204f42c`, `0205a8dc`; ov008 `0204ce64`, `0204d008`, `0204d970` (parked), `0204dec0`,
+`0204df38`, `0204e3fc`; ov009 `0204dc10`, `0204e8c0`.
+
+Two traps in the tooling, both worth remembering:
+
+* The declaration text has to keep a space (`extern u32 name;`, not `extern u32name;`).
+  A whole batch of candidates silently compiled to nothing because of it; when
+  `compile_text` returns an empty blob, suspect the generated text, not the shape.
+* `Path.read_text()` without `newline=""` translates CRLF to LF, so a `.replace` that
+  anchors on a line ending silently does nothing. Every source in this tree is CRLF.
+
+State: 1,497 of 1,499 complete units at 100%, 103,504 B matched (5.62%), 39.33% of
+functions. The last two (`ov003/02050460` 92 B, `ov008/0204d970` 108 B) carry the correct
+relocations already and differ only in register assignment / constant CSE; both are in
+`tools/match/walls.txt` with the spellings tried.
