@@ -403,3 +403,7 @@ src/ov003/func_ov003_020b8e54.c:
 src/ov003/func_ov003_020dbad4.c:
     complete
     .text       start:0x020dbad4 end:0x020dbb98
+
+src/ov003/func_ov003_020ce31c.c:
+    complete
+    .text       start:0x020ce31c end:0x020ce384

@@ -881,3 +881,10 @@ ov003 0x02082220 / 0x020c806c 96B each (famsurvey pair) -- DEGENERATE, no source
   (72 B). The lsl/asr #16 pair also implies the declared return is s32 with an explicit (s16)
   cast, not an s16 return. Same class as ov003 0x02050f2c (dead compare kept by retail): the
   retail body cannot come from the visible semantics, so it stays parked.
+ov003 0x02066a54 / 0x020b85b8 / 0x020db6ec 180B each (famsurvey 3x180, 540B total) -- same module
+  reset as 0x020d72f8 but with an else arm: `if (a0 == 0) { func_020209c8(8); func_020208b0(0x100);
+  DISPCNT_SUB = (DISPCNT_SUB & 0xffcfffef) | 0x100010; clear loop as above } else
+  func_ov003_0204e46c(*(u16 *)(b + 0x86c2)); return 0;`. Shape reproduces exactly at 180 B
+  (including the `b` to the shared tail) with the same ip/lr swap in the loop: retail keeps the
+  hoisted zero in lr and b+i*2 in ip, mwcc the reverse. Blocked by the same allocator preference
+  as 0x020d72f8, so all five units in this cluster (2x164 + 3x180 = 868 B) stand or fall together.

@@ -2768,3 +2768,28 @@ before the RMW, u32-indexed base with `[0xd]`, a named flag local, a pointer reu
 flag tests, and a load/modify/store through an explicit word variable). All five keep mwcc's
 `mov r1, r6` + `ldr r0, [r1, #0x34]` and its immediate-offset `|=`, so the "loop condition is a
 call returning the flag" idea remains untested but the pointer-spelling space is now closed.
+
+## 2.94 Two matches; the compiler-band split shows up as address materialisation (2026-11-22)
+
+`func_ov003_020ce31c` (104 B) matched under the default build on the first try: a u16 walk over
+records 0x78..0x7b of a 0x1c-byte table at `data_ov003_020eb720 + 0x9fe8`, calling
+`func_ov003_02052100((u16 *)p[4], (u16)p[0], (u16)p[1])`. The u16 counter is what reproduces
+`mul r0, r5, r6` with `r6 = 0x1c` hoisted and the `lsl #16/lsr #16` increment.
+
+`func_ov005_0206d778` (104 B) is a level-guard: if `*(u16 *)(b + 0x43a6) < 0x10` it stores 2 at
++0x36 and calls `func_ov005_0206f390(0)`, else it zeroes +0x4332, writes 0x44 at +0x4330 and
+zeroes +0x4388; then it increments the guard halfword and returns 1. Two shape notes:
+
+- The guard must be written inverted (`if (v < 0x10) { small + call } else { three stores }`).
+  Written the other way round mwcc branches `blo` and leaves the three stores unpredicated; the
+  inverted form gives retail's `movhs/strhhs ... bhs`.
+- The tail was 4 bytes and one pool word short under 1.2/sp2: sp2 folds the increment into
+  `add r1, r4, #0x4300` + `[r1, #0xa6]` twice, whereas retail pools 0x43a6 and materialises
+  `add r2, r4, r1` once. `1.2/b56` emits exactly that, so the unit is recorded as a b56 unit in
+  `config/ATOJ/mwcc_versions.txt`. Eight source spellings (u32 offset local, u16 index,
+  pointer after the branch, compound assignment, volatile, u32 address temp) all fold under
+  sp2 - the difference is the compiler band, not the expression.
+
+The same-test cluster at `0x020d72f8`/`0x02066a54` is still blocked by the ip/lr preference
+(§2.93); the 3x180 members have the identical loop and swap, so those five units (868 B) are a
+single wall.
