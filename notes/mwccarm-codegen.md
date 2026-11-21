@@ -1657,3 +1657,34 @@ no movement, so they are parked rather than ground further.
 Useful negative result: `diff_summary` counts differ by *more* than the function size here (164 for a
 148B unit), which means the compared `.text` is longer than the symbol - always read the count against
 the size before treating a wall as "close".
+
+## 2.49 Statement order is NOT the scheduling axis; two structural levers that are (2026-11-21)
+
+Built `build/permute.py` (marks a line with `// P`, permutes every ordering, scores by `diff_summary`,
+prints the best, installs nothing):
+
+    python build/permute.py <mod> <addr> <size> <file.c> [version] [--top N]
+
+It answered the question it was built for, negatively: **all 6 orders of 0x0204c884's declarations and
+all 120 orders of 0x02063bb8's scored identically.** For these bodies mwcc ignores declaration order
+entirely, so "scheduling residue" was the wrong diagnosis - my earlier conclusion in 2.48 was wrong.
+
+What actually fixed `0x02063bb8` (164B, b56, installed) was **signedness**:
+
+    s32 limit;                                    // u32 here emitted addhs/bichs
+    if (func_ov002_02062dbc(0x100) < limit) ...    // retail: addge/bicge
+
+and writing the small branch out of line (`if (v < 0x600000) { ... } else limit = 0;` instead of
+`if (v >= 0x600000) limit = 0; else { ... }`) so the zero lands in a shared block after a `b`.
+
+What fixed `0x0204c884`'s size (148B exact, from 164B) was **not duplicating the call tail**: retail has
+one call site with the table load selected by a result variable,
+
+    if (idx == 7 || idx == 0x29) word = *(u32 *)(a98 + a1 * 0x30);
+    else                         word = *(u32 *)(a94 + a1 * 0x30);
+    func_ov002_0204f3cc(word, a0 << 5, 0x20);
+
+whereas calling the function in both branches emits the tail twice. It now differs only in register
+roles (retail keeps the field address in `lr` and the value in `ip`; mwcc swaps them), so it is parked
+as a genuine allocation tie - and it is worth re-reading 2.48's "opcodes match" claim with suspicion:
+a diff count above the symbol size means the object is longer, i.e. duplicated code, not reordering.
