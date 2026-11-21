@@ -290,7 +290,7 @@ FAMILY ov002 getters/setters (130 small overlay candidates; 10 smallest derived)
   Members derived and parked: ov002 0x204c7e8(32) 0x2062b48(32) 0x2062b68(36) 0x207808c(36)
   0x20781b4(36) 0x2086020(36) 0x2060ca0(40) 0x2062b20(40); ov004 0x204cbdc(32) 0x20534cc(40).
   Bodies (all confirmed to compile and to produce the same semantics, none byte-exact):
-    ov002 0x2062b48: u32 *p=(u32*)B; p+=0xa; v=p[0]; p[0]=v&~4;         (B = *(u8**)data_ov002_02102070)
+    ov002 0x2062b48 -> u32 *p=(u32*)B; p+=0xa; v=p[0]; p[0]=v&~4;         (B = *(u8**)data_ov002_02102070)
     ov002 0x207808c: p+=0x79b; v=p[0]; p[0]=v&~6;   0x20781b4: ...&~1;
     ov002 0x2086020: u8 *p=(u8*)B; p+=0x47d4; v=p[0]; p[0]=v|a0;
     ov002 0x2062b68: r+=0xa; r[0]|=4; b[0x2c]=a0;   0x2062b20: p[0x30]=0; p[0x32]=a0; (u32*)(p+0x28) |= 8;
@@ -1022,3 +1022,24 @@ ov010 0x020514c8 172B -- two GX-command pushes on a ring buffer: `g = *(u8 **)da
   `sub sp,#4`) where mwcc uses `push {r4,lr}` and folds `0x27dc` into `add #0x2000` + `[#0x7dc]`.
   Tried: one `g` local for the whole function plus an entry pointer (136B - mwcc CSEs the global
   and the address), every dereference written inline (196B), the 168B form above.
+ov002 0x0204d488 80B -- saturating counter at `*(u8 **)data_ov002_02102070 + 0x1a89a4 + 0x30048`
+  (returns u16): `if (*f >= 0x1f) *f = 0; else (*f)++;` then `return *f`. Retail addresses the field
+  three times and splits the displacement: `add r0, r2, #0x30000` + `[r0, #0x48]` for the compare,
+  the return and the conditional zero store (if-converted `movhs/strhhs`), but pools the
+  `0x30048` constant (`ldrlo r0, [pc] / addlo r1, r2, r0`) for the increment. Any spelling that
+  names the field pointer (or writes `*f += 1`) makes mwcc CSE one address into a register and
+  collapses to 56B. Tried: `u16 *f` named (56B), `*f = *f + 1` vs `*f += 1` (both 56B).
+ov002 0x020e4450 84B -- flag clear-then-set on `((u32 *)(*(u32 *)data_ov002_02102070 + 0x54))[a0]`:
+  `apply &= ~0x30;` then `a1 == 1` sets 0x10, `a1 == 2` sets 0x20, `a1 == 0` returns right after
+  the clear. Retail keeps the base in r3 and the element address in ip (`add ip, r3, r0, lsl #2`)
+  and compares `a1` with 0 before the store, then `cmp 1 / beq` forward to the 0x10 block placed
+  last and `cmp 2` predicated (`ldreq/orreq/ldreq`). Nearest spelling is 80B: adding the explicit
+  `if (a1 == 0) return;` gets the early compare right but mwcc still folds the 0x10/0x20 RMWs
+  into one address register instead of ip. Tried: `if/else if` without the early return (72B),
+  with it (80B).
+ov002 0x020f2970 84B -- per-entity state copy: `rec = base + 0x2e4 + a0 * 0x158` (stride pooled as
+  0x158 through `mla`), `out = rec + 0xac`, and if `*(u8 *)(rec + 0xd1) == 2` it zeroes
+  `base[a0 + 0x142]` and copies the byte at `base[a0 + 0x146]` into `*out`, else `base[a0 + 0x14a]`
+  and `base[a0 + 0x14e]`. The `== 2` spelling matches exactly in length and instruction order
+  (`addeq/moveq/strbeq` predicated on the ne side): the only difference is that retail puts the
+  address temp in r0 and the zero in r1, mwcc the other way round. Register-name residue only.

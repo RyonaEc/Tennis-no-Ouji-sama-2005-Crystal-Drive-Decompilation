@@ -3014,3 +3014,26 @@ before chasing the last register.
 
 The decode itself is in `tools/match/walls.txt` (ring buffer, 8-byte `{cmd, arg}` entries,
 0x400-byte blocks, commands 0xc050008a / 0xc090808a with arg 0x5140).
+
+## 3.04 Branch polarity again, and three ov002 near-misses (2026-11-22)
+
+`ov002 0x020f2970` (84 B, parked) confirms the branch-inversion rule from the playbook with a
+clean measurement: writing `if (v != 2) {fallthrough body} else {predicated body}` puts the
+predication on the `ne` side, and swapping the two bodies (so the `== 2` body is the `if`) moves
+it to the `eq` side - same size, opposite predicate. Retail wants the `ne` side predicated, i.e.
+the `== 2` body written first. After that the unit is 84/84 bytes with identical instruction
+order and only two register names swapped (`r0` vs `r1` for the address temp and the zero).
+
+`ov002 0x020e4450` (84 B, parked) is the same family as 3.03 but on the *address* axis: retail
+keeps the base in `r3` and the element address in `ip`, while mwcc folds both RMWs onto one
+register. Adding the explicit `if (a1 == 0) return;` before them (matching retail's early
+`cmp r1, #0`) recovers 8 of the 12 missing bytes.
+
+`ov002 0x0204d488` (80 B, parked) is a size lesson in the other direction: retail addresses the
+same u16 three times, splitting `0x30048` as `#0x30000 + [#0x48]` for two of them and pooling the
+constant for the third. Naming the field pointer collapses all three into one register (56 B), so
+the *repetition* of the full expression is load-bearing.
+
+Also fixed: `tools/match/ready.py` now tolerates a trailing colon (and any junk) after the address
+in a `walls.txt` line instead of crashing, which unblocked the ov002 and ov004 rosters - the two
+malformed lines were section-internal notes rather than wall entries.

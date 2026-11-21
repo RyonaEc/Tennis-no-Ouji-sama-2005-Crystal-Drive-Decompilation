@@ -74,7 +74,13 @@ def walled(mod):
                 continue
             parts = line.split(None, 2)
             if len(parts) >= 2 and parts[0] == mod:
-                out[int(parts[1], 16)] = parts[2] if len(parts) > 2 else ""
+                # walls.txt entries inside a section sometimes carry a trailing
+                # colon on the address; the roster should not care.
+                try:
+                    addr = int(parts[1].rstrip(":,"), 16)
+                except ValueError:
+                    continue
+                out[addr] = parts[2] if len(parts) > 2 else ""
     return out
 
 
