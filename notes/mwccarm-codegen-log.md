@@ -2581,3 +2581,21 @@ One detail worth trying next time on `0x020101f8`: retail's first instruction is
 so its source referenced the global before the `idx * 8` shift, while mwcc hoists the shift above
 the load. Anything that makes the global access syntactically earlier in the loop body may fix the
 order; hoisting the chain into a local instead drops the function to 68 B, so it must stay inline.
+
+## 2.87 Data pass rejected, ov002 bounds test parked (2026-11-22)
+
+I considered continuing the data work as the alternative to the allocation wall and decided
+against slicing more regions: defining anonymous arrays for whatever runs of small ints or
+pointers happen to be aligned adds `matched_data` bytes without decompiling anything, and the
+two pilots already proved the pipeline. Data should enter where the reading code gives the shape.
+
+So I went to ov002, which is less explored. `0x0207ccd4` (80 B) is a six-argument bounds test
+(`r0` mirror flag, `r1` pair, `r2`/`r3` x0/y0 in registers, `x1`/`y1` on the stack) that negates
+the y bounds when the flag is 0 and returns whether the pair lies inside. Two spellings reach
+exactly 80 B (`ok` flag with one `||` chain; `&&` chain with `return 1` last), and what remains
+is the mirroring block's registers plus where `mov r0,#1` is placed.
+
+Pattern so far: 7 near-misses, 0 matches since the last data unit, each within a handful of
+register choices. Untried as a class: whether some source construct makes mwcc hoist a global
+address above a loop-invariant shift (`0x020101f8`) - I probed four expression groupings and the
+order never changed, so that lever is not source-expressible by parenthesis or operand order.

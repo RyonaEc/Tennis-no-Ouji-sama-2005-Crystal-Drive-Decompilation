@@ -728,3 +728,14 @@ arm9 0x020101f8 80B -- fill 4 bytes with 0x45 then one with 0x17 at
 arm9 0x02022554 84B -- boundary suspect: the body reads r1/r2/r3 without defining them before
   `strh r3, [r0]`, which no compiler emits for a normal function. Check the delinks range / whether
   this address is the middle of a larger function before spending effort.
+ov002 0x0207ccd4 80B -- bounds test with optional mirroring; six arguments, the last two on the
+  stack (r0 mirrored, r1 pair*, r2 x0, r3 y0, [sp] x1, [sp+4] y1). It negates the y bounds when
+  `mirrored == 0`, writing one of them back into the incoming stack slot, then tests p->f0 and
+  p->f4 against both ranges and returns 1/0.
+  Closest shapes, both exactly 80 B:
+      s32 ok = 1; ... if (p->f0 < x0 || p->f0 > x1 || p->f4 < y0 || p->f4 > y1) ok = 0; return ok;
+      if (p->f0 >= x0 && p->f0 <= x1 && p->f4 >= y0 && p->f4 <= y1) return 1; return 0;
+  Differences left: retail negates into `ip` and reuses `r3` for the second negation, and sets
+  `mov r0,#1` before the checks with a final `bxle lr`; mwcc negates in place, keeps `movle r0,#1`
+  plus `bxle lr` at the end, and reuses `r0` where retail uses `ip`. Also worth checking: the
+  y bounds may be (y1, y0) in the source, since retail stores -y0 into the y1 slot.
