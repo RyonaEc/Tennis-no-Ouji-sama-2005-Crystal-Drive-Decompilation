@@ -1464,3 +1464,43 @@ register and reuses it for both the load and the store.
 
 Six more single-call wrappers were derived this round (ov002 `0x02081078`, `0x02080ca4`, `0x0206d600`,
 `0x020882d4`, `0x02063434`; ov001 `0x0204fb34`). All compile, none match; bodies are in `walls.txt`.
+
+## 2.42 RETAIL WAS BUILT WITH TWO COMPILERS: 1.2/b56 for part of the code (2026-11-21)
+
+This supersedes 2.41's conclusion that the small-unit class is a pure source-shape problem. It is not.
+The repo ships **25 mwccarm builds** under `tools/mwccarm/` (1.2: b56, base, sp2, sp2p3, sp3, sp4;
+2.0: base, sp1..sp2p4; dsi: 1.1..1.3p1). I swept derived bodies across them with the *identical*
+`MWCC_FLAGS`, comparing through the normal masked harness (`build/fm_<tag>.py` are copies of
+`build/fastmatch.py` with only the compiler path substituted):
+
+    unit                    b56   sp2
+    ov002 0x02062b48         Y     -
+    ov002 0x02062b68         Y     -
+    ov002 0x0207808c         Y     -
+    ov002 0x020781b4         Y     -
+    ov002 0x02060ca0         Y     -
+    ov002 0x02062b20         Y     -
+    ov002 0x0204c7e8         Y     -
+    ov004 0x020534cc         Y     -
+    ov002 0x02063434         Y     -
+    arm9  0x0202c430         -     -     (genuinely different shape, still parked)
+    ov002 0x02081078/0x02080ca4/0x0206d600/0x020882d4, ov001 0x0204fb34  -  -
+
+**8 of 13 walls byte-match under 1.2/b56 and none under 1.2/sp2.** These are the exact units I had
+recorded as an unreachable "register-role / address-materialisation tie class" in 2.36-2.41. They are
+not ties; mwcc 1.2/sp2 simply materialises `base+offset` differently from 1.2/b56, and retail used b56
+for this code.
+
+Risk to the existing 1,434 matches is small: on a random sample of 60 installed units, b56 and sp2
+disagree on exactly **one** (`func_ov004_0205e274`, sp2 matches, b56 does not). Controls
+(`func_020263e0`, `func_02024168`) match under b56, 1.2/base and 1.2/sp2 alike. 2.0/* and dsi/* match
+nothing here and break the controls, so the choice is only ever b56 vs sp2.
+
+Games of this era commonly upgraded the SDK mid-project, so a split build is the expected explanation,
+not a mystery. Adopting it is a **build-configuration change** (per-file compiler selection in the
+build, or a global switch plus re-derivation of the ~1.7% that regress), so it needs the owner's
+decision - it is not something to slip in under the standing "never change the compiler" rule.
+Regenerate the sweep with `build/sweep/mk.py`; matched bodies are saved in `build/sweep/b56_wins.py`.
+
+Note the corollary for the loop: **any wall that is "structure solved, register roles / address
+materialisation only" must be re-tested under b56 before being parked.** That is now step 0 of triage.
