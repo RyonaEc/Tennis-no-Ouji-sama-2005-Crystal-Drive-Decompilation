@@ -1922,10 +1922,14 @@ That unit still will not match: retail permutes the saved registers and re-mater
 address at the bitfield write, while every spelling keeps it in a register or folds it. Exact size,
 identical instruction count, different allocation - the same wall class as 2.46.
 
-**Helper trees.** The scout and opencode workers are paused indefinitely for usage reasons, so the
-per-batch `cp` of `notes/`, `build/walls.txt` and the generators to `/m/ATOJ-scout`,
-`/m/ATOJ-worker` and `/m/ATOJ-delta` is suspended until further notice. All work stays in this tree;
-nothing in the release procedure changes apart from dropping that copy step.
+**Helper trees (removed).** The `ATOJ-scout`, `ATOJ-worker` and `ATOJ-delta` worktrees were deleted
+after confirming that each one's commits were ancestors of `main`; their uncommitted notes and
+rosters were identical to this tree's. Their briefs (`notes/scout-brief.md`,
+`notes/agent-protocol.md`) and the scripts that existed only to copy work between trees
+(`build/inbox.py`, `build/install_helpers.py`, `build/harvest.py`) were removed with them.
+Everything happens in this tree now. `AGENTS.md`, `CONTRIBUTING.md`, `notes/mwcc-matching-levers.md`,
+`notes/ghidra-headless.md` and `notes/objdiff-vs-digest.md` stay for outside contributors and other
+agents.
 
 ## 2.60 Five exact-size near-misses in one session (2026-11-21)
 
