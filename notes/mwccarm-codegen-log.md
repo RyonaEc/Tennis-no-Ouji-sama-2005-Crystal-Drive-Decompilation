@@ -2956,3 +2956,17 @@ Two other results from the same unit:
   set into one RMW and drops to 124 B, so the two-statement spelling is the right one even
   though the field *is* a 4-bit field: retail's compiler did not fuse them, and matching means
   reproducing that.
+
+## 3.01 Re-derived appends, and a reminder about re-matching matched units (2026-11-22)
+
+`arm9 0x02018ee8` (148 B, parked) is the growable-array append that the ov004 overlay's `0x0204fc40`
+and `0x0204fcf0` both need. Shape and evidence are in `tools/match/walls.txt`; the last 4 bytes
+are the familiar pair - retail branches to one `mov r0, #0` epilogue and keeps the count address
+in a register, mwcc if-converts the early return and folds the `+8`.
+
+Worth recording as a process note: I started this batch on `arm9 0x02004e08` because `ready.py`
+listed it as the callee blocking an ov004 unit, wrote a cleaner `rand()` body for it, and the
+unit "matched" - but the file already existed and was already matched. The rewrite was
+byte-equivalent churn on matched code and has been reverted. `ready.py`'s callee list can name a
+symbol that a `src/` file already covers; check `ls src/<mod>/<name>.c` before writing a candidate
+for a callee-sized address, not just the ready list.
