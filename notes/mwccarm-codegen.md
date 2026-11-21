@@ -1398,3 +1398,22 @@ compiles to a different loop):
 
 `func_01ff840c` is a real itcm symbol (it resolves correctly); the arm9-vs-itcm split is not the problem,
 the digit count is.
+
+## 2.39 The lock pair: structure solved, codegen not (2026-11-20)
+
+`0x0202ce70` (acquire) and `0x0202cdc8` (release) guard the object at `data_0204aec0`. Both are fully
+analysed; the layout is `L[0]` = a pointer that gets `*(u32 *)L[0] = 0`, `L[2]` = owner,
+`L[3]` = recursion count, `L[5]` = key, `L + 4` = the wait queue handed to `func_020251c0`/`func_0202514c`.
+`func_02026350` enters and returns the handle that `func_02026364` consumes; `func_020263cc` yields.
+
+Owner -2 (`0xfffffffe`) is the "released" sentinel, so acquire spins `while (L[2] != 0xfffffffe)` and
+release restores it when the count reaches zero. Both bodies are in `walls.txt`, lint-clean with correct
+symbol names, and both compile.
+
+What remains is codegen only: an extra pointer copy in the first `L[2]` read (mwcc emits `mov r1,r5 ;
+ldr r0,[r1,#8]` where retail has `ldr r1,[r5,#8]`), and the release's nested `if (L[3] != 0)` coming out
+with the condition inverted. Two formulations each; parked rather than ground further.
+
+**Reading diffs note:** the first four differences reported for both units were `bl` targets, which are
+unrelocated and must be ignored. Only the offset shift *after* them was real. When a diff looks like
+"everything moved by one instruction", strip the `bl` lines first and see what is actually left.
