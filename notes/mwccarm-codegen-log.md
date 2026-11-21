@@ -2733,3 +2733,38 @@ scratch-register choice rather than a code shape. The common thread is `ip`: ret
 park a value in `ip` across the arm9 register allocator's preferred low registers, and mwcc 1.2
 avoids it whenever a low register is free. Nothing in the source shapes tried so far changes
 that preference, so these are recorded rather than chased.
+
+## 2.93 A new family decoded; both new parks are register/degeneracy walls (2026-11-22)
+
+`famsurvey ov003 ov005` lists ten ov003 groups and three ov005 groups that have no source
+(ov011 has no delinks file, so it is not surveyable). The smallest two were taken first.
+
+`0x020d72f8`/`0x020d9f2c` (164 B each, 328 B total) is a module reset: two SDK calls, a
+DISPCNT-sub mask, then a 0x200-entry halfword clear that writes a word 0x200 every fourth
+iteration. Two useful levers came out of it:
+
+- The early-out must be `if (a0 == 0) { body }` with one `return 0` after it. `if (a0 != 0)
+  return 0;` makes mwcc duplicate the epilogue at the early exit (176 B instead of 164).
+- A `u16` loop counter is what produces retail's signed-modulo idiom for `i % 4`
+  (`lsr #31 / rsb r1, r2, r5, lsl #30 / adds r0, r2, r1, ror #30`): the counter promotes to
+  `int` in `%`, while `i < 0x200` stays an unsigned `blo` because the counter itself is u16.
+  This is a cheap way to tell "u16 counter" from "s32 counter" in future loops that use `%`.
+
+Residue: retail keeps the hoisted zero constant in `lr` and the row pointer in `ip`; mwcc does
+the reverse. Eight spellings (pointer local, separate assignment, `p += i*2`, `while`, u32 base
+with `/4` index, function-scope `u32 z`, `u16 z`, separate `j = i*2`) all give 164 B with the
+same swap, so this joins `0x020208b0`, `0x02017880` and `0x0202d158` in the scratch-preference
+class: retail accepts `ip`, mwcc 1.2 prefers a low register and here prefers `ip` for a
+different value.
+
+`0x02082220`/`0x020c806c` (96 B each) is degenerate. Retail keeps a three-armed if/else-if
+chain whose arms all assign the same constants (30, 60) and then tests the assigned value
+against zero - a dead test. Written literally, mwcc folds the chain to one conditional pair and
+drops the test (72 B). The trailing `lsl #16/asr #16` says the declared return is s32 with an
+explicit `(s16)` cast. Same class as `0x02050f2c`.
+
+`0x0202d158` was re-probed with five more spellings of the two deltas (pointer assigned just
+before the RMW, u32-indexed base with `[0xd]`, a named flag local, a pointer reused by both
+flag tests, and a load/modify/store through an explicit word variable). All five keep mwcc's
+`mov r1, r6` + `ldr r0, [r1, #0x34]` and its immediate-offset `|=`, so the "loop condition is a
+call returning the flag" idea remains untested but the pointer-spelling space is now closed.
