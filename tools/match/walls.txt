@@ -911,3 +911,12 @@ arm9 0x0203684c 40B -- `push {r0,r1,r2,r3}` then `q.w1 &= ~0x80000000` through t
   slot, returning [sp] and [sp+4] in r0/r1. An 8-byte struct return makes mwcc use r0 as the sret
   pointer; a `u64` return gives the right registers but mwcc folds the mask without the stack
   write-back and adds two `orr #0` conversions (32B). Not reachable from either type.
+ov008 0x0204cc94 140B -- slot allocator: reads `slot = *(u32 *)(p + 0xc10 + idx * 4)` where
+  `p = *(u8 **)data_ov008_0204f440 + 0x24554` and `idx = *(u8 *)(base + 0x40)`, returns 0 when
+  `slot >= 0x40`, else writes three u32s at `p + 0xc18 + idx * 0x300 + slot * 12` and
+  post-increments the same count word. Retail materialises `base + 0x40` in one register and
+  loads the index byte TWICE before the guard (r5 for the counts, r4 for the table), letting the
+  base die; mwcc folds 0x40 into `ldrb` and CSEs the two index reads into one (136B). Tried:
+  guard-first (144B: spills to r7 plus a stack slot), table-before-guard (132B), explicit
+  `u8 *hdr = base + 0x40` pointer (136B: hoists the `add` past the guard and reloads through the
+  folded address). Residue is allocation/CSE, not the shape.

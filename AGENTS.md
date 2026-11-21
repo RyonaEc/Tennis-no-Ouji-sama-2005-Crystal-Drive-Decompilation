@@ -99,6 +99,7 @@ Source files must `#include "types.h"` first, or the compiler emits
 | `python tools/match/autorun.py <limit> <maxsize> <mod>...` | try auto-generated candidates (`tools/match/tried.txt` remembers them) |
 | `python tools/match/famsurvey.py <mod>...` | list unmatched identical-skeleton groups |
 | `python tools/match/progress.py` | regenerate `PROGRESS.md` from objdiff's report |
+| `python tools/match/names.py --dry-run` | report the scripted rename pass from `notes/naming/annotations.tsv` (names are recorded, not applied: see `docs/NAMING.md`) |
 | `ninja report` / `ninja sha1` / `ninja check` | objdiff numbers, ROM digest, per-module check |
 
 `tools/match/fastmatch.py` is the shared compiler harness: `parse_ins(addr, size)`,

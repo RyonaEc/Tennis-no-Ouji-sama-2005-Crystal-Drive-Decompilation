@@ -2812,3 +2812,42 @@ parenthesised subtraction), multiplies it by 0x199, does `>> 4` and `t[idx * 2]`
 `data_027c0000 + 0x3ff8` is pooled by retail as two words and added, while mwcc 1.2 folds the
 pair into the absolute 0x027c3ff8 and pools that. Four base spellings behave the same, so the
 unit joins ov003 0x0205299c in that class.
+
+## 2.96 A struct-typed record loop, and the naming layer proven on a mirror tree (2026-11-22)
+
+`func_ov008_0204e60c` (76 B) is a fill loop over 0x80 records of 8 bytes, followed by
+`func_ov008_0204cdac()` and `func_ov008_0204ca78(p)`. The flat spelling
+
+```c
+*(u32 *)(p + i * 8) = 0x200;
+*(u16 *)(p + i * 8 + 6) = 0;
+```
+
+is the same length and differs from retail in two hoisted constants plus the address temporary
+(mwcc `r1` = 0 / `r2` = 0x200, retail `r2` = 0 / `r3` = 0x200, with the second address in `r3`
+against retail's `r1`). Declaring the record
+
+```c
+typedef struct { u32 a; u16 pad; u16 b; } Rec;
+...
+p[i].a = 0x200;
+p[i].b = 0;
+```
+
+matches exactly. Reversing the two stores does not help: mwcc then reorders the stores
+themselves (`strh` first) and the constants land in `r1`/`r2`. So the record layout is part of
+the match, not a cosmetic annotation, and it is recorded in `docs/NAMING.md#struct-notes`
+(u32 at +0, u16 pad at +4, u16 at +6).
+
+`ov008 0x0204cc94` (140 B), the slot allocator that fills those records, does not match: retail
+keeps `base + 0x40` in a register and loads the index byte twice before the guard, mwcc folds
+the offset into `ldrb` and CSEs the two reads (136 B, or 144 B with a fifth register when the
+table pointer is computed after the guard). Recorded in `tools/match/walls.txt`.
+
+Naming: `tools/match/names.py`, `notes/naming/annotations.tsv` and `docs/NAMING.md` land as the
+first step, with symbols unchanged. The rename was rehearsed on a mirror tree (copies of
+`src`, `config`, `include`, `tools`, `extract` and `build/ATOJ`) - four matched units renamed,
+`ninja sha1` unchanged, `t10.py --check` clean, `--verify` 0 stale, second run 0 rewrites - and
+the mirror has been deleted. `--apply` refuses a tree containing `.git` without
+`--allow-live-tree`, which is the gate that keeps the recorded names from being applied while
+matching is under way.
