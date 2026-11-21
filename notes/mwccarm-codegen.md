@@ -1874,3 +1874,31 @@ inline accessor that expands differently at one site).
 
 Practical consequence: matching a sibling does not guarantee the next one, even when the instruction
 shapes agree; treat each as its own unit once a spelling fails twice.
+
+## 2.58 Keeping a global in a register, and the arena pair (2026-11-21)
+
+    arm9 0x02018018 (136B) -> sibling of 0x0201842c: func_020179c8(a0, 0x45585048, q + 0x14, a1, a2),
+                              two u16 clears, a `&= ~1`, a two-word stack pair fed from a0 + 0x18 and
+                              a0 + 0x1c, func_020180a0(pair, 0x4652), then four stores into q
+    arm9 0x020186a0 (132B) -> queue insert: guard call, slot from a second call, three fields stored
+                              in order a0, a2, a1, a3, third call, then `*(g + 0x10) += slot[3]`
+
+`0x020186a0` is the clearest example yet of a global that has to be cached by hand. My first version
+passed `data_02045650` directly at each of the three call sites; mwcc then emitted three separate
+pc-relative loads and allocated only six callee-saved registers (120B, no `sb`). Assigning
+`u8 *g = data_02045650;` at the top and passing `g` matched immediately: retail keeps the address in
+r5 for the whole function and frees `sb` for the first argument. So when retail shows a pooled global
+loaded once at the top and reused across calls, the source has a local pointer, not repeated references.
+
+Also note the field store order in the same unit: retail stores a0, a2, a1, a3 into slots 0..3 — the
+second and third arguments are swapped relative to declaration order. Writing `p[1] = a2; p[2] = a1;`
+reproduces it; writing them in argument order does not.
+
+The arena pair `0x02018330` / `0x020183ac` (124B, 128B) is understood at the source level but not
+matched. Shape: `newptr = ~(align-1) & (end - size)` for the bump-down member and
+`~(align-1) & (base + align - 1)` for the bump-up one, guard against the opposite field, `u16` flags
+test at `p[-1]` (bit 0), call `func_020048e8(0, ptr, size)`, update the field, return the pointer.
+Three spellings of the flags test identified the exact form (word load, `& 0xff`, u16 widening, `& 1`,
+not `ldrh`), but retail additionally stores the zero constant to `[sp]` and reloads it for the call -
+the only memory-resident-partial I have seen in this codebase - which no spelling reproduced. Best
+copies: 112B and 116B against 124B, 108B against 128B. Parked with the body shape written down.

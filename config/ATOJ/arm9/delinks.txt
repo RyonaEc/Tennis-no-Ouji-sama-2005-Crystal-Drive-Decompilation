@@ -3407,3 +3407,11 @@ src/arm9/func_0201c9e0.c:
 src/arm9/func_020341f4.c:
     complete
     .text       start:0x020341f4 end:0x0203422c
+
+src/arm9/func_02018018.c:
+    complete
+    .text       start:0x02018018 end:0x020180a0
+
+src/arm9/func_020186a0.c:
+    complete
+    .text       start:0x020186a0 end:0x02018724
