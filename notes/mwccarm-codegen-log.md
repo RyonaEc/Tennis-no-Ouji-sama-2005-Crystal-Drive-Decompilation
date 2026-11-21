@@ -2042,3 +2042,41 @@ The ldm/stm copy family got one more shape: a 12-byte struct assignment
 `ldm/stm` through `lr`/`ip`, 68-84 B, so the guess in the advice list (single
 36/48 B struct assignment) does not reach retail's frameless
 `ldm r0!`/`stm r1!` pairs.
+
+## 2.65 Nine small units, and four walls that are pure colour (2026-11-21)
+
+Swept the unwalled 16-84B band with `vprobe` (b56 first). All nine below matched
+under `1.2/b56` and needed a map entry.
+
+| Unit | Size | Shape |
+|---|---|---|
+| `func_ov002_02058998` | 56 | `mla` stride 0x158 into `data+0x2e4`, `if (hp > 0) hp--` at 0x138 |
+| `func_ov002_02072324` | 20 | `*(u16 *)(p + 0xa) += 1` |
+| `func_ov002_0209e44c` | 72 | `data+0x1824`, six zeroed words 0x5c-0x70, `&= ~0x3f0` at 0xb8 |
+| `func_ov002_020ace70` | 72 | byte-identical twin of the above (different unit, same constants) |
+| `func_ov003_02089b64` | 64 | `u16` counter from +0x170, early `return 4` on +0x13c, `min` with +0x142 |
+| `func_ov002_0205ffe8` | 60 | flag bit 0 at +0x28, `if (< 0x1464b40) ++` at +0x260 |
+| `func_ov002_0204f898` | 64 | byte copy into +0x1930 from `data+0x4f21`, zero-test then `++` at +0x18f0 |
+| `func_02033dec` | 84 | `if (data_0204c274 == 0) { init(); if (cb) { cb(); cb = 0; } } tail(x)` |
+| `func_ov001_0204fb34` | 80 | `func(0xc0, data+0x134c, 0x400)` then `*(u32 *)(data + 0x1c) = 0x7f` |
+
+Two levers worth keeping:
+
+* The 0x4f21 copy is written as a `u8 v` local, stored, then re-read from the
+  field (`if (p[0x10c] == 0)`), which is what makes retail reload it instead of
+  reusing the register.
+* `func_ov001_0204fb34` only matches with `volatile u32 v = 0xc0;`: retail does
+  `str r1,[sp]` then `ldr r0,[sp]`, so the constant must be a volatile local to
+  survive the expression. A plain literal produced a 72B version.
+
+`func_02033dec` compiled to identical bytes on the first try but failed the
+link: the callee is `func_0203b640`, not `func_02033b640`. Same seven-digit trap
+as §2.38; the compile succeeded because the name was only a relocation.
+
+Parked after 3-6 spellings each, all in `build/walls.txt` now: `0203b4b0`
+(mwcc always adds a 4-byte frame slot), `02036650` (string loop peeling),
+`02032be8` (loop entry check orientation), `020202b4` (DISPSTAT update: register
+pair and eq/ne blocks both inverted), `02029cc4` (guard colouring), `0207be2c`
+(base/q addressing split), `02068c78` (frameless double reload of the module
+pointer), `020882d4` (index loop: C hoists the element pointer or spills to
+r7/r8).

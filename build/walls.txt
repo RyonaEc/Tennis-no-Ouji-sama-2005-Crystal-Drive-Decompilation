@@ -574,3 +574,11 @@ Shape: '#include "types.h"' + blank + '#pragma thumb on' + fn + '{ asm { swi N }
 02015040 40B arm9 -- same as 02015068 with `mvn r0,r2,lsl r0` / and; same register-role swap, and the load folds into a pre-indexed `ldrh r1,[r2,#0x1e]!` instead of add+ldrh.
 020b6b60 52B ov003 (twin 020b732c) -- exact 52B for three zeroed 4-byte structs, but retail uses r1=&a, r0=0, r2=&b; mwcc assigns r0=&a, r2=0, r1=&b. Register-role tie, not a shape problem.
 020135cc 48B arm9 -- body recovered (byte store, halfword store, halfword from call); the `*(u32 *)(data_02042a68 + 0x14)` chain compiles to `ldr r2,[r2]` where retail keeps `ldr r2,[r2,#0x14]`, and sp2 then spills the base to r4.
+arm9 0x0203b4b0 frameless two-call zeroing: mwcc reserves a 4-byte frame slot retail does not have (4 spellings, 60-92B)
+arm9 0x02036650 strchr: retail peels the first char with r0=s+1; every spelling gives post-index or extra mask (4 spellings)
+arm9 0x02032be8 loop entry: mwcc emits a movs/bxeq early-exit copy where retail branches to the bottom check (3 spellings)
+arm9 0x020202b4 DISPSTAT update: retail loads A then B and returns on the eq path; every spelling swaps both the register pair and the block orientation (4 spellings)
+arm9 0x02029cc4 guard: retail keeps the address in r1 and the value in r2, C keeps them in r0/r1 (4 spellings)
+ov002 0x0207be2c conditional zeroing: retail keeps base in r3 and base+0x3d+i in r2 with the stores at base+i; C reorders or re-registers them (6 spellings)
+ov002 0x02068c78: retail is frameless and reloads the module pointer twice; any C local forces r4 and a frame (3 spellings)
+ov002 0x020882d4: index loop; C either hoists the element pointer or burns r7/r8, retail recomputes base+i*4 each pass (3 spellings)
