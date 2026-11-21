@@ -34,12 +34,17 @@ Target: 8d555a80db47278475ffdfdf808fe80dbd7c48cf; tennis_ATOJ.nds: 8d555a80db472
 tennis_ATOJ.nds: OK
 ```
 
-1,497 functions (103,472 bytes) in the ARM9 main module and its overlays now match
-C source compiled with `mwccarm` 1.2/sp2 (and 1.2/b56 for the units retail built
-with it) and linked into the original addresses,
-and the rebuilt ROM still hashes to the retail dump. `ninja report` shows `matched_functions: 1,497` of 3,806 (39.33%) and
-`matched_code: 103,472` of 1,841,700 bytes (5.62%); the other 2,309 functions are
-still delinked assembly. [PROGRESS.md](PROGRESS.md) has the fuller breakdown
+1,497 units (103,472 bytes) in the ARM9 main module and its overlays are complete:
+their C source, compiled with `mwccarm` 1.2/sp2 (and 1.2/b56 for the units retail
+built with it), links into the original addresses,
+and the rebuilt ROM still hashes to the retail dump. `ninja report` shows `complete_units: 1,497`
+of 2,086 (71.76%) - the 1,497 of 3,806 functions (39.33%) that [PROGRESS.md](PROGRESS.md) counts -
+and `complete_code: 103,472` of 1,841,700 bytes (5.62%); the stricter
+`matched_*` counters, which the badges above display, read `matched_functions: 1,464` of
+3,806 (38.47%) and `matched_code: 100,420` of 1,841,700 bytes (5.45%). The 33-unit gap
+between the two is the `1.2/b56` units, which objdiff scores just under 100% because it
+compares against the default compiler, although the whole-ROM digest still matches. The
+other 2,309 functions are still delinked assembly. [PROGRESS.md](PROGRESS.md) has the fuller breakdown
 (code, functions, fuzzy match, data, unit completeness, and a per-module table);
 `python tools/match/progress.py` regenerates it.
 
