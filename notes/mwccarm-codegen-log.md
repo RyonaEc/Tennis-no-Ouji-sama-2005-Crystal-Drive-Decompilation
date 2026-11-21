@@ -2251,3 +2251,40 @@ tree with load/store order already resolved, which is what took the most guessin
 `0x0202ae08` (116 B, the getter twin of parked `0x0202ad9c`) decompiled cleanly but hit the
 same wall: per-address `[0]`/`[1]` indexing turns the `+4` half into extra pool words (140 B),
 a reused pointer folds it but adds the phantom frame (132 B). Parked with both spellings.
+
+## 2.74 Why some complete units score below 100% in objdiff (2026-11-21)
+
+The 33-unit gap between `complete_*` and `matched_*` is **not** a compiler-version
+artifact. Diffing the two objects of `func_ov003_0204cc9c` settles it: 240 B of code are
+byte-identical and the only differing bytes are the last pool word, where the base object
+holds the literal `0x020eb720` and the delinked retail object holds a zero plus an
+`R_ARM_ABS32` relocation. The source wrote `*(u8 **)0x020eb720` instead of the symbol
+`data_ov003_020eb720`, so nothing marks the word as linker-filled; the ROM still matches
+because the linker resolves both to the same value, but objdiff compares objects and sees a
+literal against a relocation. This is the "reference globals by symbol" rule in AGENTS.md,
+and it is a source fix, not a configuration change.
+
+Verification note for this class: `fastmatch.compare` is the wrong oracle, because it
+compares the object against the **ROM bytes**, where the symbol word is resolved. Compare
+against the delinked object instead - `fm.masked(compiled, last_relocs) ==
+fm.masked(text_of(delinks/<unit>.o), relocs_of(...))` - which is what objdiff does. The
+whole-ROM digest stays the final gate after installing.
+
+Ten units converted (raw address -> symbol, extern declarations added, object now identical
+to the delinked one, digest unchanged): arm9 `0201d1c4` `0202e418` `02030a80`, ov003
+`0204cc9c`, ov004 `0204e874` `02051148` `0205a63c` `0205a850`, ov005 `02051698`, ov008
+`0204c7c0`. `matched_code` 100,652 -> 101,688 B and `matched_functions` 1,466 -> 1,476;
+the gap is 2,016 B over 23 units.
+
+Remaining 23, by pattern (for the next pass):
+
+* Address passed as a call argument: ov003 `02050460` (`func_02025c94(0x020e6fe4, ...)`),
+  ov009 `0204dc10`, ov004 `0205acfc` / `0205ca30` / `0205e274`, ov008 `0204d970` /
+  `0204dec0` / `0204df38` / `0204e3fc` (nested `(u8 *)*(u32 *)0x...`), ov002 `02088c4c`,
+  arm9 `02030888`, ov003 `02053b30`, ov005 `0204f42c`.
+* No raw address in the source at all, so the residue is something else and needs its own
+  diff: ov005 `0205a8dc`, ov003 `0205e028` / `02081ecc` / `0204e5bc`, ov004 `02053518`,
+  ov005 `0204cf6c`, ov008 `0204ce64` / `0204d008`, ov009 `0204e8c0`, arm9 `02019aa0`.
+
+Do not touch the objdiff configuration to close this; converting the sources to symbols is
+the only honest route and it also makes the units link-safe.

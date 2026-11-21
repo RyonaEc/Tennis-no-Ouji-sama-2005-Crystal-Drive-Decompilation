@@ -1,8 +1,10 @@
 #include "types.h"
 
+extern u8 *data_ov003_020eb720;
+
 void func_ov003_0204cc9c(u32 a0)
 {
-    u8 *g = *(u8 **)0x020eb720;
+    u8 *g = data_ov003_020eb720;
     u16 i;
 
     for (i = 0; i < 4; i++)

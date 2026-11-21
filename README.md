@@ -40,10 +40,12 @@ built with it), links into the original addresses,
 and the rebuilt ROM still hashes to the retail dump. `ninja report` shows `complete_units: 1,497`
 of 2,088 (71.79%) - the 1,499 of 3,806 functions (39.39%) that [PROGRESS.md](PROGRESS.md) counts -
 and `complete_code: 103,704` of 1,841,700 bytes (5.63%); the stricter
-`matched_*` counters, which the badges above display, read `matched_functions: 1,466` of
-3,806 (38.52%) and `matched_code: 100,652` of 1,841,700 bytes (5.47%). The 33-unit gap
-between the two is the `1.2/b56` units, which objdiff scores just under 100% because it
-compares against the default compiler, although the whole-ROM digest still matches. The
+`matched_*` counters, which the badges above display, read `matched_functions: 1,476` of
+3,806 (38.78%) and `matched_code: 101,688` of 1,841,700 bytes (5.52%). The 23-unit gap
+between the two is units whose object still differs from the delinked retail object by a
+single relocation: 10 of them were sources writing a raw absolute address where a symbol
+belongs, now rewritten to symbol references (see `notes/mwccarm-codegen-log.md` 2.74), and
+the rest are queued there. The
 other 2,307 functions are still delinked assembly. [PROGRESS.md](PROGRESS.md) has the fuller breakdown
 (code, functions, fuzzy match, data, unit completeness, and a per-module table);
 `python tools/match/progress.py` regenerates it.
