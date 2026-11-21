@@ -1259,3 +1259,26 @@ The **multiset** is the right granularity: same instruction counts, different sc
 Caveat worth remembering: the twin's source still has to be re-derived where the *shape* differs
 (parameter count, the address expression). Substituting constants blindly is right for the operands,
 not for the control flow.
+
+## 2.33 The handle-dispatch family is larger than the twins (2026-11-20)
+
+`twins.py` reporting zero does not mean the family is done - it requires identical *size*, and this
+family varies. Searching instead for the skeleton itself (a `mvn rX, #0` compare, a `cmp`, a `beq` and
+two `bl`s, size <= 260) found **17 unmatched members** across the tree. Two installed first try:
+
+* `0x020241dc` (112 B) - same as `0x02024168` but the base is `data_02048cbc` unshifted, no `+ 0x20000`.
+* `0x02023674` (128 B) - 3 params, and the address is a *difference*:
+  `data_02048ca0 + a1 - data_02048c9c`. That is the first member where the address expression is not a
+  simple base + offset; reading the two `ldr`+`ldr` pairs (globals then dereferences) is what reveals it.
+
+Members so far, all with the same `if (data_02042370 != 0xffffffff) func_02026738(handle, a0, addr, ...)
+else func_020269ec(a0, addr, ...)` skeleton: `0x0202352c` (3p, `data_02048c94 + a1`),
+`0x02024168` (2p, `+0x20000`), `0x020241dc` (2p, plain), `0x02023674` (3p, difference).
+
+Remaining in the group worth attacking: `0x0202ce70` (160 B), `0x020263e0` (168 B), `0x0202cdc8`
+(168 B), `0x02025710` (212 B), plus ov002 `0x02088b0c` (212 B) and ov004 `0x0204c934` (200 B) - the
+overlay ones matter because overlay coverage is thin.
+
+`0x02027f74` (116 B) is a different shape (bit set/clear on `0x027ffc388` guarded by a null test,
+wrapped in `func_02026350`/`func_02026364`) and stops at a register tie: mwcc keeps the array base in
+r0 where retail uses r1, and the else-block comes out one instruction short. PARKED.
