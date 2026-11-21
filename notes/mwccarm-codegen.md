@@ -1582,3 +1582,28 @@ outside a byte-match batch.
 
 Worth keeping in view for the rest of this class: these are 4- and 6-byte functions, so the entire
 remaining BIOS stub set is under 50 bytes. Not worth a config fight.
+
+## 2.46 b56 units cluster by address, and the cluster predicts the next walls (2026-11-21)
+
+Retail compiled one original translation unit with one build, so neighbouring functions share a version.
+Acting on that, the three walls sitting next to installed b56 units all flipped:
+
+    ov002 0x020633e0  84B  b56 MATCH (sp2 no)   ORR 0x1000000 / BIC 0x2000000 behind a 0x2000000 test
+    ov002 0x02063820  84B  b56 MATCH (sp2 no)   same shape, 0x4000000 / 0x8000000 behind a 0x8000000 test
+    ov002 0x0204c824  96B  b56 MATCH (sp2 no)   stride-0x1c slot, clear bit 0x400 at +0x18, then call
+                                                func_ov002_0204f3cc(table[a1*0x30], a0 << 5, 0x20)
+
+Only `0x02063c5c` (the third member of the 0x02063820 family) still resists under both builds, so the
+family is not uniform - probe it separately rather than assuming the sibling's shape. This took the
+session to 12 b56 units; totals 1,446 functions / 99,080 bytes.
+
+Two loop changes came out of it:
+
+* `build/reg.py` now takes an optional trailing version (`... file.c 1.2/b56`). It records the override
+  in `config/ATOJ/mwcc_versions.txt` and re-runs `configure.py` *before* `try_unit`, because try_unit
+  links the ROM with whatever the build graph says - installing a b56 body while the map still says
+  sp2 fails the digest for the wrong reason. This is the bug that made the first three installs report
+  False despite an object-level MATCH.
+* `build/b56_regions.txt` lists every unmatched function within +-0x400 of an installed b56 unit
+  (30 candidates after this batch). That is the probe order for the next pass: read the neighbour's
+  version, then derive.
