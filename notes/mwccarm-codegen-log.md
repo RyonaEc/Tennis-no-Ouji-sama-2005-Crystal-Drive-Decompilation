@@ -2044,6 +2044,24 @@ The ldm/stm copy family got one more shape: a 12-byte struct assignment
 36/48 B struct assignment) does not reach retail's frameless
 `ldm r0!`/`stm r1!` pairs.
 
+## 2.69 Two-call wrapper matched; register-name parks (2026-11-21)
+
+`func_0201f170` (arm9, 76 B) matched first try on `1.2/b56`:
+
+    u32 s = func_02026350();
+    u32 v = func_02017784(data_02047f08, 0);
+    if (v) func_0201779c(data_02047f08, v);
+    func_02026364(s);
+    return v;
+
+The pattern worth reusing: a "lock/enter, look up, unlock/leave" wrapper keeps the lock token in a
+callee-saved register across the whole body and re-references the same global twice rather than caching
+its address.
+
+Parks: `0x02081078` (60 B) is instruction-for-instruction identical to the candidate and differs only in
+naming the derived pointer r0 rather than r2; `0x02080ca4` (68 B) puts the loop counter in ip where mwcc
+picks lr and emits an extra `mov ip, lr` (76 B), with a different split of the `0x3e6` store offset.
+
 ## 2.68 BIOS-call wrapper and two more parks (2026-11-21)
 
 `func_020307c8` (arm9, 64 B) is a one-shot wrapper: `u32 v = 0; CpuSet(&v, data_0204c180, 0x05000001);

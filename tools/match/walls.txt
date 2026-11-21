@@ -588,3 +588,5 @@ arm9 0x02028920 56B on b56 with two deltas: retail loads +0x34 before *c (schedu
 arm9 0x02028958 same family, callback at +0x3c
 arm9 0x0202497c 76B on b56: everything reproduces except that mwcc hoists the `data_02048cd4` load above `add/mov/lsl` where retail materialises it after the mask. 3 spellings (pointer locals, u32 temp, void return)
 arm9 0x02029f54 76B: retail packs `{func_02029fa0, p, 1}` into three stack words with `sub sp,#0xc` and no saved registers; struct-by-value and a compound literal both push r4/r5 and land at 100B, six scalar arguments give 60B
+ov002 0x02081078 60B on b56: identical instructions and length, only the derived pointer sits in r0 where retail keeps r2 (`ldr r2,[pc]` / `add r2,r2,r0`). 2 spellings (inline test, u8 temp)
+ov002 0x02080ca4 68B vs 76B: mwcc allocates the loop counter in lr and then copies it (`mov lr,#0` / `mov ip,lr`), retail uses ip directly; the 0x3e6 store offset also splits differently. 2 spellings (u32/s32 counter, offset order)
