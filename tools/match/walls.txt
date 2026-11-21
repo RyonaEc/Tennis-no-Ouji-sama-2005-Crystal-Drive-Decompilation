@@ -664,3 +664,17 @@ arm9 0x02017880 104B -- list insert: p[0], (u16*)((u8*)p+10) offset, count at (u
   p+8 in r2 from +40. Every spelling tried CSEs one more load than retail, giving 96 B
   (one shared local) or 104 B with three loads of the halfword and a different register
   plan. Needs a form that blocks CSE for exactly two of the three uses.
+arm9 0x02023df8 / 0x02023e58 96B -- open-handle dispatch (data_02042370, -1 = unopened).
+  func_020268e0(h, a0, 0x6600000|0x6400000 + a1) when opened, else func_020269ec(a0, base + a1).
+  Retail keeps both args in callee-saved r4/r5, holds the handle in lr, materialises the base with
+  mov ip,#0x6600000, and begins with a dead `mov r3, r2` (a third parameter copied and never used).
+  Straight 2- and 3-parameter forms both give 88 B with lr/ip as the args - the missing 8 bytes are
+  exactly that r4/r5 pair, so the source needs something that extends a0/a1 across the branch.
+
+arm9 0x02028920 / 0x02028958 56B -- add a delta into a struct word, then call a function pointer.
+  Retail: lr = e+0x28, ip = *lr, r4 = e->obj(+8), r2 = e->f28, r1 = e->f2c, *lr = ip + e->f34,
+  ip = [r4+0x40], r0 = r4, blx ip. So the third argument is the PRE-increment value and the
+  address of the field is held in lr while the object sits in r4.
+  Tried: local v, obj local, compound +=, field-pointer local, fn-pointer local, rhs-first, delta
+  local, plus a null guard. Best is 56 B but it copies e to r3 and saves lr on the stack
+  (`stmdb sp!/sub sp,#4`) where retail pushes {r4,lr} and keeps e in r0 the whole way.

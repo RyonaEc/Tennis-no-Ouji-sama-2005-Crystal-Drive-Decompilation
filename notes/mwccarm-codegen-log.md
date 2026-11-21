@@ -2400,3 +2400,22 @@ Park: `0x02017880` (104 B) list insert, written up in `walls.txt` - retail keeps
 offset halfword and two of `p[0]` where every spelling CSEs one of them.
 
 State: 1,501 of 1,501 complete units at 100%, 103,904 B.
+
+## 2.79 Two arm9 parks and a Ghidra note (2026-11-22)
+
+`famsurvey.py arm9` has only five identical-skeleton groups left, and three of them are asm
+thunks (`0x02033bd0`/`0x02033c1c` are `ldr r1,[pc]; bx r1` entry stubs) or already-documented
+walls. The two real parks are written up in `walls.txt`:
+
+* `0x02023df8` / `0x02023e58` (96 B, open-handle dispatch on `data_02042370`): straight 2- and
+  3-parameter forms both give 88 B; retail keeps both arguments in callee-saved `r4`/`r5`, so
+  something in the source makes `a0`/`a1` live across the branch.
+* `0x02028920` / `0x02028958` (56 B): semantically identical code compiles to 56 B, but retail
+  spends one more register (`push {r4,lr}` with `&e->f28` in `lr`, `e->obj` in `r4`) than my
+  best shape needs. Since retail holds one more live value than the source appears to require,
+  the source probably reads the field it updates a second time before the store.
+
+Tooling note: the ov003 Ghidra project is `ATOJOV3`, but the program name inside it is not
+`ov003.bin` - `-process "ov003.bin"` aborts with "Requested project program file(s) not found"
+and the whole headless run takes several minutes before failing. `udis.py` covers ov003 fine,
+so use that unless the program name is read out of the project first.
