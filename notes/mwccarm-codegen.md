@@ -1442,3 +1442,25 @@ What is left is the byte increment at 0x84 - retail pools `0x37a` and does `add 
 add ; strb` through r1 where mwcc folds to `ldrb r0,[r6,#0x37a] ; add ; strb`. That is the same
 address-materialisation tie as the ov002 getters (2.36), so the unit is parked with the body recorded
 rather than ground further.
+
+## 2.41 Correction: there are no per-unit flags, so the tie class must be reachable (2026-11-20)
+
+I speculated in 2.36 that the small units might have come from a compile with different flags or an
+SDK-era compiler. That is **wrong**, and the check is one line:
+
+    grep -c "flags|cflags|cpp_args" config/ATOJ/arm9/delinks.txt   ->  0
+
+`delinks.txt` carries only section ranges and `complete` markers; every unit is compiled with the single
+`MWCC_FLAGS` in `build/fastmatch.py` (`-O4,p -inline on,noauto ...`). There is no per-unit override
+anywhere in the build. So retail's small units were produced by the same compiler with the same flags as
+the 1,434 units that match, and **any remaining difference is a source-shape difference, not a toolchain
+one.** That is the more hopeful conclusion and it changes the plan: keep probing shapes rather than
+declaring the tail unreachable.
+
+Struct-typed access does not help either (`Obj { u8 pad[0x28]; u32 f28; }`, both `o->f28 &= ~4` and a
+load-into-local), which rules out "the original used a typed struct access" as the explanation for
+`0x02062b48`. The distinguishing feature of retail's form remains that it keeps the address in a second
+register and reuses it for both the load and the store.
+
+Six more single-call wrappers were derived this round (ov002 `0x02081078`, `0x02080ca4`, `0x0206d600`,
+`0x020882d4`, `0x02063434`; ov001 `0x0204fb34`). All compile, none match; bodies are in `walls.txt`.
