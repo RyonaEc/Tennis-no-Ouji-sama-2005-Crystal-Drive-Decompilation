@@ -172,6 +172,10 @@ empty names so a file never ends up with two conflicting `extern`s.
   HEAD:main`, then upload the objdiff report:
   `python tools/upload_report.py <build>/report.json --commit $(git rev-parse HEAD)`
   with `BYTEMATCH_TOKEN` in the environment.
+- The upload is part of every push, not of source changes only: a docs, README
+  or LICENSE commit still moves `HEAD`, and a report left behind on an older
+  commit makes the published numbers look stale. Push, then upload, in the same
+  breath - including when the batch changed no source at all.
 
 ## When something goes wrong
 
