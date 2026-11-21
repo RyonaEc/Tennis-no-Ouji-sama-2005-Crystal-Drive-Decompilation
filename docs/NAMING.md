@@ -117,6 +117,20 @@ the matched source cannot tell, and guessing would be invention.
 | +0x6 | u16 | filled with 0 | same |
 | stride | 8 | `i * 8` over 0x80 records | same |
 
+### ov004 instance table, base = the pointer in `func_ov004_02050154`'s first argument
+
+| offset | width | seen as | evidence |
+|---|---|---|---|
+| +0x0 | s32 | element count, loop bound | `func_ov004_02050154` |
+| +0xc | u32 | id compared against each object's +0x98 | same |
+| +0x18 | u32 | handle written to the out parameter on a hit | same |
+| +0x20 | ptr[] | array of object pointers, `i` scaled by 4 | same |
+| object +0x98 | u32 | per-object id | same |
+
+The same layout appears in the unmatched sibling `func_ov004_02050068`, which walks the
+same table and calls the function pointer stored at table +0x8 when the ids match - so
+the +0x8 slot is a callback, not data.
+
 This one is not just a label: writing the same loop through a flat `u8 *`
 produced the same 76 bytes except for the two hoisted constants and the address
 temporary, and the member form reproduces retail's register assignment exactly

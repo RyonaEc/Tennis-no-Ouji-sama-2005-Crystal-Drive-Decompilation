@@ -2882,3 +2882,28 @@ Measured cases:
 The lesson for the queue: a byte RMW through a struct pointer is not a shape problem. If the
 only difference is an `add` that retail predicates and mwcc hoists, stop - no spelling reaches
 it, and the wall note should say which side of the predicate the `add` ended up on.
+
+## 2.98 ov004 instance table: scaled index needs the inline expression (2026-11-22)
+
+`func_ov004_02050154` (104 B) matched once the table element was written as the *inline*
+expression `((u32 *)(p + 0x20))[i]` instead of
+
+- `*(u32 *)(p + 0x20 + i * 4)` - keeps a separate byte-offset register (`mov r3, ip` /
+  `add r3, r3, #4`), 108 B;
+- `u32 *tab = (u32 *)(p + 0x20); tab[i]` - hoists the base into `ip` outside the loop, 100 B
+  with the wrong allocation;
+- `u32 *tab = (u32 *)p; tab[i + 8]` - folds the +8 into the index (`add r2, lr, #8` plus a
+  shifted-register load) instead of using the load's 0x20 displacement, 104 B.
+
+The inline form is the only one that emits retail's `add r2, r0, lr, lsl #2` followed by
+`ldr r2, [r2, #0x20]`. That is a general lesson for `base + const + i * 4` addressing: write
+the pointer cast around the base-with-constant and index it, and do not name the intermediate.
+
+The sibling `func_ov004_02050068` (100 B) gets the identical instruction sequence from the same
+spelling and differs only in the register assignment (retail: count r2, cached id r3, counter
+ip). Four spellings - inline count, cached count as a local, both as locals, retail's
+declaration order - all pick the other assignment, so it is parked as a register tie.
+
+`func_ov004_0204d8ec` (128 B) is the binary search over that same table; the shape is decoded
+and written up in `tools/match/walls.txt`, and the only residue is mwcc duplicating the
+`mov r0, #0x6b` epilogue where retail branches both exits to one copy.

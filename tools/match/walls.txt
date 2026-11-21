@@ -948,3 +948,23 @@ ov009 0x0204db84 140B -- two packed-field updates on a u16 pair: `p[0] = (p[0] &
   `ldrh r5,[sp,#0x1c]`), while mwcc homes the registers but keeps the struct in r3 and shifts it
   (`lsl/lsr`), giving 100B. By-value spellings cannot ask for the home-space reload; the shape
   is recorded here so a later pass can try an explicit `&v` or a caller-side layout.
+ov004 0x02050068 100B -- same instance-table walk as the matched 0x02050154, but it calls the
+  function pointer at table+0x8 when the ids match, writes -1 to table+0x18 and returns 1.
+  `for (i = 0; i < *(s32 *)p; i++)` with `*(u32 *)(p + 0xc) == *(u32 *)(((u32 *)(p + 0x20))[i]
+  + 0x98)` reproduces the instruction sequence exactly at 100B (the scaled `add r0, r4, ip,
+  lsl #2` plus `ldr [r0, #0x20]` needs the inline `((u32 *)(p + 0x20))[i]` form - a `u8 *`
+  byte-offset expression keeps a second counter, a `u32 *tab` local gets hoisted into ip). The
+  only residue is the allocation: retail uses count=r2, cached +0xc=r3, counter=ip; mwcc gives
+  count=r1/r3, cached=r2, counter=r3/r1. Four spellings (inline count, cached count local,
+  both hoisted as locals, declared in retail's order) all choose the other assignment, so this
+  is the register-tie wall, not a shape problem.
+ov004 0x0204d8ec 128B -- binary search over the same overlay's table: `if (key >
+  *(u16 *)(data_ov004_020630c0 + 0x54)) return 0x6b;` then `while (hi >= 0 && lo <= hi)` with
+  `hi = 0x2d5` initially, `mid = (lo + hi) / 2` (signed `/2` gives retail's `add r1, r4, lr /
+  add r1, r1, r1, lsr #31 / asr ip, r1, #1`), 4-byte records `{u16 key; u16 val}` at
+  data_ov004_020625c0, `hi = mid - 1` / `lo = mid + 1` predicated, 0x6b on a miss.
+  Nearest spelling is 136B: mwcc duplicates the `mov r0, #0x6b; pop; bx lr` epilogue (one copy
+  after the range guard, one after the loop) where retail branches both exits to a single copy
+  (`bhi`, then `blt`/`ble` to the shared one at the end) and enters the loop through a `b test`.
+  Tried: tab local before the guard (136B), tab inline after the guard (136B), single-exit
+  `r = 0x6b; ... break; return r` (136B). The rotation/duplication is mwcc's, not the source's.
