@@ -66,3 +66,21 @@ Four formulations tried against the 80 retail bytes, none matched:
 Retail spills the incoming parameters to stack slots and then reuses `sp+0`/`sp+4`
 as the outgoing argument area. That is an mwcc allocation choice, so the unit
 stays parked until a source shape provokes the spill — do not force it.
+
+## Working loop
+
+1. `python tools/match/leafq.py <lo> <hi> [--module=ovNNN]` for unmatched leaf candidates.
+2. Add the addresses to a `.bat` beside `dump_decomp.py` and run
+   `cmd //c "build\ghidra\dumpXX.bat" > build/ghidra/out.txt 2>&1`; the projects that
+   exist are `ATOJ9` (arm9.bin) and `ATOJOV3` (ov003). Anything else needs a new import
+   before it can be dumped.
+3. Read the decompile as a *shape*, not as source: it gives the field offsets, the loop
+   boundaries and the constant folding. Write the C with named symbols from
+   `config/ATOJ/.../symbols.txt`, never raw addresses.
+4. Probe with `fastmatch.compile_text` against `fastmatch.retail` (plain byte compare,
+   no relocations involved when the body is leaf code and uses symbols resolved by the
+   probe), then confirm with `t10.try_unit` so the digest and the delink entry are
+   checked together.
+5. When the byte count lands within 4 and the diff is one instruction, the residue is
+   codegen, not the algorithm: record the exact pair of instructions in
+   `tools/match/walls.txt` and move on rather than rewriting logic that already matches.

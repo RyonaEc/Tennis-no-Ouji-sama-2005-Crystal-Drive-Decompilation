@@ -641,3 +641,24 @@ ov008 0x0204d970 108B -- bit-scan over the u32 at data_ov008_0204f440: the same 
   r0 and the pointer in lr, uses r2=n/ip=m/r3=i; every declaration order tried puts
   the pointer in r2 and n in r3, 108B in both). A pure register-assignment residue,
   not a spelling error; the object already carries the right relocation.
+## 2026-11-21 Ghidra pass on arm9 leaves: three parks
+arm9 0x02037788 124B -- bit-run scanner over four word parameters copied to the stack
+  (`push {r0,r1,r2,r3}`, `u8 *p = (u8 *)&a`). Retail branches to a shared tail for the
+  a==0 case (`beq` to `mov r0,#0x20`) and if-converts nothing; every spelling tried
+  (`if (a==0) return 32;` with n declared before/after the test) makes mwcc if-convert
+  the whole early return into `mov/moveq/addeq/bxeq`, 120B. Missing 4 bytes is exactly
+  that converted block.
+arm9 0x02037718 112B -- table walk over p[5+idx], length p[4], tail test `(p[idx+4] & 1)`.
+  Body matches instruction for instruction except the tail, where retail emits
+  `sub r1,r1,#1; add r0,r0,r1; ldrb r0,[r0,#5]` and every spelling of the same address
+  (`p[idx+4]`, `p[idx-1+5]`, `(p+idx-1)[5]`, via a local) emits
+  `add r1,r1,#4; ldrb r0,[r0,r1]`. Same 2 instructions, different decomposition: retail
+  factored `idx-1` first. 108B against 112B.
+arm9 0x020049a0 112B -- flush routine over the five-word table at data_02004a0c: per
+  3-word entry copy `cur[1]` bytes from the shared source, then clear `cur[2]` bytes,
+  then clear the tail range `[tab[3], tab[4])`. Retail's copy loop compares
+  **signed** (`mi`) and its clear loops compare **unsigned** (`lo`), and it walks the
+  table with post-increment loads (`ldr r4,[r1],#4`). The int-arithmetic spelling needed
+  to get `mi` blocks the post-index walk, and the pointer spelling gives `lo` on the copy
+  loop: 164B against 112B. Needs the mixed signed/unsigned shape expressed without
+  losing the table walk.
