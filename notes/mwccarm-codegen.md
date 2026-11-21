@@ -1706,3 +1706,24 @@ sibling does "clear then set". Reading the twin's bytes instead of its family's 
 
 Rule for `twins.py` output: take the **shape** from the matched unit, always take the **values and
 statement order** from the unmatched unit's own disassembly.
+
+## 2.51 Cross-module twins: a small but real seam, and why it is small (2026-11-21)
+
+`build/crosstwin.py` hashes each function's instruction *shape* (mnemonics with every immediate
+masked to `#` and every register collapsed to `R`) across all twelve modules and reports groups that
+have both a matched and an unmatched member. Over everything <= 0x200 bytes it finds only **4 groups /
+6 open functions** - the overlays are less duplicated than their sizes suggest.
+
+Two were real and both installed:
+
+    ov003 0x02052100 (matched) -> ov005 0x0204f2e0 (96B)   identical body, no module-local symbols
+    ov005 0x02051b90 (matched) -> ov003 0x020556b8 (140B)  identical body incl. all constants
+
+Both matched under **sp2 and b56 alike**, which is worth noting: not every family is a version family.
+
+The other four open members are the BIOS SWI stubs, already known to be uninstallable (2.45).
+
+Practical rule: a cross-module twin is a free unit only when the matched body references *no* module
+symbols (`data_ovNNN_*` / `func_ovNNN_*`). If it does, the body has to be respelled with the target
+module's names, and then it is twins.py work, not a copy. This makes crosstwin cheap to re-run after
+every batch (it takes one pass over the symbols files) but not a large source of units.
