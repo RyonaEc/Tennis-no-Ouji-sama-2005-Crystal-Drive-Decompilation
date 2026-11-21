@@ -17,8 +17,8 @@ are what keeps the build reproducible for everyone.
 ## Ground rules
 
 * **No game data in the repository.** Do not commit the ROM, the extracted
-  `extract/` tree, `arm7_bios.bin`, assets ripped from the cartridge, or the
-  proprietary `tools/mwccarm/` compilers. `.gitignore` covers them; see
+  `extract/` tree, `arm7_bios.bin`, or assets ripped from the cartridge.
+  `.gitignore` covers them; see
   [docs/SETUP.md](docs/SETUP.md) for supplying your own dump.
 * **No approximate matches.** Do not stub callees, drop behaviour, delete
   branches or hand-write assembly to make a unit's size line up. A unit is either
@@ -26,6 +26,10 @@ are what keeps the build reproducible for everyone.
 * **No weakened verification.** Do not edit `tools/sha1.py`, the expected SHA-1
   in `config/ATOJ/tennis_ATOJ.sha1`, the objdiff configuration, or any check to
   turn a failure into a pass.
+* **The compilers are tracked on purpose.** `tools/mwccarm/` holds the exact
+  CodeWarrior builds retail used (`1.2/sp2` for most units, `1.2/b56` for the
+  ones in `config/ATOJ/mwcc_versions.txt`), so a clean checkout builds without
+  downloading them. Do not add other builds or replace these.
 * **No compiler changes to force a match.** Compiler version and `CC_FLAGS` in
   `tools/configure.py` mirror the retail build. If a source shape resists the
   compiler, the source shape is wrong, not the flags.

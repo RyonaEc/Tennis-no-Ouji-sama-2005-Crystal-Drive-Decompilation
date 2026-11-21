@@ -42,3 +42,5 @@ src/arm9/func_020289f4.c = 1.2/b56
 src/arm9/func_020298e4.c = 1.2/b56
 src/arm9/func_02028c98.c = 1.2/b56
 src/arm9/func_020187b0.c = 1.2/b56
+src/arm9/func_0202de8c.c = 1.2/b56
+src/ov002/func_ov002_02086020.c = 1.2/b56

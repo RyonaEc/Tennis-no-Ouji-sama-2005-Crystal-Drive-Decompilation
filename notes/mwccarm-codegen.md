@@ -2014,3 +2014,57 @@ mwcc rematerialise the address after the call, which is what retail does.
 `func_02028c98` is the same lesson from the other side: the HAL lock pattern
 `h = func_02026350(); work; func_02026364(h);` keeps `h` in a callee-saved register without spilling,
 and the `&= ~0xf` on a field between two calls must stay a compound assignment on `*(u32 *)(a0 + 0xc)`.
+
+## 2.64 fresh.txt is stale; derive the queue from src, and probe every compiler at once (2026-11-21)
+
+Two process fixes, both cheap, both worth having before the next unit.
+
+**`build/fresh.txt` contains already-matched functions.** Its entries are the
+small unmatched set from the census that produced it, but the census is not
+re-run when a unit is installed, so names that matched in a later batch stay in
+the file. Three of the first five candidates this round (`0x02018318`,
+`0x0201f980`, `0x02027a14`) already had `src/arm9/<name>.c` and matched; the
+"install" only rewrote their bodies with an equivalent spelling, which is a
+cosmetic change to matching code and had to be reverted. The queue to trust is
+`build/true_fresh.txt`, regenerated from the live tree: every entry of
+`auto.FUNCS` whose `src/<module>/<name>.c` does not exist. Also check the
+symbol name, not just the address: `0x02085ff8` is `func_ov002_0202085ff8` in
+`symbols.txt` (the nine-digit name trap, 2.38), and passing the eight-digit
+form creates a new file and a duplicate delinks entry that fails to link.
+
+**Probe all retail compilers in one call.** `build/vprobe.py <mod> <addr>
+<size> <file.c>...` compiles each candidate with `1.2/b56` then `1.2/sp2` and
+prints `MATCH` or the first six differing instructions for each, masking
+relocations before the compare. This removes the manual "test b56 before
+rewriting" step; in the 28-36 B band every hit this round was b56-only, and
+sp2 was shorter or differently shaped in every miss.
+
+**The absolute-address trap in a candidate.** Writing `*(u8 **)0x02102070`
+instead of referencing `data_ov002_02102070` compiles to the same instruction
+bytes - the pool word is just a literal - and `compare()` calls it a match, but
+the object then has a raw absolute word and `t10.try_unit` fails to link
+(`link/compile issue`). Reference the symbol (`extern u8 *data_...;`) for
+anything that is not a plain constant.
+
+Matches: `func_0202de8c` (28 B, b56: `if (*p & 1) *p &= ~1;` on the DTCM
+halfword at `0x027fff96`) and `func_ov002_02086020` (36 B, b56: `u8 *p =
+data_ov002_02102070 + 0x47d4; *p |= mask;`, the OR sibling of the
+`&= ~mask` unit from 2.60).
+
+Parked this round: `0x020263c0` (retail `subs r0,r0,#4 ; bhs`; `while`,
+`do/while`, `while ((n -= 4) >= 4)` and `return n` spellings all produce a
+separate `cmp` at 16 B); `0x0202612c` (two-call wrapper with no `sub sp,#4`
+frame; mwcc always frames it); `0x02005418`, `ov004 0x0204cbdc`,
+`ov002 0x0206308c`, `ov008 0x0204e51c` (retail pools `0x027c0000` and
+`0x3ff8` as two words and uses `ldr r0,[r1,r0]!`; every spelling folds them to
+one literal or loses the writeback); `0x02015068`/`0x02015040` (retail holds
+the global in `r1` and the mask in `r2`, mwcc swaps them; four spellings);
+`ov003 0x020b6b60`/`0x020b732c` (exact 52 B, `r0`/`r1` roles swapped in the
+zero-init sequence); `0x020135cc` (the `data_02042a68 + 0x14` chain folds to
+`[r2]` instead of `[r2,#0x14]`).
+
+The ldm/stm copy family got one more shape: a 12-byte struct assignment
+(`dst[0..3] = src[0..3]`) produces `stmdb sp!,{lr}` / `sub sp,sp,#4` plus
+`ldm/stm` through `lr`/`ip`, 68-84 B, so the guess in the advice list (single
+36/48 B struct assignment) does not reach retail's frameless
+`ldm r0!`/`stm r1!` pairs.
