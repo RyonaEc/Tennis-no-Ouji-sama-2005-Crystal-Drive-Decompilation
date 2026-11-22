@@ -1504,3 +1504,14 @@ arm9 0x0202cfa4 84B -- 92B. Main-thread loop: `s = func_02026350(); while (!(*(u
 arm9 0x02017954 64B -- register-role tie, not a shape problem: seven candidates reproduce the
   frame, both zero stores, both pointer stores and the u16 increment; retail keeps n in ip and
   allocates &count/zero first, mwcc keeps n in r3. See notes/mwccarm-codegen-log.md 2.80.
+
+ov003 0x0205299c 76B -- 68 of 76 bytes agree; the residue is the last RMW's addressing.
+  Retail: `ldr r1,[pc]=0x027c0000; ldr r0,[pc]=0x3ff8; ldr r0,[r1,r0]!; orr r0,r0,#1; str r0,[r1]`.
+  Every candidate instead folds the two words into one pooled 0x027c3ff8 and emits
+  `ldr r0,[pc]; orr; str r0,[r1]`, so the unit is 4 bytes short and the pool shifts.
+  The first half matches exactly: `[0x020eb720]` -> `[that]` -> function pointer, called if
+  non-zero. Nine shapes tried: `&data_027c0000 + 0x3ff8`, raw `0x027c3ff8`, both operands as
+  literals, `u8 *base` / `u32 off` variables assigned before and after the call, `u32 *p`
+  computed before the call, `volatile`, and `*p = *p | 1`. So this is the
+  address-materialisation class (constants 0x027c0000 and 0x3ff8 kept in two registers with a
+  pre-indexed writeback), not the logic.
