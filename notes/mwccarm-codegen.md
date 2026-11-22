@@ -279,3 +279,9 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   the `u16 n;` declaration to the top of the list gives retail's `r6` for the `u16` and `r4`
   for the base, with everything else unchanged. Reorder declarations before reaching for
   statement permutation.
+- **Masking a `u8` parameter into its own local splits a load/increment merge.**
+  `func_02036650` (strchr-style) reads the first byte and bumps the pointer, and mwcc fused
+  the two into `ldrb r2, [r0], #1` in every spelling that used the `u8` parameter directly at
+  the compare. Taking the mask once up front - `u8 cc = (u8)c;` - puts `and r1, r1, #0xff`
+  between the load and the `add`, which breaks the fusion and reproduces retail's separate
+  `ldrb r2, [r0]` / `add r0, r0, #1` entry, closing the unit at 60 B.

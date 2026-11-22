@@ -1990,3 +1990,38 @@ written off.
   puts a0..a3 in r8..r5 and the base in r4. Declaration order (`u8 *h` first, last, or assigned
   after the declarations), `u32` instead of `u8 *`, and a `volatile` base all leave the pair
   swapped; this is a pure colouring tie like the ip/lr families above.
+
+  arm9 0x020208b0 140B and 0x0202093c 140B -- identical twins: `*(u16 *)(data_02048c74 + 0x18) = v`,
+  `p[0] = (p[0] | old18) & ~v`, `v == 0 -> *(u32 *)0x04001000 &= ~0x80000000`,
+  `v == 0x100 -> |= 0x80000000` plus `*(u8 *)0x04000249 = 0x83`, then
+  `func_02021538(*(u16 *)data_02048c74)`. Size-exact at 140B with the branch shape retail has;
+  the whole residue is which scratch register holds `~v`: retail `mvn ip, r0` with the old
+  `p[0]` in r3, mwcc `mvn r3, r0` with the old `p[0]` in ip. Locals for both halves, operand
+  order in the `&`, an explicit `u32 nv = ~v`, `u16` vs `u32` parameter and a
+  `~v & (u | t)` spelling all keep the pair swapped.
+
+  arm9 0x02026a88 28B, 0x02026aa4 36B and 0x0202474c 36B -- 12-byte chunk copies
+  (`ldm r0!, {r2, r3, ip}` / `stm r1!, {r2, r3, ip}`, the 0x0202474c twin storing without
+  writeback). mwcc never emits this shape from a struct assignment: it opens a frame, keeps
+  the two pointers in `lr`/`ip` and moves 16 bytes at a time, so a 36-byte copy comes out 52B
+  instead of 28B. One struct, three 12-byte members, three separate struct copies and
+  `u8 *` chunk casts all produce the same framed shape.
+
+  arm9 0x0202612c 20B and 0x0203b4b0 52B -- bodies that are only calls
+  (`func_02026140(); func_020261d0();` and the two `func_0203b6d0`/`func_0203b6dc` zero-fills).
+  Retail's prologue is a bare `stmdb sp!, {lr}` with no padding; mwcc always inserts
+  `sub sp, sp, #4` to put sp back on an 8-byte boundary before an external call, which costs
+  8B in both. Adding a second saved register flips mwcc to `push {r4, lr}` and the padding
+  disappears, but then the body no longer matches.
+
+  arm9 0x02024b5c 48B -- `if (a0 >= 0x60) { p++; a0 -= 0x60; } else a0 -= 0x40;` then
+  `*p |= 0x80000000 >> a0` on `(u32 *)0x0207ffb0`. Retail tests the threshold with
+  `cmp r0, #0x60` + `pl`/`mi` and keeps `mov r1, #0x80000000 / lsr r1, r1, r0` as its own
+  pair before the `ldr`/`orr`/`str`. mwcc emits `ge`/`lt` for every spelling tried (including
+  `0x60 <= a0` and `a0 - 0x60 >= 0`) and folds the shift into the `orr` operand, so the unit
+  lands at 44B.
+
+  ov003 0x020b6b60 52B and 0x020b732c 52B -- three 4-byte stack arrays zeroed with `strh`
+  pairs. Size-exact with three `u16 a[2] = {0, 0};` declarations, but retail puts the zero in
+  r0 and the array pointers in r1/r2 where mwcc does the reverse. Declaration order of the
+  three arrays does not move it.

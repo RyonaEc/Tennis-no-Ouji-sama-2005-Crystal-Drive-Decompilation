@@ -4411,3 +4411,20 @@ first call.
 before the `bl` is the fifth argument of `func_0202ffe4(p + 0x140, 8, 0xffff, 2, 1)`, not a
 message-buffer store. Reading it as a local was what made the `str` schedule late and in
 `ip` instead of `r0`.
+## 2.87 One unit closed, five idioms parked
+
+`func_02036650` (60 B, `strchr`-shaped) was the session's only new match. Its entry sequence
+is `ldrb r2, [r0]` / `and r1, r1, #0xff` / `add r0, r0, #1`, and mwcc insists on fusing the
+load and the increment into `ldrb r2, [r0], #1` whenever the source compares against the `u8`
+parameter. Copying the parameter through a `u8` local (`u8 cc = (u8)c;`) makes the mask a
+separate early statement, keeps the entry split, and matches; a `u32` parameter with
+`(u8)c` at each use gives the same instructions in a different order (64 B).
+
+Everything else surveyed this session is recorded in `walls.txt` with its measured residue:
+the `~v`/`p[0]` `ip`-vs-`r3` swap in the 140 B `0x020208b0`/`0x0202093c` twins, mwcc's framed
+`lr`/`ip` 16-byte struct copy against retail's unframed 12-byte `ldm`/`stm` chunks
+(`0x02026a88`, `0x02026aa4`, `0x0202474c`), the four-byte stack realignment mwcc adds to
+call-only bodies (`0x0202612c`, `0x0203b4b0`), the `pl`/`mi` threshold test plus unfused
+`mov`/`lsr` in `0x02024b5c`, and the zero-register colouring of three stack arrays
+(`ov003 0x020b6b60`, `0x020b732c`). `near.py --install` found no near twins in arm9 or any
+overlay this session.
