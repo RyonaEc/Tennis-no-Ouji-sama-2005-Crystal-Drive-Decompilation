@@ -422,3 +422,17 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
 - **Overlay callees are `func_ovNNN_<addr>`.** A relocation into the same overlay resolves against the prefixed symbol; using the bare `func_020xxxxx` name that `udis.py` prints gives an undefined-symbol link error that `var3` cannot see.
 - **A pooled `0xffff` add means the source casts to u16 before adding.** `(u16)(n + 0xffff) > 1` becomes `add r0, r1, r0, lsr #16` with 0xffff in the pool; writing `n - 1` compiles to `sub` instead.
 - **A trailing `mov r0, #1` before `bx lr` means the unit returns 1.** A `void` spelling comes out one instruction short.
+### 3.13 Nested-index fusion (2026-11-22)
+
+Theme: `b + j * K + i` inside a nested loop. mwcc 1.2/b56 always folds the whole
+sum into ONE accumulating address register and increments that, so the inner body
+carries a single `add rX, rX, #1` and no per-iteration base add. Retail keeps the
+row base and `i` in separate registers and forms `add r0, rowbase, i` every
+iteration, then advances the row base by K at the end of the outer body.
+
+Evidence: `ov002 0x0205fe04` (140 B). The direct spelling
+`b[j*3 + i + 0x21e]` / `b[j*3 + i + 0x224]` compiles to 144 B, one instruction over,
+because mwcc accumulates the address; giving the row base its own advancing
+pointer `p = b; ... p += 3;` instead compiles to 176 B, because mwcc then keeps two
+live bases and unrolls the constant-trip outer loop. Casting the stored `i` to
+`u8` changes nothing (a `u32` store to a `u8` lvalue already gives `strb`).

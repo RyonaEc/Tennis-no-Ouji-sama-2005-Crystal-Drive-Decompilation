@@ -4791,3 +4791,9 @@ Calls into arm9 (`module:main`) keep the plain `func_020xxxxx` name.
 The unit itself: a u16 gate `(u16)(n + 0xffff) > 1` (a pooled 0xffff add, not a subtraction -- the
 `add r0, r1, r0, lsr #16` form only appears when the u16 cast is applied before the add), then a
 `u16 i` loop from 0x7c to 0x7e calling `func_ov003_02052100(*(u32 *)(base + i*0x1c + 0x9ff8), 0, 0xc0)`.
+## 2026-11-22 - nested-index fusion, ov002 0x0205fe04
+
+Direct `b[j*3 + i + off]` spelling reaches 144 B against retail's 140 B with the
+address accumulated; a row-base pointer reaches 176 B. Retail's `add r0, r2, ip`
+per inner iteration is therefore not reachable from either spelling tried. See
+section 3.13 of the playbook.

@@ -2412,3 +2412,7 @@ written off.
   0x02024af8 12B is `ldr r1, [pc]; bx r1`, a thunk to a fixed target (pool 0x02024b04); 0x0203b564 and
   0x0203b578 20B each and 0x0203b58c 16B are BIOS `svc #0x123456` wrappers with the call number in r0.
   None of these has a C spelling that keeps the fall-through, the udf or the svc.
+  (addendum, 0x0205fe04) the reason no spelling reaches retail's shape: mwcc always fuses
+  `b + j*3 + i` into one accumulating address register, so its inner body has no per-iteration
+  `add r0, rowbase, i`. Giving the row base a pointer of its own makes mwcc keep two live bases and
+  unroll the 2-trip outer loop (176B). Both branches are recorded in notes/mwccarm-codegen.md 3.13.
