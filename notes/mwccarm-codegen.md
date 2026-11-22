@@ -412,3 +412,6 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
 
 - **A read-modify-write through a fresh address variable gives the pre-indexed form.** `u8 *c = p + 0x34; *c = *c - 1;` compiles to `ldrb r1, [r2, #0x34]!` + `strb r1, [r2]`, not to separate add/load/store.
 - **The overlays are ordinary arm9 code.** `ov002`..`ov010` use the same idioms and pool layout; the matching tools take the module name (`udis.py ov008 0x0204ce20`).
+
+- **`u8 >> n` gives `asr`, not `lsr`.** The promotion to signed `int` makes the shift arithmetic; read the byte into a `u32` local first when retail shifts logically.
+- **Version probes rarely help a register tie.** 1.2/b56 and 1.2/sp2 allocate the same registers for a given source shape, so a swapped-register residue is a spelling problem, not a build problem.

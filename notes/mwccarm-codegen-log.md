@@ -4753,3 +4753,14 @@ Three shapes mattered. Writing the read-modify-write through `u8 *c = p + 0x34; 
 produces retail's pre-indexed `ldrbne r1, [r2, #0x34]!` followed by `strbne r1, [r2]`. Hoisting
 `v = *(u32 *)(p + 0x3c)` above the test reproduces the speculative load retail performs before the
 branch. And `return 0` in both exits is what gives `movne r0, #0` before the `bxne lr`.
+
+### 3.10 Compiler versions do not move the allocation ties
+
+`vprobe.py` on `ov002 0x02068c78` and `ov003 0x020b6c88` prints the same register assignment for
+1.2/b56 and 1.2/sp2, in both cases the reverse of retail's (`r3`/`r2` where retail has `ip`/`r1`, and
+`r2`/`r1` where retail has `r1`/`r2`). So the small-unit allocation residue seen across this session
+is a source-shape question, not a build question -- worth knowing before spending a version probe on
+another close unit.
+
+Also confirmed: `u8 >> 1` promotes to signed int and compiles to `asr`; write the byte read into a
+`u32` first when retail has `lsr`.

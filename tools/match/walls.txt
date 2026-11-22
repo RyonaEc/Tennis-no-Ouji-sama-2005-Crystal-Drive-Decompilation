@@ -2323,3 +2323,11 @@ written off.
   `add r1, r0, ip, lsl #3`); every spelling tried makes mwcc add two extra induction variables that
   step by 2 and by 8 (76B against 68B), including hoisting the 0x300 into the base and writing the
   offsets as `i * 8` or `i << 3`.
+  ov002 0x02068c78 64B -- slot commit: `base = *(u32 *)0x02102070`, then
+  `q = base + 0x1e6c + (*(u8 *)(base + a0*0x158 + 0x2e6) >> 1)`, then `q[0x680] = 1`,
+  `q[0x682] = a0`, `q[0x684] = 5`. The `u32 v` form is needed for `lsr #1` (a `u8 >> 1` promotes to
+  signed int and gives `asr`), and that spelling is size-exact at 64B with retail's instruction
+  sequence; mwcc 1.2/b56 and 1.2/sp2 both put the base in r3 and q in r2 where retail uses ip and r1.
+  Dropping the base local and dereferencing the global twice gives exactly the same allocation.
+  Negative result worth keeping: vprobe shows 1.2/sp2 produces the same registers as b56 for this
+  unit and for ov003 0x020b6c88, so the allocation ties are not version-specific.
