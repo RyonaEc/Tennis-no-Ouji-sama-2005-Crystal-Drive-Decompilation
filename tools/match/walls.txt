@@ -2399,3 +2399,11 @@ written off.
   keeps the loop and uses ldr/str (48B, no unroll, no ldm/stm), a T3-struct loop gives 56B, and four
   explicit `*(T3 *)d = *(T3 *)s; s += 3;` statements give 56B. Retail unrolls AND merges each group into a
   block transfer, and never advances the destination.
+  ov002 0x0205fe04 140B (siblings 0x0207bc98, 0x020e9658) -- clears two 3-byte runs and then reclassifies
+  four slots: `b = *(u32 *)0x02102070`; for j<2, for i<3: `p[i + 0x21e] = 0` and `p[i + 0x224] = i` with
+  p advancing by 3 per j; then for i<4, `v = b[i + 0x94]`, and `b[i + 0x22a]` is 0 when v is 0 or 3 and 1
+  otherwise. The closest spelling reaches 144B: retail accumulates the row base in one register and forms
+  `add r0, r2, ip` inside the inner loop, while mwcc recomputes `add r1, r4, r2` from the global base and
+  then increments that address, adding one instruction. Giving the row base its own advancing pointer
+  instead makes it worse (176B) because mwcc then materialises both bases. Casting the stored `i` to u8
+  makes no difference; retail's strb comes from a plain u32 store to a u8 lvalue.
