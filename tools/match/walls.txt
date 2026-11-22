@@ -2346,3 +2346,11 @@ written off.
   push {r4}, `p` hoisted with the read inline gives 116B, and `p` inside the else with the read
   inline is the exact 120B but defers the two pool loads past the `cmp`, where retail loads both
   before it and forms `p` in r1 ahead of the branch.
+  ov003 0x02082220 96B (byte-identical twin at 0x020c806c) -- `d = 0x1e` and `m = 0x3c` selected by a
+  three-way chain on the s16 argument (`< 0x5a`, `< 0xb4`, otherwise), then `if (d == 0) return 0;`
+  and `return (s16)func_0203b0c0(m * a1, d);` (callee is arm9, so the unprefixed name). The three arms
+  assign the same two constants, and retail keeps all three: `movlt r3,#0x1e; movlt r2,#0x3c; blt`,
+  then a `cmp #0xb4` pair of `movlt` and a pair of `movge`, ending in a `cmp r3,#0` that can never
+  fire. Both mwcc builds fold the arms instead: an if/else-if/else chain reaches 80B, a nested ternary
+  chain 84B, against retail's 96B. Whatever stopped the fold in the original -- distinct expressions
+  that happen to evaluate to 0x1e and 0x3c -- has not been found.
