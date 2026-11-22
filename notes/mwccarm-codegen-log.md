@@ -3195,3 +3195,28 @@ a loop-exit pair. When a unit is short by exactly the branches' worth of bytes a
 `eq`/`ne` predicates where retail has a branch plus a duplicated address computation, stop - this
 is the wall the playbook describes, and it has now been confirmed from both directions (predicated
 here, branched in retail) in five different units.
+
+## 3.11 A scaled-index copy, and a near-miss that is pure register naming (2026-11-22)
+
+`0x020638f4` (88 B, **matched**) is the leanest member of the 12-byte-table family:
+
+```c
+    u8 *b = *(u8 **)data_ov002_02102070 + 0x1744 + a0 * 0x38;
+    T12 t = *(T12 *)data_ov002_020fdc30;
+    *(u32 *)(b + 0x18) = t.v[*b];
+```
+
+It confirms the ordering rule from 3.08 from the other side: here the entity pointer can be
+built first because the table copy is a plain initialiser that mwcc schedules after the `mul`
+anyway, and the `ldm`/`stm` pair comes out exactly as retail has it. The same shape at
+`0x02066080` needed `<volatile u32>` on the field because it reads it twice; this one writes once
+and needs nothing.
+
+`0x02068c78` (64 B) is parked at full size with every register renamed: retail keeps the base in
+`r1` and a copy in `ip` because it needs the base twice (`mla r2, r0, r2, ip` to index the entity,
+`add r1, ip, r1` to reach the target block), while mwcc keeps one copy in `r3` and offsets the
+whole allocation by one. Two useful details did come out of it, both of which changed the byte
+count rather than the registers: the shift needs `(u32)*(u8 *)p >> 1` (otherwise `asr`), and the
+offset chain has to be collapsed into a named pointer once (`p = base + 0x1e6c + i;` then
+`p[0x680] = ...`), because writing `t[i + 0x680]` makes mwcc recompute the address for each of the
+three stores and the unit grows to 100 B.

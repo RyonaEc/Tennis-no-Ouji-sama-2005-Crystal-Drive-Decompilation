@@ -1138,3 +1138,15 @@ ov002 0x0208a034 128B -- two-slot tick: for i in 0..1, decrement `*(u8 *)(base +
   bit 1 of `*(u32 *)(base + 0x38)`. Mine is 112B: mwcc if-converts the decrement and hoists the
   `base + 0x38` pointer, while retail takes two callee-saved registers, materialises
   `addne ip, lr, r0` for the decrement target and keeps the flag word in r2.
+ov002 0x02068c78 64B -- mode entry: `p = base + 0x1e6c + (*(u8 *)(base + a0 * 0x158 + 0x2e6) >> 1)`
+  then `p[0x680] = 1; p[0x682] = a0; p[0x684] = 5;`. 64/64 with the byte cast `(u32)` before
+  `>> 1` (else `asr`) and the offset chain done once into a named `p` (otherwise mwcc recomputes
+  every `strb` and lands 100B). Every register differs: retail keeps base in r1 with a copy in ip
+  (`mla r2, r0, r2, ip` / `add r1, ip, r1`), mwcc uses r3 for base and shifts the whole set by one.
+  A register tie at identical size.
+ov002 0x02080ca4 68B -- copies four s16 from data_ov002_020fc68c into a 0x300-offset field block:
+  `for (i = 0; i < 4; i++) *(u16 *)(o + i * 8 + 0x300 + 0xe6) = *(s16 *)(data + i * 2);` where
+  `o = (u8 *)func_ov002_020848a0()`. Mine is 72B and takes r4 as a second loop counter; retail
+  keeps one counter in ip and uses the operand-shift forms (`lsl r1, ip, #1`,
+  `add r1, r0, ip, lsl #3`) for both addresses, which mwcc will not emit from any of the offset
+  orderings tried (`0x300 + 0xe6 + i * 8`, `i * 8 + 0x300 + 0xe6`).
