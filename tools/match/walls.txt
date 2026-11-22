@@ -2442,3 +2442,10 @@ written off.
   the single 0x027c3ff8 literal (68B against 76B), because mwcc constant-folds a struct field off a
   constant base pointer. Section 3.14's split only survives when the field offset is small enough to
   remain a real displacement from a pooled base.
+  family survey note (2026-11-22): ov002 has 58 identical-skeleton groups and the value is concentrated
+  in a few: 13x756 (0x0208f860, 0x0209a5f4, 0x0209c728, 0x0209eb18, 0x020a8ba0, 0x020ad2b0, ...) worth
+  9,828B, 14x608 from 0x0208f38c worth 8,512B, 10x688 from 0x0209ab8c worth 6,880B, 10x676 from
+  0x0208f0e8 worth 6,760B. A representative, 0x0208f860, is not a quick win: it opens with a nine-register
+  push, a 0x44 stack frame, `mul r2, r0, #0x158` for a record stride and at least four calls in the first
+  80 bytes (0x0205bf64, 0x02034148, 0x02053468, 0x0205bee4), so it needs structured reconstruction rather
+  than a shape guess. The small-function levers in playbook 3.13/3.14 do not transfer.
