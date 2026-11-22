@@ -1478,3 +1478,12 @@ arm9 0x0202c36c 84B -- **84/84 and the same instruction sequence**, ONE register
   slot, call `cb(r0, g->c)`. Tried: raw `u8 *` + offsets with a `cb` local (84, base r1), `G *g` with
   `g->a`/`g->cb`/`g->c` (80, drops the hoisted load), `G *g` with `a` and `cb` locals (80), `if (g->cb) {}`
   block (80), raw form with `a` hoisted to a local (84, base still r1). Pure allocator tie.
+arm9 0x020124e0 68B -- **68/68 with the same instruction multiset**, only the schedule differs: retail
+  computes the shift count first (`add r1, r2, r1, ror #29`) and then loads the byte
+  (`ldrb r0, [r0, r3, asr #3]`); mwcc emits the `ldrb` first and the `add` after. Body:
+  `u8 *tab = func_0200faa8(); if (tab == 0) return 0; return tab[idx / 8] & (1u << (idx % 8));`
+  with `s32 idx` (the `/8` and `%8` both hit the signed rounding sequences, so the source is signed
+  division/modulo, not shifts). The modulus is legible in the rotate constant: `% 32` gives
+  `lsl #27`/`ror #27`, retail's `#29` is `% 8`. Tried: `% 32` (constant wrong), `% 8` inline,
+  reversed `&` operands, and `p = tab + idx / 8; bit = 1u << (idx % 8); return *p & bit;` (that one
+  also moves the byte index into r1). Pure scheduler tie.

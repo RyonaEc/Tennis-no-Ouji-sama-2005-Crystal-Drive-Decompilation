@@ -3932,3 +3932,49 @@ temp and the zero constant (`ldr r1,[pc]` / `ldr r2,[r1]` / `movne r2,#0` vs ret
 out of the pivot; the raw `u8 *` + explicit offsets keeps the size. Tried: raw offsets with a `cb`
 local, struct pointer with `cb` local, struct pointer with `a`/`cb` locals, `if (g->cb) { ... }`
 block, and the raw form with `a` hoisted. It is parked in `walls.txt` as one register swap.
+
+## 3.36 Three more units: a guard-flag setter, a buffered writer, and a signed bitmap test
+
+Three small units fell out of the same `ready.py` batch, two of them first try.
+
+`arm9 0x02015fe8` (72 B) is **matched under 1.2/b56**:
+
+```c
+u32 func_02015fe8(void)
+{
+    if (data_02042b40 & 0x8000) return 1;
+    data_02042b40 |= 0x8000;
+    func_02025c94(&data_02042b40, 0x18);
+    return func_02015fa0();
+}
+```
+
+The interesting part is the tail: the last statement is `return func_02015fa0();` and mwcc passes the
+first callee's return value straight through in r0 without touching it, which is why the retail
+`bx lr` is preceded by nothing at all. Only b56 was tried because the 8-byte alignment frame
+(`stmdb sp!, {lr}` + `sub sp, #4`) is its signature.
+
+`arm9 0x02034608` (84 B) is **matched under 1.2/b56** on the first candidate:
+
+```c
+int func_02034608(S *s, u32 src, u32 n)
+{
+    u32 cnt = n;
+    if (s->used + n > s->cap) cnt = s->cap - s->used;
+    func_02034494(s->buf + s->used, src, cnt);
+    s->used += cnt;
+    return 1;
+}
+```
+
+with `struct S { u8 *buf; u32 cap; u32 used; }`. The clamped count `cnt` stays live across the call in
+r4 and `subhi r4, r2, r3` is the ternary-free `if`, and `s->used += cnt` re-reads the field from
+memory (`ldr r1, [r2]` before the `str`) exactly like the RMW pattern already recorded in §3.30.
+
+`arm9 0x020124e0` (68 B) is a signed bitmap test - `return tab[idx / 8] & (1u << (idx % 8));` after a
+null check on the table returned by `func_0200faa8()`. It reaches **68/68 with identical
+instructions** but retail emits `add r1, r2, r1, ror #29` *before* `ldrb r0, [r0, r3, asr #3]` while
+mwcc emits the load first; every spelling tried keeps the two swapped. Worth noting for the log:
+`idx % 32` produced `lsl #27`/`ror #27` - the modulus is legible in the shift constant, so the
+retail `#29` proved the source is `% 8` and not `% 32`. That got the last constant right, leaving only
+the schedule residue. Parked in `walls.txt`.
