@@ -1644,3 +1644,30 @@ Evidence gathered:
 So this is a source-shape problem, not a compiler one: retail keeps b live in r2 to the last store
 and uses r3 as the zero/0x1000 register at the same time. 52 B total, parked until a shape that
 forces that pairing turns up.
+
+=== arm9 family survey pass (2026-11-22): four groups examined, none loadable ===
+
+  arm9 0x02028920 / 0x02028958 (56B x2) -- virtual-call trampolines, 2.0-era style allocation
+    f(o): u32 v = o[10]; o[10] = v + o[13]; (*(void(**)(u8*,u32,u32))(c+0x40))(c, o[11], v)
+    where c = (u8 *)o[2]. Source reproduces instruction for instruction but mwcc prologues with
+    `stmdb sp!, {lr} / sub sp, #4` where retail has `push {r4, lr}` and lr/ip pressed into service
+    as temporaries (`add lr, r0, #0x28`, `ldr ip, [lr]`, `ldr ip, [r4, #0x40]` + `mov r0, r4`).
+    Retail's allocation is what mwcc gives a C++ this-call with the callee pointer held in a
+    callee-saved register; no C shape tried reproduces it (plain function pointer through the
+    struct, vtable pointer, temp locals, reversed statement order).
+
+  arm9 0x02023df8 / 0x02023e58 (96B x2) -- dispatcher differing only in one constant
+    u32 f(u32 a, u32 b, u32 c) { u32 g = data_02042370;
+        if (g != 0xffffffff) return func_020268e0(g, a, 0x6600000 + b);
+        return func_020269ec(a, 0x6600000 + b); }
+    (0x6400000 in the twin.) Body matches, but retail's prologue copies every argument first --
+    `mov r5, r0 / mov r4, r1 / mov r3, r2` -- and computes the constant into ip before the test;
+    mwcc emits 88B using lr for the link and no shuffles. The unused `mov r3, r2` in particular
+    has no C origin: retail saves a third parameter that is never read afterwards.
+
+  arm9 0x02033bd0 / 0x02033c1c (60B x2) -- mrs/msr CPSR mask toggles
+    `mrs r3, apsr / mov r1, r3 / and r1, r1, #0x40 / ... / msr cpsr_fc, r3 / tst r1,r1 /
+    moveq r0,#1 / movne r0,#0` (0x80 in the twin). Hand-written assembly; no C form.
+
+  arm9 0x02023df8 group also confirms the pattern from the sub-24B sweep: what is left in the
+  small arm9 bands is SDK assembly, compiler-shim glue and C++-style calls, not lost C.
