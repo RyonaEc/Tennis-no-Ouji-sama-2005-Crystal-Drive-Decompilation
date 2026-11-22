@@ -1865,3 +1865,20 @@ forces that pairing turns up.
   variable. Five flag spellings (r = 0 then r = 1, ternary, r = expr, `r != 0`, a second
   constant `z = 1`) all fold back to 52B: mwcc re-fuses the flag into the compare. Needs the
   first `&&` result to escape, which the source of a leaf predicate cannot express.
+
+  arm9 0x0202cff8 84B -- two guards then a masked field clear and a call: `if (a0 != 0xb)
+  return; if (a2 == 0) return; p = data_0204aec0; *(u32 *)(p + 0x34) &= ~0x20;
+  func_02025118(*(u32 *)(p + 0xd0));`. Size, frame and every instruction match; the only
+  difference is the pool register. Retail loads the base after both guards into r2 (a2 is
+  dead by then); mwcc hoists the same load above the first branch into r3 so it never
+  clobbers the live a2. Initialising `p` at its declaration gives that hoist (84B, diff 10);
+  leaving `p` uninitialised and assigning it after the guards makes mwcc rematerialise the
+  address per use instead (two pool words). `volatile u8 *p` keeps the hoist, `u8 *volatile`
+  costs 96B. Same pool-scheduling class as 0x0201fd50.
+
+  ov003 0x0205299c 76B and ov008 0x0204e51c 56B -- both are the DTCM flag write already
+  parked five times (`0x027c0000 + 0x3ff8`, retail pools base and offset separately and uses
+  `ldr r0,[r1,r0]!` writeback, mwcc folds the sum into one literal). ov003 additionally has
+  the indirect call `if (*(void (**)(void))data_ov003_020eb720) (*(...))();` which reproduces
+  on its own; only the shared tail diverges. Do not re-spend rounds on these two: they inherit
+  whatever breaks the twin set (they are now the 6th and 7th members).
