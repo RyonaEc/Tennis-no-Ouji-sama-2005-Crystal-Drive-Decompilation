@@ -2375,3 +2375,12 @@ written off.
   call unless marked __inline, and inlining it lets mwcc delete the stores (4B); the pointer-parameter
   form with a `volatile s16 *` still emits three calls (44B). Retail needs both "address materialised in a
   register" and "stores not deletable", which no spelling tried has produced.
+  ov003 0x02066a54 180B (family: 0x020b85b8, 0x020db6ec) -- when the argument is 0 it calls
+  func_020209c8(8) and func_020208b0(0x100), sets bits 4 and 20 of DISPCNT 0x04001000 via
+  `(v & 0xffcfffef) | 0x100010`, then runs a u16 loop i<0x200 storing 0 at `b + i*2 + 0x8de8` and, when
+  `i % 4 == 0`, storing 0x200 as a u32 at the same address; otherwise it calls
+  func_ov003_0204e46c(*(u16 *)(b + 0x86c2)). `b = *(u32 *)0x020eb720`. A direct spelling gets 168B
+  against 180B: retail opens with `push {r4, r5, lr}` plus a `sub sp,#4` slot and hoists the loop
+  invariants into `mov lr, r5` (zero) and `mov r3, #0x200`, and computes the `i % 4` test with
+  `lsr r2,r5,#0x1f; rsb r1,r2,r5,lsl #30; adds r0,r2,r1,ror #30; addeq r0,ip,#0x8000` where the direct
+  spelling just masks with #3. Needs the invariant-hoisting and remainder shape, not the mask.
