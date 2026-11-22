@@ -2437,3 +2437,8 @@ written off.
   moved to the assignment (`u16 idx = (h + 1) & 0x3fff;`, or via a `u32 m = 0x3fff;` local) mwcc folds
   the pair away and it drops to 136B. Retail has both the pair and the and-before-truncate order, which
   no spelling tried has produced together.
+  (retest, 0x0205299c and the 0x027c0000 family) the typed-struct lever from playbook 3.14 does NOT
+  apply here: `typedef struct { u8 pad[0x3ff8]; u32 v; } T; ((T *)0x027c0000)->v |= 1;` still folds to
+  the single 0x027c3ff8 literal (68B against 76B), because mwcc constant-folds a struct field off a
+  constant base pointer. Section 3.14's split only survives when the field offset is small enough to
+  remain a real displacement from a pooled base.
