@@ -223,3 +223,11 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   creates the frame retail has (`stmdb sp!, {lr}` / `sub sp, #4`) and stops mwcc turning the last
   call into `bx ip`; a plain `func(0, ...)` compiles to a 52-byte tail call instead of the
   76-byte unit.
+
+* **Big offsets split differently depending on how they are spelled.** A *struct member* offset
+  above 12 bits is split by mwcc into `add rX, rBase, #high` plus a small immediate, so
+  `typedef struct { u8 pad[0x30048]; u16 f; } Big;` gives `add r0, r2, #0x30000` + `ldrh r0,
+  [r0, #0x48]`. The *same* address written as raw pointer arithmetic, `(u16 *)(b + 0x30048)`,
+  becomes a pooled constant plus a register add (`ldr r0, [pc]; add r1, r2, r0`). Retail
+  `func_ov002_0204d488` contains both spellings side by side, and that mixed source is what makes
+  it match — one spelling alone collapses to a single address form and lands 8 bytes short.
