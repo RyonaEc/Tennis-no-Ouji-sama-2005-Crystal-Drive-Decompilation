@@ -2176,3 +2176,9 @@ written off.
   `ldr lr,[r1,r4]` / `add ip,r2,r4`), which is five differing words in the linked ROM. Naming
   the destination as a `u32 *`, dropping the `first` variable, and reordering the declarations
   all keep the swap. `reg.py` reports miss, so the unit stays parked with the exact residue.
+  arm9 0x02027f74 116B -- lock, store a slot in a table, set/clear a bit in 0x027ffc00+0x388,
+  unlock. 108B: the table store needs `extern u32 data_0204ab68[]` (a literal base expands to
+  lsl/add/add/str, four instructions), and the two `add r3, r2, #0x388` sites retail materialises
+  are folded into the pool constant by mwcc for every spelling tried (`u32 base = 0x027ffc00`,
+  `(u32 *)0x027ffc00 + 0xe2`, a pad-struct member, a shared pointer variable). Everything else
+  matches, including the `mov r1, #1` / `orr r1, r2, r1, lsl r4` pair.
