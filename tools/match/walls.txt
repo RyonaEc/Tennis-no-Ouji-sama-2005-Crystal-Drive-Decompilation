@@ -1671,3 +1671,27 @@ forces that pairing turns up.
 
   arm9 0x02023df8 group also confirms the pattern from the sub-24B sweep: what is left in the
   small arm9 bands is SDK assembly, compiler-shim glue and C++-style calls, not lost C.
+
+=== ov002 near-misses reduced to one instruction each (2026-11-22) ===
+
+  ov002 0x0206d600 76B -- `*(u32 *)(base + 0x1dd20c) = v; *(u32 *)(...+4) = 0;
+  func_020048e8(0, ...+8, 0x800);` with the zero forced into memory (`u32 zero = 0;` and
+  `*(u32 *)&zero`) reproduces retail's frame, its `str r2,[sp]`/`ldr r0,[sp]` spill and its `bl`.
+  Residue: mwcc writes the address with a pre-index store, `str r0, [rBase, rOff]!`, where retail
+  has `add r1, r3, r1` then `str r0, [r1]`. Nine shapes tried (integer address, u32/struct index,
+  separate pointer variables, store reordering, 84B struct-pad form); every one either folds into
+  the pre-index store (76B, 1 instruction different) or over-computes to 84B.
+
+  ov002 0x020882d4 76B -- `for (i = 0; i < 2; i++) if (ent[i].link != -1) { func_02006504(i);
+  ent[i].link = -1; }` where ent is `*(u32 *)&data_ov002_02102070` and the field is at +0x1c.
+  The exact retail shape (`add r0, base, i, lsl #2` recomputed on both sides of the call, then
+  `[r0, #0x1c]`) is produced only by a 32-byte element struct, which gives `lsl #5` instead. Every
+  4-byte-element spelling strength-reduces to an incrementing pointer (72B) and `b[i + 7]`
+  hoists `i + 7` (80B). All 25 compilers were tried on the 72B shape: none avoids the reduction.
+
+  ov002 0x0204d488 80B -- `u16 *c = (u16 *)(base + 0x30048); if (*c < 0x1f) *c = *c + 1;
+  else *c = 0; return *c;` with base = `*(u8 **)&data_ov002_02102070 + 0x1a89a4`. Compiles to a
+  clean 64B predicated block (movhs/strhhs/addlo/strhlo) that is instruction-for-instruction
+  retail's, except retail computes the increment path's address from a pool literal
+  (`add r1, r2, r1` with 0x30048) while mwcc reuses the `[r0, #0x48]` addressing of the high
+  path. No shape tried keeps the two address forms separate.
