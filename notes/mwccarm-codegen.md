@@ -7,38 +7,44 @@ diffs, bodies tried, verdicts - is in
 [`mwccarm-codegen-log.md`](mwccarm-codegen-log.md); section numbers in
 `tools/match/walls.txt` and commit messages point there.
 
-Toolchain: CodeWarrior `mwccarm`, `-O4,p`, ARM mode, struct alignment 4.
-The build uses `1.2/sp2` by default with the per-file exceptions in
-`config/ATOJ/mwcc_versions.txt`. Never add a version or a map entry without a
-ROM-digest match.
+Toolchain: CodeWarrior `mwccarm` 1.2/**b56** - build 56, `Runtime Built: Sep 16
+2004`, NITRO V1.0 - with `-O4,p`, ARM mode, struct alignment 4. That single
+build compiles the whole ROM; `config/ATOJ/mwcc_versions.txt` is empty.
 
-**Which build retail used is not settled, and neither vendored default is
-proven.** The game shipped on 2004-12-30, so `1.2/sp2` (build 79, `Runtime
-Built: Aug 11 2005`) cannot be the launch compiler however early Konami had SDK
-access - a compiler binary cannot predate its own build date. `1.2/b56` is
-build 56 of 2004-09-16 (NITRO V1.0) and does fit the date.
+**b56 is retail's compiler, and the digest is how that was settled.** The game
+shipped 2004-12-30, so `1.2/sp2` (build 79, `Runtime Built: Aug 11 2005`) cannot
+be the launch compiler at all, while b56 does fit the date. The decisive test is
+not the date argument though: `configure.py ATOJ --mwcc-version 1.2/b56` plus
+`ninja sha1` reproduces `8d555a80...` with **all 1,536 units and no per-file
+overrides**. The old sp2 default needed 72 overrides to reach the same digest,
+so it was measuring the wrong baseline all along.
 
-But b56 is not the answer either. Rebuilding the whole ROM with
-`configure.py ATOJ --mwcc-version 1.2/b56` matches **1,532 of the 1,534**
-complete units and still fails the digest, so the cartridge is not build-56
-output. What rules b56 out as *the* compiler is `func_02025c30`: its source is
-literally retail's instructions (`add r1, r1, #0x40000000` / `cmp r1, #0` /
-`bne`), b56 rewrites them to `adds` and deletes the `cmp`, and sp2 emits them
-verbatim. Retail has the `add` form, so retail's toolchain did not do b56's
-rewrite. That fingerprint is independent of source shape, which the usual
-"matches under X" evidence is not.
+Two units made b56 look impossible, and both were our own source shape:
 
-So the likely story is a **third build we do not own** - a 2004-dated one such as
-build 68 (NITRO DS V1.0.2), which would fit the release date *and* share sp2's
-behaviour on literal `asm` blocks. Both vendored builds are stand-ins that agree
-with it on 99.9% of this cartridge, and the digest proves our bytes, not our
-provenance.
+* `func_02025c30` - the cache-invalidate loop. Written statement-level, b56
+  folds `add` + `cmp` into `adds`; written function-level (`asm void f(void)`)
+  both b56 and sp2 emit it verbatim. See the inline-assembly rule below.
+* `func_ov004_0205e274` - `*q = 0; f(p + 0x184, *q);` lets sp2 reload and b56
+  forward the stored zero. Writing the argument as `*(u32 *)(p + 0x180)` rather
+  than through the cached `s32 *q` matches b56 without `volatile`.
 
-Practical rule: keep probing `b56` first (it is one invocation and it is the
-build every per-file override needed), and when a unit only matches under `sp2`,
-treat that as a source shape not yet found rather than as proof about the
-compiler. Do not "fix" a unit by switching compilers unless the digest still
-matches afterwards.
+Practical rule: probe b56 first, and treat an sp2-only match as a source shape
+not yet found. `sp2` stays worth a second probe (`vprobe.py` sweeps every
+vendored build) - this cartridge has 59 units where 1.2 builds disagree, so a
+unit that only matches elsewhere is a hint that the shape, not the compiler, is
+wrong. Never switch compilers unless the digest still matches afterwards.
+
+### Inline assembly: statement level is optimised, function level is not
+
+`asm { ... }` **inside** a function body is ordinary IR to mwcc: b56's optimiser
+rewrites it, so `add` + `cmp` + `bne` collapses to `adds` + `bne` and a block
+derived straight from retail comes out 4 bytes short. `asm void f(void) { ... }`
+(function-level assembly) is assembled and emitted as written by b56 and sp2
+alike. Delinked assembly units must therefore be ported to the function-level
+form with an explicit `bx lr`, and `func_02025c30` shows the difference:
+statement-level gives 40 B of b56 output, function-level gives retail's 44 B
+byte for byte. Do not read a statement-level `asm` mismatch as a compiler
+fingerprint - it is a property of the source.
 
 ## Compiler identity in this tree
 

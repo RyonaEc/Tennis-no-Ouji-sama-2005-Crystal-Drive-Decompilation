@@ -4073,48 +4073,54 @@ compiler and the linker at b56 for every unit, then `ninja sha1`:
   `func_02025c30` at 90.5% and `func_ov004_0205e274` at 92.9%. Everything else - 1,532 of the 1,534
   complete units - is byte-identical under both compilers.
 
-The two exceptions are not evidence that retail used build 79:
+The two exceptions turned out to be source-shape artefacts, not evidence about the compiler - and
+finding that out is what overturned the conclusion below.
+
+They are not evidence that retail used build 79 either:
 
 * `func_02025c30` is an inline `asm { }` block (the `mcr p15, 0, r2, c7, c14, 2` cache clean-and-
-  invalidate loop), so its bytes come from the assembler path and tell us nothing about C codegen.
-  It legitimately differs between the two toolchains and stays as it is.
+  invalidate loop), so its bytes come from the assembler path and say nothing about C codegen.
 * `func_ov004_0205e274` is a source-shape artefact: retail stores 0 to `p->0x180` and then *reloads*
   it to pass as the second argument. Written as `*q = 0; func(p + 0x184, *q);`, sp2 keeps the reload
   and b56 folds the argument to the constant. The original source almost certainly read the field
   through something the compiler could not see through; the current line simply happens to reproduce
   retail under a compiler that postdates the game.
 
-The inline-asm unit is the sharpest test available, because inside `asm { }` there is no source-shape
-freedom: both compilers receive retail's own instruction text. Under b56 the block comes out as
+Both were then solved, and solving them is what settled the question:
+
+* `func_02025c30`, written as `asm { }` **inside** a C function, is ordinary IR to mwcc: b56's
+  optimiser folds `add r1, r1, #0x40000000` + `cmp r1, #0` into `adds` + `bne`, four bytes short of
+  retail's 44. Written as function-level `asm void func_02025c30(void) { ... bx lr }` both b56 and
+  sp2 emit the text verbatim, and `reg.py arm9 func_02025c30 0x02025c30 44 <file> 1.2/b56` prints
+  **MATCH**. The block was never a compiler fingerprint; the form of the assembly was ours.
+* `func_ov004_0205e274`: retail stores 0 to `p->0x180` and then *reloads* it for the second
+  argument. `*q = 0; func(p + 0x184, *q);` lets sp2 keep the reload and b56 forward the constant;
+  writing the argument as `*(u32 *)(p + 0x180)` instead of through the cached `s32 *q` matches b56
+  at 64 B with no `volatile` needed.
+
+With both fixed, the decisive run: `python tools/configure.py ATOJ --mwcc-version 1.2/b56` then
+`ninja sha1`
 
 ```
-adds r1, r1, #0x40000000
-bne  L0
+Target: 8d555a80db47278475ffdfdf808fe80dbd7c48cf; tennis_ATOJ.nds: 8d555a80db47278475ffdfdf808fe80dbd7c48cf
 ```
 
-- b56 folds the following `cmp r1, #0` into the `add` and deletes it. sp2 emits `add` / `cmp` /
-`bne` verbatim, which is what the cartridge contains. **So retail's toolchain did not do b56's
-rewrite.** That is a compiler fingerprint that does not depend on how we happen to write C, and it
-rules out "retail is simply b56 everywhere" as the model.
+- all 1,536 units, one compiler, **zero per-file overrides**. `t10.py --check arm9` is clean
+(`883 entries, dangling=0, unlinked=0, dupes=0`). b56 is retail's compiler.
 
-Combined with the release date that leaves a third possibility, and it is the one that fits both
-facts: the launch was built with a **2004-dated build we do not own** - build 68 (NITRO DS V1.0.2)
-is the obvious candidate - which shares sp2's behaviour on literal `asm` blocks. Both vendored
-builds are stand-ins that agree with it on 99.9% of this cartridge. The digest proves our bytes, not
-our provenance, so this question cannot be settled from the ROM; it needs the missing compiler.
+That reframes the 72 overrides accumulated under the sp2 default: they were the price of the wrong
+baseline, not evidence that retail mixed builds. `config/ATOJ/mwcc_versions.txt` is now header-only,
+`tools/configure.py`'s `DEFAULT_MWCC_VERSION` is `1.2/b56`, and the AGENTS.md rule was rewritten to
+state the measured fact (the digest, not the object diff, still decides).
 
-What follows for the work:
+**Correction worth recording.** This section first concluded the opposite: that the statement-level
+`asm` block ruled b56 out, and that retail must be an unowned 2004 build such as build 68 sharing
+sp2's behaviour on `asm`. The error was assuming `asm { }` is passed through unchanged - it is not,
+b56 optimises it, and the 40-vs-44-byte difference was our own writing. The date argument survives
+and now agrees with the digest: build 79 (`Runtime Built Aug 11 2005`) cannot have built a
+2004-12-30 cartridge, build 56 (`Sep 16 2004`, NITRO V1.0) can and does.
 
-* Never read "matches under sp2" as evidence about which compiler retail used, and never read "b56
-  is older so it must be retail" either - the `asm` block shows the opposite.
-* Keep b56 as the first probe for an unmatched unit: it is one invocation, and every per-file
-  override needed it.
-* A unit that only matches under sp2 is a source shape we have not found yet; re-derive it under
-  b56 before parking it, but do not switch compilers unless the digest still matches afterwards.
-* `Konami the Best` (2006-06-29) is Konami's budget re-release line, normally the same content at a
-  lower price; a rebuild is possible but nothing here requires it, and the third-build reading above
-  explains the evidence without it.
-* Not present in `tools/mwccarm/1.2/`: build 68 and build 73/74/80. Acquiring build 68 is the one
-  measurement that would settle this, and it is a docs/tooling task, not a matching task.
-
-Restored with `python tools/configure.py ATOJ`; `ninja sha1` is green again on `8d555a80...`.
+Remaining caveat: the digest proves the bytes, not the provenance. Nintendo could in principle have
+built SDK library objects with its own build or flags; nothing in `src/` shows it here, because b56
+alone reproduces every installed unit, but a future unit that needs another version would be the
+first evidence of it rather than a mystery to be parked.

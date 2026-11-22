@@ -1,81 +1,13 @@
 # Per-file mwccarm versions.
 #
-# Retail was built with more than one 1.2 build of mwccarm: these units are
-# byte-exact under 1.2/b56 and cannot be reproduced by 1.2/sp2, which is the
-# default for everything not listed here. A version tag must exist under
-# tools/mwccarm/<tag>/mwccarm.exe.
+# The whole ROM builds byte-exactly with a single compiler, 1.2/b56 (build 56,
+# Runtime Built 2004-09-16), which is what tools/configure.py now defaults to.
+# All 1,536 matched units reproduce the digest `8d555a80...` under it with no
+# per-file overrides, so the 72 `1.2/b56` entries that used to be listed here
+# were an artefact of the old sp2 default and have been removed.
+#
+# This file stays as the escape hatch for a unit that genuine evidence shows was
+# built by a different pre-existing build. An entry needs the full ROM digest to
+# still match, and the tag must exist under tools/mwccarm/<tag>/mwccarm.exe.
 #
 # Format: <source path> = <version tag>
-
-src/ov002/func_ov002_0204c7e8.c = 1.2/b56
-src/ov002/func_ov002_02060ca0.c = 1.2/b56
-src/ov002/func_ov002_02062b20.c = 1.2/b56
-src/ov002/func_ov002_02062b48.c = 1.2/b56
-src/ov002/func_ov002_02062b68.c = 1.2/b56
-src/ov002/func_ov002_02063434.c = 1.2/b56
-src/ov002/func_ov002_0207808c.c = 1.2/b56
-src/ov002/func_ov002_020781b4.c = 1.2/b56
-src/ov004/func_ov004_020534cc.c = 1.2/b56
-src/ov002/func_ov002_020633e0.c = 1.2/b56
-src/ov002/func_ov002_02063820.c = 1.2/b56
-src/ov002/func_ov002_0204c824.c = 1.2/b56
-src/ov002/func_ov002_020780b0.c = 1.2/b56
-src/ov002/func_ov002_02063bb8.c = 1.2/b56
-src/ov002/func_ov002_02063c5c.c = 1.2/b56
-src/arm9/func_02018318.c = 1.2/b56
-src/arm9/func_0201f980.c = 1.2/b56
-src/arm9/func_02027a14.c = 1.2/b56
-src/arm9/func_02015068.c = 1.2/b56
-src/arm9/func_02015040.c = 1.2/b56
-src/ov002/func_ov002_0202085ff8.c = 1.2/b56
-src/arm9/func_020135cc.c = 1.2/b56
-src/ov002/func_ov002_02084210.c = 1.2/b56
-src/arm9/func_02015524.c = 1.2/b56
-src/arm9/func_0201c9e0.c = 1.2/b56
-src/arm9/func_020341f4.c = 1.2/b56
-src/ov002/func_ov002_020636b4.c = 1.2/b56
-src/arm9/func_02018018.c = 1.2/b56
-src/arm9/func_020186a0.c = 1.2/b56
-src/arm9/func_020279e0.c = 1.2/b56
-src/arm9/func_0201fc1c.c = 1.2/b56
-src/arm9/func_020289f4.c = 1.2/b56
-src/arm9/func_020298e4.c = 1.2/b56
-src/arm9/func_02028c98.c = 1.2/b56
-src/arm9/func_020187b0.c = 1.2/b56
-src/arm9/func_0202de8c.c = 1.2/b56
-src/ov002/func_ov002_02086020.c = 1.2/b56
-src/ov002/func_ov002_02058998.c = 1.2/b56
-src/ov002/func_ov002_02072324.c = 1.2/b56
-src/ov002/func_ov002_0209e44c.c = 1.2/b56
-src/ov002/func_ov002_020ace70.c = 1.2/b56
-src/ov003/func_ov003_02089b64.c = 1.2/b56
-src/ov002/func_ov002_0205ffe8.c = 1.2/b56
-src/ov002/func_ov002_0204f898.c = 1.2/b56
-src/arm9/func_02033dec.c = 1.2/b56
-src/ov001/func_ov001_0204fb34.c = 1.2/b56
-src/arm9/func_0201842c.c = 1.2/b56
-src/ov002/func_ov002_02085ff8.c = 1.2/b56
-src/ov003/func_ov003_02066e84.c = 1.2/b56
-src/ov003/func_ov003_020b8904.c = 1.2/b56
-src/ov003/func_ov003_020b8e54.c = 1.2/b56
-src/ov003/func_ov003_020dbad4.c = 1.2/b56
-src/arm9/func_020307c8.c = 1.2/b56
-src/arm9/func_0201f170.c = 1.2/b56
-src/arm9/func_0202607c.c = 1.2/b56
-src/ov004/func_ov004_0206256c.c = 1.2/b56
-src/ov008/func_ov008_0204c7c0.c = 1.2/b56
-src/arm9/func_02018818.c = 1.2/b56
-src/ov005/func_ov005_02064040.c = 1.2/b56
-src/ov005/func_ov005_0206756c.c = 1.2/b56
-src/arm9/func_020221b8.c = 1.2/b56
-src/arm9/func_02028f68.c = 1.2/b56
-src/ov005/func_ov005_0206d778.c = 1.2/b56
-src/arm9/func_0201f21c.c = 1.2/b56
-src/arm9/func_0201f26c.c = 1.2/b56
-src/arm9/func_0201bef4.c = 1.2/b56
-src/arm9/func_02015fe8.c = 1.2/b56
-src/arm9/func_02034608.c = 1.2/b56
-src/arm9/func_0203b640.c = 1.2/b56
-src/arm9/func_0202c458.c = 1.2/b56
-src/arm9/func_02020240.c = 1.2/b56
-src/arm9/func_02021c70.c = 1.2/b56

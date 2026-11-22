@@ -37,7 +37,7 @@ OBJDIFF_VERSION = "v3.8.3"
 # CodeWarrior for Nintendo DS. The exact service pack used by the original
 # build is not known yet; sweep it once functions can be compared (see
 # docs/WORKFLOW.md), then pin the winner here.
-DEFAULT_MWCC_VERSION = "1.2/sp2"
+DEFAULT_MWCC_VERSION = "1.2/b56"
 # Name of the matching compiler on decomp.me for the nds_arm9 platform.
 DECOMP_ME_COMPILER = "mwcc_30_131"
 
@@ -355,7 +355,7 @@ def mwcc_version_overrides() -> dict[str, str]:
     Retail was not produced by a single mwccarm: a number of translation units
     only reproduce with an earlier 1.2 build. A source file may therefore name
     its own compiler in config/ATOJ/mwcc_versions.txt; everything else uses
-    --mwcc-version (1.2/sp2).
+    --mwcc-version (1.2/b56).
     """
     path = ROOT / "config" / "ATOJ" / "mwcc_versions.txt"
     overrides: dict[str, str] = {}

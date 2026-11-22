@@ -32,10 +32,13 @@ Never commit a unit on the strength of `var3` alone.
   assembly units stay assembly until the real C is found.
 - **Never change compiler flags, the compiler version or `tools/configure.py`
   defaults** to force a match. If a source shape resists, the source is wrong.
-  The one exception is documented fact about retail: a unit may name a
-  pre-existing mwccarm build in `config/ATOJ/mwcc_versions.txt` (retail mixes
-  `1.2/b56` with the default `1.2/sp2`), and only when the full ROM digest still
-  matches. Never guess a version; the sha1 gate, not the object diff, decides.
+  The default is `1.2/b56` because that is measured fact: build 56 (Runtime
+  Built 2004-09-16) reproduces the full digest with all 1,536 matched units and
+  **zero** per-file overrides, where the old `1.2/sp2` default needed 72 of them.
+  A unit may still name a different pre-existing build in
+  `config/ATOJ/mwcc_versions.txt`, but only with the same evidence: the full ROM
+  digest must still match. Never guess a version; the sha1 gate, not the object
+  diff, decides.
 - **Never weaken verification.** Do not edit `tools/match/t10.py`, `tools/sha1.py`,
   the expected SHA-1, or the objdiff configuration to make a check pass. Do not
   delete tests or skip modules in `--check`.
