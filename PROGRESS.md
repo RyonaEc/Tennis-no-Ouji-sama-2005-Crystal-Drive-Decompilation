@@ -1,6 +1,6 @@
 # Progress
 
-The matching C sources are compiled with `mwccarm` 1.2/sp2 and linked back into the original addresses. The rebuild is byte-identical to the retail ROM:
+The matching C sources are compiled with `mwccarm` 1.2/b56 and linked back into the original addresses. The rebuild is byte-identical to the retail ROM:
 
 ```
 Target: 8d555a80db47278475ffdfdf808fe80dbd7c48cf

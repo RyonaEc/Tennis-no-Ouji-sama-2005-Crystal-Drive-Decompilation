@@ -100,7 +100,7 @@ def masked(blob: bytes, relocs) -> bytes:
     return bytes(out)
 
 
-MWCC_EXE = "tools/mwccarm/1.2/sp2/mwccarm.exe"
+MWCC_EXE = "tools/mwccarm/1.2/b56/mwccarm.exe"
 
 
 def mwcc_path(version: str) -> str:
@@ -111,8 +111,9 @@ def mwcc_path(version: str) -> str:
 def compile_text(body: str, name: str, compiler: str | None = None) -> bytes:
     """Compile one function definition and return its code bytes.
 
-    `compiler` selects an mwccarm build; retail mixes 1.2/b56 with 1.2/sp2, so
-    a unit that only reproduces under one of them must be probed with that one.
+    `compiler` selects an mwccarm build. Retail's game code is 1.2/b56 (build 56,
+    Sep 2004) and that is the default; the other vendored builds are probes for a
+    unit that resists, not part of the build.
     """
     # Per-process scratch names: a second agent compiling in the same tree
     # must not clobber this one.

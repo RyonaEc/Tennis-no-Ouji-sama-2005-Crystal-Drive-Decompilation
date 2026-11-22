@@ -136,7 +136,7 @@ def fmt(n):
 
 def render(totals, per, hash_ok, digest):
     lines = ['# Progress', '']
-    lines.append('The matching C sources are compiled with `mwccarm` 1.2/sp2 and '
+    lines.append('The matching C sources are compiled with `mwccarm` 1.2/b56 and '
                  'linked back into the original addresses. The rebuild is '
                  'byte-identical to the retail ROM:')
     lines.append('')

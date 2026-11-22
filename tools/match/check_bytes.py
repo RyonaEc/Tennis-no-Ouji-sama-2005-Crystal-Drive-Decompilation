@@ -59,7 +59,7 @@ def main(module, name, addr, size, body):
     obj = out_dir / f"{name}.o"
     src.write_text('#include "types.h"\n\n' + body, encoding="utf-8")
     cmd = [str(ROOT / "tools" / "sjiswrap.exe"),
-           str(ROOT / "tools" / "mwccarm" / "1.2" / "sp2" / "mwccarm.exe")] + FLAGS + [str(src), "-o", str(obj)]
+           str(ROOT / "tools" / "mwccarm" / "1.2" / "b56" / "mwccarm.exe")] + FLAGS + [str(src), "-o", str(obj)]
     res = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
     if res.returncode:
         return f"compile failed: {(res.stdout + res.stderr).strip()[:200]}"

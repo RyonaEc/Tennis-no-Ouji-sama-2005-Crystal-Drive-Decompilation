@@ -14,7 +14,7 @@ for pre in ["", "#pragma optimization_level 0\n", "#pragma peephole off\n",
             "#pragma opt_propagation off\n", "#pragma totally_bogus on\n"]:
     src, obj = pathlib.Path("build/_pp.c"), pathlib.Path("build/_pp.o")
     src.write_text('#include "types.h"\n\n' + pre + body)
-    r = subprocess.run(["./tools/sjiswrap.exe", "tools/mwccarm/1.2/sp2/mwccarm.exe",
+    r = subprocess.run(["./tools/sjiswrap.exe", "tools/mwccarm/1.2/b56/mwccarm.exe",
                         *fm.MWCC_FLAGS, "-c", str(src), "-o", str(obj)],
                        capture_output=True, text=True)
     size = len(fm.text_of(obj)) if obj.exists() else -1

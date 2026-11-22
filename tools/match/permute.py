@@ -40,7 +40,7 @@ def main() -> int:
         if a == "--top":
             top = int(sys.argv[i + 1])
     mod, addr, size, src = args[0], int(args[1], 0), int(args[2], 0), Path(args[3])
-    version = args[4] if len(args) > 4 else "1.2/sp2"
+    version = args[4] if len(args) > 4 else "1.2/b56"
     fm = load_version(version)
 
     lines = src.read_text(encoding="utf-8").splitlines()

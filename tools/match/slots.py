@@ -23,7 +23,7 @@ def load(path, name):
 
 
 fm = load("tools/match/fastmatch.py", "fm")
-MWCC = ["./tools/sjiswrap.exe", "tools/mwccarm/1.2/sp2/mwccarm.exe", *fm.MWCC_FLAGS]
+MWCC = ["./tools/sjiswrap.exe", "tools/mwccarm/1.2/b56/mwccarm.exe", *fm.MWCC_FLAGS]
 
 REGS = {0x50 + i: f"r{i}" for i in range(16)}
 
