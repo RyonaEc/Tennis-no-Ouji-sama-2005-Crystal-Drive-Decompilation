@@ -2449,3 +2449,10 @@ written off.
   push, a 0x44 stack frame, `mul r2, r0, #0x158` for a record stride and at least four calls in the first
   80 bytes (0x0205bf64, 0x02034148, 0x02053468, 0x0205bee4), so it needs structured reconstruction rather
   than a shape guess. The small-function levers in playbook 3.13/3.14 do not transfer.
+  ov002 0x0207ff34 116B -- per-index byte counter with a clamp: `b = *(u32 *)0x02102070`; `p = b + 0x3654`;
+  when `*(s32 *)(p + a0*4 + 0x40)` is not positive it loads `v = *(u8 *)(p + 0x30 + a0)`, adds a1, forces 3
+  when `*(u8 *)(b + 0x8d) == 2`, clamps to 0..3, and stores back. A spelling with `u8 *q = p + 0x30` and
+  `q[a0]` for both accesses reaches 112B against 116B: it is one `add` short because retail materialises
+  `q = p + 0x30` before the early-return compare and the store address `q + a0` in a register alongside
+  it, while mwcc defers both and recomputes `q + a0` for the store. Introducing an explicit `u8 *e =
+  q + a0` for the store collapses the unit to 88B because mwcc folds it back into `q[a0]`.
