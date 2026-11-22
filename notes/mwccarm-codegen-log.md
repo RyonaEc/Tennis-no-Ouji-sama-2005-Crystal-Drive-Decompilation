@@ -3480,3 +3480,25 @@ The three-copy 96B family (`ov003 0x02082220`, `ov003 0x020c806c`, `ov005 0x0205
 unsolved: all three arms assign the same `(0x1e, 0x3c)` pair and both retail compiler builds merge
 them into 80B, so retail's source must have made the arms non-mergeable in a way not yet guessed.
 When that lever is found it is worth three units immediately.
+
+## 3.21 Branch layout: the rare arm belongs in an `else` (2026-11-22)
+
+`arm9 0x02030828` (96B) matched after one layout fix. It dispatches on `(a1 & 0x3f) == 0x11`: on a
+match it calls the installed callback at `data_0204c18c` (guarded for null), returns when that yields
+0, and otherwise calls `func_02030808`; on no match it calls `func_020263cc(a1 & 0x3f, a1)`.
+
+Written as an early-return guard -
+
+    if ((a1 & 0x3f) != 0x11) { func_020263cc(...); return; }
+
+- mwcc inverts the test and inlines the `func_020263cc` call as the fall-through, which leaves the
+  whole unit 96 bytes but completely reordered. Written as the positive test with the other arm in an
+  `else`, mwcc emits `bne` to an out-of-line else at the end of the function and falls through into the
+  main body, which is exactly retail. So an early-return guard and a positive if/else are *not*
+  interchangeable here even though they mean the same thing: the early-return form moves the rare arm
+  to the front.
+
+Two more parks with the same "mwcc caches what retail reloaded" signature seen in `0x020178e8`:
+`arm9 0x02029704` is exact in size and body but schedules a single `mov ip, lr` in a different slot
+between the two guard compares, and `arm9 0x0201c17c` caches the pooled address of `data_020475fc` in
+r4 for all three calls where retail reloads the literal at each site.

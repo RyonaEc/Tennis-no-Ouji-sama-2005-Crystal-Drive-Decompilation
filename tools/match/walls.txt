@@ -1305,3 +1305,15 @@ ov003 0x02082220 / 0x020c806c / ov005 0x0205ac30 96B (three copies) -- range tes
   check and `(s16)func_0203b0c0(m * a1, n)`. Both compiler builds merge the three identical arms and
   land at 80B; retail keeps six separate `movlt/movge` pairs. Something in retail's source made the
   arms non-mergeable, and no spelling found so far preserves them.
+arm9 0x02029704 100B -- packs up to four characters into a u32, lowercasing A-Z: guards
+  `n > 3 || n <= 0`, then loops `t = c - 0x41` with `addls #0x61` / `addhi #0x41` and
+  `v |= t << sh`, breaking on a NUL. The body matches exactly at 100/100 with
+  `if (n <= 3 && n > 0) { do {...} while (i < n); } return v;`; the only residue is where `mov ip, lr`
+  (the `i = 0` init) lands - retail schedules it between the two guard compares, mwcc puts it after
+  the second. Four placements tried: both inits inside the if, both in declarations, i in the
+  declaration with sh inside, and the reverse; none reproduce the interleave.
+arm9 0x0201c17c 96B (twin 0x0201c2d4) -- hash-bucket walk: `p = func_02017784(data_020475fc, 0)`,
+  then while `a0[0x3d] >= p[0x3d]` re-seek with `func_02017784(data_020475fc, p)`, breaking on null,
+  and finally `func_0201780c(data_020475fc, a0)`. Mine is 112B: mwcc caches the pooled address of
+  data_020475fc in r4 and reuses it for all three calls, while retail reloads the literal from the
+  pool at each of the three sites and only materialises r4 after the first null check.
