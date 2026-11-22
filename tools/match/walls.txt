@@ -2195,3 +2195,12 @@ written off.
   one epilogue; retail duplicates the epilogue at each of the four exits, which is most of the
   44-byte gap. The readback is not evidence of a volatile destination: the volatile form compiles
   to the same 72B.
+  arm9 0x0202d158 212B (+ sibling 0x0202d22c) -- submit a command under the global lock: wait
+  while (p->f34 & 4) calling func_02051c0(&p->fd4), set the bit, release, store five arguments at
+  +0x18/+0x1c/+0x20/+0x28/+0x2c, then either report through func_0202cf10(0x0202d300) or copy
+  *(u32 *)(data_02048d3c + 8) into +0xd0, call func_0202d300(p) and return (p->f00[0] == 0).
+  Reaching 212B needs all three of: a struct type over data_0204aec0, a local
+  `Base *p = &data_0204aec0;` (a direct global reference reloads the base and gives 216B), and a
+  u32 return (a void tail gives 204B). Residue: one extra `mov r1, r6` ahead of the first
+  `ldr r1, [r6, #0x34]`; the `while (1) { if (!(p->f34 & 4)) break; ... }` spelling drops it to
+  200B.
