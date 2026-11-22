@@ -4669,3 +4669,15 @@ mwcc emitted a pre-test with an if-converted exit (`cmp; addhs; pophs; bxhs`) an
 `goto test; body: p->elem[i] = p->elem[i + 1]; i++; test: if (i < n) goto body;` produces. That
 spelling is semantically identical to the `while` (zero iterations when `i >= n`) and matches the
 bytes, but it is a codegen workaround rather than evidence about the original text.
+
+### 3.03 Element fetch at 0x0202811c matched
+
+`0x0202811c` (124B) advances one 8-byte element: it bounds-checks `index * 8` against the container's
+`+0x24`, builds a two-word descriptor {container, base + index * 8} on the stack, hands it to
+`func_02028a38` with an 8-byte output buffer, stores the pair into `+0x2c`/`+0x30`, records the index
+at `+0x34` and finishes with `return func_02028af4(p, 7);`.
+
+Two things were needed past the first spelling. The container's padding field has to be
+`u8 pad0[0x20]` — writing `u32 pad0[0x20]` puts the bound at `+0x84` instead of `+0x24` (same size,
+so only the offsets differ). And the output buffer must be declared *before* the descriptor, which is
+what puts `out` at `sp+0` and `in` at `sp+8`; the reverse order swaps the two stack slots.

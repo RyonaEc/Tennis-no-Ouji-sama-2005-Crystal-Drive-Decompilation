@@ -384,3 +384,9 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   `goto test; body: <body>; test: if (cond) goto body;` compiles to the single entry branch plus a
   bottom test, where `while (...) {...}` gives mwcc a pre-test with an if-converted early exit.
   Treat the goto form as a codegen workaround, not as the original source shape.
+
+- **Stack-slot order follows the declaration order of the locals.** When retail reads its result
+  pairs from `sp+0` and its input descriptor from `sp+8`, declaring the output array before the
+  input struct is what places them; the reverse swaps the slots and every offset in the diff.
+- **Pad fields must have the pad's own element type.** `u32 pad0[0x20]` pads 0x80 bytes, not 0x20;
+  the unit stays the same size and only the field offsets move, so check the immediate offsets.
