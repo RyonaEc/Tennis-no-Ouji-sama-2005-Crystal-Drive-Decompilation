@@ -4128,3 +4128,45 @@ first evidence of it rather than a mystery to be parked.
 Later that day the pin moved to the decrypted revision (`9eec3248...`) and the header
 step in `tools/build_rom.py` was added; the hashes quoted in this section are the ones those runs
 printed at the time, against the encrypted pin.
+
+## 2.80 The arm9 ready queue is SDK code, and one more tie (2026-11-22)
+
+`ready.py --limit 40 --max 200 arm9` lists 87 ready units, 11,868 bytes. Sampling four
+of them says what the queue is *made of*, and it is not game code:
+
+* `func_020261d0` (108 B) is a context switch: `mrs`/`msr cpsr_fsxc`, saves `sp` into a
+  register, calls `func_02026090`, makes an indirect call through a pool pointer, calls
+  `func_020260a0`, restores. No C source produces that sequence, it is the OS's own asm.
+* `func_0202564c` (76 B) is an exception-frame install: `mrs r2, apsr`, `msr cpsr_c`,
+  `str sp,[r1,#0x40]`, then a 15-register `stm r1, {r0-r8,sb,sl,fp,ip,sp,lr}` and a
+  pc-relative return address stored at `+0x3c`. Same class.
+* `func_0203aeb8` (12 B) and `func_02032b00` (48 B) are not functions at all: the first is
+  `push {r4-r7,fp,ip,lr}` + `mov r4,#0` + `b` into code outside its own 12 bytes, the second
+  pushes `{r0-r3}` **without `lr`** and ends `bx lr`, so it cannot return. Both are delinks
+  boundaries that fall inside a larger routine with more than one entry point.
+
+So "ready" in that roster means "all callees matched", not "matchable from C". The arm9
+remainder is largely NitroSDK, and the overlays are where the game code is.
+
+`autorun.py 40 96 arm9` on the same queue: 0 candidates, 54 bailed, 465 already tried.
+The generator has nothing left to say about this module.
+
+One tie worth remembering rather than retrying: `func_02017954` (64 B, ready, no calls).
+Seven shapes agree on the frame, the two zero stores, the two pointer stores and the u16
+increment, and differ only in which temporary lands where:
+
+```
+retail: ldrh ip,[r0,#0xa]  mov r3,#0  add r2,r0,#8  add lr,r1,ip  ...  ldrh r0,[r2]
+ours:   ldrh r3,[r0,#0xa]  mov r2,#0  add lr,r0,#8  add ip,r1,r3  ...  ldrh r0,[lr]
+```
+
+i.e. retail allocates the count pointer and the zero before the load of `n`; mwcc here
+allocates by first use and will not move `n` out of `r3`. Declaration order of
+`count`/`zero`/`n`, a `u32 zero` variable, `u8 *t = q + n` versus the inline expression,
+and `p->count++` versus `*count = *count + 1` all produce the same rotation. Taken with
+`2.79`, the register-role class is the dominant residue in what is left, not the logic.
+
+Where the bytes actually are, from `famsurvey.py`: ov002 has 58 identical-skeleton groups,
+including 13x756 B (9,828 B), 14x608 B (8,512 B), 10x688 B and 10x676 B. One matched
+member plus constant substitution covers each family, so a single ov002 shape is worth
+more than a dozen arm9 ties.
