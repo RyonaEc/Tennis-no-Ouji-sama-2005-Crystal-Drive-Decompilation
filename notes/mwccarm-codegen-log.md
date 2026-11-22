@@ -4221,3 +4221,21 @@ second four-byte hole in that Thumb region. This is a tooling issue to fix befor
 units (and `func_02024af8`, a twelve-byte pool jump) can land; the sources and bytes are
 already known and should not be re-derived. The tree was reverted and `ninja sha1` printed
 `OK` again before this was written down.
+
+**Cause (same day).** The pad is alignment, not the carve. `Halt.o` — both the delinked one and a
+freshly compiled one — has `.text` with `sh_addralign = 4`, and the target address `0x020040e6`
+is only 2-aligned, so the linker inserts two zero bytes before the unit and everything after
+moves. `SoftReset` escaped this only because `0x0200406c` happens to be 4-aligned. dsd will not
+take a per-entry fix: adding `align:2` to the delinks entry is rejected with *"attribute
+'align' should be omitted as it is inherited from this file's header"*.
+
+That means retail did not have these stubs as separate objects — a 2-mod-4 function boundary can
+only exist inside an object, so in the original several functions were compiled in one
+translation unit. Two ways out, either of which needs the digest as the gate:
+
+* co-locate the stub with the function that ends at its address, in one source file, remembering
+  that mwcc emits functions in reverse source order; or
+* find a way to emit the unit's `.text` with 2-byte alignment, which `mwccarm` does not do for a
+  plain function.
+
+Until one of those is chosen, the five stubs stay out even though they are byte-identical.
