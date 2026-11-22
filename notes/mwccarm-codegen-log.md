@@ -4623,3 +4623,13 @@ reads, not `& 7`: retail's `ldrh` + `lsl #29` + `lsr #29` is a three-bit `u16` f
 `ldrb` + `lsl #28` + `lsr #28` is a four-bit `u8` field, so declaring the block as one struct with
 `u16 f64 : 3;` / `u8 f02 : 4;` at their real offsets produces the pairs directly, where `& 7` would
 compile to a single `and`.
+
+### 2.99 Display-mode latch at 0x020257e4 matched
+
+`0x020257e4` (120B) returns a cached value unless it is still `-1`, in which case it picks one of
+four flag bits from three probe calls and stores `value | (half-word of 0x027ffffa)`. The first
+spelling returned the cached word twice (`if (x != -1) return x; ...; return x;`) and cost the same
+120B but in the wrong shape: mwcc if-converted the first return into `popne`/`bxne` and gave the
+second its own epilogue, while retail branches to the single tail. Folding the guard into
+`if (data_020423dc == (u32)-1) { ...compute... } return data_020423dc;` leaves one return statement
+and reproduces retail's shared epilogue exactly.

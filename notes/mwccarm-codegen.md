@@ -367,3 +367,8 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   `(ldrb) + lsl #28 + lsr #28` is a `u8 x : 4` field; writing `v & 7` folds to one `and` and the
   shift pair never appears. Give the register block a struct type with the bitfields at their real
   offsets and assign them to the destination byte-by-byte.
+
+- **A cached-read function wants one return, not two.** `if (x != -1) return x; ... return x;`
+  if-converts the early exit (`popne`/`bxne`) and duplicates the epilogue; writing the guard as
+  `if (x == -1) { ...compute and store... } return x;` leaves a single return and retail's shared
+  tail. Both spellings can be the same size, so check the shape, not the length.
