@@ -2163,3 +2163,9 @@ written off.
   three- and a four-argument call. 92B: retail materialises the 0x06600000 base once in ip ahead
   of the branch and adds it in both arms, mwcc folds the constant into each `add` immediate and
   drops the `mov`.
+  arm9 0x02027080 88B -- packs nine incoming words into two command words and passes them
+  as the 4th and 5th arguments of a call. A single OR tree compiles to 80B (mwcc folds the `lsl`
+  into the `orr` operands); split assignments per sub-word (`w1 = (a3 << 26) | (a1 << 24);
+  w1 |= a9 << 16; w1 = a4 | w1;` and the same for `w2`) give retail's size exactly at 88B, and
+  then only the interleaving of the two chains and the temporaries' registers differ. Reordering
+  the two chains, or building `w2` first, changes the frame or keeps the same residue.

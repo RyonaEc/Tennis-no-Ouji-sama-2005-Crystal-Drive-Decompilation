@@ -334,3 +334,14 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   predicated instructions plus a skip branch (`ldreq`/`biceq`/`streq`/`beq`). Inverting the outer
   condition — `if (a0 != 0) { if (a0 == 0x100) {...} } else { ...bit clear... }` — restores
   retail's `beq` into a real out-of-line block and the extra `b` that closes it.
+
+- **A word built from several shifted fields needs one assignment per sub-word.** In
+  `0x02027080` the single expression `a4 | (a1 << 24) | (a3 << 26) | (a9 << 16)` is 8B short of
+  retail: mwcc folds each `lsl` into the following `orr`'s shifter operand. Writing
+
+      w1 = (a3 << 26) | (a1 << 24);
+      w1 |= a9 << 16;
+      w1 = a4 | w1;
+
+  makes mwcc materialise each shift with its own `lsl` and reaches retail's exact size. When a
+  packing routine compiles short, count the `lsl`s: retail usually has one per field.

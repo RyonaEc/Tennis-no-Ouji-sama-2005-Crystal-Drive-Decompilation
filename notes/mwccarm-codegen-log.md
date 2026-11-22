@@ -4568,3 +4568,19 @@ The queue is therefore not proof that a function is unmatched. Check
 `src/<module>/func_<addr>.c` (or the objdiff report) before spending iterations on an address
 that came out of `true_fresh.txt`; the report-derived `famsurvey.py` groups were accurate every
 time this session.
+
+### 2.95 A reliable unmatched list, and the packed-word lever
+
+`tools/match/true_fresh.txt` was stale twice, so the queue used this session comes from
+`symbols.txt` itself: every `kind:function(arm,...)` with no `src/<module>/<name>.c`, minus
+anything already in `walls.txt` (match with `0x%08x`, not bare `hex()` — the walls file zero-pads).
+That leaves 87 arm9 units in the 40-160B band.
+
+First candidate out of it, `0x02027080`, produced the packed-word lever above and reached 88B
+with only the two chains' interleaving left. Two related units in the same band:
+
+- `0x02032aa8` (88B) and `0x02032b00` (48B) share the odd `ands r0, r1, #1` / `ldrhne` /
+  `andne #0xff00` / `asrne #8` shape — an unaligned 16-bit read written as a macro. Both are
+  unmatched and belong to one source shape.
+- `0x02025698` (68B) is a context restore (`msr cpsr_c`, `ldm ... ^`); `0x02033e40` (88B) is a
+  varargs trampoline with `ldm r2, {r3}` — both off-limits per the existing notes.
