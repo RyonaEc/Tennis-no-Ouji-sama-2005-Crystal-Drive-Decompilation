@@ -1562,3 +1562,36 @@ neighbour that is itself decompiled.
   (one more at 0x020045xx, run the symscan in notes/mwccarm-codegen-log.md 2.81 to list all)
 
 All nine are byte-identical to retail under var3/compile_text; only placement blocks them.
+
+=== ov003 0x02082220 / 0x020c806c, 96B x2 (identical twins) ===
+
+Both are the same code byte for byte:
+
+  s16 f(s32 unused, s32 x)
+  {
+      s16 a, b;
+      if (x < 90)            { a = 30; b = 60; }
+      else if (x < 180)      { a = 30; b = 60; }
+      else                   { a = 30; b = 60; }
+      if (a == 0) return 0;
+      return (s16)func_0203b0c0(b * x, a);   /* arm9, size 0x20c */
+  }
+
+Retail keeps the second comparison (`cmp r1, #0xb4` with both `movlt` and `movge` arms) even
+though all three arms assign the same constants. b56 folds the chain away and emits 80 bytes
+unless the arms differ textually, and the only difference that survives to codegen is assignment
+order: `b = 60; a = 30;` in one arm keeps the branch (96 bytes, size exact) but emits r2 before
+r3, while retail emits r3 (a) before r2 (b) in every arm. Constant-spelling differences
+(`0x1e` vs `30`, `15 + 15`) fold, so the source difference that made retail keep the branch is
+something mwcc normalises *after* the front end — the branch is kept but the arms still emit
+identical instruction streams. Not solvable by statement reshuffling; the two twins are 192 B.
+The call target is arm9 `func_0203b0c0` (0x20c, matched status per symbols.txt).
+
+=== ov003 0x020b6b60 / 0x020b732c, 52B x2 (dead-store zero-init) ===
+
+Twelve bytes of stack zeroed as three s16 pairs, then `bx lr`; no call, no use of the values.
+Any straight C form (`Pair a, b, c;` with members, `s16 a[2]` arrays, aggregate initialisers)
+has its stores deleted at -O4 and compiles to `bx lr`. `volatile` keeps the stores but emits
+`[sp]`-relative addressing instead of retail's `add r1, sp, #0` / `add r2, sp, #4` register
+reuse. Retail's shape needs the aggregates to escape to something that does not appear in the
+52 bytes, so the construct that produced it is still unknown. The two twins are 104 B.
