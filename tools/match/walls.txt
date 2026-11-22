@@ -2464,3 +2464,12 @@ written off.
   direction -- any *other* unmatched function that contains this skeleton is one that calls `memset(p, v,
   n)` in source with -inline on, so search for the pattern inside larger units rather than rewriting the
   runtime routine.
+  arm9 0x0201ff64 156B -- fixed-point cross product with rounding, source recovered exactly:
+  `out[0] = (s32)(((s64)a[1]*b[2] - (s64)a[2]*b[1] + 0x800) >> 12)` and the two cyclic permutations,
+  with all six inputs copied to s32 locals first. Writing the loads as locals is what makes it size-exact:
+  indexing `a[...]`/`b[...]` inline gives 180B because mwcc re-loads between stores, while the six locals
+  reach 156B, the same size as retail with 28 of 39 instructions matching. The 11 differing instructions
+  are pure register choice and load order: retail ends up with a1 in sb, b2 in ip, a2 in r0, b1 in fp,
+  a0 in r3 and b0 in sl, mine puts a2 in lr, b1 in sl, b0 in fp. Swapping the declaration order of the a
+  and b locals and adding a u64 cast on the shifted value both leave the size and the 11-line residue
+  unchanged. Casting to u64 does match retail's `lsr`+`orr` shift form either way.
