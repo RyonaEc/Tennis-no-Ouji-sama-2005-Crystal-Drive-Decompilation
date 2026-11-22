@@ -1421,3 +1421,33 @@ ov005 0x0204f8a0 / ov009 0x0204eb14 -- best now 212/224: multiply written as
   Still missing the two materialised pointers r6 = o+0x6a64 and lr = o+0x6a68 (pooled 0x6a64/0x6a68
   + `add`), which retail builds inside the block where we keep the r3 = o+0x6a00 base; plain
   `u8 b[3]`-style locals get caught by
+arm9 0x020248c8 72B -- IME/IE critical-section bit clear, 56/72 with a *byte-identical body*. Correct C:
+  `saved = *(volatile u16 *)0x04000208; *(volatile u16 *)0x04000208 = 0;
+  *(volatile u32 *)0x04000210 = *(volatile u32 *)0x04000210 & ~mask;
+  r = *(volatile u16 *)0x04000208; *(volatile u16 *)0x04000208 = saved; return r;`
+  (the read of IME after zeroing it, returned as-is, is real: retail does ldrh/strh there and the
+  value is always 0). That gives retail's 14 instructions exactly, at 56B. Retail's extra 16 bytes are
+  a prologue/epilogue pair with NO stack references at all: `stmdb sp!, {lr}` + `sub sp, sp, #4` and
+  `add sp, sp, #4` + `ldm sp!, {lr}`. An unused 4-byte frame. Any Ctx/struct local that forces a frame
+  also changes the schedule (reading IE early is what keeps two values live and the frame alive, and
+  that moves the `ldr` of IE before `strh` of IME, which retail does not do). b56 and sp2 both give 56.
+arm9 0x020376c4 80B -- BCD digit increment, 80/80, one instruction out. Correct C: start = base + 5,
+  `for (;;) { if (*p < 9) { *p = *p + 1; return; } if (p == start) { *p = 1;
+  *(s16 *)(base + 2) += 1; return; } *p-- = 0; }`. Retail materialises `add r1, r0, #2` and runs
+  ldrsh/strh through [r1]; mwcc folds every spelling to `ldrsh r1, [r0, #2]` / `strh r1, [r0, #2]`
+  and adds a trailing `bx lr` (so the size still lands on 80 and the loop branch moves 4 bytes).
+  Tried: s16 u16 and compound forms, pointer locals assigned inside and outside the block, volatile on
+  read, on pointer, and on both, `*p-- = 0` vs `*p = 0; p--`, for(;;) vs while(1), two different
+  expressions for the same address, u8 *b = base alias. Same single divergence every time.
+arm9 0x02026ac8 44B -- 64-byte block copy, 60/44. Retail copies in 3-word chunks with the parameters as
+  running pointers (`ldm r0!, {r2,r3,ip}` / `stm r1!, {r2,r3,ip}` x4, then a 4-word tail into
+  r0,r2,r3,ip). mwcc 1.2 always picks 4-word chunks for a struct assignment (and spills a frame to
+  free r0-r3), and explicit per-field copies turn into indexed add/ldm/stm pairs (92B). Tried:
+  u32 w[16], Rec r[4]+Tail composite, four `dst[i] = src[i]` plus a Tail tail.
+arm9 0x02024b04 88B -- bitmap allocator; NOT writable in C. Body is `clz` on two words of
+  0x02027ffb0, allocating the set bit in the first word (id 0x40+n) or second (0x60+n), returning
+  0xfffffffd when both are exhausted, and clearing the bit with 0x80000000 >> n. `__cntlzw`, `__clz`,
+  `_clz`, `__builtin_clz`, `__CLZ` and `__clz32` all compile to an unresolved external call under both
+  1.2/b56 and 1.2/sp2, so the `clz` instruction cannot come from C in this toolchain.
+arm9 0x02033c1c 60B, 0x02033c58 48B, 0x0202564c 76B -- mrs/msr and mrc/mcr p15, and a banked-sp setup
+  with `msr cpsr_c`; assembly-only units, not C candidates.

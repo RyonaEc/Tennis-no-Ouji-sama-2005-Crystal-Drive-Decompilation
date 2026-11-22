@@ -3801,3 +3801,25 @@ pointer locals before the call and they are materialised early with `add` (196 B
 the block and mwcc folds them back onto the other pointer as `[r5, #0x86]` (180 B). Retail's third
 option, `ldrlo r0, [pc]` + `addlo r1, r4, r0` inside the predicate, needs mwcc to keep the two
 address computations apart; it unifies them through the shared base register instead.
+
+## 3.31 What the ready set looks like now (2026-11-22)
+
+Swept `ready.py`'s free (frameless, call-free) arm9 units instead of grinding the four blocked ones.
+Four candidates, no match, but the failure classes are now distinct and each is cheap to recognise:
+
+- **Unused frame.** `arm9 0x020248c8` produces retail's 14 instructions byte for byte and still misses:
+  retail wraps them in `stmdb sp!, {lr}` + `sub sp, #4` / `add sp, #4` + `ldm sp!, {lr}` with no stack
+  reference anywhere in the body. Forcing a frame with a struct local also changes the schedule, so the
+  two cannot be had together. Both compiler builds give the frameless 56 bytes.
+- **Address materialisation, again.** `arm9 0x020376c4` is 80/80 with a single differing instruction:
+  retail's `add r1, r0, #2` for a lone `s16` field. Nine spellings, including volatile reads, pointer
+  locals at two scopes, and two expressions for one address.
+- **Chunking.** `arm9 0x02026ac8` is a 64-byte copy; retail uses 3-word ldm/stm with the parameters as
+  running pointers, mwcc always picks 4-word chunks.
+- **Not C at all.** `arm9 0x02024b04` needs `clz`; no intrinsic spelling survives in this toolchain
+  (`__cntlzw` and friends all become external calls), so it is an assembly unit. Likewise the
+  `mrs`/`msr` and `mrc`/`mcr p15` units at `0x02033c1c` and `0x02033c58`.
+
+The edit loop is finding real C but the compiler refuses two specific peephole decisions: rematerialise
+into a conditional block (3.30) and keep an unused frame (here). Both are visible in the first few
+instructions, so triage is now a five-second check rather than a full attempt.
