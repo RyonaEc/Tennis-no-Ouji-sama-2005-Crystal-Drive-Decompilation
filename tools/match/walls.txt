@@ -2274,3 +2274,16 @@ written off.
   forms, a struct typedef, separate `q` locals, with and without `volatile`) makes mwcc allocate a
   frame instead -- it takes ip for 0x04000440 and then uses lr as the zero constant, which forces
   `stmdb sp!, {lr}` / `sub sp, #4` / `addne sp, #4` / `ldmne sp!, {lr}` and costs 28B (136B total).
+  arm9 0x02028920 56B (and its 0x02028958 sibling) -- accumulate and notify: adds p+0x34 into
+  p+0x28, then calls `(*(void (**)(u32, u32, u32))(*(u32 *)(p+8) + 0x40))(*(u32 *)(p+8),
+  *(u32 *)(p+0x2c), old p+0x28)`. Retail reads p+0x28 twice with no store between (once through
+  `add lr, r0, #0x28` for the read-modify-write, once as the third argument) and keeps the notify
+  object in r4 across the blx. A single-read spelling is size-exact at 56B but mwcc keeps the object
+  in ip and folds the address back into `[r0, #0x28]`; spelling the second read explicitly adds
+  `mov lr, r0` and costs 8B, and it still does not move the object into r4.
+  arm9 0x02023df8 96B (and 0x02023e58) -- two-way dispatch on a global sentinel at 0x02042370:
+  `if (v == 0xffffffff) func_02069ec(a0, 0x06600000 + a1, a2); else func_02068e0(v, a0,
+  0x06600000 + a1);`. Retail materialises 0x06600000 into ip before the test and adds it from the
+  register in both paths, and saves a0/a1/a2 in r5/r4/r3 across two epilogues that share one exit.
+  The direct spelling reaches 72B: mwcc folds the constant into `add r1, r4, #0x6600000` and emits a
+  separate return after each call instead of one shared tail.
