@@ -28,7 +28,7 @@ output under `build/` (gitignored).
 **Sweeps, families and queues**
 
 `autorun.py`, `resweep.py`, `sweep_tiny.py`, `sweep_homed.py` (generated
-candidates), `sweep.py` (compiler-version sweep), `clone.py`, `clone_match.py`,
+candidates), `sweep.py` (formulation sweep; `--compiler` takes a version tag), `clone.py`, `clone_match.py`,
 `twins.py`, `twin.py`, `crosstwin.py`, `near.py` (clone a matched sibling),
 `famsurvey.py`, `band.py`, `fam.py`, `family_asm.py`, `family_fill.py`,
 `trivgen.py`, `synth.py`, `scan.py`, `census.py`, `jt.py`, `jtgen.py`,

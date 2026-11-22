@@ -27,7 +27,7 @@ import pathlib
 import re
 import sys
 
-BLOCK = re.compile(r"\{\{(\w+):([^}]*)\}\}")
+BLOCK = re.compile(r"\{\{(\w+):(.*?)\}\}", re.S)
 
 
 def load(path, name):
@@ -71,6 +71,9 @@ def main() -> int:
     template = pathlib.Path(args[3]).read_text()
 
     fm = load("tools/match/fastmatch.py", "fm")
+    # `compile_text`'s compiler argument is an executable path, not a version tag;
+    # passing a tag silently yields b"" and every combination looks like a miss.
+    compiler_path = fm.mwcc_path(compiler) if compiler and "/" in compiler else compiler
     want = fm.retail(mod, addr, size)
 
     axes = []
@@ -95,10 +98,10 @@ def main() -> int:
     for choice in itertools.product(*[alts for _, alts in axes]):
         body = template
         for (name, _), value in zip(axes, choice):
-            body = re.sub(r"\{\{" + name + r":[^}]*\}\}", value, body, count=1)
+            body = re.sub(r"\{\{" + name + r":.*?\}\}", lambda _m, v=value: v, body, count=1, flags=re.S)
         tried += 1
         try:
-            got = fm.compile_text(body, "sweep", compiler)
+            got = fm.compile_text(body, "sweep", compiler_path)
         except Exception:
             failed += 1
             continue

@@ -1847,3 +1847,21 @@ forces that pairing turns up.
   popeq; bxeq; ldr r0,[r4]; cmp r0,#0; bne loop; pop; bx lr`. Retail tests r4 against zero even
   though it is the table address, so the source keeps the pointer in a variable the compiler
   cannot prove non-NULL. Three spellings (array global, pointer global, u32 + cast) all fail.
+
+  arm9 0x0201fd50 60B -- brother of the matched func_0201fd18: DIVCNT/DIV_NUMER/DIV_RESULT
+  init with a single argument (`*(volatile u16 *)0x04000280 = 1; p[0] = 0; p[1] = 0x1000;
+  q[0] = a0; q[1] = 0;` where p = 0x04000290, q = 0x04000298). Size and instruction sequence
+  are exact; retail materialises the constant 1 into r3 and keeps p in r2, mwcc materialises
+  1 into r2 and keeps p in r3, and every later reference follows. Five declaration orders
+  (p then q, q then p, late q, late p, named u16 pointer), the direct-cast form, dropped
+  `volatile` and a hoisted `p[1]` store all keep the swap at 60B / diff 6. Builds 1.2 base,
+  b56, sp2p3, sp3, sp4 agree; 2.0.* produce 44B instead. Register-allocation tie in a
+  straight-line function, not a control-flow difference.
+
+  ov004 0x0204d980 60B -- Shift-JIS lead byte test: `c = *a0; if (c >= 0x81 && c <= 0x9f)
+  return 1; if (c >= 0xe0 && c <= 0xef) return 1; return 0;`. Retail materialises the first
+  range as a stored boolean (`mov r2, #0` / `movls r2, r0` / `cmp r2, #0` / `bxne lr`) and
+  keeps the second as a direct branch, so the source clearly assigned that half to a
+  variable. Five flag spellings (r = 0 then r = 1, ternary, r = expr, `r != 0`, a second
+  constant `z = 1`) all fold back to 52B: mwcc re-fuses the flag into the compare. Needs the
+  first `&&` result to escape, which the source of a leaf predicate cannot express.
