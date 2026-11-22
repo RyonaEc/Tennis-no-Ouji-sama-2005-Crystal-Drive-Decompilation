@@ -1487,3 +1487,15 @@ arm9 0x020124e0 68B -- **68/68 with the same instruction multiset**, only the sc
   `lsl #27`/`ror #27`, retail's `#29` is `% 8`. Tried: `% 32` (constant wrong), `% 8` inline,
   reversed `&` operands, and `p = tab + idx / 8; bit = 1u << (idx % 8); return *p & bit;` (that one
   also moves the byte index into r1). Pure scheduler tie.
+arm9 0x020266c0 80B -- DMA channel CR bitfield clear; best 72B. C:
+  `volatile u16 *p = (volatile u16 *)0x040000b0; func_02026350(); p[ch*6+5] &= ~0x3a00;
+  p[ch*6+5] &= ~0x8000; func_02026364();`. The index math (pooled 0x040000b0, `mul` by 6, `+5`,
+  `lsl #1`) and both `bic`/`strh` RMWs match, but retail keeps the constant 6 in r1 and the
+  accumulator in r2 where mwcc picks r0/r1, and retail has two extra trailing `ldrh r1, [r2]` that
+  look like two discarded volatile reads. Tried: `vu16` (not in types.h - compile error), plain
+  `volatile u16`, `u16` non-volatile. Not worth forcing discarded reads to pad 8 bytes.
+arm9 0x0202cfa4 84B -- 92B. Main-thread loop: `s = func_02026350(); while (!(*(u32*)(g+0x34) & 8)) {
+  *(u32*)(g+0xd0) = g + 0x3c; func_020251c0(0); } func_02026364(s); ((void(*)(u8*))*(u32*)(g+0x30))(g);`
+  inside `for (;;)`, with `g = data_0204aec0`. The hoisted `0` and `g+0x3c` are right but land in
+  different registers (retail r7=g, r4=0, r5=g+0x3c, r6=ret; ours r6=g, r7=0, r4=g+0x3c, r5=ret)
+  and the body is 8 bytes long; a `while`-first spelling also reorders the loop pivot.

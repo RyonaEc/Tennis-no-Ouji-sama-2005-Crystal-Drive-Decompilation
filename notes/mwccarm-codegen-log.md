@@ -3978,3 +3978,21 @@ mwcc emits the load first; every spelling tried keeps the two swapped. Worth not
 `idx % 32` produced `lsl #27`/`ror #27` - the modulus is legible in the shift constant, so the
 retail `#29` proved the source is `% 8` and not `% 32`. That got the last constant right, leaving only
 the schedule residue. Parked in `walls.txt`.
+
+## 3.37 Two more parks from the same batch (2026-11-22)
+
+`arm9 0x020266c0` (80 B) is a DMA channel CR clear: `p[ch * 6 + 5] &= ~0x3a00` then `&= ~0x8000` on
+`(volatile u16 *)0x040000b0`, between `func_02026350()` / `func_02026364()` lock calls. The index
+arithmetic and both `bic`/`strh` pairs match, but retail is 80 B against our 72 B because it keeps
+two *discarded* `ldrh r1, [r2]` reads after the last store (volatile reads are never deleted, so the
+retail source evidently contains two reads whose values are unused), and it also keeps the constant 6
+in r1 with the accumulator in r2 where mwcc chooses r0/r1. Padding with invented `(void)` reads to
+buy eight bytes is exactly the kind of shape-forcing AGENTS.md forbids, so it is parked.
+
+`arm9 0x0202cfa4` (84 B) is the main-thread loop around the same lock pair with a dispatch call
+through `*(u32 *)(g + 0x30)`. Four live values (frame pointer, the 0 argument, `g + 0x3c`, the saved
+lock token) have to share r4-r7; retail and mwcc agree on the set but not on the assignment, and the
+body is 8 bytes long. Parked as a register-allocation tie.
+
+Also noted while probing: `vu16` does not exist in `include/types.h` (only the plain scalar typedefs),
+so `volatile u16 *` is the spelling to use for hardware-register pointers.
