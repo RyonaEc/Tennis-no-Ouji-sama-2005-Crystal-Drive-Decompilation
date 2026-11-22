@@ -106,3 +106,21 @@ step of up to 20 units per frame, halved and scaled.
 The remaining unresolved callees are `0x02053468` (0xdc), `0x020532e4` (0x184),
 `0x020528cc` (0xa8), `0x02057068` (0xa34), `0x020780f8` (0xbc) and
 `func_0203b0c0` (0x20c, main).
+
+## Two more callees inspected (partial)
+
+`func_ov002_020528cc(u8 *a0, s32 a1, s32 a2)` (0xa8) pulls `[a0+8]` toward a target:
+it returns early when `[a0+8] < 0`, when `func_02034148(*(u32 *)(g + <off> + 4))`
+exceeds `0x800000`, or when the computed position does not exceed `a1`. Otherwise it
+builds `n = ((u16)(<clamp> - a2)) << 1`, calls `func_0203b0c0(([a0+8] >> 8)^2, n)`,
+adds the result shifted left 16 to `[g + <off> + 8]`, and finally stores
+`func_0204f6ac(((max(a1 - [g+off+8], 0)) >> 8) * (((<clamp> - a2) >> 8) << 1)) << 8`
+back into `[a0+8]`. The `func_0203b0c0` with a squared argument is the same routine
+`0x02082220` calls, so it is a lookup/roots helper rather than a pure divider.
+
+`func_ov002_020780f8(void)` (0xbc) is the "effect trigger": it ORs bit 1 of a state
+word (`orr #2`), clears three bytes at `+0x58`/`+0x59`/`+0x5a` (writing 0, 2 and 0),
+then switches on the word at `+0xcc` with cases clustered around `0x14`..`0x18`.
+
+Those two plus `0x02053468` (0xdc), `0x020532e4` (0x184), `0x02057068` (0xa34) and
+`func_0203b0c0` (0x20c) are what remain before the family body can be written.
