@@ -4554,3 +4554,17 @@ which registers the temporaries get, or in one materialisation:
 
 The lesson for this band is that the remaining residue is the allocator, and the allocator reacts
 to things the disassembly cannot show — symbol versus literal addressing is the newest example.
+
+### 2.94 `true_fresh.txt` carries stale entries
+
+Chasing `0x0200fbc0` and `0x0200fc18` (the increment-then-clamp pair over
+`data_02042a68 + 0x10` -> `+0x154` -> `+2`/`+0x10`) produced a full `MATCH` on a rewrite that
+swapped the literal for the data symbol and split the two chains into `p` and `y` locals — and
+no change in the totals. The queue entries were stale: both units already had matching sources
+in `src/arm9/`, and compiling the committed ones gives `MATCH` too, so the rewrite was cosmetic
+churn and was reverted.
+
+The queue is therefore not proof that a function is unmatched. Check
+`src/<module>/func_<addr>.c` (or the objdiff report) before spending iterations on an address
+that came out of `true_fresh.txt`; the report-derived `famsurvey.py` groups were accurate every
+time this session.
