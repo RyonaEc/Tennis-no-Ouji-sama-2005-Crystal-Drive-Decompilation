@@ -379,3 +379,8 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   relocated ones.
 - **`(i * 3 + 2) * 4` is not `i * 12 + 8`.** The factored form gives `mov #3; mul; add; add lsl`,
   the flat form gives `mla` against the pooled base.
+
+- **A `while` loop that retail enters with `b <bottom>` can be forced with an explicit rotation.**
+  `goto test; body: <body>; test: if (cond) goto body;` compiles to the single entry branch plus a
+  bottom test, where `while (...) {...}` gives mwcc a pre-test with an if-converted early exit.
+  Treat the goto form as a codegen workaround, not as the original source shape.

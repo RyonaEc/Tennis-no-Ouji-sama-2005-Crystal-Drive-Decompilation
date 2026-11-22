@@ -4656,3 +4656,16 @@ when the arena is exhausted, attaches the node to the list behind `ctx+4` throug
 `node + 0x20` (the payload). Writing the context as a two-word struct keeps `*ctx` and `&ctx->f4`
 to a single base register, and the five-argument signature lets mwcc read the last argument off
 the stack once, which is where retail's `ldr r2, [sp, #0x18]` between the stores comes from.
+
+### 3.02 Overlay-index removal at 0x02033ab8, and a loop rotation that needed goto
+
+`0x02033ab8` (124B) asserts `nIndex < count` against the strings at `0x02041fcc` ("isdoverlay.c")
+and `0x020420d8`, decrements the count, then shifts the remaining 16-byte records down by one.
+
+The shift loop is where the iteration went. As `while (i < n) { p->elem[i] = p->elem[i + 1]; i++; }`
+mwcc emitted a pre-test with an if-converted exit (`cmp; addhs; pophs; bxhs`) and the unit came out
+136B; a `for (; i < n; i++)` spelling was worse (140B). Retail instead starts the loop with a single
+`b` to a bottom test, which is what the explicit rotation
+`goto test; body: p->elem[i] = p->elem[i + 1]; i++; test: if (i < n) goto body;` produces. That
+spelling is semantically identical to the `while` (zero iterations when `i >= n`) and matches the
+bytes, but it is a codegen workaround rather than evidence about the original text.
