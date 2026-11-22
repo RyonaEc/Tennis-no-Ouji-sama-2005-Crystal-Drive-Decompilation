@@ -1835,7 +1835,7 @@ forces that pairing turns up.
   and byte-identical except that retail holds `h` in r4 and `old` in r5 where mwcc holds them the
   other way round. Split declarations, reordered declarations and `*h` vs `h[0]` all keep the swap.
 
-  arm9 0x020202b4 76B -- display/видео swap: read u16 global 0x02048c70, store 1 to 0x0204236c, then
+  arm9 0x020202b4 76B -- display-mode swap: read u16 global 0x02048c70, store 1 to 0x0204236c, then
   `if (v == 0) { REG_DISPCNT |= 0x10000; return; } REG_DISPCNT = (REG_DISPCNT & ~0x30000) | (v << 16);`.
   mwcc emits 72B with the second block if-converted (`movne/ldrne/bicne/orrne/strne`); retail
   branches with `bxeq lr` and straight-line else (76B). Inverting the condition, else-form,
