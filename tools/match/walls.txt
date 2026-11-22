@@ -1515,3 +1515,27 @@ ov003 0x0205299c 76B -- 68 of 76 bytes agree; the residue is the last RMW's addr
   computed before the call, `volatile`, and `*p = *p | 1`. So this is the
   address-materialisation class (constants 0x027c0000 and 0x3ff8 kept in two registers with a
   pre-indexed writeback), not the logic.
+
+=== ov002 entity helpers: semantics solved, register roles not (2026-11-22) ===
+The shared global data_ov002_02102070 is a bss pointer to the entity array, stride 0x158
+(the same stride the 756-byte family uses). Three small units reconstruct to the right size
+with only register roles differing; permute.py over statement order scored best 4 bytes off.
+
+ov002 0x02068c78 64B -- size exact, differs only in which of ip/r1/r2/r3 holds base/entity/q:
+  u8 *e = data_ov002_02102070 + i * 0x158;   /* mla r2, r0, #0x158, base */
+  u8 *q = data_ov002_02102070 + 0x1e6c + (((u32)e[0x2e6]) >> 1);
+  q[0x680] = 1;  q[0x682] = i;  q[0x684] = 5;    /* r0 = 5 falls out of the last store */
+  Retail keeps the base in ip and q in r1; b56 puts base in r3 and q in r2. The shift must be
+  written `((u32)e[0x2e6]) >> 1` or mwcc emits asr instead of retail's lsr.
+
+ov002 0x02081078 60B -- size exact, one register role and a 4-byte order residue:
+  u8 *g = *(u8 **)&data_ov002_02102070;  u8 *p = g + i;
+  if (p[0x3d] != 0) return;  func_ov002_02080edc();
+  Retail loads g into r2 and keeps i in r0; b56 loads it into r1. Writing the element as
+  g[i + 0x3d] instead folds 0x3d into the index and is further away.
+
+ov002 0x02080ca4 68B -- table copy, differs in loop-register roles:
+  u8 *p = func_ov002_020848a0();  s16 *tab = (s16 *)0x020fc68c;
+  for (i = 0; i < 4; i++) { s16 v = tab[i]; *(u16 *)(p + 0x300 + i * 8 + 0xe6) = v; }
+  The s16 load is required (retail ldrsh); a u16 load is ldrh and will not match. 0x020fc68c
+  is not a symbol in symbols.txt, so it has to be used as a raw address.
