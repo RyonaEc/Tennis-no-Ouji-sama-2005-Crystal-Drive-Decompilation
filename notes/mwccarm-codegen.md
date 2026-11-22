@@ -305,3 +305,20 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   `ldrhs` / `bxhs`; declaring `s32 v` and comparing `v >= 0x3b9ac9ff` gives retail's
   `ldrge` / `bxge`. Everything else in the function is identical, so a one-word predicate
   difference is the whole residue when a limit check will not close.
+
+- **A `Pair` struct copy is what folds two stores into `[rN]` / `[rN,#4]`.** In `0x0202ad9c`
+  eight stores to literal hardware addresses (`0x04000290`, `0x04000294`, ...) compile to eight
+  pool loads and eight stores (132B). Writing them as three copies of `typedef struct { u32 a;
+  u32 b; } Pair` (`*(volatile Pair *)0x04000290 = *(Pair *)s;`) gives retail's five pool loads
+  and the structured `str x,[r2]` / `str x,[r2,#4]` pairs, exactly 108B. Use a struct copy, not
+  two scalar stores, whenever retail loads both halves before storing either.
+
+- **A u32 temporary keeps the case-fold mask off the value.** Converting with `u8 c` and writing
+  `c = c + 0x20` re-truncates and inserts `and r2, r2, #0xff` before the `orr`. Loading into
+  `u8 c` but converting into a separate `u32 d` (`d = c - 'A'; d = d <= 25 ? d + 'a' : d + 'A';`)
+  drops the mask and if-converts to retail's `sub/cmp/addls/addhi` with no branch.
+
+- **A one-block conditional tail is always inlined, never branched.** mwcc 1.2/b56 turns
+  `if (f() != 0) { ... }`, an early `return`, and `goto end` into `popeq`/`bxeq` when the body is
+  the last block. Retail's `beq` to a shared `pop`/`bx` epilogue cannot be spelled from a single
+  trailing block; park the unit instead of hunting for a branch that the compiler never emits.

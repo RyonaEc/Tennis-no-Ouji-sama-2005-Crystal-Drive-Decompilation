@@ -2123,3 +2123,26 @@ written off.
   arm9 0x0201c17c 96B -- the same `next(list, prev)` walk as `0x0201c4b0` with an extra
   per-node u8 comparison and a tail call. mwcc emits an extra compare/test pair for the
   two-condition loop (100B) where retail falls through into the shared exit.
+
+  arm9 0x02029704 100B -- `u32 c = s[i]; if (c == 0) break; d = c - 'A';
+  d = d <= 25 ? d + 'a' : d + 'A';` reproduces retail's masked-free `sub/cmp/addls/addhi`
+  and every other instruction exactly (100B), but mwcc homes the `sh = 0` constant one slot
+  above the `for` pre-test where retail homes it one slot below it. Comma-init, while-form and
+  declaration placement all keep mwcc's order; the tie is in the preheader schedule.
+
+  arm9 0x02033014 112B -- RMW on DISPCNT plus four register/two u16 register stores. Every
+  instruction matches except the tail: retail branches `beq` to the single shared epilogue,
+  mwcc 1.2/b56 inlines it as `popeq` + `bxeq` (116B) for `if (f() != 0) { ... }`, for an early
+  `return`, and for a `goto end`. Conditional inlining of a one-block tail is unconditional here.
+
+  arm9 0x0202ad9c 108B -- six-field copy to 0x04000280/0x04000290..9c/0x040002b0..bc. Three
+  `*(volatile Pair *)0xADDR = *(Pair *)(s + off)` copies with `typedef struct { u32 a, b; }`
+  produce retail's paired `str x,[rN]` / `str x,[rN,#4]` (separate literal addresses give eight
+  pool loads, 132B). Size lands exactly at 108B but the allocator rotates the whole set: retail
+  keeps the two temps in ip/r3 and the destinations in r2/r1, mwcc the reverse. Naming the
+  destinations as `Pair *` locals is folded back into pool loads and changes nothing.
+  arm9 0x0201aaa0 108B -- stores its argument to 0x020475c4, bails on `p[5] != 0`, then
+  flushes -p[0], -p[1], 0 to 0x04000470 and sets 0x04000440. Retail is frameless and exits the
+  guard with a bare `bxne lr`; every spelling tried (early `return`, single-exit `if`,
+  `volatile`/plain targets, one `d[0]/d[1]` pointer pair, both dereferences kept) makes mwcc
+  1.2/b56 open a `stmdb sp!, {lr}` + `sub sp, #4` frame and give up a register, for 124-132B.

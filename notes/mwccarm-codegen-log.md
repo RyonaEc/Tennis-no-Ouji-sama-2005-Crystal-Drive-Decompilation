@@ -4512,3 +4512,26 @@ just the loop's pre-test falling through with `v` already in r0, so it must not 
 
 Parked in the same band: `0x0202d9f4` (base rematerialised instead of held in r4 across a
 call) and `0x0201c17c` (two-condition walk gets an extra test pair).
+
+### 2.92 Three near-misses in the 100-112B band
+
+Surveyed the 108-112B units next. `0x0202ad9c` (six-field copy to I/O registers) landed
+size-exact at 108B on the first struct-copy attempt, `0x02029704` (string to packed lowercase)
+at 100B on the third, and `0x02033014` stayed one instruction long. All three are parked in
+`walls.txt` with their measured residue; none of them is a binding problem to solve later, they
+are allocator/scheduler ties.
+
+What the survey bought:
+
+- `typedef struct { u32 a; u32 b; }` copies are the only spelling that produces retail's paired
+  `str x,[rN]` / `str x,[rN,#4]` from two consecutive destinations. Eight separate literal-address
+  stores give eight pool loads.
+- A `u32` conversion temporary keeps `and #0xff` out of the case fold; a `u8` lvalue forces it.
+- A trailing one-block `if` is always expanded to `popeq`/`bxeq`; retail's `beq` to a shared
+  epilogue is not reachable from source at this compiler version.
+
+`0x0202ad9c` is the interesting residue: identical instruction sequence, size-exact, with the
+allocator rotating the whole four-register set (retail holds the pair temporaries in ip/r3 and
+the destinations in r2/r1). Naming the destinations as locals does not lengthen their live
+ranges because mwcc folds the constants back into first-use pool loads. The same rotation
+appears on `0x020255e8` (100B, three instructions) and `0x02017880`/`0x020178e8`.
