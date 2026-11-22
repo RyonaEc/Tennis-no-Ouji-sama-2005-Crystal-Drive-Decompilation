@@ -4428,3 +4428,34 @@ call-only bodies (`0x0202612c`, `0x0203b4b0`), the `pl`/`mi` threshold test plus
 `mov`/`lsr` in `0x02024b5c`, and the zero-register colouring of three stack arrays
 (`ov003 0x020b6b60`, `0x020b732c`). `near.py --install` found no near twins in arm9 or any
 overlay this session.
+
+### 2.88 Small-unit survey: one 48B match, eleven new walls
+
+Eleven fresh sub-72B units were decoded and attempted. `func_020255b8` closed at 48B once the
+scanned table was declared as a struct field array instead of a `base + 0x14 + i * 4`
+expression (the lever is in `mwccarm-codegen.md`); the other ten are now in `walls.txt` with
+measured residue, plus the previously decoded ov005 220B four-family.
+
+The recurring failure modes this batch, in order of frequency:
+
+1. **Loop layout, not loop source.** Retail emits `cmp` / conditional-store / `blt` back to
+   the `cmp` (`0x020048e8`, `0x020269ec`) or `b test` with the test at the bottom
+   (`0x02032be8`); mwcc rotates the same `while` into an early-exit guard plus a bottom test,
+   or emits `movs`/`bxeq` instead of the `b`. Four spellings each (while, for-with-increment,
+   separate store and bump, do-while) reproduced mwcc's layout every time, so the rotation is
+   not source-controllable here.
+2. **Fused flags.** `while (n >= 4) n -= 4;` (`0x020263c0`) is `subs` / `bhs` in retail, which
+   folds the borrow into the branch; mwcc only folds it for the do-while spelling, and that
+   spelling is 4-8B too long.
+3. **Scratch colouring.** r12/ip versus the next free caller-saved register decides
+   `0x0202c430`, `0x020266c0`, `0x0202497c`, and the ip/lr swap that is the *only* residue in
+   the four-copy ov005 220B family. `0x0202d158`/`0x0202d22c` are 212B-exact apart from one
+   `mov r1, r6` and a base reuse.
+4. **Literal-address reuse.** `0x0201fd50` needs three pool words with `#4` offsets from two
+   bases; per-literal loads give 76B and a struct gives 52B with reordered stores.
+5. **Aggregate copy strategy.** `0x02026ac8` (64B struct) and `0x0203b4e4` (argument
+   preservation across a call): retail stays in the argument registers or 3-register chunks,
+   mwcc frames and uses callee-saved registers.
+
+Also attempted and parked earlier in the same pass: `0x0202497c` (three live values across a
+call), `0x02032be8` (layout), `0x020266c0` (colouring).

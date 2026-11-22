@@ -2025,3 +2025,62 @@ written off.
   pairs. Size-exact with three `u16 a[2] = {0, 0};` declarations, but retail puts the zero in
   r0 and the array pointers in r1/r2 where mwcc does the reverse. Declaration order of the
   three arrays does not move it.
+
+  arm9 0x020048e8 20B and 0x020269ec 24B -- fill/copy loops `while (p < end)` with a single
+  store as the body. Retail if-converts the body at the top of the loop (`add ip, r1, r2` /
+  `cmp r1, ip` / `stmlt r1!, {r0}` / `blt` back to the cmp) and keeps the end pointer in ip;
+  mwcc rotates the loop into an early-exit guard plus a bottom test (+8B) whatever the
+  spelling (while, for with the increment in the header, separate store and bump, u8 cursor).
+  Pointer type and end-expression associativity do not move it.
+
+  arm9 0x020263c0 12B -- `while (n >= 4) n -= 4;`. Retail is `subs r0, r0, #4` / `bhs`, i.e.
+  it folds the decrement's borrow into the branch. mwcc pre-tests in every spelling
+  (`cmp r0,#4` / `bxlo lr` then a rotated body); the do-while spelling drops the fold and
+  emits `sub` / `cmp` / `bhs` at 16B.
+
+  arm9 0x0202c430 24B -- idle wait on a global (`while (data == 1);`). Size-exact at 24B in
+  all spellings; retail loads the address into ip (`ldr ip, [pc]` / `ldr r0, [ip]`) where
+  mwcc loads it into r0 and immediately clobbers it (`ldr r0, [pc]` / `ldr r0, [r0]`).
+  Pointer local, array form, volatile cast and a do-while with a copy all land the same.
+
+  arm9 0x0202497c 76B -- 12-byte record triple store (two call-free stores plus a `& mask`
+  result). Retail keeps the byte offset (r6), the shift amount (r4) and the constant 1 (r5)
+  live across the call; mwcc keeps only the index and re-derives `index + 8`, so it saves two
+  registers instead of three and pads the frame by 4B (72B result).
+
+  arm9 0x02032be8 80B -- chunked callback writer. Same 80B total but retail emits `b test`
+  and puts the test at the bottom, while mwcc emits a `movs`/`popeq`/`bxeq` early exit and
+  a bottom-tested body. `while`, `for (;;)` plus `break`, a redundant `if (n == 0) return`
+  and do-while spellings all keep mwcc's layout.
+
+  arm9 0x020266c0 80B -- hardware register read-modify-write through a computed pointer.
+  Size-exact at 80B; retail homes the constants in r1 and the pointer in r2 where mwcc homes
+  them in r0 and r1. volatile pointer spelling and a named local do not move the colouring.
+
+  arm9 0x0202d158 212B and 0x0202d22c 212B -- six-argument init with a flag wait loop and a
+  function-pointer argument. Size-exact at 212B with a struct base plus a flag local; the
+  only residue is an extra `mov r1, r6` before retail's first `ldr r1, [r6, #0x34]`, and
+  retail re-loading the base for the `+0xd0` store instead of reusing the register that
+  already holds it. Both are allocator ties, not source shapes.
+
+  ov005 0x020614a4, 0x020656d8, 0x020695bc, 0x0206bfc0 -- four 220B copies of the same init
+  routine (CHIP reset, loop over 0x200 u16 entries zeroing with an `i % 4` u32 side store,
+  then threshold-gated buffer calls). The whole body is size- and order-exact at 220B; the
+  only residue is that retail homes the zero constant in lr and the `base + i * 2` address in
+  ip, while mwcc swaps the two (ip for the zero, lr for the address). `u16 z = 0` and the
+  literal both reproduce the swap.
+
+  arm9 0x0201fd50 60B -- five hardware-register stores at 0x04000280 and the 0x04000290 /
+  0x04000298 pairs. Retail loads three pool words and reuses each base with `#4` offsets;
+  mwcc emits one `ldr` from the pool per literal address (76B). A four-field volatile struct
+  at 0x04000290 shrinks it to 52B but reorders the stores, so neither form lands.
+
+  arm9 0x02026ac8 44B -- 64-byte struct copy. Retail copies in place with 3-register
+  `ldm`/`stm` chunks (`r2, r3, ip`) and finishes with a 4-register chunk that lets r0 be
+  reused as a temp. mwcc moves src/dst into lr/ip, frames the function and uses 4-register
+  chunks throughout (60B), for both an array-of-u32 and a 16-named-field struct.
+
+  arm9 0x0203b4e4 40B -- `*p = (old & ~a0) ^ a1` through a returned pointer. Retail preserves
+  the three arguments with `push {r0, r1, r2, ip, lr}` and pops them back after the call;
+  mwcc copies the two live arguments into r4/r5, saving and restoring two callee-saved
+  registers instead (56B).

@@ -285,3 +285,11 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   the compare. Taking the mask once up front - `u8 cc = (u8)c;` - puts `and r1, r1, #0xff`
   between the load and the `add`, which breaks the fusion and reproduces retail's separate
   `ldrb r2, [r0]` / `add r0, r0, #1` entry, closing the unit at 60 B.
+
+- **An array that is a struct field reproduces retail's scaled indexing; a raw base+offset
+  expression does not.** `func_020255b8` scans 16 words at `data_02048d3c + 0x14`. Written as
+  `*(u32 *)(data_02048d3c + 0x14 + i * 4)` mwcc keeps a byte cursor and emits
+  `add r3, r3, #4` / `ldr r1, [r2, r3]`, which is 44B against retail's 48B. Declaring
+  `typedef struct { u8 pad[0x14]; u32 arr[16]; } S; extern S data_02048d3c;` and writing
+  `data_02048d3c.arr[i]` gives retail's `add r1, r2, r0, lsl #2` / `ldr r1, [r1, #0x14]`
+  exactly, closing the unit at 48B.
