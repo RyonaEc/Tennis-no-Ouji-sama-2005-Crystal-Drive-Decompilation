@@ -1317,3 +1317,22 @@ arm9 0x0201c17c 96B (twin 0x0201c2d4) -- hash-bucket walk: `p = func_02017784(da
   and finally `func_0201780c(data_020475fc, a0)`. Mine is 112B: mwcc caches the pooled address of
   data_020475fc in r4 and reuses it for all three calls, while retail reloads the literal from the
   pool at each of the three sites and only materialises r4 after the first null check.
+arm9 0x020269ec 24B (and twin 0x0201cb84 family): retail is a word-copy loop written as
+  `end = (u8 *)a1 + a2` (unscaled byte count), test at the TOP of the body with the pair PREDICATED
+  (`cmp r1, ip` / `ldmlt r0!, {r2}` / `stmlt r1!, {r2}` / `blt`), and the end pointer in `ip`.
+  Both 1.2 compilers refuse the if-conversion: every `while`/`for` spelling gives a pre-check branch
+  (`bxhs lr`, 32B) and every `do{}while` spelling gives 24B with the test at the BOTTOM and the end
+  pointer in r3. Tried: u32*/u8* pointers, byte-count vs u32 count, `*a1++ = *a0++` and separate
+  increments, a 1-word struct `Cell` copy, and for/while/do-while with each. Also no spelling
+  produced retail's single-register `ldm`/`stm` copy (always `ldr`/`str` with writeback).
+arm9 0x02037660 100B -- limits a byte field: `if (a1 <= 0) return; if (a1 >= a0[4]) return;
+  if (func_02037718(a0) < 0) { a0[4] = a1; return; } func_020376c4(a0, a1);`. Size-exact at 100/100
+  with the field read through a local, through `*(u8 *)(a0 + 4)`, and with the two guards merged into
+  one `||`; every spelling loads the byte into r1 where retail uses r2. Same r1/r2 family as the
+  register-name parks already on file.
+arm9 0x0203b4e4 40B -- `p = func_0203b6d0(a0, a1, a2); old = *p; *p = (old & ~a0) ^ a1; return old;`.
+  Retail's prologue is `push {r0, r1, r2, ip, lr}` ... `pop {r0, r1, r2, ip, lr}` with the result
+  pointer parked in r3 across the pop, i.e. a frame-less save of the incoming argument registers.
+  Every spelling of the source (locals, no locals, pointer return cast, u32 return) makes 1.2/b56 and
+  1.2/sp2 both emit `push {r4, r5, lr}; sub sp, sp, #4` with a real frame instead, 56B. The trigger
+  for the push-argument-registers prologue is still unknown.

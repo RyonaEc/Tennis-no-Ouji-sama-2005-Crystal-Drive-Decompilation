@@ -3502,3 +3502,28 @@ Two more parks with the same "mwcc caches what retail reloaded" signature seen i
 `arm9 0x02029704` is exact in size and body but schedules a single `mov ip, lr` in a different slot
 between the two guard compares, and `arm9 0x0201c17c` caches the pooled address of `data_020475fc` in
 r4 for all three calls where retail reloads the literal at each site.
+
+## 3.22 Two codegen shapes this compiler will not produce from source (2026-11-22)
+
+Working the 24-96B tail turned up two shapes that neither 1.2/b56 nor 1.2/sp2 will emit from any
+spelling tried, so they are worth recording as compiler-side walls rather than source puzzles.
+
+**Loop if-conversion.** `arm9 0x020269ec` is a word-copy loop whose test sits at the top with the
+copy pair predicated on it (`cmp r1, ip`; `ldmlt r0!, {r2}`; `stmlt r1!, {r2}`; `blt`), so the loop
+both skips when empty and re-tests without a separate exit branch - 24 bytes. Every `while`/`for`
+spelling produces a pre-check branch and 32 bytes; every `do {} while` spelling produces exactly 24
+bytes but with the test at the bottom, which is the un-rotated loop. `vprobe` shows b56 and sp2
+byte-identical here, so this is not a version-selection problem: it is an if-conversion pass we cannot
+trigger from source. It also explains the older predication parks - a predicated body in retail is not
+necessarily a predicated C expression.
+
+**Frame-less argument saves.** `arm9 0x0203b4e4` opens with `push {r0, r1, r2, ip, lr}` and closes
+with the matching `pop`, keeping the callee's return pointer in r3 across the pop. Both compilers
+choose `push {r4, r5, lr}` plus a 4-byte frame for every source spelling, 56 bytes against retail's
+40. Pushing the incoming argument registers wholesale (with `ip` as the alignment filler) is a
+different register-assignment strategy, not a different statement order.
+
+Also confirmed again on `arm9 0x02037660`: a byte field read into a local lands in r1 for us and r2
+for retail at identical size, the third instance of that register-name residue.
+
+No new matches landed in this stretch; the parks are all size-exact or within one scheduling slot.
