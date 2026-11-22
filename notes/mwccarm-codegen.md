@@ -249,3 +249,12 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   hi = -t;` gives retail's four instructions (load, negate, store, negate). Adding a redundant
   `hi = -hi;` to "make the intent clear" makes mwcc negate the same register twice, spending one
   instruction and 4 bytes.
+
+* **The `ip`/`lr` pair is a real tie, and it repeats across units.** In the u16 zero-fill skeleton
+  (`mov rX,#0; mov rY,rX; mov rZ,#0x200; add <ptr>, base, i, lsl #1; ... strh`) retail puts the
+  loaded base pointer in `ip` and the stored zero in `lr`; mwcc b56 does the opposite in every
+  spelling tried, including the ov003/ov005 members of the same family. Because the instruction
+  stream is otherwise identical, this is an allocator colouring difference, not a transcription
+  error: statement order (permute.py over both regions), pointer type, declaration order, an
+  explicit `u16 zero` local, and all 25 vendored compilers leave it. Do not spend impressions
+  re-deriving these two bytes.
