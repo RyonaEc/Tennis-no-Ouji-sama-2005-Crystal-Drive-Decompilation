@@ -30,19 +30,24 @@ first 0x800 bytes. Code starts at the header's entry point `0x02004800`, past it
 and every other byte of the 64 MiB image is identical. So the two revisions are
 the same game with the same code, and neither is better for matching.
 
-Which is more common depends on the dumper, and for DS it is the **decrypted**
-form: No-Intro catalogues decrypted releases, and `wooddumper` and
-`GodMode9i` write decrypted files by default. This project's pin happens to be
-the encrypted-secure-area revision, so a contributor whose dump is decrypted has
-the right cartridge and a different hash. Two ways to reconcile it:
+Which form you are more likely to have depends on the dumper, and for DS it is
+the **decrypted** one: No-Intro catalogues decrypted releases, and `wooddumper`
+and `GodMode9i` write decrypted files by default. This project's pin is the
+encrypted-secure-area revision, so a contributor whose dump is decrypted has the
+right cartridge and a different hash. Re-encrypt a copy with NDecrypt `-e` (or
+`ndstool -se`) and the pinned digest matches. (A decrypted dump is recognised by
+`tools/rom_info.py` and asks for no BIOS.)
 
-* re-encrypt a copy with NDecrypt `-e` (or `ndstool -se`) and use that image, so
-the pinned digest matches, or
-* run `init.py` against the decrypted image and accept that it re-pins
-  `tennis_ATOJ.sha1` (and therefore every published digest) to `9eec3248...`.
-
-Do not do the second by accident: `init.py` takes a single `.nds` under
-`extract/`, so keep only the intended revision there.
+Pinning the decrypted revision instead was measured on 2026-11-22, not assumed.
+With the decrypted image as the base ROM the build needs no BIOS, extracts
+identically and rebuilds all 1,536 matched units, but it still misses that
+revision by a single 16-bit header field: dsd's no-BIOS `rom build` writes
+`0x0000` at `0x6c` where retail has `0xcb04`, which in turn changes the header
+checksum at `0x15e`. Everything else, secure area included, comes out
+byte-identical. So pinning the decrypted form would need a build step that
+preserves that field - a pipeline change for no matching gain - and the encrypted
+pin stands. Do not run `dsd init` on another image either: it regenerates
+`delinks.txt`/`symbols.txt` and would discard every installed unit.
 
 Do not commit the ROM or the BIOS; `.gitignore` covers both.
 

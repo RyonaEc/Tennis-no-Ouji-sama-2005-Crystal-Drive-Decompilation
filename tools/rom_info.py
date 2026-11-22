@@ -12,7 +12,7 @@ import struct
 from pathlib import Path
 
 SECURE_AREA = 0x4000
-DECRYPTED_IDS = (b"encryObj", b"\xe7\xff\xde\xff" * 2, b"\x00" * 8)
+DECRYPTED_IDS = (b"encryObj", b"\xff\xde\xff\xe7" * 2, b"\x00" * 8)
 BIOS_NAMES = ("arm7_bios.bin", "bios7.bin", "extract/arm7_bios.bin")
 
 
