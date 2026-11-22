@@ -4342,3 +4342,27 @@ write it.
 (`u8 *cur = head;`) keeps retail's 104 B but leaves the loop in a different register
 colour - `r3`/`lr` swapped - for a diff of 8. The two-load spelling gives retail's
 `lr` for the cursor and `r3` for the saved head.
+
+## 2.84 Copied argument registers as a search key, and a `var3` trap
+
+The `mov rX, rY` tell from §2.83 is cheap to search for: disassemble the first few
+instructions of every unmatched function and flag a copy between `r0`-`r3` before the
+first call. Two hits, both real. `func_0202f448` uses `a2` twice - as the shift count in
+`1 << a2` and as the fourth call argument - so mwcc parks it in `r3`. `func_0201c59c`
+turns out to be a five-argument allocator call with a callback pointer
+(`func_0201bfd8`) as its third argument.
+
+`func_02025a54` and `func_02025b14` are the reference-count pair around `data_02048d3c + 8`:
+retail duplicates the increment block in the two taken arms of `if (a == 0) ... else if
+(a == g) ...`, and only the `if`/`else if` spelling reproduces that. Writing two
+independent `if`s lets mwcc merge the arms and loses 24 B.
+
+`func_020271d4` (flag-bit dispatch) only matches as `while (i < 8 && m != 0) { ... i++;
+m >>= 1; }` with `i` declared before `m`; a `for` loop moves the `i < 8` test to the bottom
+of the loop, and declaring `m` first swaps `r4`/`r5`.
+
+The trap: both ref-count functions first reported `MATCH` from `var3.py` with the wrong
+data symbol. `var3` compares instruction text, and an undefined symbol still prints as
+`ldr r1, [pc, #..]`, so the pool word's *value* is never checked. `reg.py` caught it
+immediately (`sha1` false, two bytes differing at the pool). Read the pool word out of the
+image; only `reg.py` accepting is evidence.

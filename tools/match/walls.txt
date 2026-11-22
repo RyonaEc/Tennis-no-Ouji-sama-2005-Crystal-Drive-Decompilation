@@ -1952,3 +1952,18 @@ written off.
   *(u32 *)(*(u32 *)g) == 0;`. Size-exact at 92B with `g` declared after `s`; retail hoists
   the pool load above the `bl` and keeps `g` in r6 with `s` in r5, mwcc emits `bl` then the
   load with `g` in r5 and `s` in r6. Declaring/assigning `g` first grows it to 96B.
+
+  arm9 0x0202bda0 120B -- `func_0202bfdc(0, &f)` then `*a0 = (f & 8) != 0; *a1 = (f
+  & 4) != 0;` under null guards. Size-exact at 120B; every instruction matches except that
+  retail loads the halfword and mirrors the bool into r1 where mwcc uses r0 (r0, mwcc's
+  first free register, is the dead result of the failed status call for retail too).
+
+  arm9 0x0202d9f4 88B -- `func_02026e2c(*(u32 *)(g + 0x24), 0x04100010, *(u32 *)(g + 0x1c),
+  0x200); v = *(u32 *)(g + 0x18); func_0202da4c((v >> 8) | 0xb7000000, v << 24); *(volatile
+  u32 *)0x040001a4 = *(u32 *)(data_0204b4c0 + 4);` with `g = data_0204aec0`. Retail keeps g in
+  r4 across the first call (`push {r4, lr}`); mwcc rematerialises the pool word and only needs
+  `stmdb sp!,{lr}` + `sub sp,#4`, so we come out 100B against 88B. Declaring g as a local,
+  before or after the other declarations, does not stop the rematerialisation.
+
+  arm9 0x020260b8 116B -- hand-written dispatcher (`mrs r1, apsr`, `teq`, banked `sp`
+  switch). Not expressible as C; stays delinked assembly.

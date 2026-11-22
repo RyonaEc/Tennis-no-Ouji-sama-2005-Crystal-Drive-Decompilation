@@ -265,3 +265,10 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   mwcc 1.2/b56 emit `Error: <string not found>` and produce no object at all. `fastmatch.compare`
   then silently returns `False`, and `var3.py` prints `got 0 want N` — always read the byte
   count before believing a `no`.
+- **`var3.py` matches through a relocation.** `fastmatch.compare` compares instruction text, so a
+  pool word that still carries an undefined-symbol relocation is shown as `ldr r1, [pc, #..]` and
+  matches retail no matter which symbol the source named. Two functions in this batch reported
+  `MATCH` from `var3.py` and then failed `reg.py`, because the source pointed at `data_0204aec0`
+  while retail's pool word was `0x02048d3c`. Always read the retail pool word out of the image
+  (`fastmatch.retail`) instead of copying the data symbol from the neighbouring function, and
+  treat `reg.py` — which links the ROM and checks the digest — as the only acceptance test.
