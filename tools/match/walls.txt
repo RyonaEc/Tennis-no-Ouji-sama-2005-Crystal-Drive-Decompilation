@@ -2480,3 +2480,7 @@ written off.
   0x800) >> 12)`) also scores 156 with the same 11-instruction residue. So the remaining difference is
   not statement order, declaration order or formulation; it is an allocator decision with no source-level
   handle found. Do not re-run permutations on this unit.
+  (permute, 0x0207ff34) permuting the six body statements (720 orders) never reaches a match: the
+  best orders all score 40 on permute's metric and the ones it ranks first move the load and the store
+  apart from their uses, so they are not semantically valid even though they compile. The unit stays at
+  112B against 116B. Same for the ordering axes on 0x0201ff64, which are already closed.
