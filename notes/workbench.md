@@ -19,6 +19,10 @@ replace. It is a second opinion on a unit, never a replacement for
 | Client | `dswb` from `tools/workbench/python` in the workbench source, unpacked to `M:\melonDS-workbench\pydswb\dswb` |
 | Knowledge store | `workbench/ATOJ_8d555a80db47/knowledge.db` |
 
+Two recording sessions were saved from the unlocked save and are named for it:
+`sessions/unlocked-20261122-183931_f0-35338.dswbs` (35,338 frames) and
+`sessions/unlocked-20261122-185046_f0-75818.dswbs` (75,818 frames).
+
 The digest match is the point: the workbench keys its store on the ROM's SHA-1,
 and it was given the decrypted revision, so nothing has to be re-derived from a
 different dump.
@@ -124,6 +128,21 @@ question is which file a buffer is.
   session reached and wrapped at frame 18,245); the Recording panel can move it
   to a file. Coverage and call edges do not depend on it.
 - Recording needs the interpreter, so the game runs slower than normal melonDS.
+
+## Two saves, two jobs
+
+The game uses a single save file next to the ROM and reads it on boot, so the
+profile is chosen by renaming that file, not by a menu:
+
+| save | what it answers |
+|---|---|
+| unlocked (the Action Replay-seeded `.sav` in that folder) | breadth. Every mode, character and court is reachable, so one session covers far more code, and it runs the "existing backup on boot" path |
+| new game (no `.sav` present) | progression. Unlock decisions and the flags they set, first-run defaults, save creation, intro and name entry — with a finished save none of that code runs, and a flag can be seen read but never seen written |
+
+To record the new-game path, move the unlocked `.sav` aside, boot, record, then
+rename it back. Name each session for the save it used (`unlocked-...`,
+`newgame-...`): the session file is the only place that distinction survives,
+and "who wrote this flag" is unanswerable from the unlocked recordings.
 
 ## Caveats of this particular save
 
