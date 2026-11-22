@@ -12,21 +12,33 @@ The build uses `1.2/sp2` by default with the per-file exceptions in
 `config/ATOJ/mwcc_versions.txt`. Never add a version or a map entry without a
 ROM-digest match.
 
-**Which compiler retail actually used is still open, and `sp2` is the weaker
-candidate.** The game shipped on 2004-12-30; `1.2/sp2` here is build 79, dated
-2005-08-11, i.e. seven months after release, while `1.2/b56` is build 56 of
-2004-09-16 (NITRO V1.0). Rebuilding the whole ROM with `b56` everywhere
-(`configure.py ATOJ --mwcc-version 1.2/b56`) still matches **1,532 of the 1,534
-complete units** - only `func_02025c30` (an inline-`asm` block, so it says
-nothing about C codegen) and `func_ov004_0205e274` (a source shape that only
-folds the way retail does under sp2) differ. So the two builds are identical for
-99.9% of units, the current default is a convenience rather than evidence, and
-the plausible reading is that retail is a build-56 ROM whose source we have
-written in a few sp2-shaped places.
+**Which build retail used is not settled, and neither vendored default is
+proven.** The game shipped on 2004-12-30, so `1.2/sp2` (build 79, `Runtime
+Built: Aug 11 2005`) cannot be the launch compiler however early Konami had SDK
+access - a compiler binary cannot predate its own build date. `1.2/b56` is
+build 56 of 2004-09-16 (NITRO V1.0) and does fit the date.
 
-Practical rule, on top of "probe both": **treat an sp2-only match as a source
-shape that has not been found yet, not as proof that this unit used sp2.** If a
-unit resists, prefer re-deriving it under `b56` before parking it.
+But b56 is not the answer either. Rebuilding the whole ROM with
+`configure.py ATOJ --mwcc-version 1.2/b56` matches **1,532 of the 1,534**
+complete units and still fails the digest, so the cartridge is not build-56
+output. What rules b56 out as *the* compiler is `func_02025c30`: its source is
+literally retail's instructions (`add r1, r1, #0x40000000` / `cmp r1, #0` /
+`bne`), b56 rewrites them to `adds` and deletes the `cmp`, and sp2 emits them
+verbatim. Retail has the `add` form, so retail's toolchain did not do b56's
+rewrite. That fingerprint is independent of source shape, which the usual
+"matches under X" evidence is not.
+
+So the likely story is a **third build we do not own** - a 2004-dated one such as
+build 68 (NITRO DS V1.0.2), which would fit the release date *and* share sp2's
+behaviour on literal `asm` blocks. Both vendored builds are stand-ins that agree
+with it on 99.9% of this cartridge, and the digest proves our bytes, not our
+provenance.
+
+Practical rule: keep probing `b56` first (it is one invocation and it is the
+build every per-file override needed), and when a unit only matches under `sp2`,
+treat that as a source shape not yet found rather than as proof about the
+compiler. Do not "fix" a unit by switching compilers unless the digest still
+matches afterwards.
 
 ## Compiler identity in this tree
 

@@ -4084,19 +4084,37 @@ The two exceptions are not evidence that retail used build 79:
   through something the compiler could not see through; the current line simply happens to reproduce
   retail under a compiler that postdates the game.
 
-So the honest model is: **retail is a build-56 ROM; the sp2 default is a convenience that works
-because the two builds agree on 99.9% of this cartridge.** The practical consequences:
+The inline-asm unit is the sharpest test available, because inside `asm { }` there is no source-shape
+freedom: both compilers receive retail's own instruction text. Under b56 the block comes out as
 
-* Never read "matches under sp2" as evidence about which compiler retail used. The digest cannot
-  distinguish the two configurations here, so it cannot settle it either.
-* For an unmatched unit, b56 remains the first probe (already the practice): it is the build that
-  predates release, and every one of the 66 per-file overrides needed it.
-* A unit that only matches under sp2 is a source shape we have not found yet. Re-derive it under
-  b56 rather than recording sp2 as its compiler.
+```
+adds r1, r1, #0x40000000
+bne  L0
+```
 
-The one caveat: the dump is header version 0, and a `Konami the Best` reprint followed on 2006-06-29.
-If this cart were that reprint, a 2005 compiler would be possible - but a reprint does not normally
-rebuild the game, and the b56-everywhere result above says the code is build-56-shaped almost
-throughout.
+- b56 folds the following `cmp r1, #0` into the `add` and deletes it. sp2 emits `add` / `cmp` /
+`bne` verbatim, which is what the cartridge contains. **So retail's toolchain did not do b56's
+rewrite.** That is a compiler fingerprint that does not depend on how we happen to write C, and it
+rules out "retail is simply b56 everywhere" as the model.
+
+Combined with the release date that leaves a third possibility, and it is the one that fits both
+facts: the launch was built with a **2004-dated build we do not own** - build 68 (NITRO DS V1.0.2)
+is the obvious candidate - which shares sp2's behaviour on literal `asm` blocks. Both vendored
+builds are stand-ins that agree with it on 99.9% of this cartridge. The digest proves our bytes, not
+our provenance, so this question cannot be settled from the ROM; it needs the missing compiler.
+
+What follows for the work:
+
+* Never read "matches under sp2" as evidence about which compiler retail used, and never read "b56
+  is older so it must be retail" either - the `asm` block shows the opposite.
+* Keep b56 as the first probe for an unmatched unit: it is one invocation, and every per-file
+  override needed it.
+* A unit that only matches under sp2 is a source shape we have not found yet; re-derive it under
+  b56 before parking it, but do not switch compilers unless the digest still matches afterwards.
+* `Konami the Best` (2006-06-29) is Konami's budget re-release line, normally the same content at a
+  lower price; a rebuild is possible but nothing here requires it, and the third-build reading above
+  explains the evidence without it.
+* Not present in `tools/mwccarm/1.2/`: build 68 and build 73/74/80. Acquiring build 68 is the one
+  measurement that would settle this, and it is a docs/tooling task, not a matching task.
 
 Restored with `python tools/configure.py ATOJ`; `ninja sha1` is green again on `8d555a80...`.
