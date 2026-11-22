@@ -42,7 +42,13 @@ The game's own text is the authority here, and it is easy to read:
   ROM `0x1b04f6` .. `0x1b73d0` (`rom = file + 0x6000` for this overlay) and
   RAM `0x02066cb6` .. `0x02067b90`
   (`ram = 0x0204c7c0 + file_offset`, the ov004 load base being the first
-  function's address).
+  function's address). Every overlay loads at that same base, so this RAM range
+  is only the bank while ov004 is the resident overlay; the workbench's overlay
+  table says which one is (`notes/workbench.md`).
+- **ov006 holds a second copy.** `都大会` also appears at `ov006` file offset
+  `0x62c4`, a shorter table rather than the whole bank, so a match that reads
+  one of these strings has to check which overlay is loaded before assigning it
+  an address.
 - **No symbol covers it.** The nearest named object is
   `data_ov004_02068fac kind:data(any)`, so the bank is part of the
   delinked-data blob; nothing in `symbols.txt` claims it yet.
