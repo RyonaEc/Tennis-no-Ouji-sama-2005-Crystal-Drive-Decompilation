@@ -345,3 +345,14 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
 
   makes mwcc materialise each shift with its own `lsl` and reaches retail's exact size. When a
   packing routine compiles short, count the `lsl`s: retail usually has one per field.
+
+- **A counter updated in place needs its address in a pointer variable.** In `0x0201779c` the
+  tail `*(u16 *)(node + 8) = *(u16 *)(node + 8) - 1;` lets mwcc fold the offset into both
+  accesses (108B). Declaring `u16 *cnt = (u16 *)(node + 8);` and writing `*cnt = *cnt - 1;`
+  forces retail's `add r1, r0, #8` / `ldrh` / `sub` / `strh` (112B). Same trick closes the
+  `cold` and `strhhu` shapes: any in-place u16 RMW that retail materialises an address for.
+
+- **When var3 prints `bl` differences, read the rest of the diff.** Calls to not-yet-linked
+  siblings differ in the object by definition, so `bl` lines are noise; but var3 prints the
+  whole hunk list, and a register swap further down is the real residue. Truncating the diff
+  at the first hunk hid a five-word ip/lr swap in `0x0201780c`.

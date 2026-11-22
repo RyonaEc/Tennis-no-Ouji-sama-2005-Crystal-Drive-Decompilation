@@ -4584,3 +4584,18 @@ with only the two chains' interleaving left. Two related units in the same band:
   unmatched and belong to one source shape.
 - `0x02025698` (68B) is a context restore (`msr cpsr_c`, `ldm ... ^`); `0x02033e40` (88B) is a
   varargs trampoline with `ldm r2, {r3}` — both off-limits per the existing notes.
+
+### 2.96 Keyed list removal matched at 0x0201779c, insert parked at 0x0201780c
+
+`0x0201779c` (112B) is the removal for a doubly linked list whose node carries a u16 key at
++0xa used as the offset of its two links. The body came out right on the first spelling; the only
+gap was the tail counter, which needs its address in a pointer (`u16 *cnt = (u16 *)(node + 8);`)
+instead of an inline `*(u16 *)(node + 8)`. Installed, digest verified, pushed.
+
+`0x0201780c` (116B) is the insert counterpart and is parked: the same source shape gives the
+same size and instruction order, but the copied link and the destination address swap ip and lr
+at 0x040-0x050, which is five words of the linked ROM. `reg.py` is the only thing that shows
+this, since the object compares size-equal.
+
+Also confirmed this session: `var3.py`'s diff must be read to the end. It prints `bl` target
+differences for every call to an unlinked sibling, and the real residue can sit in a later hunk.

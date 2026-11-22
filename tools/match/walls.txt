@@ -2169,3 +2169,10 @@ written off.
   w1 |= a9 << 16; w1 = a4 | w1;` and the same for `w2`) give retail's size exactly at 88B, and
   then only the interleaving of the two chains and the temporaries' registers differ. Reordering
   the two chains, or building `w2` first, changes the frame or keeps the same residue.
+  arm9 0x0201780c 116B -- insert counterpart of the 0x0201779c removal just matched (same
+  `*(u16 *)(list + 0xa)` key, same `u16 *cnt` pointer for the counter, same two tail calls).
+  Size and instruction order are identical, but retail keeps the copied link in ip and the
+  `n + k` destination in lr while mwcc swaps them (`ldr ip,[r1,r4]` / `add lr,r2,r4` vs
+  `ldr lr,[r1,r4]` / `add ip,r2,r4`), which is five differing words in the linked ROM. Naming
+  the destination as a `u32 *`, dropping the `first` variable, and reordering the declarations
+  all keep the swap. `reg.py` reports miss, so the unit stays parked with the exact residue.
