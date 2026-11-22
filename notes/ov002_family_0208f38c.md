@@ -86,3 +86,23 @@ turns that into a scaled sine/cosine pair, applies direction bits from `sl+0x4c`
 result against `0x30000`, and finally feeds three words plus the mode to
 `func_02057068`. That is a per-entity 3D placement, which is consistent with the
 nine-register frame and the three table bases.
+
+## `func_ov002_0205bee4` decoded (third callee resolved)
+
+`func_ov002_0205bee4(s32 a0, u8 *a1)` scales `a0` by a factor derived from `a1`:
+
+- `g = *(u32 *)data_ov002_02102070`, then `t = g + 0x274 + *(u8 *)(a1 + 2) * 0x1c`.
+- If `*(u8 *)(a1 + 0xd1) == 0` and `(*(u8 *)(t + 2) + 0xd9) & 0xff` is 0 or 1, the
+  factor source is 0; otherwise it is `*(u16 *)(a1 + 0xe8)`.
+- `n = min((u16)source >> 1, 2)`; factor is `2 - n`; the result is
+  `(s16)((a0 * (2 - n) + carry) / 2)`, where the `add rX, rX, rX lsr #31` before the
+  final `lsl #0xf` / `asr #0x10` is the negative-rounding fixup for that halving.
+
+So in the family body `func_0205bee4(0x14, sl)` yields "20 scaled by this entity's
+speed/state factor", and the result is added to or subtracted from the sine/cosine
+component depending on the direction bits. That is consistent with a movement
+step of up to 20 units per frame, halved and scaled.
+
+The remaining unresolved callees are `0x02053468` (0xdc), `0x020532e4` (0x184),
+`0x020528cc` (0xa8), `0x02057068` (0xa34), `0x020780f8` (0xbc) and
+`func_0203b0c0` (0x20c, main).
