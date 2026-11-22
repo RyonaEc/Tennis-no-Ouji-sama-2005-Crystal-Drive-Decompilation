@@ -238,3 +238,14 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   `switch (mode) { case 0: break; case 1: ...; case 2: ...; }` gives retail's shape: `cmp r1,#1;
   beq` to a shared trailing `ldr/orr/str/bx lr` block plus one predicated case. Switch dispatch
   suppresses the conversion that `if`/`else if` triggers.
+
+* **A chained `||` test gives one shared failure exit; separate `if (fail) return 0;` lines do not.**
+  Four bounds checks written as four early returns each get if-converted inline (`movlt r0, #0;
+  bxlt lr`) and cost 12 extra bytes. Writing `u32 ok = 1;` first and then a single
+  `if (a < lo || a > lo2 || b < hi || b > hi2) ok = 0; return ok;` produces retail's shape: the
+  flag is set in `r0` before the compares, every check branches to one shared `mov r0, #0; bx lr`
+  block, and the success path is a single `bxle lr`.
+* **Swapping and negating two values needs exactly one statement each.** `t = hi2; hi2 = -hi;
+  hi = -t;` gives retail's four instructions (load, negate, store, negate). Adding a redundant
+  `hi = -hi;` to "make the intent clear" makes mwcc negate the same register twice, spending one
+  instruction and 4 bytes.

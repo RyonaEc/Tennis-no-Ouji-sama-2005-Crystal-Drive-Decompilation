@@ -1574,3 +1574,11 @@ src/ov002/func_ov002_0204d488.c:
 src/ov002/func_ov002_020e4450.c:
     complete
     .text       start:0x020e4450 end:0x020e44a4
+
+src/ov002/func_ov002_0207c530.c:
+    complete
+    .text       start:0x0207c530 end:0x0207c584
+
+src/ov002/func_ov002_0207ccd4.c:
+    complete
+    .text       start:0x0207ccd4 end:0x0207cd24
