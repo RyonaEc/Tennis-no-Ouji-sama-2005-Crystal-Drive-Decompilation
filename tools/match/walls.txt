@@ -1938,3 +1938,17 @@ written off.
   `bxle` (a separate `if (n == 0) return;` duplicates the test and costs 12B), and the
   loop locals must be declared `u32 id;` before `s32 i;` -- the reverse order puts the
   cursor in r6 and the id in r5 where retail has them the other way round.
+
+  arm9 0x02028920 and 0x02028958 56B (updated) -- the earlier "three allocations missing"
+  note is obsolete: the calls are three-argument, `cb(o, *(u32 *)(a0 + 0x2c), *(u32 *)(a0
+  + 0x28))`, in that order. With that arity the frame becomes retail's `push {r4, lr}` and the
+  unit is size-exact at 56B; what remains is two instructions: retail loads `[a0 + 0x34]`
+  before `[lr]` where mwcc loads them the other way round, and the callback lands in `ip`
+  for retail and `r3` for us. Reordering the add operands, hoisting the addend into a
+  declared-first local, and dropping the local all move other things instead.
+
+  arm9 0x0202cc90 92B -- spin-wait wrapper: `g = data_0204aec0; s = func_02026350(); while
+  (*(u32 *)(g + 0x34) & 4) func_020251c0(g + 0xd4); func_02026364(s); return
+  *(u32 *)(*(u32 *)g) == 0;`. Size-exact at 92B with `g` declared after `s`; retail hoists
+  the pool load above the `bl` and keeps `g` in r6 with `s` in r5, mwcc emits `bl` then the
+  load with `g` in r5 and `s` in r6. Declaring/assigning `g` first grows it to 96B.
