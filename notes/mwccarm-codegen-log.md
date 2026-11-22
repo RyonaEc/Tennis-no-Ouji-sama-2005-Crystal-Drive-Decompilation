@@ -4694,3 +4694,15 @@ retail has `movne r0, #0` then `moveq r0, #3`. Writing the condition the way ret
 `if (func_0202cc04() != 0) return 0; return 3;` — gives the two predicated moves in retail's order.
 `var3.py` showed only the `bl` lines, so this one needed the byte diff to find; `reg.py` correctly
 refused the first spelling.
+
+### 3.05 Subsystem start at 0x0202cb38 matched
+
+`0x0202cb38` (136B) latches `data_0204acfc`, clears five words of `data_0204ad00`, calls
+`func_02027d68`, spins until `func_02027f4c(5, 1)` returns non-zero and then arms channel 5 with
+`func_02027f74(5, 0x0202c4dc)`.
+
+The first spelling was already 136B but hoisted `ldr` of the object's address above the early
+return, because the source opened with `Ctx *o = &data_0204ad00;`. Referring to `data_0204ad00.f0`
+directly and leaving the pointer out defers the materialisation to after the guard, which is what
+retail does. A local pointer initialised at the top of a function is therefore not free: it moves
+the address load earlier.

@@ -395,3 +395,7 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   `mov r0, #3` plus `movne r0, #0`; retail's `movne r0, #0 / moveq r0, #3` comes from writing the
   branch on the non-zero case (`if (x != 0) return 0; return 3;`). Same size, two words apart, and
   `var3.py` may report only `bl` differences — confirm with a compiled-vs-retail word dump.
+
+- **A local `T *p = &global;` at the top of a function hoists the global's address load above an
+  early return.** Referencing `global.field` directly keeps the materialisation at first use, after
+  the guard. Same size, different order — and this one is common in init/latch functions.
