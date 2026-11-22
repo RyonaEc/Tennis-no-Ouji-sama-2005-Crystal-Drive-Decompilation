@@ -2473,3 +2473,10 @@ written off.
   a0 in r3 and b0 in sl, mine puts a2 in lr, b1 in sl, b0 in fp. Swapping the declaration order of the a
   and b locals and adding a u64 cast on the shifted value both leave the size and the 11-line residue
   unchanged. Casting to u64 does match retail's `lsr`+`orr` shift form either way.
+  (exhausted, 0x0201ff64) permute.py closed both scheduling axes: all 6 orders of the three
+  output statements score 148 (worse than the 156 baseline), and all 720 orders of the six input
+  declarations score exactly 156 -- mwcc ignores declaration order when choosing load order and
+  registers here. The s64-temp formulation (`x = (s64)a1*b2 - (s64)a2*b1;` then `out[0] = (s32)((x +
+  0x800) >> 12)`) also scores 156 with the same 11-instruction residue. So the remaining difference is
+  not statement order, declaration order or formulation; it is an allocator decision with no source-level
+  handle found. Do not re-run permutations on this unit.
