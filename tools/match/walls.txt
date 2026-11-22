@@ -1085,3 +1085,25 @@ arm9 0x0203b698 56B -- call every non-null entry of a function-pointer table:
   (`ldr r4, [pc]; cmp r4, #0` - the address itself is compared against zero, which no plain
   `T **t = table;` spelling produces), `blx r0` for the call and the table pointer bumped by 4.
   Not attempted past the decode.
+ov002 0x02066080 112B -- per-entity limit check: copy the 12-byte table at data_ov002_020fdc24 to a
+  stack local (`ldm`/`stm`), then `b = *(u8 **)data_ov002_02102070 + 0x1744 + a0 * 0x38` and
+  `if (*(u32 *)(b + 0x18) < t.v[*b]) { *(u32 *)(b + 0x18) += 1; return 0; } return 1;`. Two
+  findings: the reload needs `<volatile u32>` on the field (otherwise mwcc CSEs the compare load
+  into the increment and the unit is 4B short), and the entity pointer must be computed *before*
+  the table copy or the r0-r3 allocation is scrambled. 112/112 with only the RMW addressing form
+  left: retail uses `ldrlo r1, [r2, #0x18]!` + `strlo r1, [r2]` (pre-indexed writeback), mwcc
+  always emits `[r2, #0x18]` twice. Local pointer, `++`, and the split-expression form all give
+  the same pair.
+ov002 0x020799d4 112B -- walks four 0x158-byte entity slots from base+0x2e4 and sets/clears bit
+  0x20 on `(*(u32 *)data_ov002_02102070 + 0x274) + *(u8 *)(b + 2) * 0x1c + 0x18`, depending on
+  whether the slot index equals a0. 112/112 when the base and the indexed add are written as two
+  statements (`e = base + 0x274; e = e + idx * 0x1c;`) and the field has its own `u32 *v` - that
+  reproduces retail's `mla lr, r4, r3, lr` exactly. The remaining difference is the eq branch:
+  retail load-modify-stores through `ldreq r4, [lr, #0x18]!` (writeback), mwcc materialises
+  `add r4, lr, #0x18` once for both branches.
+ov002 0x0207b494 112B -- two-slot cleanup: for i in 0..1, if `*(s32 *)(base + 0x3694 + i * 4) > 0`
+  and `*(u8 *)(base + 0x36a6 + i) == 1` then clear that byte and `*(u32 *)(base + 0x38) &= ~2`.
+  112/112 with `t = base + 0x3654` as a local and the byte expressed inline as
+  `*(u8 *)(t + i + 0x52)` in both places (naming that pointer costs the extra `add`, 116B). Retail
+  needs no callee-saved register at all (`stmdb {lr}` + `sub sp, #4`); every spelling here takes
+  r4.

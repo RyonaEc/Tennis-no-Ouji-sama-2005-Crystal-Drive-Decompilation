@@ -3110,3 +3110,43 @@ pooled bound (0xc350, and 0x80bbb040 - a float bit pattern used as an integer bo
 through `*(u32 *)(*(u8 **)(data_02042a68 + 0x10) + 0x154)`. The two halves want opposite address
 materialisation: retail materialises `+2` into `ip` for the RMW and uses the displacement for the
 clamp, and any single spelling that gets one half right CSEs the other into the same form.
+
+## 3.07 Signedness picks HS versus GE, a new cheap lever (2026-11-22)
+
+`ov002 0x0208c98c` (104 B, **matched**) is a bounds-checked setter: reject `a0 >= 2` and
+`a1 >= 4`, then write two u16 at `base + 0xba + a0 * 0x30 + a1 * 0xc + {4,6}`.
+
+The unit was 104/104 on the first structural attempt but with `addge`/`popge` where retail has
+`addhs`/`ldmhs`. That is not a disassembler synonym: `hs` is the unsigned condition (cond 2) and
+`ge` is the signed one (cond 0xA), so the encodings differ by one nibble per instruction.
+**Declaring the range-checked parameters `u32` instead of `s32` turned the whole unit into a
+match** - the comparison then compiles as unsigned `>=`, which is `hs`. Any guard written as
+`if (x >= CONST) return;` on an index or count should be checked for this first: `s32` and `u32`
+give the same size, so `var3` shows it only as a condition-name difference on otherwise
+identical instructions, and it is the cheapest possible fix.
+
+The other half of the same unit is a size lesson: the base pointer has to be initialised at its
+declaration, *before* the two guards (`u8 *base = *(u8 **)data_ov002_02102070 + 0x4bc4;`).
+Declaring it below the guards makes mwcc take a callee-saved register and the unit shrinks to
+84B, because it then keeps the whole computed address in r4 across the checks instead of
+rematerialising from lr/ip after them.
+
+## 3.08 Three ov002 near-misses around the same entity table (2026-11-22)
+
+`0x02066080`, `0x020799d4` and `0x0207b494` (112 B each, all parked) are all 112/112 or one
+addressing form away. What they teach:
+
+- **A reload needs `volatile`.** In `0x02066080` the source legitimately reads the same field
+  twice (compare, then increment). Plain C lets mwcc CSE that into one register and the unit comes
+  out 4B short (108B). Writing the field as `<volatile u32>` forces retail's two loads and lands
+  112B. If a near-miss is short by exactly the size of one load *of a value already in a
+  register*, try `volatile` on that access.
+- **Compute the entity pointer before a local struct copy.** `T12 t = *(T12 *)data_...;` placed
+  before `b = ... + a0 * 0x38` makes mwcc allocate the copy from r2; placing it after gives
+  retail's `mul lr, r0, r1` / `ldm r0, {r0, r1, r2}` order exactly.
+- **Two statements beat one expression when the offset is scaled.** `e = base + 0x274; e = e +
+  idx * 0x1c;` reproduces retail's `mla lr, r4, r3, lr`; the single nested expression picks a
+  different register for the scaling and shuffles everything after it.
+- The shared dead end is the pre-indexed writeback form `ldr rX, [rY, #imm]!`. Retail uses it for
+  the RMW half of two of these units and mwcc never emits it from C here (offset form twice
+  instead, same size, different encoding). That is the one residue left in all three.
