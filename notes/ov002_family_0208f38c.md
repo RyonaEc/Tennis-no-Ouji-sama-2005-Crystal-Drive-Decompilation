@@ -60,3 +60,29 @@ Byte-exactness here depends on eight callee signatures and three table layouts, 
 it needs the workbench (see `notes/workbench.md`) to establish field meanings and
 call arguments rather than further disassembly. The family is still the single
 biggest win available in ov002.
+
+## Resolved callee signatures (from already-matched sources)
+
+- The global base is `data_ov002_02102070` (`extern u8 data_ov002_02102070[]`), and
+  `*(u32 *)data_ov002_02102070` is the pointer to the main state struct. Every
+  `ldr rX, [pc]` at the top of a family member loads that symbol, so
+  `g = *(u32 *)data_ov002_02102070`; the same word appears in other unmatched ov002
+  units (e.g. 0x0205fe04, 0x020882d4, 0x0207ff34), so they all index one structure.
+- `func_ov002_0205bf64(void)` returns `s16`, specifically
+  `*(s16 *)(g + 0x1e00 + 92)` -- a live angle. In the family body its result minus
+  `0x14` becomes `r3`, so `0x14` is the same 20 that `func_0205bee4` is called with.
+- `func_ov002_0204f770(s32 a0, u32 a1, s32 *a2)` is a sine/cosine table lookup:
+  `k = a1 & 0xff`, `a2[0] = (t[k] * a0) >> 8`, `a2[1] = (t[k + 0x40] * a0) >> 8`,
+  `a2[2] = 0`, with `t = data_ov002_020fc208` (`s16[]`, 0x80 entries). In the family
+  the call is `func_0204f770(scaled, angle_byte, sp + 0x2c)`, so `sp + 0x2c` is a
+  three-word sine/cosine result that the rest of the body then clamps and passes on.
+
+## Reading of the body with those signatures
+
+The routine computes an entity's heading (from the live angle and the per-record
+0x38-stride table at `+0x8`), converts it to a byte angle by dividing by 360,
+turns that into a scaled sine/cosine pair, applies direction bits from `sl+0x4c`
+(bit 2) or `sl+0x50` (bits 0x10/0x20) to add or subtract a component, clamps the
+result against `0x30000`, and finally feeds three words plus the mode to
+`func_02057068`. That is a per-entity 3D placement, which is consistent with the
+nine-register frame and the three table bases.
