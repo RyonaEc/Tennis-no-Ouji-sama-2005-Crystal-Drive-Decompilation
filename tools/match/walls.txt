@@ -2218,3 +2218,11 @@ written off.
   (splitting them around it costs 4 to 12 bytes). Residue: retail keeps that zero in ip
   (`mov ip, #0` plus three `str ip`), mwcc uses r1. Chained assignment gives 132B, the split form
   136B.
+  arm9 0x020209c8 124B -- update the display window and key mask: read the u16 at
+  data_02048c74+0x14 and at +0, store the new mode into +0x14, store (old | current) & ~mode into
+  +0, then branch on the mode writing 0x84 to 0x04000243 (mode 8) or 0x82 to 0x04000249 (mode 0x100)
+  and finish with func_02021538(*(u16 *)data_02048c74). The mode dispatch must be a `switch` with an
+  explicit empty `case 0: break;`: the equivalent if/else-if chain drops the redundant `cmp r0, #0`
+  and the unit comes out 112B. Residue: a five-word register permutation -- retail keeps ~mode in
+  ip, the +0x14 word in r2 and the +0 word in r3, mwcc gives r3/ip/r2. Naming ~mode as a separate
+  local keeps the same rotation, and making that local u16 grows the unit to 128B.
