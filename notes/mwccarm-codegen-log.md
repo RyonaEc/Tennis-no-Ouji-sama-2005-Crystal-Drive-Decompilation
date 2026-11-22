@@ -3063,3 +3063,50 @@ Second, the arm9 versions differ from this one only in the control write (1 vs 0
 of the 64-bit result they read, so the shape was already proven. Before decoding an unknown IO
 helper from scratch, grep the matched tree for its register address: the sibling function usually
 hands over the exact local-pointer style mwcc needs.
+
+## 3.06 The aligned-read idiom, and where if-conversion refuses to be argued with (2026-11-22)
+
+Five arm9 units decoded this session, none installable, but two reusable results.
+
+**The unaligned-u8 read.** `0x02032c38` (56 B, `strlen` over a pointer that may be odd) and
+`0x02032b00` (48 B) both read a byte through a u16 load chosen on pointer parity. This source
+reproduces retail's sequence exactly:
+
+```c
+    if ((u32)p & 1)
+        v = (u32)((*(s16 *)(p - 1) & 0xff00) >> 8);
+    else
+        v = *(u16 *)p & 0xff;
+```
+
+`ands r1, r0, #1` picks the predicate; both arms fold into `ldrheq` + `and #0xff` and
+`ldrhne [r0, #-1]` + `and #0xff00` + `asr #8`. The `s16` cast matters: with `u16` mwcc emits
+`lsr`, retail has `asr`.
+
+**If-conversion of a two-instruction loop body.** The same unit then refuses to close. Retail's
+loop is
+
+```
+008 add r2, r2, #1      ; n++
+00c add r0, r0, #1      ; p++
+010 ...read...
+02c bne 008
+```
+
+while mwcc always predicates the two increments (`addne r2`/`addne r0`/`bne 008`) and saves the
+four bytes, for 52 B against 56 B. Writing the exit as `break`, as an early `return n`, or as a
+`goto done` changes only the *epilogue* (`moveq r0, r2`/`bxeq lr` versus a shared tail); the body
+stays predicated in all three. The exit shape is therefore a real lever (early return lengthens
+the unit by exactly 4 B and moves the epilogue), but the body predication is not, at this body
+size.
+
+**Divider family.** `0x0201fd50` (60 B) is the reciprocal starter - `DIVCNT = 1`,
+`NUMER = 0:0x1000`, `DENOM = a0:0` - and the matched `func_0201fd18`/`func_0201fd8c` gave the
+spelling directly. It is 60/60 with the constant and the NUMER pointer swapping r2/r3, the
+allocation tie the playbook warns about.
+
+**Add-and-clamp pair.** `0x0200fbc0`/`0x0200fc18` (64 B each) add to a field then clamp it from a
+pooled bound (0xc350, and 0x80bbb040 - a float bit pattern used as an integer bound) reached
+through `*(u32 *)(*(u8 **)(data_02042a68 + 0x10) + 0x154)`. The two halves want opposite address
+materialisation: retail materialises `+2` into `ip` for the RMW and uses the displacement for the
+clamp, and any single spelling that gets one half right CSEs the other into the same form.

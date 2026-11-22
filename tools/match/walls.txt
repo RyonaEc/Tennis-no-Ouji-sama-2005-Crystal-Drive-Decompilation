@@ -1043,3 +1043,29 @@ ov002 0x020f2970 84B -- per-entity state copy: `rec = base + 0x2e4 + a0 * 0x158`
   and `base[a0 + 0x14e]`. The `== 2` spelling matches exactly in length and instruction order
   (`addeq/moveq/strbeq` predicated on the ne side): the only difference is that retail puts the
   address temp in r0 and the zero in r1, mwcc the other way round. Register-name residue only.
+arm9 0x0201fd50 60B -- divider reciprocal start: `DIVCNT = 1; NUMER = 0:0x1000; DENOM = a0:0;`
+  i.e. numerator 0x1000_00000000 divided by a0 (the fixed-point reciprocal companion of the
+  matched func_0201fd18/0201fd8c pair). My spelling is 60/60 bytes with identical order; the only
+  difference is that retail keeps the constant 1 in r3 and the NUMER pointer in r2 where mwcc puts
+  the constant in r2 and the pointer in r3. Pure allocation tie: declaration order and a single
+  `volatile u8 *base` with offsets both change nothing.
+arm9 0x0200fbc0 64B -- `((u16 *)*(u32 *)(*(u8 **)(data_02042a68 + 0x10) + 0x154))[1] += a0;` then
+  reload the whole chain and clamp that field to 0xc350. 64/64 with `f = (u16 *)(b + 2); *f = *f +
+  a0;` for the add half and the same `f` form for the clamp half - but retail materialises the +2
+  into ip for the add (`add ip, r3, #2; ldrh r3, [ip]; ... strh r0, [ip]`) and uses the displacement
+  `[r1, #2]` for the clamp. Writing the clamp with `v[1]` reproduces retail's half exactly but makes
+  mwcc fold the add half too (60B). The two halves want opposite materialisation, which one
+  translation unit cannot express.
+arm9 0x0200fc18 64B -- same as 0x0200fbc0 with the u32 field at +0x10 and cap 0x80bbb040 (a float
+  bit pattern used here as a plain integer bound). Same split-materialisation wall.
+arm9 0x02032c38 56B -- strlen over a possibly unaligned pointer. The odd/even read reproduced
+  exactly (`ands r1, r0, #1` / `ldrheq`+`and #0xff` / `ldrhne [r0, #-1]`+`and #0xff00`+`asr #8`
+  from an explicit `if ((u32)p & 1)` with an `s16` cast), and `return n` versus `break` picks the
+  epilogue shape. What will not come out is the loop body: retail branches back to `n++; p++;`
+  unconditionally, mwcc if-converts the two increments (`addne`/`addne`/`bne`) and lands 52B.
+  Tried: break + single return (52B), early `return n` (56B, predicated `moveq`/`bxeq`), `goto`
+  (52B).
+arm9 0x02026a50 56B -- almost certainly hand-written: 8-word `ldm/stm` block loop then a single-word
+  `ldm/stm` tail, with `ip = dst + (n >> 5) * 32` and `sl = dst + n`. A 32-byte struct copy in C
+  compiles to 124B of ldmia/stmia per-word moves, not `ldm r0!, {8}`; leaving it as delinked
+  assembly.
