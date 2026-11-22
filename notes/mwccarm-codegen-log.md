@@ -3270,3 +3270,33 @@ lets the compiler fold - the same lesson as the pointer-initialisation cases, bu
 copying rather than address arithmetic. Second, `0x02052608` shows that mwcc *does* emit retail's
 `ldr ip, [pc]; bx ip` interworking tail call from an ordinary `return f(x);`, so that particular
 retail idiom is not a sign of a function pointer and should not be read as one.
+
+## 3.14 `volatile` on a reloaded byte, and the empty overlay (2026-11-22)
+
+The duplicate-load lever generalises past words. `ov008 0x0204cd20` reads the same index byte
+twice - once for the count-table lookup, once for the record stride - and retail emits two `ldrb`s.
+`u32 n = *(u8 *)t;` followed by `u8 *e = c + 0x610 + *(u8 *)t * 0x300;` makes mwcc common the two
+loads into one and come up 4 bytes short at 136; changing only the second read to
+`*(volatile u8 *)t` restores the second `ldrb` and lands on retail's 140 bytes exactly. So the rule
+from the word cases holds for sub-word reloads as well: when retail loads the same location twice
+and the C form will not, `volatile` is the spelling, not a second named temporary.
+
+The unit still does not match. With the size right, the only residue is that retail materialises
+`add r3, r4, #0x40` and addresses the byte through `[r3]`, where mwcc folds both reads to
+`[base, #0x40]` and hoists the count lookup ahead of the record pointer. That is the same split
+materialisation seen at `0x020e198c`, now confirmed in a second overlay and a different shape, which
+makes it the single most common remaining gap rather than an ov002 quirk.
+
+Two bookkeeping findings while picking work. `ov007` has no code at all - its overlay is 32 bytes
+and its delinks file contains only `.ctor` and `.bss` - so `auto.set_module` now reports that
+plainly instead of raising `AttributeError` on the missing `.text` match. And the 12-byte
+`ov006 0x0204df9c` is a boundary artefact, not a function: it pops a frame it never pushes, so the
+delink should start one `push` earlier. Both are recorded in `walls.txt`; neither changes any
+source.
+
+A third shape joined the list while picking the next unit: `ov002 0x02082034` wants its index byte
+re-read inside a four-iteration loop (retail's loop body begins at the `ldrb`) while still sharing a
+single induction register between the `lsl #3` destination and the `lsl #1` source. Hoisting the read
+costs nothing but produces 96 bytes with two extra induction registers; inlining it lands at 112.
+So the `volatile` lever from above is not interchangeable with "move the expression into the loop":
+mwcc strength-reduces differently in each case, and neither matches here.

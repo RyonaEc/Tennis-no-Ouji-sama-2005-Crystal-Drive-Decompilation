@@ -1190,3 +1190,22 @@ ov002 0x0204f5a0 132B -- pushes a 12-byte record into a 0x40-entry table: index 
   on success. Mine is 144B: retail reads the index byte three times (r6 for the count lookup, r4
   for the stride, then again for the final increment) and uses `ldr r6, [ip, r6, lsl #2]` operand
   shifts for both table accesses, which the straightforward C form does not reproduce.
+ov008 0x0204cd20 140B -- 12-byte record push, same family as ov002 0x0204f5a0: index byte at
+  base + 0x40, counts at base + 0x24b5c + idx * 4, records at base + 0x24b64 + idx * 0x300 +
+  cnt * 12, refusals when the count is already 0x40. Source reproduces the size exactly (140/140)
+  once the second index-byte read is `*(volatile u8 *)t` - mwcc otherwise CSEs the two `ldrb`s
+  into one and lands at 136B - but the residue is the address form: retail materialises
+  `add r3, r4, #0x40` and loads `ldrb` through `[r3]` twice, while mwcc folds both to
+  `[base, #0x40]` and orders the count lookup before the record pointer.
+ov005 0x0204f340 140B -- varargs-shaped coordinate update taking x/y and an s16 pair from the
+  stack: rotates the target bytes (`(x & 0xff) + (w & 0xff00)` and `(y & mask) + w2 & 0xfe00`),
+  writes back both halves and returns early on a null pointer. Not attempted beyond decoding.
+ov006 0x0204df9c 12B -- not a matchable function: the whole body is `add sp, sp, #4;
+  ldm sp!, {lr}; bx lr`, i.e. it pops a frame it never pushes, so the delink boundary is one
+  `push` too late. No C source can produce this; leave it as delinked assembly.
+ov002 0x02082034 92B -- copies four s16s into an 8-byte stride at p + 0x3c6 from a table indexed by the
+  byte at base + 0x36ac + 0x24, after calling func_ov002_020848a0 for p. Retail re-reads that index
+  byte on every iteration (loop body starts at the `ldrb`) while keeping one induction register used
+  as both `lsl #3` for the destination and `lsl #1` for the source. Hoisting the byte read gives 96B
+  with two extra induction registers; inlining it takes 112B because mwcc then re-materialises the
+  table address each pass.

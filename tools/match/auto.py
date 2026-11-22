@@ -66,6 +66,8 @@ def set_module(mod):
         symp = pathlib.Path(f'config/ATOJ/arm9/overlays/{mod}/symbols.txt')
         m = re.search(r'\.text\s+start:(0x[0-9a-f]+)',
                       pathlib.Path(f'config/ATOJ/arm9/overlays/{mod}/delinks.txt').read_text())
+        if not m:
+            raise SystemExit(f'{mod} has no .text section (empty overlay)')
         base = int(m.group(1), 16)
     rom = binary.read_bytes()
     POOL[mod] = (base, rom)
