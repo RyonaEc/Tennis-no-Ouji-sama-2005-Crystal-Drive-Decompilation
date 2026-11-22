@@ -2287,3 +2287,11 @@ written off.
   register in both paths, and saves a0/a1/a2 in r5/r4/r3 across two epilogues that share one exit.
   The direct spelling reaches 72B: mwcc folds the constant into `add r1, r4, #0x6600000` and emits a
   separate return after each call instead of one shared tail.
+  arm9 0x02026a04 76B -- word fill: `end = dst + len`, `mid = dst + ((len >> 5) << 3)`, an
+  8-word-per-iteration loop (`stmlt r1!, {r0, r2..r8}` with the value replicated into eight
+  registers) and a single-word tail (`stmlt r1!, {r0}`), i.e. the 32-byte body of a memset helper.
+  mwcc refuses to fold eight consecutive `*dst++ = val;` statements, or eight
+  `*(u32 *)(dst + n) = val;` statements, into the stm retail has: both spellings come out as one
+  `str` per word with offsets, and the byte-shifted-address spelling even costs an extra register.
+  Building a `u32[8]` struct and assigning it through a pointer spills the block to the stack
+  instead. Retail's eight-live-register stm needs a source shape that has not been found yet.
