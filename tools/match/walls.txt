@@ -2416,3 +2416,12 @@ written off.
   `b + j*3 + i` into one accumulating address register, so its inner body has no per-iteration
   `add r0, rowbase, i`. Giving the row base a pointer of its own makes mwcc keep two live bases and
   unroll the 2-trip outer loop (176B). Both branches are recorded in notes/mwccarm-codegen.md 3.13.
+  arm9 0x02032c70 144B -- 16-bit ring/cursor update: `arr = *(u32 *)(0x027fff60 + 0x1c) + 0x8000`;
+  `h = p[0]`; `idx = (h + 1) & 0x3fff`; return when `idx == p[2]`; else merge one byte of the u16 argument
+  `v` into `arr[h & ~1]` -- the high byte when `h` is odd (`(old & 0xff) | (v << 8)`), the low byte when
+  it is even (`(old & 0xff00) | v`) -- and store `p[0] = idx`. Pools resolved: 0x027fff60 and the 0x3fff
+  index mask. Spelling with plain masks reaches 124B against 144B: retail converts through `lsl #0x10` +
+  `lsr #0x10` pairs (three of them across the two paths) where the masks fold them away, and adding
+  explicit `(u16)` casts on the stored expressions drops it to 112B. The 20-byte gap is exactly those
+  conversion pairs, so the source needs a shape that makes mwcc re-extend the u16 argument at each use
+  rather than keeping it in a register.
