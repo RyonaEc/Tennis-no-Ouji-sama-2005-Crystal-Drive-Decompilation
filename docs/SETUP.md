@@ -22,13 +22,27 @@ If it is missing for an encrypted dump, `init.py` stops and says so rather than
 extracting a garbled secure area.
 
 **Which revision the digest pins.** `config/ATOJ/tennis_ATOJ.sha1` is
-`8d555a80db47278475ffdfdf808fe80dbd7c48cf`, which is the cartridge image as
-dumped, with the secure area at `0x4000` still encrypted. A `ndstool`-style
-decryption writes exactly that one 4 KiB page and nothing else, producing a
-different revision (for this cart, `9eec3248...`) that will never match the
-pinned digest. Keep the raw dump in use and a decrypted copy out of `extract/`:
-`init.py` expects a single `.nds` there, and re-running it against the decrypted
-image would re-pin every published number to a different revision.
+`8d555a80db47278475ffdfdf808fe80dbd7c48cf`: the cartridge image with the secure
+area at `0x4000` **still encrypted**. Decrypting it produces
+`9eec3248d3569eba8abcb3244adcbdf01a5ea424`, and the changed bytes are exactly
+`0x4000`-`0x47ff` - the 2 KiB KEY1-encrypted secure-area block, which is the arm9's
+first 0x800 bytes. Code starts at the header's entry point `0x02004800`, past it,
+and every other byte of the 64 MiB image is identical. So the two revisions are
+the same game with the same code, and neither is better for matching.
+
+Which is more common depends on the dumper, and for DS it is the **decrypted**
+form: No-Intro catalogues decrypted releases, and `wooddumper` and
+`GodMode9i` write decrypted files by default. This project's pin happens to be
+the encrypted-secure-area revision, so a contributor whose dump is decrypted has
+the right cartridge and a different hash. Two ways to reconcile it:
+
+* re-encrypt a copy with NDecrypt `-e` (or `ndstool -se`) and use that image, so
+the pinned digest matches, or
+* run `init.py` against the decrypted image and accept that it re-pins
+  `tennis_ATOJ.sha1` (and therefore every published digest) to `9eec3248...`.
+
+Do not do the second by accident: `init.py` takes a single `.nds` under
+`extract/`, so keep only the intended revision there.
 
 Do not commit the ROM or the BIOS; `.gitignore` covers both.
 
