@@ -231,3 +231,10 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   becomes a pooled constant plus a register add (`ldr r0, [pc]; add r1, r2, r0`). Retail
   `func_ov002_0204d488` contains both spellings side by side, and that mixed source is what makes
   it match — one spelling alone collapses to a single address form and lands 8 bytes short.
+
+* **A small `switch` keeps a branch that the equivalent `if` chain gets if-converted away.** For
+  `func_ov002_020e4450` the natural `if (mode == 1) ... else if (mode == 2) ...` compiles both
+  bodies to predicated `ldreq`/`orreq`/`streq` and lands 4 bytes short. Writing the same logic as
+  `switch (mode) { case 0: break; case 1: ...; case 2: ...; }` gives retail's shape: `cmp r1,#1;
+  beq` to a shared trailing `ldr/orr/str/bx lr` block plus one predicated case. Switch dispatch
+  suppresses the conversion that `if`/`else if` triggers.

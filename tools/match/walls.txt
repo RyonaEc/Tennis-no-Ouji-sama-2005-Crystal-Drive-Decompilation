@@ -1689,3 +1689,12 @@ forces that pairing turns up.
   4-byte-element spelling strength-reduces to an incrementing pointer (72B) and `b[i + 7]`
   hoists `i + 7` (80B). All 25 compilers were tried on the 72B shape: none avoids the reduction.
 
+
+  ov002 0x02082034 92B -- `u8 *p = func_ov002_020848a0(); for (i = 0; i < 4; i++)
+  *(u16 *)(p + 0x300 + i * 8 + 0xc6) = data_ov002_020fc6e4[b[0x24] * 4 + i];` with
+  b = `*(u8 **)&data_ov002_02102070 + 0x36ac`. The inner table access is solved: a 4-s16 row
+  struct (`t[b[0x24]].f[i]`) reproduces retail's `add r2, ip, r2, lsl #3` + `ldrsh [r3, r2]`, but
+  it costs an extra callee-saved register (108B). Best shape is 96B vs 92B, differing only in
+  that retail materialises `b` with a pooled `add r4, r2, r1` where mwcc merges the constant into
+  `add #0x3000` + `ldrb [r1, #0x6d0]`, plus one redundant zero init. A `u32 off = 0x36ac` local
+  does not stop the merge.
