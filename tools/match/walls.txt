@@ -2204,3 +2204,9 @@ written off.
   u32 return (a void tail gives 204B). Residue: one extra `mov r1, r6` ahead of the first
   `ldr r1, [r6, #0x34]`; the `while (1) { if (!(p->f34 & 4)) break; ... }` spelling drops it to
   200B.
+  arm9 0x0201c0c4 124B -- look the node up in data_020475f0, else in data_020475fc and compare
+  against the node's +0x3d byte (s32 a0 is required for retail's `blt`; u32 gives `blo`), run
+  func_0201c140, then re-key with func_0201779c(0x020475f0, h), store a0 at +0x3d, notify and
+  return h. Size and instruction sequence match; the only residue is the load temp: retail has
+  `ldrb r1, [r4, #0x3d]; cmp r5, r1`, mwcc gives `ldrb r0, ...; cmp r5, r0`. Tried a u8 local
+  assigned in place, a u8 `lim` declared at the top, and a struct field for +0x3d; all keep r0.
