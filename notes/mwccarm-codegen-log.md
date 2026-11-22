@@ -396,7 +396,7 @@ the Thumb block, not placement.
 Levers above are cross-checked against, and reusable from, these:
 `tangosdev/sm64ds-decomp` `notes/mwccarm-codegen.md` (statement order colours
 temps; the materialisation wall and its build dependence; struct-copy load
-batching), `fuddlesworth/pokebw2` `docs/matching.md` (narrow parameters change
+batching), `fuddlesworth/pokebw2` `pokebw2/docs/matching.md` (narrow parameters change
 caller scheduling; direct-global accesses instead of cached; pointer-reference
 count flips added-vs-folded), `ReGame-Labs/dwds_decomp` (1.2/sp4 `-O4,p`),
 `6elphegor/acww-decomp` (1.2/base, Thumb), `InusualZ/mhtri-decomp` (subscript vs

@@ -1,8 +1,8 @@
 # MWCC matching levers (from pokebw2 / aletheia)
 
 Distilled from two 100%-matching NDS decomps, keeping only what applies to this
-ROM. Source docs: `fuddlesworth/pokebw2` `docs/matching.md` and
-`docs/decompiling.md`, `Project-Holon/aletheia` `README.md`.
+ROM. Source docs: `fuddlesworth/pokebw2` `pokebw2/docs/matching.md` and
+`pokebw2/docs/decompiling.md`, `Project-Holon/aletheia` `README.md`.
 
 ## Parameters and stack slots
 
@@ -80,10 +80,10 @@ ROM. Source docs: `fuddlesworth/pokebw2` `docs/matching.md` and
 
 | pokebw2 tool | Use here |
 |---|---|
-| `tools/decomp/compiler_probe.py` | compiles one file with many mwcc versions and reports MATCH/bytes per function; needs more compilers than `1.2/sp2` on disk (mw-executables provides `ds/`, `dsi/` builds) |
-| `tools/decomp/locals.py` | prints the register/stack slot of every parameter and local, from the object's debug info — would settle the register-tie walls directly, but needs `-g` in our flags |
-| `tools/decomp/try_variants.py --score` | applies `=====`-separated variants and scores aligned diff lines — our `near.py` without the scoring |
-| `tools/decomp/rodata_solver.py` | anneals declaration order until the data layout is forced |
+| `pokebw2/tools/decomp/compiler_probe.py` | compiles one file with many mwcc versions and reports MATCH/bytes per function; needs more compilers than `1.2/sp2` on disk (mw-executables provides `ds/`, `dsi/` builds) |
+| `pokebw2/tools/decomp/locals.py` | prints the register/stack slot of every parameter and local, from the object's debug info — would settle the register-tie walls directly, but needs `-g` in our flags |
+| `pokebw2/tools/decomp/try_variants.py --score` | applies `=====`-separated variants and scores aligned diff lines — our `near.py` without the scoring |
+| `pokebw2/tools/decomp/rodata_solver.py` | anneals declaration order until the data layout is forced |
 - **Hoist a computed base before an early-return guard, then advance it with
   `+=`.** Two spellings of the same address generate different code:
   `p = b + OFF; if (b[k] == 0) return 0; p += a;` materialises `b + OFF` into
