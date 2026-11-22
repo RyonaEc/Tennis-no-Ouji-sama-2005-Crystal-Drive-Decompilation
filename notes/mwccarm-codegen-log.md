@@ -3734,3 +3734,30 @@ the `s8` requirement was found.
 Remaining from the two-offset queue: `ov005 0x0204f8a0` and `ov009 0x0204eb14` are the same 224-byte
 hardware state writer in two overlays (mask/or/shift combinations into 0x0400xxxx-style registers plus
 a `mul` by -1) - a 2-for-1 if the constants can be pinned down.
+
+## 3.28 Materialisation, third instance: two expressions for one address (2026-11-22)
+
+No matches this pass, but the exception to the two-offset rule now has three instances and they agree
+with each other.
+
+`arm9 0x02014f68` (192/196) is one instruction short: retail computes `add r1, r2, #0x22` and does the
+u16 read-modify-write through `[r1]`, while the same field is *also* read as `[r2, #0x22]` two
+instructions later. `ov005 0x0204f8a0` shows it twice - the fields at B+0x68 and B+0x64 are reached
+both as `[r3, #0x68]` (r3 = o + 0x6a00) and as `[r6]` / `[lr]` from *separate* pool constants - and
+`arm9 0x0200fcac` shows it for a lone RMW.
+
+So the rule from 3.25 needs restating: a base is materialised when the compiler sees **more than one
+distinct address expression** for the same location, and "two different offsets through one pointer"
+is only the case the corpus happened to be full of. Two spellings of the same address (`p->f` and
+`*(T *)((u8 *)base + K)`) also do it, because they are separate trees and are not CSE'd against each
+other. Our compiler CSEs them, which is why the address folds.
+
+That immediately suggests the way to finish these units: write the second access through a *different
+type or path* than the first, so the two address computations cannot be merged - a `volatile` read
+keeps the second load (verified: 188B without it, 192B with it) but not the second address. In
+`0x02014f68` the two accesses differ only in form (`*slot` against `*(u16 *)(O + 0x22)`), and mwcc
+still folds both to `[r2, #0x22]`.
+
+Also decoded in full and parked: `ov005 0x0204f8a0` / `ov009 0x0204eb14`, the 224-byte twin hardware
+state writers, best 200/224 - the pseudocode and every constant are in `walls.txt`, so the pair is a
+finishing job rather than an analysis job.
