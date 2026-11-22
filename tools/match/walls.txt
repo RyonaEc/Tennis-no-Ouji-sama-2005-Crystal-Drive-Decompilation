@@ -2256,3 +2256,21 @@ written off.
   volatile block stores) compiles to 116B because mwcc predicates the early exit as
   `popeq`/`bxeq` with a second epilogue at the end, where retail emits `beq` to a single shared
   `pop`/`bx`; net one instruction.
+  arm9 0x0202a3a0 188B -- slot fetch: `base = (a1 == 0) ? 0x0204ac04 : 0x0204ac0c;` then, when
+  `*(u32 *)base` is non-zero, bounds-checks `(a2 << 5) < *(u32 *)(base + 4)`, copies 0x20 bytes from
+  `*(u32 *)base + (a2 << 5)` into dst through func_02026b88, stores a1 at dst+0x20 and returns 1
+  (returning 0 when out of range); when `*(u32 *)base` is zero it tail-returns
+  func_0202a4e4(dst, a1, a2, (void *)0x0204ac14, two 8-byte structs by value read from 0x027ffe50 and
+  0x027ffe58, which land on the stack). Writing the guard as `if (*(u32 *)base != 0) {...} return
+  spawn(...);` is what produces retail's `beq` to the trailing spawn block; the `== 0`-first form makes
+  mwcc emit `bne` with the spawn block inline. That spelling is size-exact at 188B and differs only in
+  the argument marshalling allocation: retail keeps the 0x027ffe58 address in ip, 0x027ffe50[0] in r0
+  and the two struct words in r5/r4, where mwcc uses r0 for the 0x027ffe58 address and ip for
+  0x027ffe50[0]. Naming the two structs as locals first does not move them.
+  arm9 0x0201aaa0 108B -- voice start: stores the argument into the global at 0x020475c4, returns when
+  `(*(u32 *)*p)[5]` (byte offset 0x14) is non-zero, then zeroes 0x04000440 and 0x04000444, writes
+  `-(v[0])`, `-(v[1])` and 0 to 0x04000470 and sets 0x04000440 to 1. Retail is frameless, with r3
+  holding the 0x04000440 address and ip the constant 0; every spelling tried (u32/double-pointer
+  forms, a struct typedef, separate `q` locals, with and without `volatile`) makes mwcc allocate a
+  frame instead -- it takes ip for 0x04000440 and then uses lr as the zero constant, which forces
+  `stmdb sp!, {lr}` / `sub sp, #4` / `addne sp, #4` / `ldmne sp!, {lr}` and costs 28B (136B total).
