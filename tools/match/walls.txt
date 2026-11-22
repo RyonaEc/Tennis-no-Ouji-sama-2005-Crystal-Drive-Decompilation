@@ -1471,3 +1471,10 @@ arm9 0x0202cff8 84B -- 88 best. C: `if (a0 != 0xb) return; if (a2 == 0) return;
   Body and both guards match (including the b56 alignment frame); retail keeps the global in r2 and
   materialises `add r1, r2, #0x34` for the RMW, we load the pool a second time instead. Tried: `u32 *p`
   pointer local for the RMW (88), inline two-offset expressions (88), dropping the unused pointer.
+arm9 0x0202c36c 84B -- **84/84 and the same instruction sequence**, ONE register pair swapped: retail
+  keeps the global base in r2 (`ldr r2,[pc]; ldr r1,[r2]; ldr ip,[r2,#4]; movne r3,#0; strne r3,[r2]`)
+  and we get the base in r1 (`ldr r1,[pc]; ldr r2,[r1]; ldr ip,[r1,#4]; movne r2,#0; strne r2,[r1]`).
+  Body: clear data_0204acb8[0] if set, return if the callback slot is null, save it in ip, clear the
+  slot, call `cb(r0, g->c)`. Tried: raw `u8 *` + offsets with a `cb` local (84, base r1), `G *g` with
+  `g->a`/`g->cb`/`g->c` (80, drops the hoisted load), `G *g` with `a` and `cb` locals (80), `if (g->cb) {}`
+  block (80), raw form with `a` hoisted to a local (84, base still r1). Pure allocator tie.

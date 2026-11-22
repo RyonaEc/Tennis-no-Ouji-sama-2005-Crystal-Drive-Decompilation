@@ -3894,3 +3894,41 @@ for the second reference.
 Worth recording as a rule of thumb: **a `ldr rX` / `cmp rX` pair where X is a scratch register is not a
 source-shape signal.** Every attempt either changes the size or moves the value between r1 and r3; the
 body is right and the allocator disagrees.
+
+## 3.35 Two sibling idiom units: a flag-gated callback registry (2026-11-22)
+
+Two of the `ready.py` units turned out to be the same idiom kernel, and one of them matched first try
+once the operand order was fixed.
+
+`arm9 0x0201bef4` (84 B) is **matched under 1.2/b56** with:
+
+```c
+int func_0201bef4(u32 mask)
+{
+    if (mask == 0) return 1;
+    if (mask & data_020475ec) return 0;
+    func_02027164(mask, 0);
+    data_020475ec |= mask;
+    return 1;
+}
+```
+
+The first candidate wrote `data_020475ec & mask`, which gives `ands r1, r1, r4`; retail has
+`ands r1, r4, r1`, i.e. **mwcc keeps the source operand order in a commutative `&`**. That single
+swap was the whole difference, and it is the third time this log has recorded operand order mattering
+in a two-register ALU instruction (§3.11 `add`/`sub` operands, §3.24 the `ldrh` form). Both builds
+produced the same 84 bytes, so no version probe was needed; `reg.py` and `t10 --check arm9` agree.
+
+For the record, the `movs r4, r0` / `moveq r0, #1` prologue means the zero test is on the argument
+while the value stays live in r4, and the callee receives `(mask, 0)` with r0 untouched - a plain
+two-argument call, not a saved-and-restored register.
+
+`arm9 0x0202c36c` (84 B) is the sibling: check a slot, clear it, save the callback, clear it, then call
+it. The instruction sequence and size land exactly (84 B, `stmdb sp!, {lr}` + `sub sp, #4`, `blx ip`),
+but mwcc puts the global base in r1 where retail has it in r2, and that swap cascades into the `a`
+temp and the zero constant (`ldr r1,[pc]` / `ldr r2,[r1]` / `movne r2,#0` vs retail
+`ldr r2,[pc]` / `ldr r1,[r2]` / `movne r3,#0`). Spelling the global as `G *g` and using `g->a`,
+`g->cb`, `g->c` is right in structure and shrinks to 80 B because mwcc drops the hoisted `g->c` load
+out of the pivot; the raw `u8 *` + explicit offsets keeps the size. Tried: raw offsets with a `cb`
+local, struct pointer with `cb` local, struct pointer with `a`/`cb` locals, `if (g->cb) { ... }`
+block, and the raw form with `a` hoisted. It is parked in `walls.txt` as one register swap.
