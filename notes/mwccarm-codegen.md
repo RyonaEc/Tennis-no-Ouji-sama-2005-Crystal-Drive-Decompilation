@@ -349,8 +349,8 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
 - **A counter updated in place needs its address in a pointer variable.** In `0x0201779c` the
   tail `*(u16 *)(node + 8) = *(u16 *)(node + 8) - 1;` lets mwcc fold the offset into both
   accesses (108B). Declaring `u16 *cnt = (u16 *)(node + 8);` and writing `*cnt = *cnt - 1;`
-  forces retail's `add r1, r0, #8` / `ldrh` / `sub` / `strh` (112B). Same trick closes the
-  `cold` and `strhhu` shapes: any in-place u16 RMW that retail materialises an address for.
+  forces retail's `add r1, r0, #8` / `ldrh` / `sub` / `strh` (112B). The same holds for any
+  in-place u16 read-modify-write that retail materialises an address for.
 
 - **When var3 prints `bl` differences, read the rest of the diff.** Calls to not-yet-linked
   siblings differ in the object by definition, so `bl` lines are noise; but var3 prints the

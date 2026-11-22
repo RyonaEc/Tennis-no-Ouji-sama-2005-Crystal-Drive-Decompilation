@@ -36,8 +36,8 @@ tennis_ATOJ.nds: OK
 
 | | Matching C | Total | Share |
 |---|---:|---:|---:|
-| Functions | 1,578 | 3,806 | 41.46% |
-| Code | 112,520 B | 1,841,700 B | 6.11% |
+| Functions | 1,579 | 3,806 | 41.49% |
+| Code | 112,636 B | 1,841,700 B | 6.12% |
 | Data | 124 B | 801,936 B | 0.02% |
 | Units | 1,579 | 2,160 | 73.10% |
 
@@ -51,7 +51,7 @@ digest unchanged, and objdiff scores it (`data_02042240`, 36 B). Adding a source
 `python tools/configure.py ATOJ` re-run because `build.ninja` only lists sources known at
 configure time.
 
-The remaining 2,228 functions are still delinked assembly. Complete units compile with
+The remaining 2,227 functions are still delinked assembly. Complete units compile with
 `mwccarm` 1.2/sp2, or 1.2/b56 where retail used it, link at the original addresses, and
 leave the ROM digest unchanged. [PROGRESS.md](PROGRESS.md) has the fuller breakdown - code,
 functions, fuzzy match, data and a per-module table - and `python tools/match/progress.py`
