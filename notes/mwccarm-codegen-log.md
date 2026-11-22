@@ -4459,3 +4459,24 @@ The recurring failure modes this batch, in order of frequency:
 
 Also attempted and parked earlier in the same pass: `0x0202497c` (three live values across a
 call), `0x02032be8` (layout), `0x020266c0` (colouring).
+
+### 2.89 Two more small units; four walls of the same two kinds
+
+`func_020255b8` (48B) closed on the struct-field-array lever. `func_0202963c` (80B) closed
+once the walk was written as `while (p != 0 && *(s32 *)p != v) p = *(u8 **)(p + 4);` - the
+`&&` form makes mwcc emit retail's `b test` / body / test layout, where `while (p) { if (...) break; ... }`
+produced a four-byte-longer straight-line version.
+
+Four new walls, all of kinds already in the log: branch inversion with if-conversion
+(`0x020202b4`), pool-versus-`add` materialisation of a base plus field pointer
+(`0x0202cff8`), a scratch-register tie plus a folded-operand order (`0x020101f8`), and a
+hoisted base address that mwcc rematerialises per use (`0x0202cfa4`).
+
+Two negative results worth keeping:
+
+- The ov005 `0x020614a4` family resists every spelling tried: `while`, `for`, separate
+  pointer variables declared inside and outside the loop, a `u16` index into a `u16 *`, and
+  an explicit `u16 z = 0`. All are 220B and all differ only by the ip/lr swap on the zero
+  constant and the `base + i * 2` address.
+- `0x0201fd50`, `0x02026ac8` and `0x0203b4e4` keep the residues recorded in `walls.txt`
+  (per-literal pool loads, aggregate copy strategy, argument preservation in r4/r5).

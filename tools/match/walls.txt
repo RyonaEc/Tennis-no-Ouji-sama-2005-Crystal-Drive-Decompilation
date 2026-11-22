@@ -2084,3 +2084,26 @@ written off.
   the three arguments with `push {r0, r1, r2, ip, lr}` and pops them back after the call;
   mwcc copies the two live arguments into r4/r5, saving and restoring two callee-saved
   registers instead (56B).
+
+  arm9 0x020202b4 76B -- two-word status write then a DISPCNT update chosen by a stored
+  mode (`if (v == 0) ... |= 0x10000; else ...`). Retail if-converts the *then* block and
+  ends it with `bxeq lr`, leaving the else block unconditional (72B is what mwcc produces).
+  mwcc instead if-converts the else block on `ne`, for the if/else spelling, the
+  early-return spelling and the both-branches-return spelling alike.
+
+  arm9 0x0202cff8 84B -- guarded flag clear plus one call. Retail loads the base once
+  (`ldr r2, [pc]`), derives the field pointer with `add r1, r2, #0x34` and then still reads
+  `[r2, #0xd0]`. Writing both accesses from one `u8 *b` makes mwcc load the symbol twice
+  (88B); deriving the second access from the field pointer folds it into `[r1, #0x9c]`
+  (80B). The intermediate `add` only appears with retail's two-register split.
+
+  arm9 0x020101f8 80B -- four-byte fill through a reloaded pointer chain plus one closing
+  byte. Size-exact at 80B, but mwcc homes the data pointer in r3 and the store value in r1
+  where retail uses r1 and r3, and it folds `off + base` the other way round
+  (`add r0, r0, r2` against `add r0, r2, r0`). Declaration order of the pointer, offset and
+  counter does not move either.
+
+  arm9 0x0202cfa4 84B -- endless tick loop with a nested flag wait, an indirect call through
+  `[base + 0x30]` and a hoisted `base + 0x3c`. Every spelling that compiles emits the base
+  address twice from the pool (96B); making it a single local moves the load above the
+  guards. Retail is one pool load in r7 plus `add r5, r7, #0x3c` hoisted out of the loop.
