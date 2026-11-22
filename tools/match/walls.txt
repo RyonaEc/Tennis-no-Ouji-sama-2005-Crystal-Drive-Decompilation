@@ -1620,3 +1620,27 @@ exhausted:
 
 Conclusion: no unit below 24 bytes can be installed, so the next real target is ordinary C in the
 ov002 family clusters (13x756, 14x608, 10x688, 10x676), starting with one fully decoded member.
+
+=== arm9 0x0201fce4 (28B) and 0x0201fd00 (24B): 2.0-built, register roles only ===
+
+Twins of the matched func_0201fcc8 (log 2.82) in the same 2.0-built Thumb block. Both are
+nine-word fixed-point block initialisers:
+
+  fce4: p[0]=b, p[1]=0, p[2]=-a, p[3]=0, p[4]=0x1000, p[5]=0, p[6]=a, p[7]=0, p[8]=b
+  fd00: p[0]=b, p[1]=a, p[2]=0, p[3]=-a, p[4]=b, p[5..7]=0, p[8]=0x1000
+
+Evidence gathered:
+* every one of the 25 vendored mwccarm builds was tried on the best source shape. 1.2/* give
+  32/40 B (the 0x1000 becomes a pool load); 2.0/* give the right 28 B for fce4 but put the zero
+  and the negation in r2 where retail uses r3 for the zero and reuses r2 for -a; dsi/* reorder
+  the whole body.
+* fce4 retail stores index 2 twice (0 then -a), which is what pointers guarantee (no dead-store
+  elimination through a parameter). Nine statement orders were tried: the two that keep the
+  double store land the zero in r2 as well, so the allocation never matches.
+* fd00 retail writes through an incrementing pointer with `stm r0!` group stores
+  ({r2}, {r1,r3}, {r1,r2}) and then immediate offsets for the tail; both 1.2 and 2.0 emit plain
+  `str` for every form of the source tried (array, pointer increments, struct members).
+
+So this is a source-shape problem, not a compiler one: retail keeps b live in r2 to the last store
+and uses r3 as the zero/0x1000 register at the same time. 52 B total, parked until a shape that
+forces that pairing turns up.
