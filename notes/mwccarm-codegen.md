@@ -399,3 +399,9 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
 - **A local `T *p = &global;` at the top of a function hoists the global's address load above an
   early return.** Referencing `global.field` directly keeps the materialisation at first use, after
   the guard. Same size, different order — and this one is common in init/latch functions.
+
+- **Repeated `ldrh`/`strh` to the same stack slot needs a `volatile` local.** Three identical
+  hardware reads whose values are discarded only survive if the destination is
+  `volatile u16 tmp;` — otherwise mwcc eliminates the dead stores.
+- **Check `relocs.txt` and `symbols.txt` before assuming a pooled word is a symbol.** Silence in
+  both means the word is a literal address (`0x04000204`, `0x09fe2ffe`).

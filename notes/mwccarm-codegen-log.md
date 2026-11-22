@@ -4717,3 +4717,15 @@ src, (flags >> 2) | 0x85000000)`, releases the lock and waits on the control bit
 The same factored index `(ch * 3 + 2) * 4` is what keeps retail's `mov #3; mul` sequence, exactly as
 in `0x02026e2c`. Retail's `str r6, [r1, r8, lsl #2]!` falls out of keeping the fill register in a
 `u32 *` that is then passed to the call, so the address is materialised once with writeback.
+
+### 3.07 Display latch at 0x02032f90 matched first try
+
+`0x02032f90` (132B) writes `p+2` into the two hardware latches at `0x027fff72` and `0x09fe2ffe` when
+`func_02033170(1)` succeeds and `p+4` is non-zero, reads `0x09fe20f0` three times into a volatile
+local, and finally always writes `*p` to `0x04000204`. None of the four pool words is a relocation —
+the relocation and symbol tables are both silent for this function — so they are plain literal
+addresses.
+
+The three identical `ldrh`/`strh` pairs exist because the destination is a `volatile u16` local:
+without `volatile`, mwcc deletes the dead stores and the unit shrinks. The `a && b` form of the guard
+is what produces retail's two separate `beq` to the shared tail.
