@@ -4170,3 +4170,54 @@ Where the bytes actually are, from `famsurvey.py`: ov002 has 58 identical-skelet
 including 13x756 B (9,828 B), 14x608 B (8,512 B), 10x688 B and 10x676 B. One matched
 member plus constant substitution covers each family, so a single ov002 shape is worth
 more than a dozen arm9 ties.
+
+## 2.81 Five Thumb SWI stubs are byte-exact but cannot be installed (2026-11-22)
+
+Scanning for unmatched units whose full mnemonic skeleton equals a matched unit's found
+seven in arm9 and none in the overlays. Five of the seven are the same shape as the matched
+`SoftReset`: a two-instruction Thumb BIOS stub, `swi N; bx lr`. Retail bytes read straight
+out of the ROM, `swi` immediates from the low byte of the first halfword:
+
+| unit | address | bytes | `swi` |
+|---|---|---|---|
+| `Halt` | `0x020040e6` | `06df 7047` | `0x06` |
+| `Sqrt` | `0x02004146` | `0ddf 7047` | `0x0d` |
+| `IsDebugger` | `0x02004336` | `0fdf 7047` | `0x0f` |
+| `CpuSet` | `0x02004466` | `0bdf 7047` | `0x0b` |
+| `GetCRC16` | `0x020044ea` | `0edf 7047` | `0x0e` |
+
+Each one written as
+
+```c
+#include "types.h"
+
+#pragma thumb on
+void Halt(void)
+{
+    asm { swi 0x06 }
+}
+```
+
+is byte-identical: `var3.py` prints `MATCH` for all five, and `fastmatch.compile_text`
+returns exactly `06df 7047`. None of them can be installed, though — `reg.py`/`t10.try_unit`
+print `miss`, and a manual install showed why:
+
+* the arm9 entry point in the rebuilt header moves from `0x02004800` to `0x02004804`,
+  i.e. the whole image shifts by four bytes;
+* 218,294 bytes differ, starting in the header.
+
+So the four bytes are not being carved out of the module blob when the unit is installed, and
+the new section is appended instead. `src/arm9/SoftReset.c` is the same shape and *is*
+installed, with a delinks entry
+
+```
+src/arm9/SoftReset.c:
+    complete
+    .text       start:0x0200406c end:0x02004070
+```
+
+so the entry format is not the problem — the difference is in how the delink/relink handles a
+second four-byte hole in that Thumb region. This is a tooling issue to fix before those five
+units (and `func_02024af8`, a twelve-byte pool jump) can land; the sources and bytes are
+already known and should not be re-derived. The tree was reverted and `ninja sha1` printed
+`OK` again before this was written down.
