@@ -81,7 +81,7 @@ ROM. Source docs: `fuddlesworth/pokebw2` `pokebw2/docs/matching.md` and
 | pokebw2 tool | Use here |
 |---|---|
 | `pokebw2/tools/decomp/compiler_probe.py` | compiles one file with many mwcc versions and reports MATCH/bytes per function; needs more compilers than `1.2/sp2` on disk (mw-executables provides `ds/`, `dsi/` builds) |
-| `pokebw2/tools/decomp/locals.py` | prints the register/stack slot of every parameter and local, from the object's debug info — would settle the register-tie walls directly, but needs `-g` in our flags |
+| `pokebw2/tools/decomp/locals.py` | prints the register/stack slot of every parameter and local from the object's debug info — **already ported** as `tools/match/slots.py`; `-sym on` is in our flags, so nothing to add |
 | `pokebw2/tools/decomp/try_variants.py --score` | applies `=====`-separated variants and scores aligned diff lines — our `near.py` without the scoring |
 | `pokebw2/tools/decomp/rodata_solver.py` | anneals declaration order until the data layout is forced |
 - **Hoist a computed base before an early-return guard, then advance it with
@@ -136,3 +136,10 @@ ROM. Source docs: `fuddlesworth/pokebw2` `pokebw2/docs/matching.md` and
   `if (v != a0)` restores retail's `cmp r0, r6`. Confirmed on
   `func_020145b8` (96 B, matched 2026-11-20). Writing the loaded expression
   inline gives the wrong order regardless of `!=` or `==` spelling.
+
+## See also
+
+[`ds-prior-art.md`](ds-prior-art.md) lists the other DS matching decomps and
+which of their documents answers which question. This file stays a list of
+levers; the evidence behind each row is in
+[`mwccarm-codegen-log.md`](mwccarm-codegen-log.md).

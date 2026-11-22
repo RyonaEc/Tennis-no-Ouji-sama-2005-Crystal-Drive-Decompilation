@@ -12,6 +12,53 @@ Retail is a **split build**: `1.2/sp2` for most units and `1.2/b56` for the ones
 listed in `config/ATOJ/mwcc_versions.txt`. Never add a version or a map entry
 without a ROM-digest match.
 
+## Compiler identity in this tree
+
+Every directory under `tools/mwccarm/` is a different executable, and the
+directory name is an archive label, not a version. Ask the executable:
+`mwccarm.exe -V` prints `Version 2.0 build NN (build 00NN)` and a build date, and
+the object it produces carries `Metrowerks C/C++ for ARM <version>` in
+`.comment`. Measured here (2026-11-22):
+
+| tag | banner | build date | `.comment` |
+|---|---|---|---|
+| `1.2/b56` | 2.0 build 56 | Sep 16 2004 | `2.0b0055` |
+| `1.2/base` | 2.0 build 72 | May 13 2005 | `2.0.0.72` |
+| `1.2/sp2` (default) | 2.0 build 79 | Aug 11 2005 | `2.0.0.79` |
+| `1.2/sp2p3` | 2.0 build 82 | Oct 11 2005 | `2.0.0.82` |
+| `1.2/sp3` | 2.0 build 84 | Oct 28 2005 | `2.0.0.84` |
+| `1.2/sp4` | 2.0 build 87 | Apr 7 2006 | `2.0.0.87` |
+| `2.0/base` | 3.0 build 114 | Mar 30 2006 | `3.0.0.114` |
+| `2.0/sp1p2` | 3.0 build 126 | Oct 13 2006 | `3.0.0.126` |
+
+`b56` is the 2004 compiler (the one sm64ds pins as `2004/b56`), not a 1.2
+service pack: Nintendo's build rules map NITRO V1.0 to compiler build 56 and
+linker build 67. The same file records separate `SDK_CW_BUILD_NUMBER_CC` and
+`SDK_CW_BUILD_NUMBER_LD` values, so a build number read out of a binary may be
+the **linker's** - NITRO V0.5 is CC 46 / LD 58, V0.6 is CC 50 / LD 62, DS V1.2 is
+CC 73 / LD 72, V1.2 SP2+patch CC 80 / LD 74, V1.2 SP3 CC 84 / LD 77, V1.2 SP4
+CC 87. Only the compiler banner identifies a compiler. Note also that the 2004
+build's `.comment` says `2.0b0055` while its banner says build 56, so `.comment`
+alone is one build off for that one - the banner wins.
+
+## File layout inside an object
+
+mwcc emits **one `.text` section per function, last function first**: a file
+declaring `alpha` then `beta` produces a `.text` for `beta` and then one for
+`alpha` (verified against `1.2/sp2` on 2026-11-22). A single-function unit is
+unaffected, but two functions in one file exist in reverse source order, and
+`fastmatch.text_of` returns only the first `.text`, which is why the harness and
+`src/` are one function per file. Definition order also decides what mwcc is
+allowed to inline: a same-file callee defined *before* its caller can be inlined,
+so a `bl` in retail to a function you keep seeing inlined means that callee
+belongs **after** the caller. acww records the same two rules, plus a size-sorted
+`data`/`bss` order, in `docs/matching.md`.
+
+Our flags already carry `-sym on`, so every candidate object has DWARF;
+`python tools/match/slots.py <file.c>` reads it back and prints the register or
+stack slot each parameter and local got - use it instead of guessing on a
+register-role wall.
+
 ## How to work
 
 * The digest is the only proof: `ninja sha1` must print the retail hash. An

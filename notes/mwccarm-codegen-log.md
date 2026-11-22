@@ -399,8 +399,12 @@ temps; the materialisation wall and its build dependence; struct-copy load
 batching), `fuddlesworth/pokebw2` `pokebw2/docs/matching.md` (narrow parameters change
 caller scheduling; direct-global accesses instead of cached; pointer-reference
 count flips added-vs-folded), `ReGame-Labs/dwds_decomp` (1.2/sp4 `-O4,p`),
-`6elphegor/acww-decomp` (1.2/base, Thumb), `InusualZ/mhtri-decomp` (subscript vs
-pointer-sum operand order), and the `decomp.wtf` MWCC guide.
+`7ucina/acww-decomp` (1.2/base, Thumb; renamed from `6elphegor/`),
+`InusualZ/mhtri-decomp` (a Wii decompilation - subscript vs pointer-sum operand
+order), and the `decomp.wtf` MWCC guide.
+
+A dated survey of the whole field - which projects are actually source-complete,
+and which document answers which problem - is in [`ds-prior-art.md`](ds-prior-art.md).
 
 ## 2.1a Address materialisation: a measured rule (2026-11-20)
 
