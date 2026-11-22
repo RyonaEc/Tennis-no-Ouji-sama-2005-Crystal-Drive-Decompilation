@@ -405,3 +405,7 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   `volatile u16 tmp;` — otherwise mwcc eliminates the dead stores.
 - **Check `relocs.txt` and `symbols.txt` before assuming a pooled word is a symbol.** Silence in
   both means the word is a literal address (`0x04000204`, `0x09fe2ffe`).
+
+- **`lsl #30` + `asrs #31` is a signed one-bit bitfield at bit 1, not `v & 2`.** Model the word as a
+  union of `u32 w` and a bitfield struct (`u32 b0 : 1; s32 f : 1; u32 rest : 30;`), read the field
+  for the test and use `flags.w` for the read-modify-write, which keeps retail's add/ldr/bic/str.

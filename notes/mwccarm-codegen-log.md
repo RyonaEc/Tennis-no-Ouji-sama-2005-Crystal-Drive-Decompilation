@@ -4729,3 +4729,15 @@ addresses.
 The three identical `ldrh`/`strh` pairs exist because the destination is a `volatile u16` local:
 without `volatile`, mwcc deletes the dead stores and the unit shrinks. The `a && b` form of the guard
 is what produces retail's two separate `beq` to the shared tail.
+
+### 3.08 Flagged device release at 0x0201ca18 matched first try
+
+`0x0201ca18` (132B) tests a one-bit field of `p+0x24`, and when it is set performs the device
+release: `func_020271d4(*(u32 *)(p+0x44), 0, 1 << *(u32 *)(p+0x40), 0)`, two teardown calls on
+`p+8` and `p+0x14`, a bit clear on `p+0x24`, and a `func_020274c4`/`func_02027580(1)`/
+`func_020274f0` sequence around a saved handle. The final `func_0201c9e0(p)` always runs.
+
+Two spellings matter. The flag read is `lsl #0x1e` + `asrs #0x1f`, i.e. a **signed one-bit bitfield
+at bit 1**, so the field comes from a union of `u32 w` and a bitfield struct with `s32 f : 1` after a
+`b0 : 1`; an `& 2` test would compile to `tst`/`ands` instead. And the clear is a whole-word
+read-modify-write through the union's `w`, which gives retail's `add r1, r4, #0x24; ldr; bic; str`.
