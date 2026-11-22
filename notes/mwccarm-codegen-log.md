@@ -4706,3 +4706,14 @@ return, because the source opened with `Ctx *o = &data_0204ad00;`. Referring to 
 directly and leaving the pointer out defers the materialisation to after the guard, which is what
 retail does. A local pointer initialised at the top of a function is therefore not free: it moves
 the address load earlier.
+
+### 3.06 DMA fill transfer at 0x02026934 matched first try
+
+`0x02026934` (132B) is the fill sibling of `0x02026e2c`: it returns immediately when the flag word is
+zero, waits on the channel's control bit at `0x040000b0 + (ch * 3 + 2) * 4`, takes the global lock,
+stores the fill word into `0x040000e0 + ch * 4`, calls the ITCM routine `func_01ff844c(ch, &fillreg,
+src, (flags >> 2) | 0x85000000)`, releases the lock and waits on the control bit again.
+
+The same factored index `(ch * 3 + 2) * 4` is what keeps retail's `mov #3; mul` sequence, exactly as
+in `0x02026e2c`. Retail's `str r6, [r1, r8, lsl #2]!` falls out of keeping the fill register in a
+`u32 *` that is then passed to the call, so the address is materialised once with writeback.
