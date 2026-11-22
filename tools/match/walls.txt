@@ -2113,3 +2113,13 @@ written off.
   `ldr r1, [r6, #0x34]` / `ands r0, r1, #4`, mwcc emits an extra `mov r1, r5` and loads
   through the copy. Same allocator tie as the 212B unit, with a flag local, a direct field
   read and a struct base all reproducing it.
+
+  arm9 0x0202d9f4 88B -- three field reads of one base object around two calls. Retail keeps
+  the base in r4 across the first call; with the field expressions inline mwcc rematerialises
+  the pool address instead (100B, and `sub sp, #4` replaces the r4 save), and hoisting the
+  `+0x18` read into a local ahead of the first call also gives 100B. The struct-typed symbol
+  and the single-`u8 *b` local both reload after the call.
+
+  arm9 0x0201c17c 96B -- the same `next(list, prev)` walk as `0x0201c4b0` with an extra
+  per-node u8 comparison and a tail call. mwcc emits an extra compare/test pair for the
+  two-condition loop (100B) where retail falls through into the shared exit.

@@ -4500,3 +4500,15 @@ stores, and it hits the same `mov r1, r5` tie on the first flag load.
 The ov005 `0x020614a4` four-family still resists: every form that lands on 220B keeps the
 ip/lr swap on the zero constant and the `base + i * 2` address, so the tie is in the
 allocator's temp order, not in the loop's source shape.
+
+### 2.91 `func_02008178`: saturating table/counter lookup
+
+96B, closed by two separate details. The table read is a byte offset with a `mul`
+(`*(u32 *)(data_0203c0f4 + a0 * 12)`), not `((u32 *)data)[a0 * 3]`, which would scale an
+index and pick the wrong addressing mode. The guard is a *signed* compare: `s32 v` with
+`v >= 0x3b9ac9ff` gives `ldrge` / `bxge`, where `u32 v` gives `ldrhs` / `bxhs` and leaves the
+unit one predicate away. The `if (n <= 1) return 0x7d0;` that the disassembly seems to show is
+just the loop's pre-test falling through with `v` already in r0, so it must not be written.
+
+Parked in the same band: `0x0202d9f4` (base rematerialised instead of held in r4 across a
+call) and `0x0201c17c` (two-condition walk gets an extra test pair).

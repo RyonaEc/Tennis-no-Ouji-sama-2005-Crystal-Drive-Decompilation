@@ -299,3 +299,9 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   (`u8 *b = a0 + 0x24; u32 t = *(u32 *)b; u8 *p;`) put `b` in r5 and `t` in r4, the reverse of
   retail. Declaring `u32 t; u8 *b; u8 *p;` and assigning in statements (`b = a0 + 0x24;
   t = *(u32 *)b;`) gives retail's `add r4, r0, #0x24` / `ldr r5, [r4]` exactly.
+
+- **The comparison's signedness picks `ge` versus `hs` on the same code.** `func_02008178`
+  doubles a saturating counter and bails at a limit. With `u32 v` the guard assembles as
+  `ldrhs` / `bxhs`; declaring `s32 v` and comparing `v >= 0x3b9ac9ff` gives retail's
+  `ldrge` / `bxge`. Everything else in the function is identical, so a one-word predicate
+  difference is the whole residue when a limit check will not close.
