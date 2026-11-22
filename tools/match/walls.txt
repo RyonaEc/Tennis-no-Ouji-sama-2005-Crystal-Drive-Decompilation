@@ -1271,3 +1271,18 @@ ov003 0x02082220 96B -- three-arm range test on a1 (< 0x5a, < 0xb4, else) where 
   after a null-check. Writing it as an if/else-if chain lets mwcc fold the identical arms and lands at
   80B against retail's 96B; the arms have to survive as separate basic blocks, which no spelling tried
   so far achieves.
+ov002 0x02069b3c 100B -- sets bit 0x400 in `*(u32 *)(base + 0x1e6c)`, clears the byte at +0x5e0, zeroes
+  +0x628, stores 0x238e3 at +0x62c and calls func_ov002_0204f5a0(data_ov002_020fc558, 0x5000000, 0x20).
+  Mine is 104B because mwcc splits the first access (`add r1, ip, #0x1000` + `[r1, #0xe6c]`) and
+  materialises `base + 0x1e6c` only for the later stores, where retail adds the pooled constant once
+  into ip and addresses every access through `[ip]`. Tried: a single pointer from the global, a
+  separate base plus pointer, a two-statement load/orr/store, and a padded struct type - all split.
+ov002 0x02086f14 104B -- clears a byte, calls func_ov002_02086da0, then bumps a counter (`if (p[2] < 1)`
+  RMW) and wraps `p[3]` to 0 once it reaches 6. Mine is 96B: retail materialises `r4 = base + 0x47d0`
+  once and does the first `strb` through `[r4]` plus a `addlo r1, r4, #2` RMW, while mwcc addresses
+  the first store as `add r1, r3, #0x4000` + `[r1, #0x7d0]` and folds the RMW to `[r4, #2]`.
+ov002 0x02064b04 108B -- selects a state predicate from `*(u8 *)(base + 0x1744 + a0 * 0x38)` after
+  calling func_ov002_02062dbc(0x100): `st == 1` returns `v < 0xc8`, `st == 2` returns 1, everything
+  else 0. Four spellings land at 104-132B: the closest (104B) runs the `mul` after the call and keeps
+  a0 in r4 without a spare register, where retail computes the offset first, keeps a0 in r5, and puts
+  the `st == 1` arm out of line behind `beq` with the `st == 2` arm inline.

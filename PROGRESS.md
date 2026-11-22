@@ -13,11 +13,11 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 | Metric | Matched | Total | Progress |
 |---|---:|---:|---|
-| Code | 105,972 B | 1,841,700 B | 5.75% `█░░░░░░░░░░░░░░░░░░░░░░░` |
-| Functions | 1,522 | 3,806 | 39.99% `██████████░░░░░░░░░░░░░░` |
-| Fuzzy match | 5.75% | n/a | `█░░░░░░░░░░░░░░░░░░░░░░░` |
+| Code | 106,080 B | 1,841,700 B | 5.76% `█░░░░░░░░░░░░░░░░░░░░░░░` |
+| Functions | 1,523 | 3,806 | 40.02% `██████████░░░░░░░░░░░░░░` |
+| Fuzzy match | 5.76% | n/a | `█░░░░░░░░░░░░░░░░░░░░░░░` |
 | Data | 124 B | 801,936 B | 0.02% `█░░░░░░░░░░░░░░░░░░░░░░░` |
-| Complete units | 1,524 | 2,119 | 71.92% `█████████████████░░░░░░░` |
+| Complete units | 1,525 | 2,120 | 71.93% `█████████████████░░░░░░░` |
 
 ## By module
 
@@ -29,13 +29,13 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 | OV004 | 4.26% (3,812 / 89,584 B) | 59 / 170 (34.7%) | 4.26% | 0.00% (0 / 27,404 B) | 59 / 88 |
 | OV005 | 3.14% (4,484 / 142,964 B) | 46 / 166 (27.7%) | 3.14% | 0.00% (0 / 369,132 B) | 46 / 78 |
 | OV006 | 0.71% (52 / 7,324 B) | 1 / 16 (6.2%) | 0.71% | 0.00% (0 / 170,504 B) | 1 / 3 |
-| OV008 | 12.03% (1,316 / 10,940 B) | 24 / 55 (43.6%) | 12.03% | 0.00% (0 / 480 B) | 24 / 41 |
+| OV008 | 13.02% (1,424 / 10,940 B) | 25 / 55 (45.5%) | 13.02% | 0.00% (0 / 480 B) | 25 / 42 |
 | OV009 | 8.84% (2,192 / 24,788 B) | 22 / 61 (36.1%) | 8.84% | 0.00% (0 / 9,972 B) | 22 / 36 |
 | OV001 | 2.30% (320 / 13,904 B) | 3 / 21 (14.3%) | 2.30% | 0.00% (0 / 7,872 B) | 3 / 7 |
 | OV010 | 2.32% (584 / 25,144 B) | 7 / 33 (21.2%) | 2.32% | 0.00% (0 / 47,904 B) | 7 / 11 |
 
 ## Against the whole ROM
 
-1,522 of 3,806 functions (39.99%) and 105,972 of 1,841,700 code bytes (5.75%) are matching C; the rest are still delinked assembly.
+1,523 of 3,806 functions (40.02%) and 106,080 of 1,841,700 code bytes (5.76%) are matching C; the rest are still delinked assembly.
 
 124 bytes of `.data` are matching C definitions; the rest of the data sections are still raw bytes in the delinked image.

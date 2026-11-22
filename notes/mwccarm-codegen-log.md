@@ -3424,3 +3424,27 @@ strength-reduces the `self + 0x20 + i * 4` element access into a second inductio
 (`add r3, r3, #4`) where retail recomputes `add r0, r4, ip, lsl #2` every iteration; and
 `ov002 0x0204f70c` needs its magic-division constant (`0xa2f96525`, paired with an
 `if (v < 0) v += 0x6488` wrap where 0x6488 is 65536*pi/8) identified before it can be written.
+
+## 3.19 The first-store split, and a clean ov008 sequence match (2026-11-22)
+
+`ov008 0x0204e4b0` (108B) matched on the first attempt: a flat init sequence of eleven calls -
+`func_ov008_0204ed28`, `0204e554`, `0204df5c`, `0204c9ac`, `0204e434`, `0204e75c(0, 0x80)` - then
+`b[8] = 0`, `0204c8dc(1)`, `0204e3fc`, `0204c894(1)`, `0204c810`, `0204ebc8`, and
+`*(u32 *)0x04000540 = 1`. Nothing needed adjusting; long call sequences with a couple of side stores
+stay cheap. Note that every callee is `func_ov008_*`, not `func_0204*` - the overlay's own namespace,
+which `var3` masks and only `reg.py` verifies.
+
+Three units parked, and they share one signature that is now the most common residue in the queue:
+**mwcc splits the address of the first access**. `0x02069b3c` and `0x02086f14` both want
+`ptr = base + K` materialised once and every later access addressed through it; mwcc instead encodes
+the first access as `add rX, base, #hi` plus a `[rX, #lo]` displacement and materialises `base + K`
+only when a second use appears. That costs one instruction and breaks the match. Neither a named
+pointer, a two-step declaration-then-assignment, a load/orr/store split, nor a padded struct type
+stops it - a full list of failures for the two units is in `walls.txt`. The pattern to watch for:
+retail's first access after materialising a base is a store (`strb`), and the split only ever happens
+when that store is the first use.
+
+`0x02064b04` adds a second axis to the same problem: the closest spelling (104B) lets mwcc schedule
+the `mul` after the call and keep the index in r4, while retail computes it first and keeps the
+argument in r5. Branch polarity in the state dispatch also has to be inverted - retail puts the
+`st == 1` arm out of line behind a `beq` and leaves `st == 2` inline.
