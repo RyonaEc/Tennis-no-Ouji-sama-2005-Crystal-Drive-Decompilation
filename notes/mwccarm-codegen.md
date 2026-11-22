@@ -418,3 +418,7 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
 
 - **A guarded post-increment `(*(T *)(p + k))++` rematerialises the address.** Writing it through a cached pointer gives three instructions where retail has four (`addne r2, r0, #k; ldrhne r1, [r2]; addne r1, r1, #1; strhne r1, [r2]`).
 - **Sibling families pay off in the overlays.** Two-byte-adjacent constants (a pool word one nibble apart, a different return value) are the only differences between members, and each member needs its own verification run.
+
+- **Overlay callees are `func_ovNNN_<addr>`.** A relocation into the same overlay resolves against the prefixed symbol; using the bare `func_020xxxxx` name that `udis.py` prints gives an undefined-symbol link error that `var3` cannot see.
+- **A pooled `0xffff` add means the source casts to u16 before adding.** `(u16)(n + 0xffff) > 1` becomes `add r0, r1, r0, lsr #16` with 0xffff in the pool; writing `n - 1` compiles to `sub` instead.
+- **A trailing `mov r0, #1` before `bx lr` means the unit returns 1.** A `void` spelling comes out one instruction short.

@@ -2331,3 +2331,11 @@ written off.
   Dropping the base local and dereferencing the global twice gives exactly the same allocation.
   Negative result worth keeping: vprobe shows 1.2/sp2 produces the same registers as b56 for this
   unit and for ov003 0x020b6c88, so the allocation ties are not version-specific.
+  ov003 0x020960a4 120B -- threshold gate on the u16 at `base+0x8736` (base = *(u32 *)0x020eb720):
+  when it is at least 4, writes a 0/0x1f/0x35/0x35 sequence at base+0x86c0..0x86c2, then 0x1f4,
+  0 and 0x1f9 to base+0x8718 and base+0x16, and finally increments the u16 at base+0x8736 and
+  returns 1. The `return 1` is only visible as the `mov r0, #1` before `bx lr` (the function is u32,
+  not void) and adding it takes the unit from 116B to the exact 120B. The remaining residue is
+  allocation: retail keeps the +0x8700 pointer in r1, the +0x8600 pointer in r0 and the zero
+  constant in r3, where mwcc puts q in r3, w in r1 and zero in r2. Declaring w before q, or folding
+  the 0x8600 offset into each store, changes the count of differing lines but not the match.

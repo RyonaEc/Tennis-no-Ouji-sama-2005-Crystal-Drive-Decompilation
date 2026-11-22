@@ -4779,3 +4779,15 @@ The decrement/increment has to be written as `(*(u16 *)(p + 0x10))--` / `++`, no
 the branch (`addne r2, r0, #0x10` before `ldrhne`), which is the whole difference between a 3- and a
 4-instruction guarded update. The pool word each member arms with is easy to mis-transcribe by one
 nibble -- `0x04000050` against `0x04001050` -- and the digest catches it immediately.
+
+### 3.12 Overlay-to-overlay calls need the module-prefixed symbol
+
+`func_ov003_02051638` (124B) matched in `var3` on the first spelling but `reg.py` failed with
+`Undefined : "func_02052100"`. The relocation table names the callee
+`to:0x02052100 module:overlay(3)`, so the symbol is `func_ov003_02052100`; the disassembler only
+shows the bare address. Writing the prefixed name and rebuilding gave a clean digest immediately.
+Calls into arm9 (`module:main`) keep the plain `func_020xxxxx` name.
+
+The unit itself: a u16 gate `(u16)(n + 0xffff) > 1` (a pooled 0xffff add, not a subtraction -- the
+`add r0, r1, r0, lsr #16` form only appears when the u16 cast is applied before the add), then a
+`u16 i` loop from 0x7c to 0x7e calling `func_ov003_02052100(*(u32 *)(base + i*0x1c + 0x9ff8), 0, 0xc0)`.
