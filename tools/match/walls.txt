@@ -1163,3 +1163,30 @@ ov002 0x0204f98c 104B -- distance cull: if `*(u32 *)(base + 0x1824 + 0xc8) & 0xc
   single `&&` chain - makes mwcc take `stmdb {lr}` + `sub sp, #4` and 128B, because it cannot keep
   the base plus four s16 temps in r0-r3/ip without spilling. The `s16` promotion itself is right;
   the frame is the whole gap.
+ov002 0x020e198c 128B -- frameless HUD init on a pointer argument: `*(u32 *)(o + 0xb8) |= 8`,
+  `*(u32 *)(o + 0xcc) = 0x115`, zero fields at 0x5c/0x68, then `*(s32 *)(o + 0x60) = (o[0xb8] & 2)
+  ? -0x90000 : 0x90000`, then clamp `*(s32 *)(o + 4)` to [0x10000, -0x10000] with two exits. Mine is
+  124B: retail materialises `add r3, r0, #0xb8` once for the OR and then reads the flag back with
+  the displacement `[r0, #0xb8]`, which is the split-materialisation pair again. Tried: field
+  pointer local, struct member access through a padded struct, inline expressions - all fold to
+  `[r0, #0xb8]` twice.
+ov002 0x02065ffc 132B -- returns 1 unless bit 0x100000 of `b + 0x24` is set, then 1 again unless
+  `*(u32 *)(b + 0x18) < t.v[*b]`, else bumps the counter and returns 0, with
+  `b = *(u8 **)data_ov002_02102070 + 0x1744 + a0 * 0x38` and `t` the 12-byte table at
+  data_ov002_020fdc18. Reaches 132/132 with `T12 t; t = *(T12 *)table; u32 lim = t.v[*b];` - the
+  plain initialiser form lets mwcc fold the copy away and land at 116B, so the two-step assignment
+  is required. Residue: mwcc saves lr (`stmdb {lr}` + `sub sp, #0xc`) where retail's frame is a bare
+  `sub sp, #0x10` and its exits are `bxeq`/`bxhs` with no link save.
+ov002 0x02052608 72B -- tail-calling updater: clears bits and sets 0x800 in
+  `*(u8 **)data_ov002_02102070 + 0x1824 + 0xb8` (mask 0xfffa3c0f), then `bx ip` to 0x0207808c with
+  the updated word in r0 - a `return func_ov002_0207808c(*p);` tail call, which mwcc does emit as
+  `ldr ip, [pc]; bx ip`. Mine is 64B because mwcc folds the whole address into
+  `add r1, r1, #0x1000` + `[r1, #0x8dc]` where retail adds the pooled 0x1824 in one instruction and
+  then materialises `add r2, r0, #0xb8` before using `[r2]` for both RMWs. Tried: plain pointer,
+  `<volatile u32>` pointer (needed for the double read), and a two-step `u8 *b = base + 0x1824`.
+ov002 0x0204f5a0 132B -- pushes a 12-byte record into a 0x40-entry table: index byte at
+  `base + 0x36d8`, counts at `base + 0x1a60a8 + idx * 4`, records at `base + 0x1a60a8 + 8 +
+  idx * 0x300 + cnt * 12`, returning 0 when the count is already 0x40 and bumping the count plus 1
+  on success. Mine is 144B: retail reads the index byte three times (r6 for the count lookup, r4
+  for the stride, then again for the final increment) and uses `ldr r6, [ip, r6, lsl #2]` operand
+  shifts for both table accesses, which the straightforward C form does not reproduce.

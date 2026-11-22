@@ -3250,3 +3250,23 @@ formulation of the same computation changes it.
 the function - which is now the third unit where an early-computed `base + const` pointer is the
 difference between 88 and 96 bytes - but keeps a `bx lr` where retail has `bxne` after the
 m==1 test.
+
+## 3.13 Four more ov002 units, all short by a materialisation (2026-11-22)
+
+Nothing landed this round; four units were decoded to the last instruction and each is a few bytes
+from matching for the same two reasons already on record. Recorded compactly because the individual
+diagnoses are more useful than the fact they failed:
+
+| unit | size | gap | why |
+|---|---|---|---|
+| `0x020e198c` | 128 | 124 B | retail uses `add r3, r0, #0xb8` then `[r3]` for the OR and `[r0, #0xb8]` for the later read; every spelling folds both |
+| `0x02065ffc` | 132 | 132 B, wrong frame | reaches full size with `T12 t; t = *(T12 *)table;` (a plain initialiser lets mwcc fold the copy, 116 B), but keeps `stmdb {lr}` + `sub sp, #0xc` where retail is a bare `sub sp, #0x10` |
+| `0x02052608` | 72 | 64 B | tail call reproduces (`ldr ip, [pc]; bx ip` for `return f(*p);`), but mwcc folds the address into `add #0x1000` + `[r1, #0x8dc]` instead of retail's pooled-0x1824 add plus `add r2, r0, #0xb8` |
+| `0x0204f5a0` | 132 | 144 B | retail reads the index byte three times and uses `ldr rX, [ip, rX, lsl #2]` operand shifts for both table accesses |
+
+Two things worth carrying forward. First, `0x02065ffc` adds a second confirmed instance of the
+rule that a **two-step struct assignment forces the stack copy** that a declaration-with-initialiser
+lets the compiler fold - the same lesson as the pointer-initialisation cases, but for `ldm`/`stm`
+copying rather than address arithmetic. Second, `0x02052608` shows that mwcc *does* emit retail's
+`ldr ip, [pc]; bx ip` interworking tail call from an ordinary `return f(x);`, so that particular
+retail idiom is not a sign of a function pointer and should not be read as one.
