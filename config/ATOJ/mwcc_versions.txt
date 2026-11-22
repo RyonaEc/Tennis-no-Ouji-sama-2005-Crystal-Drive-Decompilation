@@ -2,7 +2,7 @@
 #
 # The whole ROM builds byte-exactly with a single compiler, 1.2/b56 (build 56,
 # Runtime Built 2004-09-16), which is what tools/configure.py now defaults to.
-# All 1,536 matched units reproduce the digest `8d555a80...` under it with no
+# All 1,536 matched units reproduce the digest `9eec3248...` under it with no
 # per-file overrides, so the 72 `1.2/b56` entries that used to be listed here
 # were an artefact of the old sp2 default and have been removed.
 #

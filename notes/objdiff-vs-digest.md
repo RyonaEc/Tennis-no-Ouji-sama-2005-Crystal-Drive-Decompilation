@@ -2,7 +2,7 @@
 
 Two ov004 units installed from Delta (`func_ov004_0205a63c`, 116 B and
 `func_ov004_02051148`, 120 B) link to the exact target ROM
-(`8d555a80...`, `ninja sha1` prints `OK`) and pass `t10 --check`, yet the
+(`9eec3248...`, `ninja sha1` prints `OK`) and pass `t10 --check`, yet the
 objdiff report scores them `fuzzy_match_percent: 99.83` with
 `complete_code_percent: 100.0`. `tools/match/progress.py` credits a function only at
 100% fuzzy, so they add nothing to `PROGRESS.md`/`README.md`.

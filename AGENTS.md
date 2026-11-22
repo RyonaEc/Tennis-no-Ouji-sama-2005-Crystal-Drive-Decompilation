@@ -16,7 +16,7 @@ A function is matched only when **all** of these hold:
    (`dangling=0`, `unlinked=0`, `dupes=0`); without the local tooling, `ninja
    check` must pass for that module instead, and
 2. `ninja sha1` prints
-   `Target: 8d555a80db47278475ffdfdf808fe80dbd7c48cf; tennis_ATOJ.nds: 8d555a80db47278475ffdfdf808fe80dbd7c48cf`
+   `Target: 9eec3248d3569eba8abcb3244adcbdf01a5ea424; tennis_ATOJ.nds: 9eec3248d3569eba8abcb3244adcbdf01a5ea424`
    followed by `tennis_ATOJ.nds: OK`.
 
 A unit whose object diff looks close is **not** done. `tools/match/var3.py` compares

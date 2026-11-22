@@ -8,7 +8,7 @@ change is only progress when the rebuilt ROM is **byte-identical** to the
 supported dump:
 
 ```
-sha1: 8d555a80db47278475ffdfdf808fe80dbd7c48cf   (64 MiB)
+sha1: 9eec3248d3569eba8abcb3244adcbdf01a5ea424   (64 MiB)
 ```
 
 Everything else — cleaner C, fewer functions, "almost matching" objects — is a
@@ -71,7 +71,7 @@ function you have not written yet.
    `config/ATOJ/arm9/overlays/<module>/delinks.txt` for an overlay) is present and
    marked complete, and any `symbols.txt` change the unit needs is included.
 3. `ninja check` reports the module as matching **and** `ninja sha1` prints
-   `OK` against `8d555a80db47278475ffdfdf808fe80dbd7c48cf`.
+   `OK` against `9eec3248d3569eba8abcb3244adcbdf01a5ea424`.
 4. `README.md` and `PROGRESS.md` are consistent with the new totals if the
    headline counts moved. `PROGRESS.md` is generated from the objdiff report
    (`ninja report`); never hand-edit it.

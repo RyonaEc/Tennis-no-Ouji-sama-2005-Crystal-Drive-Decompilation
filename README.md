@@ -21,7 +21,7 @@ ROM that matches the retail release byte for byte.
 | Release | 2004-12-30 |
 | Cartridge | 512 Mbit (64 MiB) |
 | Target | ARM9 (ARM946E-S), ARM7, overlays |
-| Supported dump | `sha1: 8d555a80db47278475ffdfdf808fe80dbd7c48cf` (64 MiB) |
+| Supported dump | `sha1: 9eec3248d3569eba8abcb3244adcbdf01a5ea424` (64 MiB) |
 
 ## Status
 
@@ -30,7 +30,7 @@ byte-for-byte identical ROM, including all eleven ARM9 overlays.
 
 ```
 $ ninja sha1
-Target: 8d555a80db47278475ffdfdf808fe80dbd7c48cf; tennis_ATOJ.nds: 8d555a80db47278475ffdfdf808fe80dbd7c48cf
+Target: 9eec3248d3569eba8abcb3244adcbdf01a5ea424; tennis_ATOJ.nds: 9eec3248d3569eba8abcb3244adcbdf01a5ea424
 tennis_ATOJ.nds: OK
 ```
 

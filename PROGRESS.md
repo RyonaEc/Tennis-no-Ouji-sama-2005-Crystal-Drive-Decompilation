@@ -3,8 +3,8 @@
 The matching C sources are compiled with `mwccarm` 1.2/b56 and linked back into the original addresses. The rebuild is byte-identical to the retail ROM:
 
 ```
-Target: 8d555a80db47278475ffdfdf808fe80dbd7c48cf
-rebuilt: 8d555a80db47278475ffdfdf808fe80dbd7c48cf  -> OK
+Target: 9eec3248d3569eba8abcb3244adcbdf01a5ea424
+rebuilt: 9eec3248d3569eba8abcb3244adcbdf01a5ea424  -> OK
 ```
 
 The figures come from `ninja report` (objdiff). A complete unit has its whole body in matching C; gap units are still delinked assembly.

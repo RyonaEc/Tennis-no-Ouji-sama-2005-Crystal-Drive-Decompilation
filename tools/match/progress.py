@@ -16,7 +16,7 @@ import sys
 REPORT = pathlib.Path('build/ATOJ/report.json')
 OBJDIFF = pathlib.Path('objdiff.json')
 OUT = pathlib.Path('PROGRESS.md')
-EXPECT = '8d555a80db47278475ffdfdf808fe80dbd7c48cf'
+EXPECT = '9eec3248d3569eba8abcb3244adcbdf01a5ea424'
 
 NAMES = {'arm9': 'ARM9 main', 'ov002': 'OV002', 'ov003': 'OV003',
          'ov004': 'OV004', 'ov005': 'OV005', 'ov006': 'OV006',

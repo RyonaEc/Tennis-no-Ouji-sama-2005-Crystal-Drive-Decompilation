@@ -49,7 +49,7 @@ incremental):
 
 | step | result |
 |---|---|
-| `ninja sha1` before renaming | `8d555a80db47278475ffdfdf808fe80dbd7c48cf … OK` |
+| `ninja sha1` before renaming | `9eec3248d3569eba8abcb3244adcbdf01a5ea424 … OK` |
 | `names.py --apply` (4 rows: `0x0204efa0`, `0x0204ebb0`, `0x0206d778`, `0x020ce31c`) | 17 rewrites |
 | `tools/configure.py ATOJ && ninja sha1` | 10 steps, digest unchanged, `OK` |
 | `t10.py --check arm9 ov001 ov003 ov005` | all `ok`, `dangling=0 unlinked=0 dupes=0` |

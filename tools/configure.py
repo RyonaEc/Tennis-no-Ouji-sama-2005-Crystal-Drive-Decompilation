@@ -611,7 +611,13 @@ def write_rules(n: ninja_syntax.Writer, args) -> None:
 
     n.rule(
         name="rom_build",
-        command=f"{args.dsd_path} {DSD_BASE_FLAGS} rom build --config $in --rom $out $arm7_bios_flag",
+        # dsd writes the whole header only when it re-encrypts the secure area;
+        # with a decrypted base ROM it leaves the secure-area checksum at 0x6c
+        # zeroed, so restore it (and the header CRC over it) afterwards.
+        command=(
+            f'$python {rel(TOOLS_DIR / "build_rom.py")} {args.dsd_path} {DSD_BASE_FLAGS} '
+            f"rom build --config $in --rom $out --base {rel(baserom)} $arm7_bios_flag"
+        ),
         description="Build $out",
     )
     n.newline()

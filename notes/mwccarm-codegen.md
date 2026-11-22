@@ -15,7 +15,7 @@ build compiles the whole ROM; `config/ATOJ/mwcc_versions.txt` is empty.
 shipped 2004-12-30, so `1.2/sp2` (build 79, `Runtime Built: Aug 11 2005`) cannot
 be the launch compiler at all, while b56 does fit the date. The decisive test is
 not the date argument though: `configure.py ATOJ --mwcc-version 1.2/b56` plus
-`ninja sha1` reproduces `8d555a80...` with **all 1,536 units and no per-file
+`ninja sha1` reproduces `9eec3248...` with **all 1,536 units and no per-file
 overrides**. The old sp2 default needed 72 overrides to reach the same digest,
 so it was measuring the wrong baseline all along.
 

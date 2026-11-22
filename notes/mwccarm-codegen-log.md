@@ -4124,3 +4124,7 @@ Remaining caveat: the digest proves the bytes, not the provenance. Nintendo coul
 built SDK library objects with its own build or flags; nothing in `src/` shows it here, because b56
 alone reproduces every installed unit, but a future unit that needs another version would be the
 first evidence of it rather than a mystery to be parked.
+
+Later that day the pin moved to the decrypted revision (`9eec3248...`) and the header
+step in `tools/build_rom.py` was added; the hashes quoted in this section are the ones those runs
+printed at the time, against the encrypted pin.

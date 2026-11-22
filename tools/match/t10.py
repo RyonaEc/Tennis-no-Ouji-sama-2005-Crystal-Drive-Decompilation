@@ -16,7 +16,7 @@ import re
 import subprocess
 import sys
 
-EXPECT = "8d555a80db47278475ffdfdf808fe80dbd7c48cf"
+EXPECT = "9eec3248d3569eba8abcb3244adcbdf01a5ea424"
 ARM9_DELINKS = 'config/ATOJ/arm9/delinks.txt'
 DIGEST_RE = re.compile(r'tennis_ATOJ\.nds:\s*([0-9a-f]{40})')
 ENTRY_HEAD_RE = re.compile(r'^(src/[^\s:]+\.c):\s*$')

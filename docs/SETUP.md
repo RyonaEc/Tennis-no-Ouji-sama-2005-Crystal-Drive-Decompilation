@@ -22,31 +22,29 @@ If it is missing for an encrypted dump, `init.py` stops and says so rather than
 extracting a garbled secure area.
 
 **Which revision the digest pins.** `config/ATOJ/tennis_ATOJ.sha1` is
-`8d555a80db47278475ffdfdf808fe80dbd7c48cf`: the cartridge image with the secure
-area at `0x4000` **still encrypted**. Decrypting it produces
-`9eec3248d3569eba8abcb3244adcbdf01a5ea424`, and the changed bytes are exactly
-`0x4000`-`0x47ff` - the 2 KiB KEY1-encrypted secure-area block, which is the arm9's
-first 0x800 bytes. Code starts at the header's entry point `0x02004800`, past it,
-and every other byte of the 64 MiB image is identical. So the two revisions are
-the same game with the same code, and neither is better for matching.
+`9eec3248d3569eba8abcb3244adcbdf01a5ea424`: the cartridge image with the secure
+area at `0x4000` **decrypted** - the form No-Intro catalogues and the usual
+dumpers (`wooddumper`, `GodMode9i`) write by default. It needs no ARM7 BIOS.
 
-Which form you are more likely to have depends on the dumper, and for DS it is
-the **decrypted** one: No-Intro catalogues decrypted releases, and `wooddumper`
-and `GodMode9i` write decrypted files by default. This project's pin is the
-encrypted-secure-area revision, so a contributor whose dump is decrypted has the
-right cartridge and a different hash. Re-encrypt a copy with NDecrypt `-e` (or
-`ndstool -se`) and the pinned digest matches. (A decrypted dump is recognised by
-`tools/rom_info.py` and asks for no BIOS.)
+The still-encrypted image of the same cartridge is
+`8d555a80db47278475ffdfdf808fe80dbd7c48cf`, and the two differ only in
+`0x4000`-`0x47ff`: the 2 KiB KEY1 secure-area block, which is the arm9's first
+0x800 bytes (code starts at the entry point `0x02004800`, past it). The same
+game, the same code, so matching is unaffected either way. If your dump is the
+encrypted form, decrypt a copy (`ndstool -sd`, or NDecrypt without `-e`) and the
+pinned digest matches.
 
-Pinning the decrypted revision instead was measured on 2026-11-22, not assumed.
-With the decrypted image as the base ROM the build needs no BIOS, extracts
-identically and rebuilds all 1,536 matched units, but it still misses that
-revision by a single 16-bit header field: dsd's no-BIOS `rom build` writes
-`0x0000` at `0x6c` where retail has `0xcb04`, which in turn changes the header
-checksum at `0x15e`. Everything else, secure area included, comes out
-byte-identical. So pinning the decrypted form would need a build step that
-preserves that field - a pipeline change for no matching gain - and the encrypted
-pin stands. Do not run `dsd init` on another image either: it regenerates
+**Why a build step fixes the header.** Decrypting changes only the secure-area
+contents, but retail's header keeps the checksum of the *encrypted* block: the
+16-bit field at `0x6c` is CRC16 (`0x4000`-`0x47ff` ciphertext, poly `0xA001`,
+init `0xFFFF`) and the header CRC at `0x15e` covers it. `dsd rom build` writes
+those only when it re-encrypts, so on a decrypted base ROM it leaves `0x6c` at
+zero and the rebuild misses the digest by four bytes. `tools/build_rom.py` wraps
+the build, carries the 16-bit field over from the base ROM header - metadata,
+like the banner and logo dsd already copies - and recomputes the header CRC.
+Those two header words are the only part of a rebuilt ROM not derived from source.
+
+Do not run `dsd init` against another image: it regenerates
 `delinks.txt`/`symbols.txt` and would discard every installed unit.
 
 Do not commit the ROM or the BIOS; `.gitignore` covers both.
