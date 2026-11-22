@@ -1404,3 +1404,20 @@ ov002 0x020766c4 216B -- record creator, 220/216 best (s16 t[2] + s16 u), 216/21
   s16 scalars fit 8 (216B) but then mwcc folds `t1 - t2` to `sub r1, r5, r5` with r5 unallocated and
   spills p to the stack instead of r5. Tried: s16 t[3], s16 t[4], s16 t[5], struct{s16 a,b,c;} t,
   s16 t[2] + s16 u (220B), scalar t0/t1/t2 (216B, broken), declaration order p/q swapped.
+ov003 0x020d77b4 204B -- 196/204. Call func_02021b14(0x04001050, 0xe, 0x24, s[0x3f], s[0x43]) where
+  s = (u16 *)(base + 0x8900) and base = *(u8 **)data_ov003_020eb720; guarded by
+  `if (*(u16 *)(p + 6) != 0 || *(u16 *)(p + 8) != 0)` with p = (u16 *)(base + 0xb8dc); then the two RMWs
+  on base+0x8986 (+1 if < 0x10) and base+0x897e (-1 if != 0); always writes ((*(u32 *)0x04001000 &
+  ~0x1f00) | 0x500) and returns 0. The RMW predicates need the *fresh* load (`ldrhlo r0, [r1]`), which
+  s[0x43] vs `*(u16 *)(base + 0x8986)` gives us for free. What is left is exactly two instructions:
+  retail materialises base+0x8986 and base+0x897e inside the predicated blocks (`ldrlo r0, [pc]` +
+  `addlo r1, r4, r0`), while mwcc always materialises them before the call in the same `add` form
+  (196B) or folds them onto s+0x43 as `[r5, #0x86]` when the assignment is inside the block (180B).
+  Tried: pointer locals assigned before the call, assigned after the call, declared inside each if
+  body, direct `*(u16 *)(base + K)` expressions. No spelling puts the add inside the predicate.
+ov005 0x0204f8a0 / ov009 0x0204eb14 -- best now 212/224: multiply written as
+  `*(u16 *)(o + 0x6a64) * 0xffffffff` (or `* -1u`) makes mwcc emit `mvn r1, #0` + `mul`, matching
+  retail, and re-reading every field through `*(u16 *)(o + K)` instead of locals keeps the reloads.
+  Still missing the two materialised pointers r6 = o+0x6a64 and lr = o+0x6a68 (pooled 0x6a64/0x6a68
+  + `add`), which retail builds inside the block where we keep the r3 = o+0x6a00 base; plain
+  `u8 b[3]`-style locals get caught by

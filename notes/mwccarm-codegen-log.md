@@ -3781,3 +3781,23 @@ all give a 0x10 frame (224 B) with correct code; three separate `s16` scalars gi
 spills `p` instead of keeping it in r5. `s16 t[2]` plus a trailing `s16` gives 220 B with the loads
 correct. mwcc reuses the word it stores as the 5th argument of the allocator call for the locals, so
 the 0xc frame retail wants is not reachable from any of those spellings.
+
+## 3.30 Two levers that transferred, and the same wall twice (2026-11-22)
+
+`ov003 0x020d77b4` went 172 -> 196 of 204 and `ov005 0x0204f8a0` 200 -> 212 of 224, both without a
+match. Two of the levers are worth keeping.
+
+**A pointer local used at a small offset makes the RMW re-read.** `if (s[0x43] < 0x10) t[0] = t[0] + 1;`
+with `t = (u16 *)(base + 0x8986)` emits a *second* load inside the predicate, which is what retail
+does; writing the same address as `*(u16 *)(base + 0x8986)` on both sides reuses the comparison's
+value and comes out four bytes short.
+
+**Multiplying by `-1u` or `0xffffffff` gets `mvn` + `mul`.** `x * -1` gives `rsb r0, x, #0`; spelling
+the constant unsigned gives retail's `mvn r1, #0` / `mul r0, r5, r1`.
+
+The wall is the same one from 3.28, now with a sharper shape: retail materialises an address *inside*
+a predicated block, and mwcc will not. For `ov003 0x020d77b4` the choice is explicit - assign the two
+pointer locals before the call and they are materialised early with `add` (196 B), assign them inside
+the block and mwcc folds them back onto the other pointer as `[r5, #0x86]` (180 B). Retail's third
+option, `ldrlo r0, [pc]` + `addlo r1, r4, r0` inside the predicate, needs mwcc to keep the two
+address computations apart; it unifies them through the shared base register instead.
