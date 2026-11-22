@@ -2146,3 +2146,20 @@ written off.
   guard with a bare `bxne lr`; every spelling tried (early `return`, single-exit `if`,
   `volatile`/plain targets, one `d[0]/d[1]` pointer pair, both dereferences kept) makes mwcc
   1.2/b56 open a `stmdb sp!, {lr}` + `sub sp, #4` frame and give up a register, for 124-132B.
+  arm9 0x02028920 56B (and 0x02028958, same source with 0x40 -> 0x3c) -- `*cur += p->f34`
+  then an indirect `q->vt[0x10](q, p->f2c, old)` call. Size-exact at 56B with every instruction
+  in retail's order, but mwcc loads the `cur` target one slot before `p->f34` and hands the vtable
+  entry r3 where retail reuses ip. Naming the function pointer, giving `d` its own variable and
+  moving the declaration order all leave the pair swapped.
+
+  arm9 0x020208b0 140B (and 0x0202093c, mode 0x80, field 0x16, bit 0x40000000, byte 0x82) -- u16
+  flag clear plus a conditional VRAM bit. 140B exactly, but the allocator rotates mask/v18/v0
+  through ip/r3/r2. Using the `data_02048c74[]` symbol instead of the literal address fixes the
+  base pointer in r1 (retail's register); the remaining three stay rotated. Writing the `a0 == 0`
+  body as a nested `else` (not an `else if` chain) is required to keep it a real branch instead
+  of five predicated instructions.
+
+  arm9 0x02023df8 96B (and 0x02023e58, base 0x06400000) -- dispatch on a -1 sentinel into a
+  three- and a four-argument call. 92B: retail materialises the 0x06600000 base once in ip ahead
+  of the branch and adds it in both arms, mwcc folds the constant into each `add` immediate and
+  drops the `mov`.

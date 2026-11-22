@@ -322,3 +322,15 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   `if (f() != 0) { ... }`, an early `return`, and `goto end` into `popeq`/`bxeq` when the body is
   the last block. Retail's `beq` to a shared `pop`/`bx` epilogue cannot be spelled from a single
   trailing block; park the unit instead of hunting for a branch that the compiler never emits.
+
+- **The data symbol, not the literal address, decides the base pointer's register.** In
+  `0x020208b0` writing `u16 *p = (u16 *)0x02048c74;` and indexing `p[0xc]` leaves the base in ip
+  where retail keeps it in r1 and everything else falls into a different rotation. Declaring
+  `extern u16 data_02048c74[];` and writing `data_02048c74[0xc]` gives retail's `ldr r1, [pc]`
+  base immediately; the same body then differs only in the temporaries' numbers.
+
+- **A short `if` body is if-converted unless it is the `else` arm.** A four-instruction
+  `if (a0 == 0) { ...bit clear... } else if (a0 == 0x100) { ...set... }` compiles to five
+  predicated instructions plus a skip branch (`ldreq`/`biceq`/`streq`/`beq`). Inverting the outer
+  condition — `if (a0 != 0) { if (a0 == 0x100) {...} } else { ...bit clear... }` — restores
+  retail's `beq` into a real out-of-line block and the extra `b` that closes it.

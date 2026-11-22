@@ -4535,3 +4535,22 @@ allocator rotating the whole four-register set (retail holds the pair temporarie
 the destinations in r2/r1). Naming the destinations as locals does not lengthen their live
 ranges because mwcc folds the constants back into first-use pool loads. The same rotation
 appears on `0x020255e8` (100B, three instructions) and `0x02017880`/`0x020178e8`.
+
+### 2.93 Three families closed on shape, none on colouring
+
+`famsurvey.py` still reports five groups in arm9; four of them are now understood and parked.
+All three families below reach retail's exact size and instruction sequence and differ only in
+which registers the temporaries get, or in one materialisation:
+
+- `0x02028920`/`0x02028958` (56B each): `*cur += p->f34` plus an indirect vtable call. Two
+  independent loads come out one slot apart (mwcc: `*cur` then `p->f34`; retail the reverse) and
+  the vtable entry gets r3 instead of a reused ip. Naming the callee pointer, splitting `d` into
+  its own variable and reordering declarations all leave it.
+- `0x020208b0`/`0x0202093c` (140B each): 140B exactly, mask/v18/v0 rotated through ip/r3/r2.
+  Two real levers came out of this one (symbol base, `else`-arm if-conversion) and both moved the
+  unit closer without closing it.
+- `0x02023df8`/`0x02023e58` (96B each): 92B, because mwcc folds the 0x06600000 base into both
+  `add` immediates instead of materialising it once in ip ahead of the branch.
+
+The lesson for this band is that the remaining residue is the allocator, and the allocator reacts
+to things the disassembly cannot show — symbol versus literal addressing is the newest example.
