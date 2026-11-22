@@ -2248,3 +2248,11 @@ written off.
   comparisons are signed (retail uses ge/bge/blt); that spelling is size-exact at 132B but mwcc puts
   &count in r7 and base in r5, where retail has r5 = &count, r7 = base and r8 = the incremented
   destination address. An explicit `u8 *dst` induction variable costs 20B (152B).
+  arm9 0x02033014 112B -- stage-2 handoff: saves the current value of the hardware word at
+  0x04000204 into *p, writes (v & 0xffe3) | 0xf back to 0x04000204, then when func_02033170(1)
+  succeeds stores 1 at p+4, latches 0x027fff72 into p+2 and writes 0x20 to both 0x09fe2ffe and
+  0x027fff72. The store to *p is scheduled between the `and` and the `orr`, which the separate-`n`
+  form reproduces. Every spelling (guarded block, early `return`, explicit `else { return; }`,
+  volatile block stores) compiles to 116B because mwcc predicates the early exit as
+  `popeq`/`bxeq` with a second epilogue at the end, where retail emits `beq` to a single shared
+  `pop`/`bx`; net one instruction.
