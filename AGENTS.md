@@ -104,7 +104,7 @@ Source files must `#include "types.h"` first, or the compiler emits
 | `python tools/match/progress.py` | regenerate `PROGRESS.md` from objdiff's report |
 | `python tools/match/names.py --dry-run` | report the scripted rename pass from `notes/naming/annotations.tsv` (names are recorded, not applied: see `docs/NAMING.md`) |
 | `ninja report` / `ninja sha1` / `ninja check` | objdiff numbers, ROM digest, per-module check |
-| `M:\melonDS-workbench` (melonDS decomp workbench) | runtime evidence: did the unit run, who calls it through a pointer, what arguments, who writes a field, which ROM file a buffer came from; setup and limits in `notes/workbench.md` |
+| melonDS decomp workbench (installed outside this repo) | runtime evidence: did the unit run, who calls it through a pointer, what arguments, who writes a field, which ROM file a buffer came from; setup and limits in `notes/workbench.md` |
 
 `tools/match/fastmatch.py` is the shared compiler harness: `parse_ins(addr, size)`,
 `retail(mod, addr, size)`, `compile_text(source, name)`, `literal_of(ins)`.
@@ -120,7 +120,7 @@ delinked objects and the built ROM (`build/ATOJ/`), scratch candidates
 
 ## Runtime evidence (melonDS workbench)
 
-`M:\melonDS-workbench` is a melonDS fork that records coverage, call edges,
+The melonDS decomp workbench is a melonDS fork that records coverage, call edges,
 write history and data provenance, and serves them over a local JSON-RPC API.
 It answers what the digest cannot: did this unit ever run, who calls it through
 a pointer, what arguments a call site sets up, who writes a struct field, and

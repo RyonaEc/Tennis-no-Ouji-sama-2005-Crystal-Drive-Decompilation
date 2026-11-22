@@ -12,16 +12,17 @@ replace. It is a second opinion on a unit, never a replacement for
 
 | | |
 |---|---|
-| Workbench | `M:\melonDS-workbench`, `melonDS-decomp-workbench-windows-x64.exe`, API 1.1 |
+| Workbench | [hmatt1/melonDS-with-decomp](https://github.com/hmatt1/melonDS-with-decomp), one executable, API 1.1, installed anywhere outside this repo. `<workbench>` below is that directory |
 | ROM | `Tennis no Ouji-sama 2005 - Crystal Drive (Decrypted).nds`, SHA-1 `9eec3248d3569eba8abcb3244adcbdf01a5ea424` — **the same bytes the digest pins**, so a record is evidence about the code we rebuild |
 | Launch | `melonDS-decomp-workbench-windows-x64.exe -w --api --write-history --data-origin <rom>` |
 | JIT | off (`[JIT] Enable = false`). Recording stays off while the JIT is on, so this is not optional |
-| Client | `dswb` from `tools/workbench/python` in the workbench source, unpacked to `M:\melonDS-workbench\pydswb\dswb` |
+| Client | the `dswb` Python package from the workbench source (`tools/workbench/python`), copied to `<workbench>/pydswb`; `Client.connect()` also reads `DSWB_API_INFO` or `MELONDS_DIR` instead of the default lookup |
 | Knowledge store | `workbench/ATOJ_8d555a80db47/knowledge.db` |
 
-Two recording sessions were saved from the unlocked save and are named for it:
-`sessions/unlocked-20261122-183931_f0-35338.dswbs` (35,338 frames) and
-`sessions/unlocked-20261122-185046_f0-75818.dswbs` (75,818 frames).
+Sessions land in `<workbench>/workbench/<GAMECODE>_<sha1>/sessions/`. They are local
+artefacts, not part of this repository, and the two recorded while writing this
+note are named for the save they used: `unlocked-20261122-183931_f0-35338.dswbs`
+(35,338 frames) and `unlocked-20261122-185046_f0-75818.dswbs` (75,818 frames).
 
 The digest match is the point: the workbench keys its store on the ROM's SHA-1,
 and it was given the decrypted revision, so nothing has to be re-derived from a
@@ -94,7 +95,7 @@ table can be matched back to a static file.
 ## The API, in the shape that was actually used
 
 ```py
-import sys; sys.path.insert(0, r"M:\melonDS-workbench\pydswb")
+import sys; sys.path.insert(0, "<workbench>/pydswb")   # the dswb package
 from dswb import Client
 
 c = Client.connect(agent="buffy")            # reads workbench/api.json
@@ -107,7 +108,7 @@ c.origin_get(0x0204C7C0, size=8)              # overlay file, ROM offset, loader
 c.disasm_get(0x0204fb34, count=20)            # the instructions around a call
 c.coverage_get(addr=0x0204C7C0, size=0x1C000, kind="exec")   # what ran
 c.overlays_list()                             # overlay table + load/evict events
-c.kb_import_static_analysis(path=r"M:\melonDS-workbench\import.json")
+c.kb_import_static_analysis(path="<workbench>/import.json")
 c.recording_configure(save_session=True)      # write a .dswbs without stopping
 ```
 
