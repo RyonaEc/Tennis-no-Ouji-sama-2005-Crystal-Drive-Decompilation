@@ -3823,3 +3823,38 @@ Four candidates, no match, but the failure classes are now distinct and each is 
 The edit loop is finding real C but the compiler refuses two specific peephole decisions: rematerialise
 into a conditional block (3.30) and keep an unused frame (here). Both are visible in the first few
 instructions, so triage is now a five-second check rather than a full attempt.
+
+## 3.32 Match: arm9 0x0201f21c, and the "unused frame" was stack alignment (2026-11-22)
+
+`arm9 0x0201f21c` (80 B) matches, and it explains the frame that blocked `arm9 0x020248c8` last pass.
+
+```c
+typedef struct T T;
+struct T { u8 pad[0x118]; s32 f118; };
+void func_0201f21c(T *t)
+{
+    if (t->f118 == 0) return;
+    t->f118 -= 1;
+    if (t->f118 != 0) return;
+    func_0201cdb8(t);
+}
+```
+
+Under the default 1.2/sp2 this comes out at 72 bytes; under **1.2/b56 it is byte-exact at 80**, and the
+eight missing bytes are `sub sp, #4` / `add sp, #4` around a `push {lr}` that needs them: b56 aligns the
+stack to 8 bytes across a call (AAPCS) and sp2 does not. Retail does align, so the unit needs
+`src/arm9/func_0201f21c.c = 1.2/b56` in `config/ATOJ/mwcc_versions.txt`, and the full ROM digest still
+matches with that override in place. `reg.py` takes the version as a sixth argument, so the install is
+one command: `reg.py arm9 func_0201f21c 0x0201f21c 80 cand.c 1.2/b56`.
+
+Two lessons worth the four turns they cost:
+
+1. **A 4-byte frame with no stack references is not an unused frame.** Check whether it is the second
+   half of an 8-byte AAPCS alignment; if it is, the unit is a b56 candidate, not a C-shape problem.
+2. **Probe both compilers before writing the wall note.** `vprobe.py` answers in one run, and the
+   version tag is a documented, digest-gated lever.
+
+Re-probed and still short under both builds: `ov003 0x020d77b4` (196), `ov005 0x0204f8a0` (212),
+`arm9 0x020376c4` (80 under sp2 with the materialisation folded, 84 under b56 with a trailing `bx lr`),
+`arm9 0x020248c8` (56 under both; retail aligns without a call in sight, so the alignment theory does
+not rescue that one on its own).

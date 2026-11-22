@@ -1431,6 +1431,9 @@ arm9 0x020248c8 72B -- IME/IE critical-section bit clear, 56/72 with a *byte-ide
   `add sp, sp, #4` + `ldm sp!, {lr}`. An unused 4-byte frame. Any Ctx/struct local that forces a frame
   also changes the schedule (reading IE early is what keeps two values live and the frame alive, and
   that moves the `ldr` of IE before `strh` of IME, which retail does not do). b56 and sp2 both give 56.
+  Note: a 4-byte frame with no stack references is usually the second half of an 8-byte AAPCS
+  alignment pair (see `arm9 0x0201f21c`, matched under 1.2/b56); this unit is a leaf and b56 does not
+  align it, so that explanation does not apply here.
 arm9 0x020376c4 80B -- BCD digit increment, 80/80, one instruction out. Correct C: start = base + 5,
   `for (;;) { if (*p < 9) { *p = *p + 1; return; } if (p == start) { *p = 1;
   *(s16 *)(base + 2) += 1; return; } *p-- = 0; }`. Retail materialises `add r1, r0, #2` and runs
