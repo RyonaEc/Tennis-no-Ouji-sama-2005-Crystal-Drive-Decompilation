@@ -1595,3 +1595,28 @@ has its stores deleted at -O4 and compiles to `bx lr`. `volatile` keeps the stor
 `[sp]`-relative addressing instead of retail's `add r1, sp, #0` / `add r2, sp, #4` register
 reuse. Retail's shape needs the aggregates to escape to something that does not appear in the
 52 bytes, so the construct that produced it is still unknown. The two twins are 104 B.
+
+=== small-unit sweep: nothing under 24 bytes is C (checked 2026-11-22) ===
+
+Every unmatched unit of 20 bytes or less in arm9/ov003/ov006 was disassembled. All of them are
+hand-written assembly or fragments, each blocked for a structural reason, so this size band is
+exhausted:
+
+  0x020040e6..0x020045xx  4-6B Thumb SWI stubs at 2-mod-4   (alignment section above)
+  0x02033cb0  8B   udf #0xffff trap; not expressible in C
+  0x0203b2cc  8B   cmp/bxeq then falls into the next symbol (non-returning fragment)
+  0x0203aeb8  12B  same fragment class
+  0x02024af8  12B  ldr r1,[pc]; bx r1 veneer
+  0x020263c0  12B  subs/bhs flag-chained delay loop; C emits cmp+subs or sub without flags
+                   (tried while, do-while, and returning n — 16/24 bytes, never 12)
+  0x02048e8   20B  stm fill loop: add ip,r1,r2 / cmp / stmlt r1!,{r0} / blt
+  0x0202612c  20B  two-call wrapper; mwcc pads 4 bytes for AAPCS stack alignment, retail does not
+  0x0203b564  20B  svc #0x123456 wrapper (r0=3)
+  0x0203b578  20B  svc #0x123456 wrapper (r0=7, r1=0)
+  0x0203b58c  16B  svc #0x123456 wrapper (r0=0x18)
+  0x02033bc0/0x02033c0c 16B  mov r0,#0 / mov r0,#1 thunks that branch into the next symbol
+  0x0204df9c  12B  epilogue only: add sp,sp,#4 / ldm sp! / bx lr
+  0x02050f2c  16B  cmp/moveq/movne both returning 0; folds to `bx lr` in every C form tried
+
+Conclusion: no unit below 24 bytes can be installed, so the next real target is ordinary C in the
+ov002 family clusters (13x756, 14x608, 10x688, 10x676), starting with one fully decoded member.
