@@ -2425,3 +2425,7 @@ written off.
   explicit `(u16)` casts on the stored expressions drops it to 112B. The 20-byte gap is exactly those
   conversion pairs, so the source needs a shape that makes mwcc re-extend the u16 argument at each use
   rather than keeping it in a register.
+  (update, 0x02032c70) best spelling so far is 136B against 144B: keep the merged value in a u16
+  local and the extended argument in a u32 local assigned from the u16 parameter, then store the local.
+  Two instructions are still missing versus retail, which extends the argument separately inside each
+  branch instead of hoisting it once.
