@@ -2295,3 +2295,18 @@ written off.
   `str` per word with offsets, and the byte-shifted-address spelling even costs an extra register.
   Building a `u32[8]` struct and assigning it through a pointer spills the block to the stack
   instead. Retail's eight-live-register stm needs a source shape that has not been found yet.
+  ov004 0x0204cbdc 32B -- `*(u32 *)0x027c3ff8 |= 1` written as a base 0x027c0000 plus an offset
+  0x3ff8: retail pools BOTH constants and loads through `ldr r0, [r1, r0]!`. mwcc folds the pair
+  into a single 0x027c3ff8 literal (24B) for the folded cast, a base-pointer local, a
+  `u32 off = 0x3ff8` local and `((u32 *)0x027c0000)[0xffe]`; the register-offset load needs whatever
+  spelling stopped the fold.
+  ov004 0x0204d980 60B -- byte classifier: `c = *p`, `ok = (c >= 0x81 && c <= 0x9f)`, `return 1` when
+  ok, `return 1` when `c >= 0xe0 && c <= 0xef`, else 0. Retail loads the byte into r1 and keeps 1 in
+  r0 from the top so both exits are `bxne lr` / `bxls lr` with no extra move; every spelling tried
+  (plain early returns, a two-stage `ok` flag) makes mwcc keep the byte in r0 instead and emit
+  `movls r0, #1` per exit (48B or 68B against 60B).
+  ov004 0x0204e8a4 64B -- `return *(u32 *)(base + a0*0x220 + a1*0x88 + 0xf0) ?
+  (u32)(base + 0xf0 + a0*0x220 + a1*0x88) : 0;` with `base = *(u32 *)0x020690a8`. The ternary form
+  reaches exactly 64B; the only residue is one commutative operand swap, retail `add r0, r0, r2`
+  against mwcc's `add r0, r2, r0` at 0x1c. Splitting the products into locals, a hoisted `p`, or
+  swapping the term order in the source all change the allocation instead of the operand order.
