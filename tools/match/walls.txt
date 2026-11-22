@@ -2393,3 +2393,9 @@ written off.
   assignments give 132B (mwcc never merges them); splitting the object into a 48-byte struct plus a
   16-byte struct gives 68B. Retail needs the writeback form, which only comes from copying one
   contiguous object, yet that object also has to break into groups of three.
+  arm9 0x0202474c 36B -- four `ldm r0!, {r2, r3, ip}` / `stm r1, {r2, r3, ip}` pairs and `bx lr`: twelve
+  words are read from an advancing source but every block is written to the SAME destination address (no
+  writeback on the stm). Shapes tried: `for (i = 0; i < 4; i++) { d[0]=s[0]; d[1]=s[1]; d[2]=s[2]; s += 3; }`
+  keeps the loop and uses ldr/str (48B, no unroll, no ldm/stm), a T3-struct loop gives 56B, and four
+  explicit `*(T3 *)d = *(T3 *)s; s += 3;` statements give 56B. Retail unrolls AND merges each group into a
+  block transfer, and never advances the destination.
