@@ -1922,3 +1922,19 @@ forces that pairing turns up.
   arm9 0x02033bd0 and 0x02033c1c 60B (2x60 family) -- hand-written assembly, not C:
   `ldr r1, [pc]; bx r1` veneer into inline `mrs r3, apsr / and r1, #0x40 / orreq / bicne /
   msr cpsr_fc / tst / moveq 1 / movne 0` interrupt enable-with-save. Leaves asm.
+
+RESOLVED (2026-11-22): arm9 0x0201f3d0 and 0x0201c2d4 are both matched; see
+notes/mwccarm-codegen-log.md 2.83. The missing instruction in each was a call argument
+the visible signature did not have: 0x0201f3d0 passes the just-tested bitfield
+(`func_0201f38c(a0, b, a1)`) so the `asr` result already sits in r1, and 0x0201c2d4
+passes the state byte (`func_0201c140(a0, v, a1)`). The entry `mov r2, r1` in both was
+the tell. Any other parked unit whose retail prologue copies an argument register
+without an obvious reason should be re-read as a higher-arity call before being
+written off.
+
+  arm9 0x0201cae0 116B -- loop over `a0->count` entries, each indexing an 8-byte table
+  at data_02047e18 to build an offset for func_02027b4c and passing the result to
+  func_02027104. Two things decide it: the bound must be read as `s32` so the guard is
+  `bxle` (a separate `if (n == 0) return;` duplicates the test and costs 12B), and the
+  loop locals must be declared `u32 id;` before `s32 i;` -- the reverse order puts the
+  cursor in r6 and the id in r5 where retail has them the other way round.
