@@ -1209,3 +1209,19 @@ ov002 0x02082034 92B -- copies four s16s into an 8-byte stride at p + 0x3c6 from
   as both `lsl #3` for the destination and `lsl #1` for the source. Hoisting the byte read gives 96B
   with two extra induction registers; inlining it takes 112B because mwcc then re-materialises the
   table address each pass.
+ov003 0x02066a54 180B (family: 0x02066a54 0x020b85b8 0x020db6ec 180B; 0x020d72f8 0x020d9f2c 164B,
+  5 units / 868B) -- display init: guards on a0 == 0, calls func_020209c8(8) then func_020208b0(0x100),
+  rewrites *(u32 *)0x04001000 to (old & 0xffcfffef) | 0x100010, then loops i = 0..0x1ff zeroing the
+  u16 at b + 0x8de8 + i * 2 and writing 0x200 there every fourth entry (b = *data_ov003_020eb720);
+  the 180B members take an else branch calling func_0204e46c(*(u16 *)(b + 0x86c2)). Source is exact
+  in size and instruction order for both size classes: 164/164 and 180/180, with every opcode
+  identical except a single register pair. Retail keeps the zero store value in lr and the rolling
+  address in ip; mwcc emits `mov ip, r5` and `add lr, r4, r5, lsl #1`, i.e. the two temporaries swap
+  registers and nothing else differs. Tried: 0 as a literal, a `u16 z = 0` variable carried across
+  the loop, `u8 *p` declared inside the loop, `u8 *p` declared outside and assigned inside, and a
+  pre-offset `u16 *q = (u16 *)(b + 0x8de8)` with `q[i]` (that one folds the split 0x8d00/#0xe8
+  materialisation and lands at 176B). vprobe shows 1.2/b56 and 1.2/sp2 produce the identical swap,
+  so this is not a compiler-version lead.
+ov003 0x020b6b60 52B (twin 0x020b732c) -- `sub sp, #0x10` then six stores of zero to three adjacent
+  u16 pairs in the frame and nothing else: dead local initialisation that no C source will make mwcc
+  emit. Left as delinked assembly.

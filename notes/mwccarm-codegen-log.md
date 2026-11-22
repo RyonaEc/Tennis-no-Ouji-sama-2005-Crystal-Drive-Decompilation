@@ -3300,3 +3300,28 @@ single induction register between the `lsl #3` destination and the `lsl #1` sour
 costs nothing but produces 96 bytes with two extra induction registers; inlining it lands at 112.
 So the `volatile` lever from above is not interchangeable with "move the expression into the loop":
 mwcc strength-reduces differently in each case, and neither matches here.
+
+## 3.15 The closest wall yet: five units, one swapped register pair (2026-11-22)
+
+`ov003 0x02066a54` (180B, family of three) and `0x020d72f8` (164B, family of two) are one source:
+display init that clears the resident pointer, calls `func_020209c8(8)` and `func_020208b0(0x100)`,
+rewrites `*(u32 *)0x04001000` to `(old & 0xffcfffef) | 0x100010`, then loops 0x200 times zeroing the
+u16 at `b + 0x8de8 + i * 2` and stamping `0x200` every fourth entry; the 180B members take an else
+branch calling `func_0204e46c(*(u16 *)(b + 0x86c2))`.
+
+Both size classes reproduce exactly - 164/164 and 180/180 - with every opcode in retail's slot. The
+entire residue is one register pair: retail holds the zero store value in `lr` and the rolling
+address in `ip`, mwcc emits `mov ip, r5` and `add lr, r4, r5, lsl #1`. Nothing else differs, not even
+the `% 4` sequence (`lsr`/`rsb`/`adds ... ror #30` plus the predicated `addeq`/`streq`).
+
+Five spellings do not move it: a literal 0, a `u16 z = 0` variable carried across the loop, `u8 *p`
+declared inside the loop, the same declared outside and assigned inside, and a pre-offset
+`u16 *q = (u16 *)(b + 0x8de8)` indexed as `q[i]` (which also folds the split 0x8d00/#0xe8
+materialisation and drops to 176B). `vprobe` confirms 1.2/b56 and 1.2/sp2 make the same choice, so
+the version-override route is closed here too. Both builds create the zero temporary first and then
+the address, and differ only in which of r12/r14 they assign to the first - so this is the allocator's
+scratch preference, not an evaluation-order effect that source can reach.
+
+Worth remembering as the highest-value retry in the tree: five units and 868 bytes behind a single
+register name. If a lever for scratch-register preference ever appears, this family cashes in
+immediately.
