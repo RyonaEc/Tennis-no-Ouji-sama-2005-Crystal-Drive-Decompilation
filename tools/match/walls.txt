@@ -1286,3 +1286,22 @@ ov002 0x02064b04 108B -- selects a state predicate from `*(u8 *)(base + 0x1744 +
   else 0. Four spellings land at 104-132B: the closest (104B) runs the `mul` after the call and keeps
   a0 in r4 without a spare register, where retail computes the offset first, keeps a0 in r5, and puts
   the `st == 1` arm out of line behind `beq` with the `st == 2` arm inline.
+arm9 0x020178e8 108B -- singly-linked-list insert: on a non-zero `*(u32 *)node`, links `list` into the
+  node's chain through a u16 offset at `node + 0xa`, re-reads `node + 4` and the offset for the second
+  link write, sets `node + 4 = list` and bumps the u16 counter at `node + 8`. Closest spelling is 104B
+  (volatile reads of `node + 4` / `node + 0xa` reproduce retail's duplicate loads and the whole body
+  lines up); the missing instruction is `add r2, r0, #8` for the counter pointer. Declaring the counter
+  pointer at the top of the function does materialise it, but too early (`add lr, r0, #8` right after
+  the first load) and into lr, which also costs the frame. Retail computes it between the two link
+  stores, into r2.
+arm9 0x020235a0 112B -- mode setter: stores `func_02020830()` into data_02048c98, returns when it is 0,
+  then writes 0x6890000 (mode 0x20) or 0x6894000 (mode 0x40) to data_02048c94. Writing it as `void`
+  with early returns gets to 108B: mwcc keeps the `== 0x20` arm inline with its own epilogue, while
+  retail puts that arm out of line behind a `beq` and leaves `== 0x40` as the fall-through with a
+  shared epilogue. Both arms must end in different epilogues, which no if/else or return spelling
+  tried (four variants) produced.
+ov003 0x02082220 / 0x020c806c / ov005 0x0205ac30 96B (three copies) -- range test on a1 (< 0x5a,
+  < 0xb4, else) assigning the identical pair (0x1e, 0x3c) in all three arms, then a dead `n == 0`
+  check and `(s16)func_0203b0c0(m * a1, n)`. Both compiler builds merge the three identical arms and
+  land at 80B; retail keeps six separate `movlt/movge` pairs. Something in retail's source made the
+  arms non-mergeable, and no spelling found so far preserves them.

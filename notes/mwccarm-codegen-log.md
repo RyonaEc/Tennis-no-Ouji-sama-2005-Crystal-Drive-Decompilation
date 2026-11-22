@@ -3448,3 +3448,35 @@ when that store is the first use.
 the `mul` after the call and keep the index in r4, while retail computes it first and keeps the
 argument in r5. Branch polarity in the state dispatch also has to be inverted - retail puts the
 `st == 1` arm out of line behind a `beq` and leaves `st == 2` inline.
+
+## 3.20 A symbol-type trap, and where a pointer declaration lands (2026-11-22)
+
+`ov002 0x02076658` (108B) matched: a spawn helper that rejects `a0 >= *(u16 *)(data_ov002_02102074 +
+0x38)`, then calls `func_ov002_02077974(func_ov002_02076358, 0x14, 0, 0, 0)` and, on success, writes
+1 at +6, `a0` at +7 and `a1` at +5 of the returned block.
+
+Two traps cost a round trip each, and both are worth remembering because `var3` cannot see either:
+
+1. `ldrh r0, [r2, #0x38]` after `ldr r2, [pc]` means the pool word is **the object itself**, not a
+   pointer holder. Every other ov002 unit in this batch dereferences `data_ov002_02102070`; here the
+   symbol is `data_ov002_02102074` and is read directly. Writing `*(u8 **)` produced `ldr r0, [r2]`
+   and diverged immediately. Always check whether the pooled address is a container or a pointer
+   before deciding the dereference level.
+2. The same pool word `0x02076358` is **a function address used as an argument**
+   (`func_ov002_02076358`, size 0x300), not a data buffer. Declaring it as `extern u8 data_[]` makes
+   `var3` say MATCH and `reg.py` fail at link, because a data extern adds a relocation the linker
+   cannot resolve to a code symbol. Grep `symbols.txt` for the address before choosing a type: this is
+   the second time this session that only `reg.py` caught a wrong symbol declaration.
+
+`arm9 0x020178e8` produced a clean fact about pointer declarations. The unit is 4 bytes short unless
+the counter pointer `(u16 *)(node + 8)` is materialised between the two link stores; declaring it at
+the top of the function makes mwcc emit `add lr, r0, #8` immediately after the first load instead,
+which is both the wrong slot and the wrong register, and forces a frame. So the declaration *site*
+picks the materialisation *slot*, but not necessarily the one you want - the scheduler will still
+hoist it. Late declaration folds the address into `[r0, #8]` entirely and loses the instruction. There
+is no middle setting found for this one.
+
+The three-copy 96B family (`ov003 0x02082220`, `ov003 0x020c806c`, `ov005 0x0205ac30`) remains
+unsolved: all three arms assign the same `(0x1e, 0x3c)` pair and both retail compiler builds merge
+them into 80B, so retail's source must have made the arms non-mergeable in a way not yet guessed.
+When that lever is found it is worth three units immediately.
