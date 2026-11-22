@@ -2107,3 +2107,9 @@ written off.
   `[base + 0x30]` and a hoisted `base + 0x3c`. Every spelling that compiles emits the base
   address twice from the pool (96B); making it a single local moves the load above the
   guards. Retail is one pool load in r7 plus `add r5, r7, #0x3c` hoisted out of the loop.
+
+  arm9 0x0202cc90 92B -- the flag wait plus `return *(u32 *)(*(u32 *)base) == 0` shape that
+  `0x0202d158` also has, at 92B. Everything matches except the first flag load: retail is
+  `ldr r1, [r6, #0x34]` / `ands r0, r1, #4`, mwcc emits an extra `mov r1, r5` and loads
+  through the copy. Same allocator tie as the 212B unit, with a flag local, a direct field
+  read and a struct base all reproducing it.

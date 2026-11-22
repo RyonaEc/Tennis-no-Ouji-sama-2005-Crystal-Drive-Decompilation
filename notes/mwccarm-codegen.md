@@ -293,3 +293,9 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   `typedef struct { u8 pad[0x14]; u32 arr[16]; } S; extern S data_02048d3c;` and writing
   `data_02048d3c.arr[i]` gives retail's `add r1, r2, r0, lsl #2` / `ldr r1, [r1, #0x14]`
   exactly, closing the unit at 48B.
+
+- **Callee-saved colouring follows assignment order, not just declaration order.** In
+  `func_020181b0` the same three locals written as declaring-with-initialisers
+  (`u8 *b = a0 + 0x24; u32 t = *(u32 *)b; u8 *p;`) put `b` in r5 and `t` in r4, the reverse of
+  retail. Declaring `u32 t; u8 *b; u8 *p;` and assigning in statements (`b = a0 + 0x24;
+  t = *(u32 *)b;`) gives retail's `add r4, r0, #0x24` / `ldr r5, [r4]` exactly.

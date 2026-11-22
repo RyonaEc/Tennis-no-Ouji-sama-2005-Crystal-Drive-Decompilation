@@ -4480,3 +4480,23 @@ Two negative results worth keeping:
   constant and the `base + i * 2` address.
 - `0x0201fd50`, `0x02026ac8` and `0x0203b4e4` keep the residues recorded in `walls.txt`
   (per-literal pool loads, aggregate copy strategy, argument preservation in r4/r5).
+
+### 2.90 List walkers: three units in the `0x0201c4b0`/`0x020181b0`/`0x0202cc90` band
+
+`func_0201c4b0` (92B) closed once the traversal was written against a `next(list, prev)` style
+API - `p = func_02017784(data, p);` at the bottom of the loop, with the same call feeding the
+pre-test from `0` - instead of a `p = p->next` load. The call clobbers r1, so retail simply
+leaves the previous pointer in it as the next call's second argument, which is not something a
+pointer-chasing expression can express.
+
+`func_020181b0` (88B) closed on a colouring refinement: declaring `u32 t; u8 *b; u8 *p;` and
+assigning in statements rather than initialising in the declarations, which swaps r4/r5 into
+retail's order. The `u32`/`u8 *` mix also needs an explicit `(u32)p` on the list-backpointer
+store or the unit does not compile.
+
+`func_0202cc90` (92B) is parked: it is the `0x0202d158` flag-wait tail without the argument
+stores, and it hits the same `mov r1, r5` tie on the first flag load.
+
+The ov005 `0x020614a4` four-family still resists: every form that lands on 220B keeps the
+ip/lr swap on the zero constant and the `base + i * 2` address, so the tie is in the
+allocator's temp order, not in the loop's source shape.
