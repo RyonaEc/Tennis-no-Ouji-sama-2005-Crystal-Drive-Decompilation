@@ -4614,3 +4614,12 @@ pool load serves `f24` for the call and `f18`/`f1c`/`f20` after it — spelling 
 wrap test has to be written as separate `+=` statements followed by `if (data_0204aec0.f20 == 0)`,
 which puts the long success block in the fall-through path and the small `func_0202d9f4()` block
 at the tail; the natural `if (f20 != 0) { ... return; }` inverts the branch and mirrors the layout.
+
+### 2.98 Register snapshot at 0x02026564 matched first try
+
+`0x02026564` (124B) copies a handful of packed fields out of the `0x027ffc80` register block into a
+caller struct, then copies two windows of it with `func_020269d0`. The masked reads are bitfield
+reads, not `& 7`: retail's `ldrh` + `lsl #29` + `lsr #29` is a three-bit `u16` field and its
+`ldrb` + `lsl #28` + `lsr #28` is a four-bit `u8` field, so declaring the block as one struct with
+`u16 f64 : 3;` / `u8 f02 : 4;` at their real offsets produces the pairs directly, where `& 7` would
+compile to a single `and`.

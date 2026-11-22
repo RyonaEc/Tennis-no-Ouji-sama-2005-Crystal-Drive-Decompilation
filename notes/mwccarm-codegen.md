@@ -362,3 +362,8 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   func_0202d9f4();` produces retail's field-order loads and the `r3`/`r2`/`r1` mapping; hoisting
   into locals first makes mwcc pick a different order and register set. The `== 0` spelling also
   puts the long block in the fall-through and keeps the short one at the tail.
+
+- **Masked reads may be bitfields.** `(ldrh) + lsl #29 + lsr #29` is a `u16 x : 3` field and
+  `(ldrb) + lsl #28 + lsr #28` is a `u8 x : 4` field; writing `v & 7` folds to one `and` and the
+  shift pair never appears. Give the register block a struct type with the bitfields at their real
+  offsets and assign them to the destination byte-by-byte.
