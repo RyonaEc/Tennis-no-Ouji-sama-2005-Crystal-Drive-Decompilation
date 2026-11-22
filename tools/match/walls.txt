@@ -1822,3 +1822,28 @@ forces that pairing turns up.
   C spelling can be 20B. Same class as 0x0203b4b0: hand-written assembly thunk, and it also
   explains the 15 remaining sub-28B units, which are all bare `bx r1` veneers, `svc` wrappers,
   multi-register copy loops or `subs`-loop aligners.
+
+  arm9 0x020101f8 80B -- fill loop: `for (j = 0; j < 4; j++) *(u8 *)(*(u32 *)(*(u32 *)((u8 *)&data_02042a68
+  + 0x10) + 0x158) + (i << 3) + j + 0x24) = 0x45;` then the same store with 0x17. Right size (80B),
+  identical instruction sequence, only register colour differs: retail keeps the pool base in r1
+  and the hoisted `i << 3` in r2 with the constant in r3, mwcc 1.2/b56 insists on base r0, constant
+  r2, offset r3. Tried locals for the base and for the offset, `(i * 8)`, `(i << 3) + j` grouping,
+  do-while, and pointer locals. Register-allocation tie.
+
+  arm9 0x020181b0 88B -- list insert: `h = (u32 *)(p + 0x24); old = h[0]; n = func_020183ac(h, 0x10, 4);
+  if (!n) return 0; n[0] = v; n[1] = old; n[2] = h[1]; n[3] = h[2]; h[2] = n; return 1;`. Exactly 88B
+  and byte-identical except that retail holds `h` in r4 and `old` in r5 where mwcc holds them the
+  other way round. Split declarations, reordered declarations and `*h` vs `h[0]` all keep the swap.
+
+  arm9 0x020202b4 76B -- display/видео swap: read u16 global 0x02048c70, store 1 to 0x0204236c, then
+  `if (v == 0) { REG_DISPCNT |= 0x10000; return; } REG_DISPCNT = (REG_DISPCNT & ~0x30000) | (v << 16);`.
+  mwcc emits 72B with the second block if-converted (`movne/ldrne/bicne/orrne/strne`); retail
+  branches with `bxeq lr` and straight-line else (76B). Inverting the condition, else-form,
+  early-return-both-ways, a `volatile` register pointer and a split read/modify/write all keep
+  the predicated form.
+
+  arm9 0x0203b698 56B -- walks the NULL-terminated function-pointer array at 0x02042228 calling
+  each entry: `stmdb sp!,{lr}; ldr r4,[pc]; b test; loop: blx r0; add r4,r4,#4; test: cmp r4,#0;
+  popeq; bxeq; ldr r0,[r4]; cmp r0,#0; bne loop; pop; bx lr`. Retail tests r4 against zero even
+  though it is the table address, so the source keeps the pointer in a variable the compiler
+  cannot prove non-NULL. Three spellings (array global, pointer global, u32 + cast) all fail.

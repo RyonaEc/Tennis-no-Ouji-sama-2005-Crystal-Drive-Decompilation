@@ -258,3 +258,8 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   error: statement order (permute.py over both regions), pointer type, declaration order, an
   explicit `u16 zero` local, and all 25 vendored compilers leave it. Do not spend impressions
   re-deriving these two bytes.
+
+- **A type mismatch is a hard error, not a warning.** Assigning a `u8 *` to a `u32 *` makes
+  mwcc 1.2/b56 emit `Error: <string not found>` and produce no object at all. `fastmatch.compare`
+  then silently returns `False`, and `var3.py` prints `got 0 want N` — always read the byte
+  count before believing a `no`.
