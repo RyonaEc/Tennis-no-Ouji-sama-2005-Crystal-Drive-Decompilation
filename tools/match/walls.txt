@@ -2368,3 +2368,10 @@ written off.
   and the word-index form (`base[i + 7]`, typed `u32 *`) make mwcc add an offset induction variable
   (r6 stepping by 4) and spill to r7/r8, costing 4 bytes. Same class as ov002 0x02080ca4: mwcc
   strength-reduces a `i * sizeof` index that retail recomputes with a scaled add.
+  ov003 0x020b6b60 52B (byte-identical twin at 0x020b732c) -- six dead `strh #0` stores into a 0x10 stack
+  frame: `sub sp,#0x10`, then for each of three s16 pairs `add rX, sp, #N` followed by two stores, then
+  `add sp,#0x10; bx lr`. Nothing reads the slots. Plain volatile arrays make mwcc store straight to
+  `[sp]`/`[sp,#2]` (40B, no address materialised); a helper called on the three arrays stays an out-of-line
+  call unless marked __inline, and inlining it lets mwcc delete the stores (4B); the pointer-parameter
+  form with a `volatile s16 *` still emits three calls (44B). Retail needs both "address materialised in a
+  register" and "stores not deletable", which no spelling tried has produced.
