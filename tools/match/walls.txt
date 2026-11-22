@@ -2493,3 +2493,6 @@ written off.
   `and` where retail truncates with `lsl #0xf`/`lsr #0x10`. Writing the selection as
   `src = 0; if (!(cond)) src = ...` or casting `(u32)(u16)src` instead of masking drops the unit to
   120B, so both of those moves lose the branch retail keeps. Parked at 128B.
+  (update, 0x0205bee4) three more truncation forms measured, all worse than the 128B baseline:
+  `n = (u32)((u16)src) / 2;` 120B, `n = ((u32)((u16)src) << 15) >> 16;` 120B,
+  `n = ((u16)src) >> 1;` 124B. The `(src & 0xffff) >> 1` form stays the best at 128B.
