@@ -75,6 +75,36 @@ CC 87. Only the compiler banner identifies a compiler. Note also that the 2004
 build's `.comment` says `2.0b0055` while its banner says build 56, so `.comment`
 alone is one build off for that one - the banner wins.
 
+### What the `1.2/b56` directory actually contains
+
+It is a composite, and only the compiler decides bytes:
+
+* `mwccarm.exe` is build 56, `Runtime Built: Sep 16 2004 13:20:23`, copyright
+  2004, SHA-1 `876570fc9bfada25e93192d414cfb6781ba9dfc3`. SM64DS records
+  `8eb0b965…` for its build-56 copy, so ours is a different packaging of the same
+  build - the banner and the digest decide, not someone else's file hash. Build
+  56 came out of a public Metrowerks `CW_ARM_2.1.1_Update.exe`; the circulating
+  24-build `mwccarm.zip` does not contain it, because it floors at build 72.
+* `mwldarm.exe` in the same directory is **build 72, `Runtime Built: May 12
+  2005`** - a year newer than the compiler. Nintendo's NITRO V1.0 pair is CC 56 /
+  LD 67, and build 67 is in no public archive, so the folder was assembled with
+  the nearest linker available. `tools/mwccarm/1.2/sp2/mwldarm.exe` is build 74.
+
+The mix is normal for a 2004 build recovered from a compiler-only update, and it
+is harmless here: `configure.py` passes explicit addresses and section order
+from dsd's delinks/relocs, and the full digest still matches, so the 2005 linker
+reproduces retail's packing byte for byte. It would only matter if a failure
+ever looked link-level (section padding, section order, padding between
+functions) instead of code-level - that is when chasing build 67 would be worth
+it.
+
+For reference, Nintendo's release-to-build mapping (from `modulerules.cctype`,
+as recorded by the SM64DS archive search) is CC 0038 for IRIS V0.2 and NITRO
+V0.3, 0043 V0.4.1, 0046 V0.5, 0049 V0.5+HF1, 0050 V0.6/V0.6.1/V0.7, **0056
+NITRO V1.0**, 0068 NINTENDO DS V1.0.2, 0073 V1.2, 0074 V1.2 SP1, 0080 V1.2
+SP2+patch, 0084 SP3, 0087 SP4. Only build 56 is reachable publicly; everything
+before it is unrecovered, and build 68 is absent from the circulating packs too.
+
 ## File layout inside an object
 
 mwcc emits **one `.text` section per function, last function first**: a file
