@@ -2456,3 +2456,11 @@ written off.
   `q = p + 0x30` before the early-return compare and the store address `q + a0` in a register alongside
   it, while mwcc defers both and recomputes `q + a0` for the store. Introducing an explicit `u8 *e =
   q + a0` for the store collapses the unit to 88B because mwcc folds it back into `q[a0]`.
+  arm9 0x02026af4 148B (twin 0x02026cc0) -- this is mwcc's inlined byte-fill (memset) expansion, not
+  ordinary hand-written C: `cmp r2,#0; bxeq lr` guard, a one-byte head via `tst r0,#1` with an `ldrh/and
+  #0xff/orr/strh` merge at [r0,#-1], `orr r1,r1,r1,lsl #8` then `orr r1,r1,r1,lsl #16` to widen the fill
+  byte, an aligned `str r1,[r0],#4` loop against `add ip, r3, r0`, a conditional `strhne` tail and a final
+  merged byte at `[r0]`. Reconstructing this by hand is the wrong approach; the lever is the opposite
+  direction -- any *other* unmatched function that contains this skeleton is one that calls `memset(p, v,
+  n)` in source with -inline on, so search for the pattern inside larger units rather than rewriting the
+  runtime routine.
