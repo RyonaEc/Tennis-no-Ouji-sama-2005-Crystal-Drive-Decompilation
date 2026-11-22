@@ -4764,3 +4764,18 @@ another close unit.
 
 Also confirmed: `u8 >> 1` promotes to signed int and compiles to `asr`; write the byte read into a
 `u32` first when retail has `lsr`.
+
+### 3.11 A four-member ov003 family around 0x2051c30
+
+Four neighbours in ov003 share one skeleton and all matched with only their constants substituted:
+`0x02051c30` (120B), `0x02051ca8` (132B), `0x02051d5c` (132B), `0x02051de0` (120B). Each tests the
+u16 at `p+0x18`, and in both arms bumps the u16 at `p+0x10` under a predicate (decrement while
+non-zero, or increment while below 0x10), passes it to `func_02021aa8` against a hardware address
+(`0x04001050` or `0x04001050`-adjacent pools differ per member), negated in the first arm only, and
+returns 0 or 1 depending on the member.
+
+The decrement/increment has to be written as `(*(u16 *)(p + 0x10))--` / `++`, not through a cached
+`u16 *c`: the post-increment on a fresh lvalue is what makes mwcc rematerialise the address inside
+the branch (`addne r2, r0, #0x10` before `ldrhne`), which is the whole difference between a 3- and a
+4-instruction guarded update. The pool word each member arms with is easy to mis-transcribe by one
+nibble -- `0x04000050` against `0x04001050` -- and the digest catches it immediately.

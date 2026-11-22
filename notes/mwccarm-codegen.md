@@ -415,3 +415,6 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
 
 - **`u8 >> n` gives `asr`, not `lsr`.** The promotion to signed `int` makes the shift arithmetic; read the byte into a `u32` local first when retail shifts logically.
 - **Version probes rarely help a register tie.** 1.2/b56 and 1.2/sp2 allocate the same registers for a given source shape, so a swapped-register residue is a spelling problem, not a build problem.
+
+- **A guarded post-increment `(*(T *)(p + k))++` rematerialises the address.** Writing it through a cached pointer gives three instructions where retail has four (`addne r2, r0, #k; ldrhne r1, [r2]; addne r1, r1, #1; strhne r1, [r2]`).
+- **Sibling families pay off in the overlays.** Two-byte-adjacent constants (a pool word one nibble apart, a different return value) are the only differences between members, and each member needs its own verification run.
