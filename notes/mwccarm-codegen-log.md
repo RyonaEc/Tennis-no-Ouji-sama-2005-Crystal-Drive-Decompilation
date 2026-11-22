@@ -2236,7 +2236,7 @@ the same expression.
 
 ## 2.73 Two arm9 leaves from the Ghidra decompiler (2026-11-21)
 
-Used the documented headless setup (`notes/ghidra-headless.md`, `M:\ATOJ-tools`) rather than
+Used the documented headless setup (`notes/ghidra-headless.md`) rather than
 reading disassembly by hand: `analyzeHeadless ... -process arm9.bin -noanalysis -postScript
 dump_decomp.py <addrs>`. Cheap (~10 s for four functions) and it hands back the expression
 tree with load/store order already resolved, which is what took the most guessing before.

@@ -25,15 +25,18 @@ analyzeHeadless <projdir> <projname> -process arm9.bin -noanalysis \
 finds the wrong boundaries anyway. The post-script disassembles a 0x400-byte
 window at each address and creates the function itself.
 
-## Local install (this machine)
+## Local install
+
+`<tools>` below is any directory outside this repository; the exact location does
+not matter and nothing here is installed system-wide.
 
 | Piece | Path |
 |---|---|
-| JDK 21 (Temurin, portable) | `M:\ATOJ-tools\jdk` |
-| Ghidra 11.2.1 (portable) | `M:\ATOJ-tools\ghidra11` |
-| dsd-ghidra v0.7.0 extension | `M:\ATOJ-tools\ghidra11\Ghidra\Extensions\dsd-ghidra` |
-| dump script | `M:\ATOJ-tools\scripts\dump_decomp.py` |
-| project | `M:\ATOJ-tools\proj` (programs `ATOJ`, `ATOJ9`) |
+| JDK 21 (Temurin, portable) | `<tools>\jdk` |
+| Ghidra 11.2.1 (portable) | `<tools>\ghidra11` |
+| dsd-ghidra v0.7.0 extension | `<tools>\ghidra11\Ghidra\Extensions\dsd-ghidra` |
+| dump script | `<tools>\scripts\dump_decomp.py` |
+| project | `<tools>\proj` (programs `ATOJ`, `ATOJ9`) |
 
 All portable, nothing installed system-wide, no admin rights used. The extension
 release is built against Ghidra **11.2.1** specifically — a newer Ghidra rejects
