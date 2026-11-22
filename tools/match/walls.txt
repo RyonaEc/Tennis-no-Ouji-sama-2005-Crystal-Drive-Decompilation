@@ -1908,3 +1908,17 @@ forces that pairing turns up.
   `stmdb sp!,{lr}` + `sub sp, #4` instead, so the frame instruction itself differs even
   though the total is 8 bytes either way. Same saved-register tie as 0x0201fd50; both members
   are unmatched, so one solution would land two units.
+
+  arm9 0x02023df8 and 0x02023e58 96B (2x96 family, differ only in 0x6600000 vs
+  0x6400000) -- `h = data_02042370; if (h != (u32)-1) func_020268e0(h, a0, 0x6600000 + a1,
+  a2); else func_020269ec(a0, 0x6600000 + a1);`. Retail shares the constant in ip
+  (`mov ip, #0x6600000` before the branch, then `add r2, ip, r4` / `add r1, ip, r4`) and is
+  96B; mwcc re-encodes it as an add-immediate per use (`add r2, r4, #0x6600000`) and lands
+  one instruction short at 92B. Sharing it through a local `base`, computing `addr` once
+  before the branch, and pointer-typed forms all fold back to the immediate (the `addr`
+  version also shrinks the frame to 88B). 0x6600000 is a legal rotated add-immediate, so
+  this is a constant-CSE-vs-rematerialise tie. Both members unmatched.
+
+  arm9 0x02033bd0 and 0x02033c1c 60B (2x60 family) -- hand-written assembly, not C:
+  `ldr r1, [pc]; bx r1` veneer into inline `mrs r3, apsr / and r1, #0x40 / orreq / bicne /
+  msr cpsr_fc / tst / moveq 1 / movne 0` interrupt enable-with-save. Leaves asm.
