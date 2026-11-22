@@ -3627,3 +3627,35 @@ src/arm9/func_020190f8.c:
 src/arm9/func_020235a0.c:
     complete
     .text       start:0x020235a0 end:0x02023610
+
+src/arm9/func_020304a8.c:
+    complete
+    .text       start:0x020304a8 end:0x02030520
+
+src/arm9/func_0203030c.c:
+    complete
+    .text       start:0x0203030c end:0x020303a0
+
+src/arm9/func_020303a0.c:
+    complete
+    .text       start:0x020303a0 end:0x02030448
+
+src/arm9/func_0202e7ec.c:
+    complete
+    .text       start:0x0202e7ec end:0x0202e8d8
+
+src/arm9/func_0202ec1c.c:
+    complete
+    .text       start:0x0202ec1c end:0x0202ed2c
+
+src/arm9/func_0202ea20.c:
+    complete
+    .text       start:0x0202ea20 end:0x0202eb28
+
+src/arm9/func_0202ee48.c:
+    complete
+    .text       start:0x0202ee48 end:0x0202ef50
+
+src/arm9/func_0202f118.c:
+    complete
+    .text       start:0x0202f118 end:0x0202f28c

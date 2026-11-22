@@ -272,3 +272,10 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   while retail's pool word was `0x02048d3c`. Always read the retail pool word out of the image
   (`fastmatch.retail`) instead of copying the data symbol from the neighbouring function, and
   treat `reg.py` — which links the ROM and checks the digest — as the only acceptance test.
+
+- **Local declaration order assigns the callee-saved registers.** In `func_0202f118` the
+  `func_0202e2ec()` base, a "default 1" counter and a loaded `u16` all compete for `r4`-`r6`.
+  Declared `u8 *h; s32 m = 1; ...; u16 n;` mwcc gives the base `r6` and the `u16` `r4`; moving
+  the `u16 n;` declaration to the top of the list gives retail's `r6` for the `u16` and `r4`
+  for the base, with everything else unchanged. Reorder declarations before reaching for
+  statement permutation.

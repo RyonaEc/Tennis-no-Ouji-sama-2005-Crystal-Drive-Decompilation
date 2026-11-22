@@ -4388,3 +4388,26 @@ the single `addeq` epilogue is the loop test.
 followed by `popeq`, which no `void` function emits. Declaring the function `s32`, returning
 `0`, and returning the callee's result gives retail's frame - and the trailing call stays
 `bl` + epilogue rather than becoming a tail `b`.
+
+## 2.86 Declaration order, shared failure exits, and stack arguments
+
+`func_0202f118` is 372 B and differs from retail only in which callee-saved register holds
+the `func_0202e2ec()` base and which holds a `u16` field. The whole fix is declaration order:
+with `u8 *h = ...; s32 m = 1; s32 f; s32 r; u16 n;` mwcc colours the base `r6` and the field
+`r4`; with `u16 n;` moved to the front of the list it produces retail's `r4` base and `r6`
+field. No statement changed. `func_0202f28c` has the same shape but only one local competing
+with four parameters, and every declaration order there leaves the two groups swapped, so it
+is parked in `walls.txt`.
+
+`func_0202ee48` needed the bounds checks written as one condition. Two separate
+`if (sum > 0x200) return 6;` lines get if-converted into two four-instruction predicated
+epilogues and land 12 B long; a single `if (c1 > 0x200 || c2 > 0x200) return 6;` puts one
+shared failure block between the two tests and matches. The same function's second
+`func_02025c78(x, *(u16 *)(p + 4))` call reuses the halfword that the `if` had just loaded,
+which is what retail does - the second argument is that field, not the `0x40` used by the
+first call.
+
+`func_020303a0` showed a fifth argument hiding on the stack: `str r0, [sp]` immediately
+before the `bl` is the fifth argument of `func_0202ffe4(p + 0x140, 8, 0xffff, 2, 1)`, not a
+message-buffer store. Reading it as a local was what made the `str` schedule late and in
+`ip` instead of `r0`.
