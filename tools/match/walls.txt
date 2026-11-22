@@ -2241,3 +2241,10 @@ written off.
   read-modify-write and for the &0x10 test, where retail keeps one base register (r7). Declaring
   `Base *p = &data_0204aec0;` gives r7 and retail's shape but costs 8B (140B); an explicit
   `u32 *f = (u32 *)(p + 0x34)` address variable costs 12B (144B).
+  arm9 0x0201617c 132B -- compacts a 0xc0-byte-element array after removing index idx:
+  `if (idx >= *(s32 *)0x02042b00) return;`, a for loop from idx+1 copying base+(i-1)*0xc0 down to
+  base+i*0xc0 (base = 0x02042fa0) via func_02026a50(dst, src, 0xc0), then func_02025c94(base, 0x600)
+  and a decrement of the count. The count has to be re-read from memory on every iteration and the
+  comparisons are signed (retail uses ge/bge/blt); that spelling is size-exact at 132B but mwcc puts
+  &count in r7 and base in r5, where retail has r5 = &count, r7 = base and r8 = the incremented
+  destination address. An explicit `u8 *dst` induction variable costs 20B (152B).
