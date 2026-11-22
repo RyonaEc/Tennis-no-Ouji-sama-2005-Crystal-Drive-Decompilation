@@ -2226,3 +2226,11 @@ written off.
   and the unit comes out 112B. Residue: a five-word register permutation -- retail keeps ~mode in
   ip, the +0x14 word in r2 and the +0 word in r3, mwcc gives r3/ip/r2. Naming ~mode as a separate
   local keeps the same rotation, and making that local u16 grows the unit to 128B.
+  arm9 0x020340d8 112B -- scan three 0x4c-byte records from data_02042690: for each, test a 3-bit
+  field in the word at +4 and call func_02034230 when it is set, clearing the result to -1 on a
+  non-zero return, then advance with `p = &base[i++]` while `i < 3` and stop when that yields NULL.
+  Three things are needed for the size: the field is at BIT 7 width 3 (`lsl #0x16` / `lsr #0x1d`),
+  not bit 10; the loop must be a `do { } while (p != 0)` because retail has no entry test; and the
+  index must be `s32` (`mullt`/`addlt`, not `mullo`/`addlo`). Residue: the base pointer lands in r6
+  with the zero constant in r8, where retail loads it into r0, copies it to r8 and keeps the zero in
+  r7. Declaring the accumulator before the index gives retail's r4/r5 split for i and r.
