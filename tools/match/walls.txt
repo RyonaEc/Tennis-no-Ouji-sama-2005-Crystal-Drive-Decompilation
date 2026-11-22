@@ -2182,3 +2182,9 @@ written off.
   are folded into the pool constant by mwcc for every spelling tried (`u32 base = 0x027ffc00`,
   `(u32 *)0x027ffc00 + 0xe2`, a pad-struct member, a shared pointer variable). Everything else
   matches, including the `mov r1, #1` / `orr r1, r2, r1, lsl r4` pair.
+  arm9 0x02034594 116B -- init a {buf, n, 0} descriptor, hand it to func_0203465c with the
+  callback pointer 0x02034608, then force NUL termination. Size and instruction structure match;
+  the residue is three register names: retail keeps the descriptor's zero word in ip and the
+  `p[-1]` tail in r1/r2, mwcc gives us r2 and r0/r1. `char *p = buf + n; p[-1] = 0;` is required
+  to get `addne r1, r5, r4` / `strbne ..., [r1, #-1]` (plain `buf[n - 1] = 0;` yields subne plus an
+  indexed store), and the struct must cover all three words so the stores stay sp/sp+4/sp+8.
