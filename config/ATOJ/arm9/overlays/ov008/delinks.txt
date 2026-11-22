@@ -101,3 +101,7 @@ src/ov008/func_ov008_0204e60c.c:
 src/ov008/func_ov008_0204e4b0.c:
     complete
     .text       start:0x0204e4b0 end:0x0204e51c
+
+src/ov008/func_ov008_0204dd80.c:
+    complete
+    .text       start:0x0204dd80 end:0x0204de18

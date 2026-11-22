@@ -3704,3 +3704,33 @@ at +0xc and +8 of `*(u32 *)(*(u32 *)(data_02042a68 + 0x10) + 0x154)`, then clamp
 [0xc4653601, 0x3b9ac9ff] and returns it. Marking the chain `volatile` at both levels reproduces
 retail's five independent re-reads, but retail also materialises `add r2, r1, #0xc` for a
 single-offset read-modify-write, which is the one place the 3.25 rule does not explain; ours is 128B.
+
+## 3.27 Struct copies want word members, and a byte store of -1 wants an s8 pointer (2026-11-22)
+
+**`ov008 0x0204dd80` (152B) matched** - the third unit from the two-offset queue. It copies a 36-byte
+table into a stack buffer, calls `func_020101d0` on each of the nine entries, records the index and a
+zero byte for each hit into `p + 0xf`, then writes the hit count at `p[0xb]` and three trailing bytes.
+
+Three things were needed and each is reusable:
+
+- **The buffer struct must have word members.** `typedef struct { u8 b[0x24]; } Blk;` compiled the
+  36-byte assignment into an 18-iteration `ldrb`/`strb` loop. `typedef struct { u32 w[9]; } Blk;`
+  compiles it to retail's `ldm ip!, {r0-r3}` twice plus a single word, which is the shape to look for
+  whenever retail copies a buffer in one go.
+- **A byte store of -1 needs an `s8 *`.** `p[0xe] = -1;`, `~0`, `0xffffffff`, `(u8)-1` and a named
+  `s32 v = -1` all compile to `mov r0, #0xff`; retail has `mvn r0, #0`. Storing through a cast
+  pointer with a signed element type - `((s8 *)p)[0xe] = -1;` - produces the `mvn`. The store width is
+  the same either way; only the constant materialisation differs, and the signed element type is what
+  keeps it 32-bit.
+- The tail loop's `n++` and `q += 2` only happen inside the hit arm, so the increment and the pointer
+  advance are both predicated (`addne r4, r4, #1` / `addne sb, sb, #2`), which the plain
+  `if (hit) { ... }` form gives for free.
+
+Verified through `t10 --check ov008` (`26 entries, 26 sources, dangling=0, unlinked=0, dupes=0 -> ok`)
+and the digest gate. `reg.py` initially reported a miss on the version of the source that still had
+`p[0xe] = -1;`; the ROM diff was a single word (`e3a000ff` against retail's `e3e00000`), which is how
+the `s8` requirement was found.
+
+Remaining from the two-offset queue: `ov005 0x0204f8a0` and `ov009 0x0204eb14` are the same 224-byte
+hardware state writer in two overlays (mask/or/shift combinations into 0x0400xxxx-style registers plus
+a `mul` by -1) - a 2-for-1 if the constants can be pinned down.
