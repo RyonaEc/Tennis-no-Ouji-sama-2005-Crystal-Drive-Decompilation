@@ -2407,3 +2407,8 @@ written off.
   then increments that address, adding one instruction. Giving the row base its own advancing pointer
   instead makes it worse (176B) because mwcc then materialises both bases. Casting the stored `i` to u8
   makes no difference; retail's strb comes from a plain u32 store to a u8 lvalue.
+  arm9 micro-stubs (checked once, all asm-shaped, do not retry as C): 0x02033cb0 8B is `udf #0xffff;
+  bx lr`; 0x0203b2cc 8B is `cmp r1, #0; bxeq lr` and falls through into the next unit when r1 != 0;
+  0x02024af8 12B is `ldr r1, [pc]; bx r1`, a thunk to a fixed target (pool 0x02024b04); 0x0203b564 and
+  0x0203b578 20B each and 0x0203b58c 16B are BIOS `svc #0x123456` wrappers with the call number in r0.
+  None of these has a C spelling that keeps the fall-through, the udf or the svc.
