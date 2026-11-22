@@ -209,3 +209,17 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
 * `tools/match/walls.txt` - every parked unit, one line each, with the exact residue.
 * `AGENTS.md`, `CONTRIBUTING.md` - the hard rules, the edit loop and the
   release procedure.
+
+## Address folds and stack temporaries (2026-11-22)
+
+* **Blocking the pre-index fold.** `u32 *p = (u32 *)(base + A + B);` makes mwcc fold the add into
+  the first store (`str r0, [rBase, rOff]!`). Retail often computes the address with a plain
+  `add` first. Splitting the pointer across two statements and two variables restores it:
+  `u32 *p = (u32 *)(base + A); u32 *q = (u32 *)((u8 *)p + B);` — the 72-byte
+  `func_ov002_02052608` matches with exactly this shape.
+* **A zero that retail spills.** When retail has `str r2, [sp]` / `ldr r0, [sp]` around a call
+  argument, the source kept a zero in a stack local rather than passing a literal. Forcing the
+  local to memory reproduces it: declare `u32 zero = 0;` and pass `*(u32 *)&zero`. That also
+  creates the frame retail has (`stmdb sp!, {lr}` / `sub sp, #4`) and stops mwcc turning the last
+  call into `bx ip`; a plain `func(0, ...)` compiles to a 52-byte tail call instead of the
+  76-byte unit.
