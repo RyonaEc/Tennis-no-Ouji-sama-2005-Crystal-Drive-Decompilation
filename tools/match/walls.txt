@@ -2361,3 +2361,10 @@ written off.
   local, `((u32 *)0x027c0000)[0xffe]`) makes mwcc fold to a single 0x027c3ff8 literal -- here 68B
   against 76B. Three separate functions sharing the identical non-folded shape means the original had
   some source construct that blocked constant folding across the pair; that construct is still unknown.
+  ov002 0x020882d4 76B -- releases up to two slots: `base = *(u32 *)0x02102070`, and for i in 0..1,
+  when `*(u32 *)(base + i*4 + 0x1c)` is not -1 it calls func_02006504(i) and stores -1 there. Retail
+  recomputes the slot address every iteration as `add r0, r6, r5, lsl #2` plus the 0x1c displacement
+  and keeps the counter in r5, using only r4-r6. Both the byte-pointer form (`base + i * 4 + 0x1c`)
+  and the word-index form (`base[i + 7]`, typed `u32 *`) make mwcc add an offset induction variable
+  (r6 stepping by 4) and spill to r7/r8, costing 4 bytes. Same class as ov002 0x02080ca4: mwcc
+  strength-reduces a `i * sizeof` index that retail recomputes with a scaled add.
