@@ -21,6 +21,15 @@ ARM7 BIOS (`bios7.bin`, `BIOSNDS7.ROM`); dump it from your own console with
 If it is missing for an encrypted dump, `init.py` stops and says so rather than
 extracting a garbled secure area.
 
+**Which revision the digest pins.** `config/ATOJ/tennis_ATOJ.sha1` is
+`8d555a80db47278475ffdfdf808fe80dbd7c48cf`, which is the cartridge image as
+dumped, with the secure area at `0x4000` still encrypted. A `ndstool`-style
+decryption writes exactly that one 4 KiB page and nothing else, producing a
+different revision (for this cart, `9eec3248...`) that will never match the
+pinned digest. Keep the raw dump in use and a decrypted copy out of `extract/`:
+`init.py` expects a single `.nds` there, and re-running it against the decrypted
+image would re-pin every published number to a different revision.
+
 Do not commit the ROM or the BIOS; `.gitignore` covers both.
 
 `tools/init.py` records the SHA-1 of the dump you use in
