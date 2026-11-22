@@ -44,8 +44,11 @@ the build, carries the 16-bit field over from the base ROM header - metadata,
 like the banner and logo dsd already copies - and recomputes the header CRC.
 Those two header words are the only part of a rebuilt ROM not derived from source.
 
-Do not run `dsd init` against another image: it regenerates
-`delinks.txt`/`symbols.txt` and would discard every installed unit.
+`tools/init.py` only runs `dsd init` when `config/ATOJ/arm9/config.yaml` is
+missing, because that command regenerates `delinks.txt`/`symbols.txt` from
+scratch and would discard every matched unit's placement. In a checkout where
+the config already exists, `init.py` extracts the ROM, records the digest and
+leaves the config alone - which is what makes a fresh clone build out of the box.
 
 Do not commit the ROM or the BIOS; `.gitignore` covers both.
 
@@ -111,7 +114,9 @@ ninja
 ```
 
 `init.py` prints the ROM header it found and refuses to continue if the game
-code is not `ATOJ`.
+code is not `ATOJ`. A decrypted dump needs no ARM7 BIOS, and the tracked
+`config/ATOJ` is kept as it is, so the three commands above are the whole
+first build for someone whose dump matches the pinned revision.
 
 If `dsd` is missing, the first `configure.py` run emits a build file whose only
 target is `download_tools`:

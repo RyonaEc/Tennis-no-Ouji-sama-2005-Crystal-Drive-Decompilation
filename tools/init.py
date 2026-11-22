@@ -223,22 +223,30 @@ def main() -> int:
         extract_command += ["--arm7-bios", rel(bios)]
     run(extract_command, dry_run=args.dry_run)
 
-    run(
-        [
-            dsd,
-            "init",
-            "--rom-config",
-            rel(EXTRACT_DIR / "config.yaml"),
-            "--output-path",
-            rel(CONFIG_DIR / GAME_ID),
-            "--build-path",
-            rel(BUILD_DIR / GAME_ID),
-        ],
-        dry_run=args.dry_run,
-    )
+    # `dsd init` rewrites delinks.txt/symbols.txt from scratch, which in this
+    # repository would discard the delinks of every matched unit. The config is
+    # versioned and only needs bootstrapping for a brand-new project, so keep it
+    # whenever it is already there.
+    arm9_config = CONFIG_DIR / GAME_ID / "arm9" / "config.yaml"
+    if arm9_config.is_file():
+        print(f"\nKeeping the existing project config at {rel(arm9_config.parent)} "
+              "(dsd init would regenerate delinks.txt and lose the matched units)")
+    else:
+        run(
+            [
+                dsd,
+                "init",
+                "--rom-config",
+                rel(EXTRACT_DIR / "config.yaml"),
+                "--output-path",
+                rel(CONFIG_DIR / GAME_ID),
+                "--build-path",
+                rel(BUILD_DIR / GAME_ID),
+            ],
+            dry_run=args.dry_run,
+        )
 
     if not args.dry_run:
-        arm9_config = CONFIG_DIR / GAME_ID / "arm9" / "config.yaml"
         if not arm9_config.is_file():
             print(f"error: dsd did not create {rel(arm9_config)}", file=sys.stderr)
             return 1
