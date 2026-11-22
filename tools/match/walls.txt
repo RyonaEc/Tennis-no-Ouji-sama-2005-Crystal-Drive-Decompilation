@@ -2210,3 +2210,11 @@ written off.
   return h. Size and instruction sequence match; the only residue is the load temp: retail has
   `ldrb r1, [r4, #0x3d]; cmp r5, r1`, mwcc gives `ldrb r0, ...; cmp r5, r0`. Tried a u8 local
   assigned in place, a u8 `lim` declared at the top, and a struct field for +0x3d; all keep r0.
+  arm9 0x0201d7c0 124B -- reset an object: zero +0x84/+0x7c/+0x80, func_02029a5c(&p->f74),
+  func_02029c8c(&p->f30), func_02029980(&p->f30, pair) where the +0x74 pair is passed BY VALUE
+  (that is what yields retail's `add r1, r6, #0x74; ldm r1, {r1, r2}` instead of two ldr), then
+  func_02029828(&p->f30, p, 0x30), optional func_0201d5e0(p, a2, a3) and data_02047f00 = p. The
+  three zero stores must sit adjacent before the first call so they share one zero register
+  (splitting them around it costs 4 to 12 bytes). Residue: retail keeps that zero in ip
+  (`mov ip, #0` plus three `str ip`), mwcc uses r1. Chained assignment gives 132B, the split form
+  136B.
