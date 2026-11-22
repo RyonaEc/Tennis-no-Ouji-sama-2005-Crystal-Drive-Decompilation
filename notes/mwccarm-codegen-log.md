@@ -4599,3 +4599,18 @@ this, since the object compares size-equal.
 
 Also confirmed this session: `var3.py`'s diff must be read to the end. It prints `bl` target
 differences for every call to an unlinked sibling, and the real residue can sit in a later hunk.
+
+### 2.97 Lock-guarded teardown and ramped counter matched
+
+`0x0202d4f0` (116B) is an object teardown under a global lock. The callback and its argument have
+to be read into locals before the lock call, otherwise they are re-read after it and the whole
+body grows; the flags word on `p+0x34` is re-read after the inner release instead of being cached
+across it.
+
+`0x0202d980` (116B) ramps three fields of `data_0204aec0` and then either restarts or finishes.
+Two things were needed. The struct type has to cover the whole object from offset 0, so that one
+pool load serves `f24` for the call and `f18`/`f1c`/`f20` after it — spelling the fields as
+`*(u32 *)(data_0204aec0 + n)` makes mwcc materialise the base twice and costs 8 bytes. And the
+wrap test has to be written as separate `+=` statements followed by `if (data_0204aec0.f20 == 0)`,
+which puts the long success block in the fall-through path and the small `func_0202d9f4()` block
+at the tail; the natural `if (f20 != 0) { ... return; }` inverts the branch and mirrors the layout.

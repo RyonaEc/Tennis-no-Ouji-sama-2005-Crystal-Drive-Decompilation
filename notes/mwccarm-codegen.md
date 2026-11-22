@@ -356,3 +356,9 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   siblings differ in the object by definition, so `bl` lines are noise; but var3 prints the
   whole hunk list, and a register swap further down is the real residue. Truncating the diff
   at the first hunk hid a five-word ip/lr swap in `0x0201780c`.
+
+- **Split steady-state updates into per-field statements when the test reads one of the results.**
+  `data.f18 += k; data.f1c += k; data.f20 -= k; if (data.f20 == 0) { long path; return; }
+  func_0202d9f4();` produces retail's field-order loads and the `r3`/`r2`/`r1` mapping; hoisting
+  into locals first makes mwcc pick a different order and register set. The `== 0` spelling also
+  puts the long block in the fall-through and keeps the short one at the tail.
