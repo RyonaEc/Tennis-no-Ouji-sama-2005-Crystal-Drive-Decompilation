@@ -3356,3 +3356,32 @@ local) stops the fold.
 
 `arm9 0x02033bd0` is not writable from C at all: its first two instructions are `ldr r1, [pc]; bx r1`,
 a jump into the real body, which the delink treated as the function start. Left as assembly.
+
+## 3.17 A new wall class: mwcc copies parameter-derived values, retail updated in place (2026-11-22)
+
+`arm9 0x020255e8` is 100 bytes of straight-line struct init and it matches at 100/100 with every
+operand identical. Three instructions disagree, and they show a pattern the earlier walls did not:
+retail **modifies the incoming parameter register in place** -
+
+    add r1, r1, #4        add r1, r1, #1  (later)
+    sub r2, r2, #0x40
+
+- while mwcc copies each computed value into a fresh register and updates nothing -
+
+    add r3, r1, #4
+    sub r1, r2, #0x40
+    ands r1, r3, #1
+
+Three spellings give the identical copy: a named local for the sum, compound assignment on the
+parameters (`a1 += 4`, `a2 -= 0x40`, which is the documented way to get `add rX, rX, #c`), and fully
+inline expressions. Both compiler builds agree, so it is not a version lead. In the documented case
+the compound form lands in place; here mwcc refuses even when the parameter is dead after the add, so
+the rule has an exception tied to how the value is then consumed (the here: a ternary on the result).
+Worth watching for: this is the first unit where the *only* difference is that retail reused an
+argument register.
+
+Two roster findings from the same sweep. `autorun.py` is now exhausted: with `tried.txt` at 1,238
+entries it reports `candidates 0` for arm9 (55 bailed) and for ov003/ov005/ov006/ov008/ov009/ov010,
+so nothing is left to farm automatically and everything remaining is manual. And `ov000` is a second
+empty overlay like `ov007` - no `.text`, 0 functions - which the new guard in `auto.set_module`
+reports cleanly.

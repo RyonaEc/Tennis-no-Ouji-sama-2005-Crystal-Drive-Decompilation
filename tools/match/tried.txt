@@ -1236,3 +1236,7 @@ ov004	func_ov004_0204e58c
 ov004	func_ov004_02052a00
 ov004	func_ov004_0204c9fc
 ov002	func_ov002_0204f654
+ov008	func_ov008_0204d9dc
+ov008	func_ov008_0204cf80
+ov008	func_ov008_0204f0a4
+ov008	func_ov008_0204c9b8

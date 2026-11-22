@@ -1247,3 +1247,12 @@ arm9 0x02033bd0 60B (twin 0x02033c1c) -- APSR interrupt-mask helper: `ldr r1, [p
   whether the bit was previously set. The pc-relative `bx r1` entry stub is not something the C
   compiler emits; the function entry is really the target of that jump, so this unit cannot be
   written from C as delinked.
+arm9 0x020255e8 100B -- plain struct init: stores a1 + 4 at p + 0x40, a2 at p + 0x44, a2 - 0x40 at
+  p + 0x38, the flag `(p[0x40] & 1) ? 0x3f : 0x1f` at p + 0, then 14 explicit zero stores at 4..0x34
+  and 0x3c. Size and every operand match at 100/100; the whole residue is three instructions of
+  register naming in the first block. Retail updates the incoming parameter registers in place
+  (`add r1, r1, #4`, `sub r2, r2, #0x40`) and tests the updated r1; mwcc instead copies each result
+  into a fresh register (`add r3, r1, #4`, `sub r1, r2, #0x40`) and then tests `r3`. Tried: a named
+  local for the sum, `a1 += 4` / `a2 -= 0x40` on the parameters, and fully inline expressions - all
+  three produce the identical copy. vprobe shows 1.2/b56 and 1.2/sp2 agree, so this is allocator
+  behaviour, not a version lead.
