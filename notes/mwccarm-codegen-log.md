@@ -4681,3 +4681,16 @@ Two things were needed past the first spelling. The container's padding field ha
 `u8 pad0[0x20]` — writing `u32 pad0[0x20]` puts the bound at `+0x84` instead of `+0x24` (same size,
 so only the offsets differ). And the output buffer must be declared *before* the descriptor, which is
 what puts `out` at `sp+0` and `in` at `sp+8`; the reverse order swaps the two stack slots.
+
+### 3.04 Job submission at 0x0202cabc matched
+
+`0x0202cabc` (124B) takes the lock, refuses with 1 when `data_0204ad00.busy` is already set,
+otherwise latches the flag, releases the lock, fills `+0x14 = 1`, `+0x18 = 0`, `+0x8 = arg0`,
+`+0x4 = arg1`, `+0x10 = arg2` and returns 0 or 3 depending on `func_0202cc04()`.
+
+The tail is the interesting part. `return func_0202cc04() == 0 ? 3 : 0;` is the same size (124B) and
+only differs in two words: mwcc emits an unconditional `mov r0, #3` followed by `movne r0, #0`, where
+retail has `movne r0, #0` then `moveq r0, #3`. Writing the condition the way retail tests it —
+`if (func_0202cc04() != 0) return 0; return 3;` — gives the two predicated moves in retail's order.
+`var3.py` showed only the `bl` lines, so this one needed the byte diff to find; `reg.py` correctly
+refused the first spelling.

@@ -390,3 +390,8 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   input struct is what places them; the reverse swaps the slots and every offset in the diff.
 - **Pad fields must have the pad's own element type.** `u32 pad0[0x20]` pads 0x80 bytes, not 0x20;
   the unit stays the same size and only the field offsets move, so check the immediate offsets.
+
+- **Predicated result pairs follow the tested condition's polarity.** `x == 0 ? 3 : 0` compiles to
+  `mov r0, #3` plus `movne r0, #0`; retail's `movne r0, #0 / moveq r0, #3` comes from writing the
+  branch on the non-zero case (`if (x != 0) return 0; return 3;`). Same size, two words apart, and
+  `var3.py` may report only `bl` differences — confirm with a compiled-vs-retail word dump.
