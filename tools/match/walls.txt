@@ -2188,3 +2188,10 @@ written off.
   `p[-1]` tail in r1/r2, mwcc gives us r2 and r0/r1. `char *p = buf + n; p[-1] = 0;` is required
   to get `addne r1, r5, r4` / `strbne ..., [r1, #-1]` (plain `buf[n - 1] = 0;` yields subne plus an
   indexed store), and the struct must cover all three words so the stores stay sp/sp+4/sp+8.
+  arm9 0x020366bc 116B -- bounded copy that tests the byte it just stored (retail reloads it
+  through the pre-increment destination address in ip, then zero-fills the remainder). 72B: every
+  spelling tried (`*d++ = *s++; if (*d == 0)`, a saved `char *p = d;` before the store, and
+  `volatile u8 *dst` so the reload cannot be folded) makes mwcc merge the four early returns into
+  one epilogue; retail duplicates the epilogue at each of the four exits, which is most of the
+  44-byte gap. The readback is not evidence of a volatile destination: the volatile form compiles
+  to the same 72B.
