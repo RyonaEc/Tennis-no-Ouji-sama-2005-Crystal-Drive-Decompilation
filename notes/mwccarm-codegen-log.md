@@ -3669,3 +3669,38 @@ written twice through one base and writing it as `u32 *p = (u32 *)(a0 + 0x108); 
 `u32 *r = (u32 *)a0; r += 0x42; r[0] = r[0] | 8;`, as a struct member, as a signed bitfield, with
 `volatile`, with the value read into a local first, and as the doubled `x = x | 8` expression all
 fold to `[r4, #0x108]`. Single-offset accesses do not materialise; only a second offset does.
+
+## 3.26 The two-offset rule pays: two units first try (2026-11-22)
+
+Acting on 3.25 instead of guessing produced two matches with no iteration on the source shape beyond
+reading the disassembly.
+
+**`ov002 0x020730ac` (136B)** allocates a record through `func_ov002_02077974` (passing
+`func_ov002_02072db0` as the fifth argument's table, `0x14` as the size) and then fills four words of
+it. The mark of the shape is `q = (u32 *)(p + 0x10)` with `q[1]`..`q[4]`: four different offsets
+through one base is exactly what makes mwcc keep the `add r4, r5, #0x10` alive, and it came out
+byte-identical first try. Two further details were needed:
+
+- the null test must be a **positive** `if (p != 0) { ... } return p;` - the early-return form
+  if-converts the whole body into `addeq/popeq/bxeq`, the wall from 3.22/3.23;
+- the two arguments to `func_ov002_0204f70c` are `(s16)(*(u32 *)(a1 + 0x60) >> 8)` and
+  `(s16)(*(u32 *)(a1 + 0x5c) >> 8)`, i.e. 16-bit signed fields packed at bit 8 of a word. Writing
+  `(s8)(v >> 8)` gives three instructions (`lsr #8`, `lsl #24`, `asr #24`) where retail has two
+  (`lsl #8`, `asr #16`), so the width is 16, not 8 - a good tell for how wide a packed field is.
+
+**`ov002 0x02077b9c` (152B)** clears three sub-arrays of one record:
+`*(u16 *)(p + i * 0x50 + 0x264)` for `i < 10`, `*(u8 *)(p + i + 0x584)` for `i < 7`, and
+`*(u32 *)(p + i * 8 + 0x58c)` for `i < 4`, over `p = *(u8 **)data_ov002_02102070 + 0x1e6c`.
+Matched first try. The `u16` loop counters are what produce the `lsl #0x10 / lsr #0x10` pair, per the
+playbook, and the `mla` for the 0x50 stride follows from `i * 0x50` written as a multiply.
+
+Both were installed through `reg.py` and the digest gate; `t10 --check ov002` reports
+`389 entries, 389 sources, dangling=0, unlinked=0, dupes=0 -> ok`.
+
+Also examined and parked: `arm9 0x020344b4` is a `memset` implementation (alignment prologue, byte
+replication word, eight-word unrolled loop, 4-byte and byte tails) - library code, not writable from a
+plausible C function here. `arm9 0x0200fcac` (148B) is a score accumulator: it adds the delta to fields
+at +0xc and +8 of `*(u32 *)(*(u32 *)(data_02042a68 + 0x10) + 0x154)`, then clamps +8 into
+[0xc4653601, 0x3b9ac9ff] and returns it. Marking the chain `volatile` at both levels reproduces
+retail's five independent re-reads, but retail also materialises `add r2, r1, #0xc` for a
+single-offset read-modify-write, which is the one place the 3.25 rule does not explain; ours is 128B.
