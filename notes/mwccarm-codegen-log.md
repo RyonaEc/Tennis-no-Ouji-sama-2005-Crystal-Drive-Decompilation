@@ -4647,3 +4647,12 @@ argument is `0xaf000001`, not `0x0af00001` — I transcribed the pool print by e
 and `reg.py` refused the unit while `var3.py` stayed quiet because the differing word is a pool
 constant rather than an instruction. Dump the words with `struct.unpack_from` and compare bytes
 (`compile_text` vs `retail`) whenever a unit is size-exact and `reg.py` still misses.
+
+### 3.01 Pool-backed node allocation at 0x0201da30 matched first try
+
+`0x0201da30` (112B) asks `func_02018248(*ctx, align32(len) + 0x20, 0x20)` for a block, bails with 0
+when the arena is exhausted, attaches the node to the list behind `ctx+4` through
+`func_02017770`/`func_020178e8`, fills the four header words at +8/+0xc/+0x10/+0x14 and returns
+`node + 0x20` (the payload). Writing the context as a two-word struct keeps `*ctx` and `&ctx->f4`
+to a single base register, and the five-argument signature lets mwcc read the last argument off
+the stack once, which is where retail's `ldr r2, [sp, #0x18]` between the stores comes from.
