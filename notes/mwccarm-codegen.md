@@ -179,7 +179,9 @@ Volatile used for a stack spill is a match-shape hack, not the original source. 
 | `strh`/`strb` post-index missing | step wider than the store width, written as its own statement | 4.2 |
 | Struct field access folds where retail adds | use a struct-typed access, not `u8 *` arithmetic | 2.55, 2.63 |
 | Two adjacent words copied separately | struct assignment (`*(P2 *)dst = *(P2 *)src;`) batches loads then stores | 2.5 |
-| Bitfield read uses `asr` | declare the member `s32 b : 1`; `u32` emits `lsr` | 2.59 |
+| Bitfield read uses `asr` | declare the member `s32 b : 1`; `u32` emits `lsr` | 2.59, 2.83 |
+| A `mov r1, #0` appears before a call that should pass a field | pass the bitfield value itself as that argument; the `asr` result already sits in that register | 2.83 |
+| An argument is copied to a scratch register at entry | the callee takes more arguments than the visible signature says; raise its arity | 2.83 |
 | Tail call appears as `ldr ip, =callee; ...; bx ip` | write the call in tail position | 11.2 |
 | `mov r0, #0; bx lr` | `return 0;` | 11.1 |
 | Same body resists both compilers in the 68-88 B band | check the b56 address clusters before rewriting again | 2.46, 2.52, 2.63 |

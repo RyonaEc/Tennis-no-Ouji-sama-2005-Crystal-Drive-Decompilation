@@ -4295,3 +4295,50 @@ unit's diff is printed as ARM nonsense even though the byte comparison itself is
 `got`/`want` sizes and the byte compare are trustworthy; the instruction listing is not, for
 `kind:function(thumb)` units in arm9. Use `udis.py`/capstone with `CS_MODE_THUMB` when reading
 those.
+
+## 2.83 Five arm9 units, and two bitfield-arity levers (2026-11-22)
+
+A batch picked by adjacency to already-matched units produced five installs:
+`func_0201f1bc` (96 B), `func_0201cb84` (96 B), `func_02025550` (104 B),
+`func_02018c70` (108 B) and `func_0201f3d0` (104 B). Three of them were first-try
+transcriptions; the two bitfield units needed the levers below.
+
+**`s32 x : 1` for an `asr` read (2.59, confirmed).** `func_0201cb84` tests a flag word
+at `0x24` and `func_0201f3d0` one at `0x108`. Retail reads them as
+
+```
+ldr r0, [r4, #0x24]
+lsl r0, r0, #0x1e
+asrs r0, r0, #0x1f
+```
+
+Writing `*(u32 *)(a0 + 0x24) & 2` gives `tst`/`and` instead. Declaring the member
+`s32 busy : 1` at bit 1 produces the shift-and-arithmetic-shift pair exactly; a `u32`
+member produces `lsrs` and the sign of the test flips to `bne` on an unsigned compare.
+For `func_0201f3d0` the same struct covers two fields (`f1` at bit 1, `f3` at bit 3),
+and the set is a plain `orr r1, r1, #8`.
+
+**Pass the field, not a literal, when retail omits the `mov` (new).** `func_0201f3d0`
+calls `func_0201f38c` twice and retail passes `r0 = a0`, `r1 = <the asr result>`,
+`r2 = a1`, having copied `a1` to `r2` at entry (`mov r2, r1`). Writing the obvious
+two-argument call `func_0201f38c(a0, a1)` reproduces the entry copy but leaves the
+function 4 B short, because neither call site needs `r1`. Writing a three-argument
+call with a literal `func_0201f38c(a0, 0, a1)` matches everything up to those calls and
+then inserts `mov r1, #0` before each, overshooting by 8 B. Only reading the field into
+a variable and passing *it* - `s32 b = fl->f1; ... func_0201f38c(a0, b, a1);` - lands:
+the `asr` result is already in `r1`, so both call sites are bare `bl`. The `mov r2, r1`
+at entry is the tell that the callee takes three arguments and the second one is the
+field just tested.
+
+**`if (!p) return;` before a loop that reloads its bound.** `func_0201cae0` walks
+`a0->count` entries and reloads `[r7, #0x48]` at the bottom of every iteration, so the
+bound must be read through the pointer inside the loop condition rather than hoisted
+into a local by hand; the compiler keeps the reload because the preceding call could
+write it.
+
+**Two identical loads of one global are sometimes the source.** `func_02025550`
+(sorted list insert) only reproduced once `head` and `cur` were both initialised from
+`*(u8 **)(data_02048d3c + 0xc)` as two separate loads. Sharing the value
+(`u8 *cur = head;`) keeps retail's 104 B but leaves the loop in a different register
+colour - `r3`/`lr` swapped - for a diff of 8. The two-load spelling gives retail's
+`lr` for the cursor and `r3` for the saved head.
