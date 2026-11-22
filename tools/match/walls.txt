@@ -2339,3 +2339,10 @@ written off.
   allocation: retail keeps the +0x8700 pointer in r1, the +0x8600 pointer in r0 and the zero
   constant in r3, where mwcc puts q in r3, w in r1 and zero in r2. Declaring w before q, or folding
   the 0x8600 offset into each store, changes the count of differing lines but not the match.
+  ov003 0x020bb0b0 120B -- mode switch: `p = *(u32 *)0x020eb720 + 0xc8dc`; when the argument is 0
+  it calls func_02020d44(1), func_02020c50(0x40) and func_ov003_0205e2f8(2) and then sets bits 0-1 of
+  the u16 at 0x04000008 to 2, otherwise it stores 0x20 at p+0x24 and p+0x28, returning 0. Three
+  spellings each land on a different near miss: `p` and the 0x04000008 read hoisted gives 112B and a
+  push {r4}, `p` hoisted with the read inline gives 116B, and `p` inside the else with the read
+  inline is the exact 120B but defers the two pool loads past the `cmp`, where retail loads both
+  before it and forms `p` in r1 ahead of the branch.
