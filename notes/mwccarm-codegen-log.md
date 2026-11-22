@@ -3596,3 +3596,76 @@ Roster note: a skeleton-matching sweep (unmatched units whose mnemonic+condition
 already-matched unit's) found only 7 hits across arm9/ov002/ov003, and 6 of them are misaligned
 four-byte artefacts of `SoftReset`-like padding. The family-substitution route is exhausted for the
 unmatched set: the remaining units have no matched sibling.
+
+
+## 3.25 Materialisation corpus: 42 matched units that DO keep `add rX, base, #K` alive (2026-11-22)
+
+The recurring residue on the small-function tail is "retail materialises `add rX, base, #K` and
+addresses everything through `rX`, we fold it into `[base, #K]`". Guessing at sources for it has
+failed six times, so instead of guessing, here is the set of *already-matched* units that exhibit the
+shape. Any future candidate with this residue should be diffed against the nearest member of this
+table rather than re-derived from scratch.
+
+Found by scanning every matched unit's retail bytes for `add rD, rN, #imm` (imm in 1..0xff, no
+rotate) followed within four instructions by a load or store addressed off `rD`:
+
+| unit | size | source |
+|---|---|---|
+| `arm9 0x2006be0` | 48 | `src/arm9/func_02006be0.c` |
+| `arm9 0x200e8f4` | 52 | `src/arm9/func_0200e8f4.c` |
+| `arm9 0x200e99c` | 48 | `src/arm9/func_0200e99c.c` |
+| `arm9 0x2010280` | 56 | `src/arm9/func_02010280.c` |
+| `arm9 0x20102f0` | 56 | `src/arm9/func_020102f0.c` |
+| `arm9 0x201038c` | 52 | `src/arm9/func_0201038c.c` |
+| `arm9 0x2015524` | 52 | `src/arm9/func_02015524.c` |
+| `arm9 0x2018318` | 24 | `src/arm9/func_02018318.c` |
+| `arm9 0x201c9e0` | 56 | `src/arm9/func_0201c9e0.c` |
+| `arm9 0x201fc1c` | 32 | `src/arm9/func_0201fc1c.c` |
+| `arm9 0x20221b8` | 108 | `src/arm9/func_020221b8.c` |
+| `arm9 0x20279e0` | 52 | `src/arm9/func_020279e0.c` |
+| `arm9 0x20289f4` | 68 | `src/arm9/func_020289f4.c` |
+| `arm9 0x2028c98` | 72 | `src/arm9/func_02028c98.c` |
+| `arm9 0x20298e4` | 76 | `src/arm9/func_020298e4.c` |
+| `ov002 0x204c7e8` | 32 | `src/ov002/func_ov002_0204c7e8.c` |
+| `ov002 0x204c824` | 96 | `src/ov002/func_ov002_0204c824.c` |
+| `ov002 0x204d09c` | 68 | `src/ov002/func_ov002_0204d09c.c` |
+| `ov002 0x204d0e0` | 76 | `src/ov002/func_ov002_0204d0e0.c` |
+| `ov002 0x204d12c` | 76 | `src/ov002/func_ov002_0204d12c.c` |
+| `ov002 0x204d1e8` | 68 | `src/ov002/func_ov002_0204d1e8.c` |
+| `ov002 0x204d22c` | 68 | `src/ov002/func_ov002_0204d22c.c` |
+| `ov002 0x204d270` | 68 | `src/ov002/func_ov002_0204d270.c` |
+| `ov002 0x204d2b4` | 68 | `src/ov002/func_ov002_0204d2b4.c` |
+| `ov002 0x204f898` | 64 | `src/ov002/func_ov002_0204f898.c` |
+| `ov002 0x2060ca0` | 40 | `src/ov002/func_ov002_02060ca0.c` |
+| `ov002 0x2062b48` | 32 | `src/ov002/func_ov002_02062b48.c` |
+| `ov002 0x2062b68` | 36 | `src/ov002/func_ov002_02062b68.c` |
+| `ov002 0x20633e0` | 84 | `src/ov002/func_ov002_020633e0.c` |
+| `ov002 0x2063434` | 88 | `src/ov002/func_ov002_02063434.c` |
+| `ov002 0x20636b4` | 108 | `src/ov002/func_ov002_020636b4.c` |
+| `ov002 0x2063820` | 84 | `src/ov002/func_ov002_02063820.c` |
+| `ov002 0x2063bb8` | 164 | `src/ov002/func_ov002_02063bb8.c` |
+| `ov002 0x2063c5c` | 84 | `src/ov002/func_ov002_02063c5c.c` |
+| `ov002 0x209b878` | 116 | `src/ov002/func_ov002_0209b878.c` |
+| `ov002 0x209e44c` | 72 | `src/ov002/func_ov002_0209e44c.c` |
+| `ov002 0x20a825c` | 104 | `src/ov002/func_ov002_020a825c.c` |
+| `ov002 0x20ace70` | 72 | `src/ov002/func_ov002_020ace70.c` |
+
+Four source shapes account for the small members, and they differ in ways that matter:
+
+- `src/arm9/func_02018318.c` - `u32 *q = (u32 *)(p + 0x24); *q = *(u32 *)(p + 0x18); q[2] = 0;`
+  The pointer is used at **two different offsets** (`[q]` and `[q, #8]`), which is what makes the
+  base worth materialising.
+- `src/arm9/func_0201fc1c.c` - struct members `s->a` and `s->b`, i.e. `[base, #8]` and
+  `[base, #0xc]` through one struct pointer. Same two-offset rule, expressed as member access.
+- `src/ov002/func_ov002_0204c7e8.c` - `u16 *q = (u16 *)p; u32 *r = (u32 *)p; q[3] = 0; q[2] = a1;
+  r += 6; r[0] = r[0] | 2;` The second pointer is **advanced** (`r += 6`) before a single `r[0]`
+  use, and the u16 stores already consumed the plain `p` addressing.
+- `src/arm9/func_02015524.c` - `s32 *q = (s32 *)(p + 0xc); *q = *q + 1;` plus a *separate* full
+  re-derivation of the same address in the following `if`. Two independent expressions for the
+  same address is the extreme case.
+
+The negative result that motivated this: on `arm9 0x0201f3d0` the field at 0x108 is read-modify-
+written twice through one base and writing it as `u32 *p = (u32 *)(a0 + 0x108); *p |= 8;`, as
+`u32 *r = (u32 *)a0; r += 0x42; r[0] = r[0] | 8;`, as a struct member, as a signed bitfield, with
+`volatile`, with the value read into a local first, and as the doubled `x = x | 8` expression all
+fold to `[r4, #0x108]`. Single-offset accesses do not materialise; only a second offset does.
