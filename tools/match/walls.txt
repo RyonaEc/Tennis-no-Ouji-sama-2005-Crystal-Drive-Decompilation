@@ -2310,3 +2310,16 @@ written off.
   reaches exactly 64B; the only residue is one commutative operand swap, retail `add r0, r0, r2`
   against mwcc's `add r0, r2, r0` at 0x1c. Splitting the products into locals, a hoisted `p`, or
   swapping the term order in the source all change the allocation instead of the operand order.
+  ov003 0x020b6c88 76B -- two-flag gate on the word at 0x02042a68+0x30 (bit 1 blocks, bit 0 must be
+  set), then a lazy init on `(u8 *)*(u32 *)0x020eb720 + 0x8600`: when the u16 at +0xd6 is zero, store 1
+  at +0xd6 and +0xce and 0x22 at +0xc2. The spelling with the base pointer locals, the word read and
+  the global dereference hoisted above the tests is size-exact at 76B and instruction-for-instruction
+  identical; mwcc just assigns the flag word to r1 and the dereferenced pointer to r2 where retail has
+  the pointer in r1 and the flag word in r2. Swapping the two declarations, inlining the dereference,
+  or dropping the address locals all keep that swap.
+  ov002 0x02080ca4 68B -- four-element copy: `p = func_020848a0() + 0x300`, then
+  `for (i = 0; i < 4; i++) *(u16 *)(p + i*8 + 0xe6) = *(s16 *)(0x020fc68c + i*2);`. Retail keeps `ip`
+  as the only induction variable and recomputes both addresses per iteration (`lsl r1, ip, #1` and
+  `add r1, r0, ip, lsl #3`); every spelling tried makes mwcc add two extra induction variables that
+  step by 2 and by 8 (76B against 68B), including hoisting the 0x300 into the base and writing the
+  offsets as `i * 8` or `i << 3`.
