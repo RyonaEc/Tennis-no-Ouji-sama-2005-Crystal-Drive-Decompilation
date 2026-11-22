@@ -2384,3 +2384,12 @@ written off.
   invariants into `mov lr, r5` (zero) and `mov r3, #0x200`, and computes the `i % 4` test with
   `lsr r2,r5,#0x1f; rsb r1,r2,r5,lsl #30; adds r0,r2,r1,ror #30; addeq r0,ip,#0x8000` where the direct
   spelling just masks with #3. Needs the invariant-hoisting and remainder shape, not the mask.
+  arm9 0x02026ac8 44B -- leaf 64-byte word copy with no stack frame: four `ldm r0!`/`stm r1!` pairs moving
+  three words each (r2, r3, ip) then a final four-word pair `ldm r0, {r0, r2, r3, ip}` / `stm r1!`, so the
+  pointers stay in r0/r1 for the whole body. Shapes tried, each further off: a 16-word struct copy and a
+  16-word struct made of four 3-word elements plus one 4-word element both give 60B with four 4-word
+  ldm/stm pairs and a `stmdb sp!` frame; a four-statement 3-word element copy plus a 4-word tail gives
+  92B with non-writeback `ldm ip`/`add` pairs; a `for` loop gives 28B; sixteen explicit word
+  assignments give 132B (mwcc never merges them); splitting the object into a 48-byte struct plus a
+  16-byte struct gives 68B. Retail needs the writeback form, which only comes from copying one
+  contiguous object, yet that object also has to break into groups of three.
