@@ -372,3 +372,10 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
   if-converts the early exit (`popne`/`bxne`) and duplicates the epilogue; writing the guard as
   `if (x == -1) { ...compute and store... } return x;` leaves a single return and retail's shared
   tail. Both spellings can be the same size, so check the shape, not the length.
+
+- **Verify pool constants by bytes, not by eyeballing the hex print.** A wrong digit in a pooled
+  literal leaves `var3.py` at `MATCH`-minus-one-pool-word and only `reg.py` reports the miss.
+  Compile with `compile_text`, diff against `retail`, and look for differing words outside the
+  relocated ones.
+- **`(i * 3 + 2) * 4` is not `i * 12 + 8`.** The factored form gives `mov #3; mul; add; add lsl`,
+  the flat form gives `mla` against the pooled base.

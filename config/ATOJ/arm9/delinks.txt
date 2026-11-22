@@ -3707,3 +3707,7 @@ src/arm9/func_02026564.c:
 src/arm9/func_020257e4.c:
     complete
     .text       start:0x020257e4 end:0x0202585c
+
+src/arm9/func_02026e2c.c:
+    complete
+    .text       start:0x02026e2c end:0x02026ea4

@@ -4633,3 +4633,17 @@ spelling returned the cached word twice (`if (x != -1) return x; ...; return x;`
 second its own epilogue, while retail branches to the single tail. Folding the guard into
 `if (data_020423dc == (u32)-1) { ...compute... } return data_020423dc;` leaves one return statement
 and reproduces retail's shared epilogue exactly.
+
+### 3.00 DMA channel start at 0x02026e2c matched, and a lesson about reading pool words
+
+`0x02026e2c` (120B) primes a channel with `func_0202660c(ch, -1, len)`, then unless the flag
+argument is zero waits for the DMA control bit to clear at
+`0x040000b0 + (ch * 3 + 2) * 4` and calls the ITCM routine `func_01ff8504(ch, src, len, 0xaf000001)`.
+
+Two gotchas. The index has to be written as `(a0 * 3 + 2) * 4`, not `a0 * 12 + 8`: the latter
+makes mwcc fold the base into an `mla` (`ldr r1, [pc]; mov r0, #0xc; mla r1, r6, r0, r1`), while
+retail keeps `mov r0, #3; mul r1, r6, r0; add r1, r1, #2; add r1, r0, r1, lsl #2`. And the fourth
+argument is `0xaf000001`, not `0x0af00001` — I transcribed the pool print by eye, dropped a digit,
+and `reg.py` refused the unit while `var3.py` stayed quiet because the differing word is a pool
+constant rather than an instruction. Dump the words with `struct.unpack_from` and compare bytes
+(`compile_text` vs `retail`) whenever a unit is size-exact and `reg.py` still misses.
