@@ -4057,3 +4057,46 @@ because the frame is the usual 8-byte alignment pair.
 
 The fifth candidate, `arm9 0x02026a04` (76 B), is a 256-bit block fill that keeps matching retail's
 `stmlt` block until the count loop; it is still open and is not parked.
+
+## 3.39 Does everything need to be `1.2/b56`? (2026-11-22)
+
+Prompted by the release date: the game shipped in Japan on **2004-12-30**, but our `1.2/sp2` is
+build 79, `Runtime Built: Aug 11 2005` - seven months after the cart was on shelves. `1.2/b56` is
+build 56 of `Sep 16 2004` (NITRO V1.0), which does predate it.
+
+Measured instead of argued. `python tools/configure.py ATOJ --mwcc-version 1.2/b56` points both the
+compiler and the linker at b56 for every unit, then `ninja sha1`:
+
+* `tennis_ATOJ.nds` **fails** the digest (`609bd9ff...` against `8d555a80...`), so b56 is not a
+  drop-in replacement for the current configuration.
+* but objdiff with that build reports only **two** functions below 100% out of 1,536:
+  `func_02025c30` at 90.5% and `func_ov004_0205e274` at 92.9%. Everything else - 1,532 of the 1,534
+  complete units - is byte-identical under both compilers.
+
+The two exceptions are not evidence that retail used build 79:
+
+* `func_02025c30` is an inline `asm { }` block (the `mcr p15, 0, r2, c7, c14, 2` cache clean-and-
+  invalidate loop), so its bytes come from the assembler path and tell us nothing about C codegen.
+  It legitimately differs between the two toolchains and stays as it is.
+* `func_ov004_0205e274` is a source-shape artefact: retail stores 0 to `p->0x180` and then *reloads*
+  it to pass as the second argument. Written as `*q = 0; func(p + 0x184, *q);`, sp2 keeps the reload
+  and b56 folds the argument to the constant. The original source almost certainly read the field
+  through something the compiler could not see through; the current line simply happens to reproduce
+  retail under a compiler that postdates the game.
+
+So the honest model is: **retail is a build-56 ROM; the sp2 default is a convenience that works
+because the two builds agree on 99.9% of this cartridge.** The practical consequences:
+
+* Never read "matches under sp2" as evidence about which compiler retail used. The digest cannot
+  distinguish the two configurations here, so it cannot settle it either.
+* For an unmatched unit, b56 remains the first probe (already the practice): it is the build that
+  predates release, and every one of the 66 per-file overrides needed it.
+* A unit that only matches under sp2 is a source shape we have not found yet. Re-derive it under
+  b56 rather than recording sp2 as its compiler.
+
+The one caveat: the dump is header version 0, and a `Konami the Best` reprint followed on 2006-06-29.
+If this cart were that reprint, a 2005 compiler would be possible - but a reprint does not normally
+rebuild the game, and the b56-everywhere result above says the code is build-56-shaped almost
+throughout.
+
+Restored with `python tools/configure.py ATOJ`; `ninja sha1` is green again on `8d555a80...`.

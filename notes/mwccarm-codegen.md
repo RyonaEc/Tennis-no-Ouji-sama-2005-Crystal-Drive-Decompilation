@@ -8,9 +8,25 @@ diffs, bodies tried, verdicts - is in
 `tools/match/walls.txt` and commit messages point there.
 
 Toolchain: CodeWarrior `mwccarm`, `-O4,p`, ARM mode, struct alignment 4.
-Retail is a **split build**: `1.2/sp2` for most units and `1.2/b56` for the ones
-listed in `config/ATOJ/mwcc_versions.txt`. Never add a version or a map entry
-without a ROM-digest match.
+The build uses `1.2/sp2` by default with the per-file exceptions in
+`config/ATOJ/mwcc_versions.txt`. Never add a version or a map entry without a
+ROM-digest match.
+
+**Which compiler retail actually used is still open, and `sp2` is the weaker
+candidate.** The game shipped on 2004-12-30; `1.2/sp2` here is build 79, dated
+2005-08-11, i.e. seven months after release, while `1.2/b56` is build 56 of
+2004-09-16 (NITRO V1.0). Rebuilding the whole ROM with `b56` everywhere
+(`configure.py ATOJ --mwcc-version 1.2/b56`) still matches **1,532 of the 1,534
+complete units** - only `func_02025c30` (an inline-`asm` block, so it says
+nothing about C codegen) and `func_ov004_0205e274` (a source shape that only
+folds the way retail does under sp2) differ. So the two builds are identical for
+99.9% of units, the current default is a convenience rather than evidence, and
+the plausible reading is that retail is a build-56 ROM whose source we have
+written in a few sp2-shaped places.
+
+Practical rule, on top of "probe both": **treat an sp2-only match as a source
+shape that has not been found yet, not as proof that this unit used sp2.** If a
+unit resists, prefer re-deriving it under `b56` before parking it.
 
 ## Compiler identity in this tree
 
