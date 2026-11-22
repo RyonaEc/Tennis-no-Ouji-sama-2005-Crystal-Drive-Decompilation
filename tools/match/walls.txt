@@ -2234,3 +2234,10 @@ written off.
   index must be `s32` (`mullt`/`addlt`, not `mullo`/`addlo`). Residue: the base pointer lands in r6
   with the zero constant in r8, where retail loads it into r0, copies it to r8 and keeps the zero in
   r7. Declaring the accumulator before the index gives retail's r4/r5 split for i and r.
+  arm9 0x0202daec 132B -- shutdown half of the 0x0202d4f0 teardown, reading data_0204aec0
+  directly: cb = f28, arg = f2c, `*(u32 *)*(u32 **)base = 0`, lock, `base+0x34 &= ~0xc`,
+  func_0202514c(base+0xd4), conditional func_02025118(base+0x3c), unlock, then cb(arg). The plain
+  global struct form is size-exact (132B) but mwcc reloads the base from the pool for the +0x34
+  read-modify-write and for the &0x10 test, where retail keeps one base register (r7). Declaring
+  `Base *p = &data_0204aec0;` gives r7 and retail's shape but costs 8B (140B); an explicit
+  `u32 *f = (u32 *)(p + 0x34)` address variable costs 12B (144B).
