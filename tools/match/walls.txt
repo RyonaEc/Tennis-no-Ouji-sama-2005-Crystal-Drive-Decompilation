@@ -1805,3 +1805,20 @@ forces that pairing turns up.
   always inserts `sub sp, sp, #4` to 8-byte-align the SP at the calls, giving 60B in every
   spelling (one variable, two variables, single statement per store). Likely hand-written
   assembly paired with those two accessors.
+
+  arm9 0x0202963c 80B -- linked-list find by key: `key = func_02029704(); func_02026350();
+  for (n = head; n && n->id != key; n = n->next); func_02026364(); return n;` with
+  head = *(Node **)0x0204abe8 and Node = {s32 id; Node *next;}. Seven spellings (for, while
+  with break, while with &&, inverted test, do-loop) x six mwcc builds (1.2 b56/base/sp2,
+  2.0 base/sp2/sp1p7) all give 84B: retail rotates the loop so the null test sits at the
+  bottom with a single copy and the id compare branches backwards to the advance, while mwcc
+  emits the unrotated form with the null test duplicated. Not a spelling problem: the residue
+  is loop rotation, which 1.2 b56 only performs for a different source shape. Parked until the
+  adjacent 0x02029704 / 0x02026350 pair is understood.
+
+  arm9 0x0202612c 20B -- `func_02026140(); func_020261d0();` and nothing else. Retail is
+  `stmdb sp!,{lr}` + two `bl` + `ldm sp!,{lr}` + `bx lr` with no frame. mwcc 1.2/b56 emits
+  `sub sp, sp, #4` / `add sp, sp, #4` around the calls to keep SP 8-byte aligned (28B), so no
+  C spelling can be 20B. Same class as 0x0203b4b0: hand-written assembly thunk, and it also
+  explains the 15 remaining sub-28B units, which are all bare `bx r1` veneers, `svc` wrappers,
+  multi-register copy loops or `subs`-loop aligners.
