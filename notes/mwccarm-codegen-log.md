@@ -3557,3 +3557,42 @@ Pick units whose small arms end in a call or another branch instead.
 Also confirmed on `arm9 0x02028920`: keeping the base pointer in the incoming r0 and materialising a
 field address in lr is an allocation we cannot request; our best form is two instructions shorter of
 work and therefore needs fewer registers than retail does.
+
+## 3.24 Two call sites need two statements, not one `if/else` (2026-11-22)
+
+`arm9 0x0201f3d0` (104B) is solved in shape but not in bytes, and getting the shape right produced a
+lever worth writing down. The function opens by testing bit 1 of `*(s32 *)(a0 + 0x108)` and calls
+`func_0201f38c(a0)` in two different situations: when the bit is clear, and when the bit is set but
+`a1 == 0`. Retail has the call **inlined twice**, at two separate addresses.
+
+Written as an `if/else` whose two arms both end in the same call -
+
+    if (bit) { if (a1 == 0) { f(a0); return; } ... } else { f(a0); }
+
+- mwcc tail-merges the two identical call-and-return sequences into a single call site and the unit
+  comes out 8 bytes short. Written as two consecutive early-return statements -
+
+    if (!bit) { f(a0); return; }
+    if (a1 == 0) { f(a0); return; }
+
+- mwcc keeps both call sites, which is retail. So the earlier rule "identical arms get merged, split
+  them" is only half of it: the merge happens across an if/else *join*, and two early returns are
+  separate blocks that are never joined. This is the mirror of the 3.21 finding, where converting an
+  early-return guard into a positive if/else was what fixed the unit.
+
+The 8 bytes still missing are pure materialisation, the same class as 3.4 and 3.20: retail keeps the
+bit-test value in two registers (`ldr r3` then `lsl r1, r3`), which forces `mov r2, r1` to preserve
+`a1` before the shift, and materialises the flags-field address in r2 for the read-modify-write. Ours
+folds the address into `[r4, #0x108]` and does the whole bit test in one register, so both of retail's
+instructions have nothing to do. Seven spellings of that field access, including `volatile` and the
+doubled-expression form, all fold.
+
+`arm9 0x02024af8` is confirmed as the second instance of the veneer class already noted for
+`0x02033bd0`: `ldr r1, [pc]; bx r1` to a real function start. Every C form of the tail call emits
+`ldr ip` instead, both compiler builds agree, and a literal-address cast stops being a tail call
+altogether. Veners are not reachable from source.
+
+Roster note: a skeleton-matching sweep (unmatched units whose mnemonic+condition sequence equals an
+already-matched unit's) found only 7 hits across arm9/ov002/ov003, and 6 of them are misaligned
+four-byte artefacts of `SoftReset`-like padding. The family-substitution route is exhausted for the
+unmatched set: the remaining units have no matched sibling.

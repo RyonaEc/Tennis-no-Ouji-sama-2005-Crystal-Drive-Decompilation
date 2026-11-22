@@ -1353,3 +1353,18 @@ arm9 0x02028920 56B + twin 0x02028958 -- `obj = *(u8 **)(a0 + 8); cur = *(u32 *)
   copies the base to r3, folds the field address into `[r3, #0x28]` and needs no callee-saved register
   at all. Marking both the duplicate `[0x28]` load and the field pointer `volatile` restores the
   duplicate load (r2 before the store, as retail) but moves the base to ip and grows to 60B.
+arm9 0x0201f3d0 104B -- 96B shape right, 2 instructions of materialisation missing. Retail:
+  `v = *(s32 *)(a0 + 0x108)` into r3, shift into r1, `mov r2, r1` (a copy of a1 made before the shift
+  clobbers r1), then `if (!bit) { func_0201f38c(a0); return; }`, `if (a1 == 0) { func_0201f38c(a0);
+  return; }` (TWO separate call sites, not a shared else), `func_0201fc78(a0 + 0xe0, 0)`, then the
+  flags RMW with the field address materialised in r2 (`add r2, r4, #0x108` ... `str r1, [r2]`), then
+  `*(u32 *)(a0 + 0x130) = 0`. Ours reproduces every block and both call sites at 96B but folds the
+  field address into `[r4, #0x108]` and keeps the bit test inside one register, so we never need the
+  `mov r2, r1` copy or the `add`. Tried: `if/else` with a shared call in both arms (mwcc then merges
+  them into ONE call site, 96B), named `s32 v` local, `u32 *p` for the field, `u32 f = *p` before the
+  store, `volatile` on both the head load and the field, and the doubled `x = x | 8` expression form.
+  Nothing outside the four calls: `func_0201f38c`, `func_0201fc78`, both confirmed by address.
+arm9 0x02024af8 12B -- `ldr r1, [pc]; bx r1` veneer to func_02024c78 (pool word 0x02024c78 is a real
+  function start, size 0x20). `return func_02024c78();`, the void form, the K&R empty-parens form and a
+  one-parameter forwarding form all emit `ldr ip, [pc]; bx ip` at 12B; the literal-address cast form
+  stops being a tail call (32B). Same class as 0x02033bd0: a compiler/linker veneer, not C.
