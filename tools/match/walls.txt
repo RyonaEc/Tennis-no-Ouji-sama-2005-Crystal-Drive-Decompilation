@@ -1069,3 +1069,19 @@ arm9 0x02026a50 56B -- almost certainly hand-written: 8-word `ldm/stm` block loo
   `ldm/stm` tail, with `ip = dst + (n >> 5) * 32` and `sl = dst + n`. A 32-byte struct copy in C
   compiles to 124B of ldmia/stmia per-word moves, not `ldm r0!, {8}`; leaving it as delinked
   assembly.
+arm9 0x0203b4e4 40B -- lock-word atomic op: `u32 *p = (u32 *)func_0203b6d0(); old = *p;
+  *p = (old & ~a0) ^ a1; return old;` (the getter returns the address of data_0204c794). Retail
+  spills the argument registers instead of using callee-saved ones:
+  `push {r0, r1, r2, ip, lr}; bl; mov r3, r0; pop {r0, r1, r2, ip, lr}` and then works on r0/r1 in
+  place. Any spelling here compiles to `push {r4, r5, lr}` with the masks copied into r4/r5 and
+  lands 56B. Tried: locals only (56B), same with the pointer declared after the masks.
+arm9 0x0203b50c 76B -- the packed-field sibling of 0x0203b4e4: repack both arguments as
+  `(v & 0x1f) | ((v & 0x1f0000) >> 8)` first - which retail does exactly, in place on r0/r1 - then
+  the same lock-word `(old & ~a0) ^ a1` and return
+  `(old & 0x1f) | ((old & 0x1f00) << 8) | 0x40000000`. Same spill wall as 0x0203b4e4 (92B against
+  76B); the packing half is already byte-identical.
+arm9 0x0203b698 56B -- call every non-null entry of a function-pointer table:
+  `while (t != 0) { if (*t == 0) break; (*t)(); t++; }` with the table address from a literal pool
+  (`ldr r4, [pc]; cmp r4, #0` - the address itself is compared against zero, which no plain
+  `T **t = table;` spelling produces), `blx r0` for the call and the table pointer bumped by 4.
+  Not attempted past the decode.
