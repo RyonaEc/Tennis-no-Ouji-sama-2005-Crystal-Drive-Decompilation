@@ -1256,3 +1256,18 @@ arm9 0x020255e8 100B -- plain struct init: stores a1 + 4 at p + 0x40, a2 at p + 
   local for the sum, `a1 += 4` / `a2 -= 0x40` on the parameters, and fully inline expressions - all
   three produce the identical copy. vprobe shows 1.2/b56 and 1.2/sp2 agree, so this is allocator
   behaviour, not a version lead.
+ov004 0x02050068 100B -- scans `*(s32 *)self` elements at `self + 0x20 + i * 4`, comparing
+  `*(u32 *)(e + 0x98)` against `*(u32 *)(self + 0xc)` and on a hit calling
+  `(*(void **)(self + 8))(e)`, storing 0xffffffff at `self + 0x18` and returning 1. Mine is 108B: mwcc
+  strength-reduces the element index into a second induction variable (`add r3, r3, #4` each pass)
+  where retail keeps one counter and recomputes `add r0, r4, ip, lsl #2` every iteration, and it also
+  keeps the count in lr rather than r2.
+ov002 0x0204f70c 100B -- angle helper: calls func_02020044(a1, a0), wraps a negative result by adding
+  0x6488 (= 65536*pi/8, i.e. 22.5 degrees in 16-bit angle units), casts to s16, then runs a magic
+  multiply (0xa2f96525, `lsl #16`, `asr #14`, sign fixup) and truncates to u16. The magic's divisor is
+  unidentified, so the source expression is still unknown; parked rather than guessed.
+ov003 0x02082220 96B -- three-arm range test on a1 (< 0x5a, < 0xb4, else) where every arm assigns the
+  same pair (0x1e, 0x3c), then `if (n == 0) return 0;` and `return (s16)func_0203b0c0(m * a1, n)`
+  after a null-check. Writing it as an if/else-if chain lets mwcc fold the identical arms and lands at
+  80B against retail's 96B; the arms have to survive as separate basic blocks, which no spelling tried
+  so far achieves.

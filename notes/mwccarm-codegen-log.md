@@ -3385,3 +3385,42 @@ entries it reports `candidates 0` for arm9 (55 bailed) and for ov003/ov005/ov006
 so nothing is left to farm automatically and everything remaining is manual. And `ov000` is a second
 empty overlay like `ov007` - no `.text`, 0 functions - which the new guard in `auto.set_module`
 reports cleanly.
+
+## 3.18 Four units from the clean-shape queue (2026-11-22)
+
+The 550-unit clean queue (96-320B, no calls, no multiplies) paid off: four matches in one pass, and
+one of them gives a lever for a wall class that had looked hopeless.
+
+`ov002 0x0204d4d8` (100B) clamps a value into a range chosen by `a0 < 0x81`. Two levers were needed:
+
+1. The parameter must be **`s32`, not `u32`**, or the range test comes out `movlo/movhs` where retail
+   has `movlt/movge`.
+2. The accumulation must be written **left-to-right from the low end**: `v = a1 + lo + f(...)` makes
+   mwcc precompute `a1 + lo` in a spare register, while `v = lo + f(...) + a1` chains
+   `add r0, r5, r0` / `add r0, r6, r0` exactly as retail does.
+3. The second clamp had to be a **plain assignment, not a return**: `if (v < lo) v = lo; return v;`
+   emits `cmp` + `movlt r0, r5` + a shared epilogue, where `return lo;` made mwcc fold the whole tail
+   into a `max()` (`movge r5, r0` + `mov r0, r5`) and grow the unit to 104B. The first clamp keeps
+   its `return hi;`, which is what retail does.
+
+`ov003 0x02067020` (100B) is a jump-table switch. Writing only the live cases (`8`, `9`) produced two
+compares and 72B; retail has a full `addls pc, pc, r1, lsl #2` table with ten entries, seven of which
+land on the epilogue. Listing the dead cases explicitly (`case 0:` through `case 7:` each falling out
+of the switch) is what makes mwcc emit the table - so a table with identical targets is a sign of
+**enumerated dead cases**, not of an optimisation.
+
+`ov002 0x02084244` (100B) settled a register pair by **declaration order**. Retail keeps the raw
+global base in r4 and the derived `base + 0x36ac` in r5. Declaring `base` first and `s = base + 0x36ac`
+second gave the opposite pair and a 100/100 unit that still differed on every line; swapping the two
+declarations - `s` first, `base` second, each reading the global - put them in retail's registers and
+matched immediately. When two pointers derived from the same global swap registers, try the reverse
+declaration order before anything else.
+
+`ov002 0x02057e58` (100B) matched on the first attempt: a per-entity lookup with `mla` strides 0x158
+and 0x1c, a `(a1 == 0x55) ? 0x56 : 0x55` toggle guarded by `idx > 1`, and two tail calls.
+
+Also tried and parked: `ov004 0x02050068` (100B) is five instructions long at 108B because mwcc
+strength-reduces the `self + 0x20 + i * 4` element access into a second induction variable
+(`add r3, r3, #4`) where retail recomputes `add r0, r4, ip, lsl #2` every iteration; and
+`ov002 0x0204f70c` needs its magic-division constant (`0xa2f96525`, paired with an
+`if (v < 0) v += 0x6488` wrap where 0x6488 is 65536*pi/8) identified before it can be written.
