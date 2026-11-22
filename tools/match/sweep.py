@@ -1,138 +1,122 @@
-"""Compile one C unit with every CodeWarrior mwccarm build on disk and diff
-each result against the retail bytes.
+"""Sweep formulation variants of one candidate and score them against retail.
 
-This is the "version sweep" from sm64ds-decomp: a residue that no source
-spelling fixes is often a compiler-build delta, not a source problem.
+A candidate carries alternatives inline:
 
-usage: python tools/match/sweep.py <mod> <name>=<file.c> [versions...]
-       (default: every tools/mwccarm/*/* that has an mwccarm.exe)
+    u32 *p = {{base:(u32 *)0x027c0000 + 0xffe|(u32 *)0x027c3ff8}};
+    {{store:*p = *p | 1;|*p |= 1;}}
+
+Every `{{id:alt1|alt2|...}}` block expands into one axis; the tool compiles the
+cartesian product and ranks the results by instruction-level difference from the
+retail bytes. Nothing is installed -- a winner still goes through reg.py.
+
+Usage:
+    python tools/match/sweep.py <mod> <addr> <size> <file.c> [--top N]
+                               [--limit N] [--compiler 1.2/b56]
+
+This exists because the project's remaining walls are dominated by four
+mechanical axes (offset folding, constant-pool choice, register colour, stack
+alignment). Enumerating them by hand costs one tool call per guess; this walks
+the grid in one run and prints what was closest.
+
+Note: `|` separates alternatives, so a variant cannot contain one. Write
+`x = x | 1` instead of `x |= 1`, and avoid `||` in a variant.
 """
 import importlib.util
+import itertools
 import pathlib
-import struct
-import subprocess
+import re
 import sys
 
-from capstone import Cs, CS_ARCH_ARM, CS_MODE_ARM
+BLOCK = re.compile(r"\{\{(\w+):([^}]*)\}\}")
 
 
-def load(p, n):
-    s = importlib.util.spec_from_file_location(n, p)
-    m = importlib.util.module_from_spec(s)
-    s.loader.exec_module(m)
-    return m
+def load(path, name):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
-ROOT = pathlib.Path('.')
-A = load('tools/match/auto.py', 'auto')
-MD = Cs(CS_ARCH_ARM, CS_MODE_ARM)
-
-FLAGS = ['-O4,p', '-enum', 'int', '-proc', 'arm946e', '-gccext,on',
-         '-fp', 'soft', '-char', 'signed', '-inline', 'on,noauto',
-         '-Cpp_exceptions', 'off', '-gccinc', '-interworking', '-sym', 'on',
-         '-nolink', '-msgstyle', 'gcc', '-str', 'reuse', '-enc', 'sjis',
-         '-i', 'include']
+def norm(mnemonic, op_str):
+    """Blank branch targets: they follow relocations, not the source."""
+    if mnemonic.startswith("b"):
+        op_str = re.sub(r"#0x[0-9a-f]+", "#T", op_str)
+    op_str = re.sub(r"#0x[0-9a-f]{6,}", "#A", op_str)
+    return mnemonic + " " + op_str
 
 
-def text_of(path):
-    d = pathlib.Path(path).read_bytes()
-    if d[:4] != b'\x7fELF':
-        return b''
-    shoff = struct.unpack_from('<I', d, 0x20)[0]
-    shent = struct.unpack_from('<H', d, 0x2e)[0]
-    shnum = struct.unpack_from('<H', d, 0x30)[0]
-    shstr = struct.unpack_from('<H', d, 0x32)[0]
-
-    def sh(i):
-        o = shoff + i * shent
-        return struct.unpack_from('<II', d, o) + struct.unpack_from('<II', d, o + 0x10)
-
-    _, _, stroff, _ = sh(shstr)
-    for i in range(shnum):
-        nm_off, _, off, size = sh(i)
-        nm = d[stroff + nm_off:d.index(b'\x00', stroff + nm_off)].decode()
-        if nm == '.text':
-            return d[off:off + size]
-    return b''
+def score(fm, got, mod, addr, size, want):
+    want_lines = [norm(i.mnemonic, i.op_str) for i in fm.parse_ins(addr, size)]
+    got_lines = [norm(i.mnemonic, i.op_str) for i in fm.md.disasm(got, addr)]
+    diff = abs(len(got) - len(want)) // 4 * 1000
+    diff += abs(len(got_lines) - len(want_lines))
+    for a, b in zip(want_lines, got_lines):
+        if a != b:
+            diff += 1
+    return diff
 
 
-def relocs_of(mod):
-    out = set()
-    p = pathlib.Path(f'config/ATOJ/{mod}/relocs.txt')
-    if not p.exists():
-        return out
-    for line in p.read_text().splitlines():
-        if not line.startswith('from:'):
+def main() -> int:
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    top, limit, compiler = 8, 4000, None
+    for i, a in enumerate(sys.argv):
+        if a == "--top":
+            top = int(sys.argv[i + 1])
+        elif a == "--limit":
+            limit = int(sys.argv[i + 1])
+        elif a == "--compiler":
+            compiler = sys.argv[i + 1]
+    mod = args[0]
+    addr, size = int(args[1], 0), int(args[2], 0)
+    template = pathlib.Path(args[3]).read_text()
+
+    fm = load("tools/match/fastmatch.py", "fm")
+    want = fm.retail(mod, addr, size)
+
+    axes = []
+    for match in BLOCK.finditer(template):
+        axes.append((match.group(1), match.group(2).split("|")))
+    if not axes:
+        print("no {{axis:...}} blocks found")
+        return 2
+
+    combos = 1
+    for _, alts in axes:
+        combos *= len(alts)
+    print(f"{mod} {addr:#x} {size}B  {combos} combinations "
+          f"over {len(axes)} axes: {', '.join(n for n, _ in axes)}")
+    if combos > limit:
+        print(f"refusing: {combos} > {limit} (raise --limit)")
+        return 2
+
+    best = []
+    tried = 0
+    failed = 0
+    for choice in itertools.product(*[alts for _, alts in axes]):
+        body = template
+        for (name, _), value in zip(axes, choice):
+            body = re.sub(r"\{\{" + name + r":[^}]*\}\}", value, body, count=1)
+        tried += 1
+        try:
+            got = fm.compile_text(body, "sweep", compiler)
+        except Exception:
+            failed += 1
             continue
-        for field in line.split():
-            if field.startswith('from:'):
-                out.add(int(field[5:], 16))
-    return out
+        if got == want:
+            print(f"MATCH after {tried} combinations")
+            for name, value in zip([n for n, _ in axes], choice):
+                print(f"  {name} = {value}")
+            return 0
+        best.append((score(fm, got, mod, addr, size, want), choice, len(got)))
+
+    best.sort(key=lambda r: (r[0], r[2]))
+    note = f" ({failed} did not compile)" if failed else ""
+    print(f"no match in {tried}{note}; closest:")
+    for diff, choice, got_len in best[:top]:
+        pairs = ", ".join(f"{n}={v}" for (n, _), v in zip(axes, choice))
+        print(f"  diff {diff:4d}  {got_len}B  {pairs}")
+    return 1
 
 
-def versions():
-    out = []
-    for p in sorted(pathlib.Path('tools/mwccarm').glob('*/*')):
-        if (p / 'mwccarm.exe').exists():
-            out.append(f'{p.parent.name}/{p.name}')
-    return out
-
-
-def compile_with(ver, cfile, obj):
-    cc = ROOT / 'tools/mwccarm' / ver.replace('/', '/') / 'mwccarm.exe'
-    wrap = ROOT / 'tools/sjiswrap.exe'
-    argv = [str(wrap), str(cc)] + FLAGS + ['-c', str(cfile), '-o', str(obj)]
-    if not wrap.exists():
-        argv = [str(cc)] + FLAGS + ['-c', str(cfile), '-o', str(obj)]
-    obj.unlink(missing_ok=True)
-    r = subprocess.run(argv, capture_output=True, text=True)
-    if r.returncode or not obj.exists():
-        return None, (r.stdout + r.stderr).strip()[:300]
-    return text_of(obj), None
-
-
-def main(argv):
-    mod, spec = argv[0], argv[1]
-    wanted = argv[2:] or versions()
-    A.set_module(mod)
-    reloc = relocs_of(mod)
-    name, cfile = spec.split('=', 1)
-    addr = A.NAME2ADDR[name]
-    size = A.FUNCS[addr][1]
-    retail = bytes(A.ROM[addr - A.BASE:addr - A.BASE + size])
-    rw = struct.unpack_from(f'<{size // 4}I', retail)
-
-    tmp = ROOT / 'build/sweep_tmp'
-    tmp.mkdir(parents=True, exist_ok=True)
-    src = tmp / f'{name}.c'
-    src.write_text('#include "types.h"\n\n' + pathlib.Path(cfile).read_text())
-
-    print(f'== {name} (0x{size:x}) across {len(wanted)} compiler builds')
-    best = None
-    for ver in wanted:
-        obj = tmp / f'{name}_{ver.replace("/", "_")}.o'
-        buf, err = compile_with(ver, src, obj)
-        if buf is None:
-            print(f'   {ver:14s} compile failed: {err}')
-            continue
-        if len(buf) != size:
-            print(f'   {ver:14s} size {len(buf)}B != {size}B')
-            continue
-        mw = struct.unpack_from(f'<{size // 4}I', buf)
-        diffs = [k for k in range(size // 4)
-                 if mw[k] != rw[k] and (addr + 4 * k) not in reloc]
-        if not diffs:
-            print(f'   {ver:14s} IDENTICAL  <<<')
-            best = ver
-        else:
-            print(f'   {ver:14s} {len(diffs)} differ')
-            if best is None and (best is None or len(diffs) < 99):
-                pass
-    print(f'   best: {best}' if best else '   no build reproduces this unit')
-    for p in tmp.iterdir():
-        p.unlink(missing_ok=True)
-    tmp.rmdir()
-
-
-if __name__ == '__main__':
-    main(sys.argv[1:])
+if __name__ == "__main__":
+    sys.exit(main())
