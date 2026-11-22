@@ -409,3 +409,6 @@ Each has a body and a diff summary in `tools/match/walls.txt`.
 - **`lsl #30` + `asrs #31` is a signed one-bit bitfield at bit 1, not `v & 2`.** Model the word as a
   union of `u32 w` and a bitfield struct (`u32 b0 : 1; s32 f : 1; u32 rest : 30;`), read the field
   for the test and use `flags.w` for the read-modify-write, which keeps retail's add/ldr/bic/str.
+
+- **A read-modify-write through a fresh address variable gives the pre-indexed form.** `u8 *c = p + 0x34; *c = *c - 1;` compiles to `ldrb r1, [r2, #0x34]!` + `strb r1, [r2]`, not to separate add/load/store.
+- **The overlays are ordinary arm9 code.** `ov002`..`ov010` use the same idioms and pool layout; the matching tools take the module name (`udis.py ov008 0x0204ce20`).

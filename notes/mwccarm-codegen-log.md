@@ -4741,3 +4741,15 @@ Two spellings matter. The flag read is `lsl #0x1e` + `asrs #0x1f`, i.e. a **sign
 at bit 1**, so the field comes from a union of `u32 w` and a bitfield struct with `s32 f : 1` after a
 `b0 : 1`; an `& 2` test would compile to `tst`/`ands` instead. And the clear is a whole-word
 read-modify-write through the union's `w`, which gives retail's `add r1, r4, #0x24; ldr; bic; str`.
+
+### 3.09 Overlay band opened: 0x0204ce20 matched on the first spelling
+
+`0x0204ce20` (68B, ov008) is the first unit matched outside `arm9` since the module work began. It
+reads `p = *(u8 **)0x0204f440`, tests the byte at `p+0x34`, and on the non-zero path decrements that
+byte through a fresh address variable and returns 0; otherwise it tests bit 0x400 of the word at
+`p+0x3c`, writing 8 to the byte and returning 1.
+
+Three shapes mattered. Writing the read-modify-write through `u8 *c = p + 0x34; *c = *c - 1;` is what
+produces retail's pre-indexed `ldrbne r1, [r2, #0x34]!` followed by `strbne r1, [r2]`. Hoisting
+`v = *(u32 *)(p + 0x3c)` above the test reproduces the speculative load retail performs before the
+branch. And `return 0` in both exits is what gives `movne r0, #0` before the `bxne lr`.
