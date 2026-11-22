@@ -75,3 +75,7 @@ src/arm9/func_0201f26c.c = 1.2/b56
 src/arm9/func_0201bef4.c = 1.2/b56
 src/arm9/func_02015fe8.c = 1.2/b56
 src/arm9/func_02034608.c = 1.2/b56
+src/arm9/func_0203b640.c = 1.2/b56
+src/arm9/func_0202c458.c = 1.2/b56
+src/arm9/func_02020240.c = 1.2/b56
+src/arm9/func_02021c70.c = 1.2/b56

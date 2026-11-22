@@ -4000,3 +4000,60 @@ body is 8 bytes long. Parked as a register-allocation tie.
 
 Also noted while probing: `vu16` does not exist in `include/types.h` (only the plain scalar typedefs),
 so `volatile u16 *` is the spelling to use for hardware-register pointers.
+
+## 3.38 Four units from the ready queue, all 1.2/b56 (2026-11-22)
+
+Back on `ready.py` after the documentation pass; four of the five candidates in this batch matched,
+and each one turned on a single structural detail rather than a register.
+
+`arm9 0x0203b640` (88 B) - deferred-callback drain loop. The shape that matches is a `while` whose
+body reloads the global at the bottom, not a `do`/`while` that reassigns inside it:
+
+```c
+N *n = data_0204c790;
+while (n != 0) { data_0204c790 = n->next; n->cb(n->arg, -1); n = data_0204c790; }
+```
+
+The initial load therefore feeds the **first** iteration from a register and only the bottom of the
+loop re-reads memory (`ldr r2, [r4]` / `cmp` / `bne`), which is exactly retail. A `do { ... } while`
+with the same statements produced a second load at the top and 92 B. The `-1` argument is loop
+invariant, so mwcc hoists `mvn r5, #0` and copies it into r1 each iteration.
+
+`arm9 0x0202c458` (132 B) - BCD nibble decode (validate eight nibbles, then accumulate base 10).
+Both loops and the `mul`/`mla` pair were right on the first candidate; the residue was the *position
+of the zero accumulator*: retail has `mov r5, #0 / mov r3, r5 / mov r2, r5`, i.e. the result variable
+is zeroed **before** the validation loop and its register then seeds both counters. Writing
+`u32 r = 0;` as a declaration ahead of the validation loop (instead of after it) removes the extra
+`mov` and matches. Same lesson as §2.19 (a value live across a call has to be written as one), one
+level down: a value live across a *loop* has to be declared where retail's copy lives.
+
+`arm9 0x02020240` (116 B) - DISPCNT writer with a conditional mode and a mirror flag:
+
+```c
+u32 disp = *(volatile u32 *)0x04000000;
+u16 flag = data_0204236c;
+data_02048c70 = (u16)a;
+if (flag == 0) a = 0;
+*(volatile u32 *)0x04000000 = (disp & 0xfff0fff0) | (a << 16) | b | (c << 3);
+if (data_02048c70 == 0) data_0204236c = 0;
+```
+
+The store to the mirror happens **before** the flag test, so retail stores the raw parameter and only
+then zeroes the register the mode field uses (`strh r0, [r3]` then `moveq r0, #0`). Putting the store
+after the `if` reads naturally and is one instruction shorter (112 B).
+
+`arm9 0x02021c70` (116 B) - packed command-word builder with nine parameters. First candidate:
+
+```c
+*(u32 *)s[0] = 0x2a;
+*(u32 *)s[1] = (i >> 3) | (b << 26) | (c << 30) | (d << 20) | (e << 23) | (f << 16) | (g << 18) | (h << 29);
+s[0] = s[1] + 4;
+s[1] = s[0] + 4;
+```
+
+The OR chain's operand order and the pointer advance through `s[1]` before `s[0]` both come straight
+out of writing it in source order; the fifth through ninth arguments arrive at `[sp, #8]` upward
+because the frame is the usual 8-byte alignment pair.
+
+The fifth candidate, `arm9 0x02026a04` (76 B), is a 256-bit block fill that keeps matching retail's
+`stmlt` block until the count loop; it is still open and is not parked.
