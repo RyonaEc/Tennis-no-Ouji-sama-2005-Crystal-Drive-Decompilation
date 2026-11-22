@@ -1539,3 +1539,26 @@ ov002 0x02080ca4 68B -- table copy, differs in loop-register roles:
   for (i = 0; i < 4; i++) { s16 v = tab[i]; *(u16 *)(p + 0x300 + i * 8 + 0xe6) = v; }
   The s16 load is required (retail ldrsh); a u16 load is ldrh and will not match. 0x020fc68c
   is not a symbol in symbols.txt, so it has to be used as a raw address.
+
+=== arm9 Thumb BIOS stubs at 2-mod-4 addresses (alignment wall, 9 units / 38 B) ===
+
+Every function in the ROM whose address is not 4-aligned is a Thumb BIOS wrapper, and all nine
+are unmatched because they cannot be linked as separate units: mwccarm emits `.text` with
+`sh_addralign = 4` no matter what (`__attribute__((aligned(2)))`, `#pragma align 2` and
+`__declspec(align(2))` all still produce a 4-aligned section), the linker therefore pads two
+bytes in front of the unit, and the arm9 image shifts. dsd rejects `align:2` on a delinks
+sub-entry ("inherited from this file's header"). Retail must have kept these wrappers inside a
+larger object with a 2-aligned boundary, so they can only be matched by co-locating with a
+neighbour that is itself decompiled.
+
+  Halt                           0x020040e6  4B   swi 0x06
+  Sqrt                           0x02004146  4B   swi 0x0d
+  RLUnCompReadNormalWrite8bit    0x0200426a  4B
+  VBlankIntrWait                 0x020042d2  6B
+  IsDebugger                     0x02004336  4B   swi 0x0f
+  LZ77UnCompReadByCallbackWrite16bit 0x0200440e  4B
+  CpuSet                         0x02004466  4B   swi 0x0b
+  GetCRC16                       0x020044ea  4B   swi 0x0e
+  (one more at 0x020045xx, run the symscan in notes/mwccarm-codegen-log.md 2.81 to list all)
+
+All nine are byte-identical to retail under var3/compile_text; only placement blocks them.

@@ -4239,3 +4239,11 @@ translation unit. Two ways out, either of which needs the digest as the gate:
   plain function.
 
 Until one of those is chosen, the five stubs stay out even though they are byte-identical.
+
+**Scope of the alignment wall.** Only nine functions in the whole ROM start at `addr % 4 == 2`
+(38 bytes, all arm9, all Thumb BIOS wrappers): `Halt`, `Sqrt`, `RLUnCompReadNormalWrite8bit`,
+`VBlankIntrWait`, `IsDebugger`, `LZ77UnCompReadByCallbackWrite16bit`, `CpuSet`, `GetCRC16` and one
+more in `0x020045xx`. Zero matched units sit at such an address, which confirms the wall is real
+and also that it is a 38-byte corner, not a systemic obstacle — re-tooling the linker for it is
+not worth the risk to the 1,536 units that link today. `tools/match/walls.txt` now lists them
+with the reason.
