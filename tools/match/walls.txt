@@ -2429,3 +2429,11 @@ written off.
   local and the extended argument in a u32 local assigned from the u16 parameter, then store the local.
   Two instructions are still missing versus retail, which extends the argument separately inside each
   branch instead of hoisting it once.
+  (update, 0x02032c70) best spellings are 136B and 140B against 144B. Two levers found: writing the
+  global as `typedef struct { u8 pad[0x1c]; u32 p; } T;` and loading `((T *)0x027fff60)->p` reproduces
+  retail's pooled base plus `#0x1c` displacement (an absolute `0x027fff60 + 0x1c` folds to one literal),
+  and `u16 idx = (u16)(h + 1) & 0x3fff;` (cast on the sum, not on the result) makes mwcc emit retail's
+  `lsl #0x10`/`lsr #0x10` truncation pair but masks in the wrong order, reaching 140B. With the cast
+  moved to the assignment (`u16 idx = (h + 1) & 0x3fff;`, or via a `u32 m = 0x3fff;` local) mwcc folds
+  the pair away and it drops to 136B. Retail has both the pair and the and-before-truncate order, which
+  no spelling tried has produced together.

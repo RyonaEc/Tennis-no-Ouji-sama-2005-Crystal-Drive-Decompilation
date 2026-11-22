@@ -436,3 +436,18 @@ because mwcc accumulates the address; giving the row base its own advancing
 pointer `p = b; ... p += 3;` instead compiles to 176 B, because mwcc then keeps two
 live bases and unrolls the constant-trip outer loop. Casting the stored `i` to
 `u8` changes nothing (a `u32` store to a `u8` lvalue already gives `strb`).
+### 3.14 Base-plus-field load must not be an absolute expression (2026-11-22)
+
+Theme: `*(u32 *)(0xBASE + FIELD)` folds the sum into a single pooled literal, so
+the unit loses retail's `ldr rX, [pc]` + `ldr rY, [rX, #FIELD]` pair. Writing the
+global as a typed struct pointer keeps both:
+
+```c
+typedef struct { u8 pad[FIELD]; u32 p; } T;
+u32 v = ((T *)0xBASE)->p;      /* ldr rX,[pc]; ldr rY,[rX,#FIELD] */
+```
+
+Evidence: `arm9 0x02032c70`. The absolute form pools 0x027fff7c and loads
+`ldr ip, [r3]`; the struct form pools 0x027fff60 and loads `ldr ip, [r3, #0x1c]`
+exactly as retail does, worth 8 bytes on that unit and moving it from 124 B to
+136 B against retail's 144 B.
