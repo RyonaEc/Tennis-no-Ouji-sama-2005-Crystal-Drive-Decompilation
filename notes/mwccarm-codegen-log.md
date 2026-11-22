@@ -3761,3 +3761,23 @@ still folds both to `[r2, #0x22]`.
 Also decoded in full and parked: `ov005 0x0204f8a0` / `ov009 0x0204eb14`, the 224-byte twin hardware
 state writers, best 200/224 - the pseudocode and every constant are in `walls.txt`, so the pair is a
 finishing job rather than an analysis job.
+
+## 3.29 ov002 0x020766c4: signedness fixed the guards, the frame is the wall (2026-11-22)
+
+`ov002 0x020766c4` (216 B, record creator) is the closest miss so far at 220/216, and two of its
+levers transferred cleanly.
+
+**Signedness is written into the branch condition.** The first guard is `cmp a0, [data+0x38]` with
+`addge` / `bxge`, the second `cmp r0, #0x1000000` with `addgt`. With `u32 a0` and a `u32`-returning
+callee we get `addhs`/`addhi`; declaring `s32 a0` and `extern s32 func_02034148(s32 a0)` gives
+`addge`/`addgt` exactly, and it also settles the register assignment: a0 lands in sb and a1/a2/a3 in
+r8/r7/r6, which is retail's layout. So the comparison opcode tells you the parameter's signedness
+before you ever look at the data.
+
+**Aggregate locals cost a frame word.** Retail is `push {r4,r5,r6,r7,r8,sb,lr}` with `sub sp, #0xc`
+and three `s16` outputs at sp+4/+6/+8. `s16 t[3]`, `s16 t[4]`, `s16 t[5]` and `struct { s16 a, b, c; }`
+all give a 0x10 frame (224 B) with correct code; three separate `s16` scalars give a 0x8 frame
+(216 B, size-exact) but mwcc then folds `t1 - t2` into `sub r1, r5, r5` with r5 never allocated and
+spills `p` instead of keeping it in r5. `s16 t[2]` plus a trailing `s16` gives 220 B with the loads
+correct. mwcc reuses the word it stores as the 5th argument of the allocator call for the locals, so
+the 0xc frame retail wants is not reachable from any of those spellings.

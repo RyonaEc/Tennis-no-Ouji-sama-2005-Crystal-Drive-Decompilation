@@ -1388,3 +1388,19 @@ ov005 0x0204f8a0 224B / ov009 0x0204eb14 224B -- same hardware state writer in t
   are B+0x68 and B+0x64 (0x6a68/0x6a64 versus 0x2a30/0x2a2c). Retail materialises both of those as
   separate `add rX, o, K` values even though the same addresses are also reached as [r3 = o+B, #0x68]
   in the same function.
+ov002 0x020766c4 216B -- record creator, 220/216 best (s16 t[2] + s16 u), 216/216 size-exact but
+  miscompiled with three scalar locals, 224/216 with any array or struct local. Shape: `if (a0 >=
+  *(u16 *)(data_ov002_02102074 + 0x38)) return 0; if (func_02034148(a1) > 0x1000000) return 0;
+  p = func_ov002_02077974(func_ov002_02076358, 0x14, 0, 0, 0); if (p == 0) return p; p[6] = 1;
+  p[7] = a0; q = (u32 *)(p + 0x10); q[0] = a1; q[1] = a2; q[2] = a3; func_0204f808(q, t);
+  func_0204f7c4(q, (u8 *)q + 0x10, (u8 *)q + 0x12); *(u16 *)(p + 0x1c) = t[0];
+  *(u16 *)(p + 0x1e) = t[1] - t[2]; return p;`. `a0` is s32 and func_02034148 returns s32 -- that is
+  what turns the two guards into `addge`/`addgt` (they are `addhs`/`addhi` with u32) and it puts a0 in
+  sb, a1/a2/a3 in r8/r7/r6, matching retail exactly.
+  What is left is the stack frame: retail is `push {r4,r5,r6,r7,r8,sb,lr}` + `sub sp,#0xc` with the
+  three s16 outputs at sp+4/+6/+8 and p kept in r5, q in r4. mwcc 1.2 always allocates 8 or 0x10 for
+  us - it reuses the word it passes as the 5th argument of func_ov002_02077974 for the locals, so any
+  array or 6-byte struct rounds the frame to 0x10 (224B, otherwise correct code), while three separate
+  s16 scalars fit 8 (216B) but then mwcc folds `t1 - t2` to `sub r1, r5, r5` with r5 unallocated and
+  spills p to the stack instead of r5. Tried: s16 t[3], s16 t[4], s16 t[5], struct{s16 a,b,c;} t,
+  s16 t[2] + s16 u (220B), scalar t0/t1/t2 (216B, broken), declaration order p/q swapped.
