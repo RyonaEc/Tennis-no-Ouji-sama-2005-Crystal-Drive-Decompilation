@@ -3858,3 +3858,21 @@ Re-probed and still short under both builds: `ov003 0x020d77b4` (196), `ov005 0x
 `arm9 0x020376c4` (80 under sp2 with the materialisation folded, 84 under b56 with a trailing `bx lr`),
 `arm9 0x020248c8` (56 under both; retail aligns without a call in sight, so the alignment theory does
 not rescue that one on its own).
+
+## 3.33 b56 sweep of the frame-shaped walls (2026-11-22)
+
+Following 3.32, every walls entry whose residue was a bare `stmdb sp!,{lr}` + `sub sp, #4` pair with no
+stack access was re-probed under 1.2/b56. Three improved, none matched:
+
+| unit | sp2 | b56 | residue under b56 |
+|---|---|---|---|
+| `arm9 0x02017954` | 44/64 | **64/64** | `off` in r3 not ip, zero in r2 not r3 |
+| `arm9 0x020208b0` | 136/140 | **140/140** | 3-register rotation: retail `mvn ip, r0` + flags in r2, we get `mvn r3, r0` + flags in ip |
+| `arm9 0x02026aa4` | 84/36 | 84 | register moves plus frame, unchanged |
+| `arm9 0x0203684c` | 48/40 | 48 | spill shape unchanged |
+| `arm9 0x0202612c` | 28/20 | 28 | frame in the wrong direction |
+
+So the b56 hypothesis is confirmed as a real class: the alignment frame appears (02017954 goes from 20
+bytes missing to exact) but does not by itself fix the register allocation. Both survivors are now
+"one register swap from a match", which is the dead end AGENTS.md tells you to record rather than
+chase, so that is what `walls.txt` says for them.
