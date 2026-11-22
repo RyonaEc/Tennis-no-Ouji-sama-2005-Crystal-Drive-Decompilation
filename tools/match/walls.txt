@@ -1107,3 +1107,17 @@ ov002 0x0207b494 112B -- two-slot cleanup: for i in 0..1, if `*(s32 *)(base + 0x
   `*(u8 *)(t + i + 0x52)` in both places (naming that pointer costs the extra `add`, 116B). Retail
   needs no callee-saved register at all (`stmdb {lr}` + `sub sp, #4`); every spelling here takes
   r4.
+ov002 0x020895c8 116B -- clears bit 0x80 of a word at `base + 0x4bc4 + 4`, switches on
+  `*(u8 *)(b + 0x35e)` (case 0 -> mode byte 0, case 5 -> 2, default -> 1 at `b + 0x35d`) and sets
+  0x400 in the same word. My spelling is 108B: retail materialises `add r1, r2, #4` twice (keeping
+  the base in r2 because the switch still needs it), mwcc keeps the base in r1 and folds both RMWs
+  into `[r1, #4]`, saving the two adds. Tried: one `u32 *f` for the first RMW, two-step base
+  (`u8 *b = base + 0x4bc4;`) - both 108B.
+ov002 0x0207b41c 120B -- entity predicate: `e = base + 0x2e4 + a0 * 0x158`,
+  `i = *(u8 *)(e + 2) >> 1`, bail out with 0 if `*(s32 *)(base + 0x3654 + 0x40 + i * 4) <= 0`, else
+  clear `*(u32 *)(e + 0xd4)` when `a0 != *(u8 *)(base + 0x3654 + 0x50 + i)` and return 1. Two
+  details reproduced: the shift must be written `(u32)*(u8 *)(...) >> 1` (plain `u8 >> 1`
+  promotes signed and gives `asr`, retail has `lsr`), and the index arithmetic as `t + 0x40 + i * 4`
+  gives the `lsl #2` operand form. 116B against 120B because retail branches the `<= 0` exit to a
+  separate `mov r0, #0` epilogue while mwcc if-converts the four-instruction return
+  (`addle`/`movle`/`ldmle`/`bxle`).

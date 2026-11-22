@@ -3150,3 +3150,29 @@ addressing form away. What they teach:
 - The shared dead end is the pre-indexed writeback form `ldr rX, [rY, #imm]!`. Retail uses it for
   the RMW half of two of these units and mwcc never emits it from C here (offset form twice
   instead, same size, different encoding). That is the one residue left in all three.
+
+## 3.09 Two more ov002 matches: block scope and the dead-store mask (2026-11-22)
+
+`0x02089484` (108 B) and `0x0207fa7c` (108 B) both matched after the same style of correction.
+
+**`0x02089484`** is a pure field initialiser (no branches): set 0x300 in a word, copy two u16 from
+`base + 0x4bc4 + 0x300 + {0x58,0x5a}`, zero four others, and store `a0 & 0x1ff`. The single
+correction was `b += 0x300;` as its own statement. Writing the offset into the pointer
+construction (`*(u8 **)data_... + 0x4bc4 + 0x300`) makes mwcc fold it into the *pool literal*
+(`0x4ec4`) and the unit is one `add` short; a separate `p = b + 0x300;` local instead puts the
+result in `ip` where retail uses the base register itself, and only the compound update on the
+existing pointer reproduces `add r1, r1, #0x300`.
+
+**`0x0207fa7c`** needed three things, in this order:
+1. the early exit is on the **clear** bit (`if (!(a1 & 0x800000)) return;`); writing the set test
+   gives `ne` where retail predicates `eq`;
+2. the boolean argument is masked to a byte, which only happens if the value is a `u8`;
+3. **the `u8` local must be declared inside the `if` block, not at function scope.** At function
+   scope mwcc hoists the `cmp`/`moveq`/`movne`/`and` sequence above the branch and the unit is
+   4 B short; inside the block it lands exactly where retail has it. If a masked boolean argument
+   appears before a call in retail but your build computes it earlier, move the declaration into
+   the innermost block that uses it.
+
+Also confirmed again on `0x0207b41c`: `(u32)*(u8 *)p >> 1` gives `lsr`, plain `*(u8 *)p >> 1`
+promotes to signed int and gives `asr` - the same signed/unsigned trap as 3.07, this time on the
+shift rather than the comparison condition.
