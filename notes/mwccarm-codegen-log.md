@@ -3876,3 +3876,21 @@ So the b56 hypothesis is confirmed as a real class: the alignment frame appears 
 bytes missing to exact) but does not by itself fix the register allocation. Both survivors are now
 "one register swap from a match", which is the dead end AGENTS.md tells you to record rather than
 chase, so that is what `walls.txt` says for them.
+
+## 3.34 Moving up in size: two near-misses that are both scratch-register ties (2026-11-22)
+
+Started on `ready.py`'s mid-size, call-using units as planned. Both new candidates land on the same
+class of residue, and neither is worth chasing per AGENTS.md.
+
+`arm9 0x0201f26c` (68 B) reaches **68/68 under 1.2/b56** with the whole body in place - the nested
+`if (f118 == 0) { if (callee(t) == 0) return 0; } f118 += 1; return 1;` and both builds keep the
+argument in r0 the way retail does. The single diff is which scratch register holds the loaded `f118`
+(r3 in retail, r1 in ours). Five formulations, including a `s32 v` local that made it worse (72 B).
+
+`arm9 0x0202cff8` (84 B) is 88: the two guards, the `bic`/`str` RMW and the callee all line up, but
+retail materialises `add r1, r2, #0x34` off a global kept in r2, while mwcc reloads the literal pool
+for the second reference.
+
+Worth recording as a rule of thumb: **a `ldr rX` / `cmp rX` pair where X is a scratch register is not a
+source-shape signal.** Every attempt either changes the size or moves the value between r1 and r3; the
+body is right and the allocator disagrees.
