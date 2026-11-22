@@ -1882,3 +1882,29 @@ forces that pairing turns up.
   the indirect call `if (*(void (**)(void))data_ov003_020eb720) (*(...))();` which reproduces
   on its own; only the shared tail diverges. Do not re-spend rounds on these two: they inherit
   whatever breaks the twin set (they are now the 6th and 7th members).
+
+  arm9 0x02008178 96B -- size-table lookup plus a doubler loop: `if (a0 != 0xb) return
+  *(s32 *)(data_0203c0f4 + a0 * 12); if (a1 == 0) return 0; v = 0x7d0; i = 1; if (a1 <= 1)
+  return v; do { v *= 2; if (v >= 0x3b9ac9ff) return 0x3b9ac9ff; i++; } while (i < a1);
+  return v;`. Signedness matters (`ldrge`/`blt`, not `ldrhs`/`blo`), and hoisting `i = 1`
+  above the `a1 <= 1` test is what puts `mov r3, #1` before `bxle`. That leaves ONE
+  instruction: retail reloads the cap (`ldrge r0, [pc, #0x14]`, same pool word it compared
+  against) while mwcc reuses r2 (`movge r0, r2`). Six literal spellings, a local `limit`
+  variable, `> limit - 1`, decimal/hex/`L`/`U` suffixes and four loop forms all keep the
+  reuse, and 1.2 base/sp2/sp3/sp4 all CSE it, so this is not a build difference. Parked at
+  diff 2 (96B both).
+
+  arm9 0x0201c2d4 96B -- `if (!a0) return; if (*(u8 *)(a0 + 0x2c) == 0) return; if (a1 == 0)
+  { func_0201c140(); return; } func_0201fc78(a0 + 0x1c, 0); func_0201bf74(a0, 0);
+  *(u8 *)(a0 + 0x2c) = 2;`. Retail is 96B with `mov r2, r1` at entry and loads the state byte
+  into r1 (`ldrb r1, [r4, #0x2c]`), so a1 was moved out of r1 before the test; mwcc keeps a1
+  in r1 and is one instruction short (92B). Copying a1 into a local `flag` before the guards
+  does not stop mwcc coalescing the two. Needs a1's live range to end before the byte load,
+  which this source shape does not express.
+
+  arm9 0x02028920 and 0x02028958 56B (famsurvey pair) -- `add r0, a0, #0x28; (-0x28) +=
+  (+0x34); o = *(a0 + 8); (*(fn **)(o + 0x40 or 0x3c))(o, old28, (+0x2c));`. Retail allocates
+  the object pointer to r4 (`push {r4, lr}`); mwcc keeps it in ip/r3 and emits
+  `stmdb sp!,{lr}` + `sub sp, #4` instead, so the frame instruction itself differs even
+  though the total is 8 bytes either way. Same saved-register tie as 0x0201fd50; both members
+  are unmatched, so one solution would land two units.
