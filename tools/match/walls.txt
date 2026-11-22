@@ -1121,3 +1121,20 @@ ov002 0x0207b41c 120B -- entity predicate: `e = base + 0x2e4 + a0 * 0x158`,
   gives the `lsl #2` operand form. 116B against 120B because retail branches the `<= 0` exit to a
   separate `mov r0, #0` epilogue while mwcc if-converts the four-instruction return
   (`addle`/`movle`/`ldmle`/`bxle`).
+ov002 0x02084b28 128B -- per-slot mode byte: for i in 0..3, skip when `*(u8 *)(base + 0x90 + i)` is
+  zero, else write 1 to `base + 0x47ac + 0x1c + i` when `*(u8 *)(base + *(u8 *)(base + 0x4bc4 + i) +
+  0xc5) == 0xe` and 0 otherwise. Inline stores give 120B (mwcc if-converts both to `strbeq`/
+  `strbne`); a named `p = a + 0x1c + i` reaches 128B but hoists the address into `ip` and still
+  predicates. Retail branches: `bne` to an else block that does its own `add r0, r4, r3` then
+  `strb r0`, i.e. two separate address materialisations and no predication. Tried: inline (120B),
+  named pointer (128B, hoisted), `continue` in the true arm (120B).
+ov002 0x020617d0 128B -- finds the two indices i in 0..3 where `*(u8 *)(base + 0x94 + i) >> 1`
+  equals a0 (u16 loop counter, u8 result count, 2-byte stack array) then swaps those two bytes in
+  that array. My spelling is 132B and takes r4 plus an 8-byte frame; retail uses neither
+  (`stmdb {lr}` + `sub sp, #4`) because the index array and counter live in r3/ip. The loop-exit
+  structure (`n == 2` break out of a `for`) also comes out differently.
+ov002 0x0208a034 128B -- two-slot tick: for i in 0..1, decrement `*(u8 *)(base + 0x4bc4 + i +
+  0x34d)` when it is non-zero, and when `*(u8 *)(base + 0x4bc4 + i + 0x349) == 1` zero it and clear
+  bit 1 of `*(u32 *)(base + 0x38)`. Mine is 112B: mwcc if-converts the decrement and hoists the
+  `base + 0x38` pointer, while retail takes two callee-saved registers, materialises
+  `addne ip, lr, r0` for the decrement target and keeps the flag word in r2.

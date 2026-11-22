@@ -3176,3 +3176,22 @@ existing pointer reproduces `add r1, r1, #0x300`.
 Also confirmed again on `0x0207b41c`: `(u32)*(u8 *)p >> 1` gives `lsr`, plain `*(u8 *)p >> 1`
 promotes to signed int and gives `asr` - the same signed/unsigned trap as 3.07, this time on the
 shift rather than the comparison condition.
+
+## 3.10 A switch on a mode byte, and three hits on the predication wall (2026-11-22)
+
+`0x02083f0c` (128 B, **matched**) is a small mode-dispatch: increment a per-index byte at
+`base + 0x36b3 + a0`, then switch on `*(u8 *)(base + 0x8f)` - case 0 returns 1, cases 1 and 2
+return whether the counter just reached 2 or 3, default returns 0. It compiled correctly first
+time with three separate `return` statements inside the `switch`, and the counter written as
+`*(u8 *)(b + a0) = *(u8 *)(b + a0) + 1` rather than `++` (retail loads into r1, adds, then
+stores through the same `[r2, r0]` addressing).
+
+The three parked units this round all fail on the same axis and it is worth naming: **a predicated
+store block (`strbeq`/`strbne`) cannot be turned into retail's branch-and-two-addresses by any
+wording tried so far.** `0x02084b28` wants `bne` to an else block that re-materialises
+`add r0, r4, r3`; every spelling gives either `strbeq`+`strbne` at 120B or a hoisted address at
+128B with the wrong register. `0x0208a034` and `0x020617d0` fail the same way on a decrement and on
+a loop-exit pair. When a unit is short by exactly the branches' worth of bytes and the diff shows
+`eq`/`ne` predicates where retail has a branch plus a duplicated address computation, stop - this
+is the wall the playbook describes, and it has now been confirmed from both directions (predicated
+here, branched in retail) in five different units.
