@@ -4366,3 +4366,25 @@ data symbol. `var3` compares instruction text, and an undefined symbol still pri
 `ldr r1, [pc, #..]`, so the pool word's *value* is never checked. `reg.py` caught it
 immediately (`sha1` false, two bytes differing at the pool). Read the pool word out of the
 image; only `reg.py` accepting is evidence.
+
+## 2.85 Signed guards, redundant guards, and two constants into one address
+
+`func_020123e0` opens `cmp r6, #0xc; movgt r0, #0` - `gt`, not `hi`. A range guard written
+against a `u32` parameter emits `movhi`, so retail's parameter is `s32`; switching the
+declaration is free and obvious only if you read the condition code.
+
+`func_020190f8` showed the opposite: an explicit `if (n == 0) return;` in front of a
+`for (i = 0; i < n; ...)` loop makes mwcc hoist *two* zero tests, because the loop's own
+guard cannot reuse the truncation's flags once the statements are separate. Deleting the
+redundant guard gives retail's shape exactly - the `lsrs r8, r1, #0x10` sets the flags and
+the single `addeq` epilogue is the loop test.
+
+`func_020235a0` writes two constants to one address from two conditions. Written as
+`if (r == 0x20) A; else if (r == 0x40) B;` mwcc merges the stores and comes up 4 B short at
+108 B. Written as `if (r != 0x20) { if (r == 0x40) B; return; } A;` it reproduces retail's
+112 B, including the `0x20` case sitting out of line at the end.
+
+`func_0201e5f8` needed the return type, not the body: the early exit is `moveq r0, #0`
+followed by `popeq`, which no `void` function emits. Declaring the function `s32`, returning
+`0`, and returning the callee's result gives retail's frame - and the trailing call stays
+`bl` + epilogue rather than becoming a tail `b`.

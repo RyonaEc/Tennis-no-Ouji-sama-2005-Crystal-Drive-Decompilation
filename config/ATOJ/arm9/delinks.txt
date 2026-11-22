@@ -3615,3 +3615,15 @@ src/arm9/func_02025b14.c:
 src/arm9/func_020271d4.c:
     complete
     .text       start:0x020271d4 end:0x02027244
+
+src/arm9/func_0201e5f8.c:
+    complete
+    .text       start:0x0201e5f8 end:0x0201e670
+
+src/arm9/func_020190f8.c:
+    complete
+    .text       start:0x020190f8 end:0x02019170
+
+src/arm9/func_020235a0.c:
+    complete
+    .text       start:0x020235a0 end:0x02023610

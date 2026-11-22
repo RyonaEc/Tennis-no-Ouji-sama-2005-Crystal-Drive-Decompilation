@@ -1967,3 +1967,18 @@ written off.
 
   arm9 0x020260b8 116B -- hand-written dispatcher (`mrs r1, apsr`, `teq`, banked `sp`
   switch). Not expressible as C; stays delinked assembly.
+
+  arm9 0x020123e0 116B -- `if (a0 > 0xc) return 0;` (so a0 is signed; `u32` yields `movhi`
+  instead of retail's `movgt`), then a four-byte loop over `data_0203bf70 + a0 * 8` and a final
+  `func_0200ff30(*(u8 *)(data_0203bf74 + a0 * 8)) != 0`. Size-exact at 116B with `s32 a0`.
+  Remaining: retail keeps a0 itself in r6 across the loop (`mov r6, r0` before the range check,
+  `add r4, r0, r6, lsl #3`) and re-scales it for the last load; mwcc keeps `a0 * 8` in r4
+  instead and indexes with `[rX, r4]`. Both spellings tried (pointer walk and `+ i` re-index)
+  hold the scaled value.
+
+  arm9 0x0202c018 120B -- slot setup: `func_0202c3e0(a0)` guard, `*(u16 *)(data_0204acdc + a0
+  * 8) = 0`, `*(u32 *)(data_0204acb8 + 4) = a2`, `*(u32 *)(data_0204acb8 + 8) = a3`,
+  `*(u32 *)(data_0204ace0 + a0 * 8) = a1`, `func_0202bd70((a0 & 0xff) | 0x03006500)`. Size-exact
+  at 120B; retail holds the scaled index in lr and the zero in r8, mwcc swaps those two and
+  schedules the `orr` before the `strh` instead of after. Hoisting the or'd argument into its
+  own local does not change the colouring.
