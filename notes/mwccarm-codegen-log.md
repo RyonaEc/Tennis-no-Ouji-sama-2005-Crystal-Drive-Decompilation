@@ -3325,3 +3325,34 @@ scratch preference, not an evaluation-order effect that source can reach.
 Worth remembering as the highest-value retry in the tree: five units and 868 bytes behind a single
 register name. If a lever for scratch-register preference ever appears, this family cashes in
 immediately.
+
+## 3.16 Moving to arm9, and what `volatile` is actually good for here (2026-11-22)
+
+The arm9 module has small identical-skeleton groups the ov002 sweep never touched, so three were
+taken in one pass. None matched, but two produced exact-size bodies and one generalises the
+`volatile` lever in a way worth writing down.
+
+`arm9 0x02028920` is an indirect-call trampoline: it accumulates `*(u32 *)(s + 0x28) +=
+*(u32 *)(s + 0x34)` and calls through `*(void **)(*(u8 **)(s + 8) + 0x40)` passing the object,
+`*(u32 *)(s + 0x2c)` and the **pre-update** value of `s + 0x28`. Retail loads `s + 0x28` twice before
+the store, which no plain C expression reproduces - mwcc commons the two loads. Marking the two
+reads and the `+ 0x34` read `volatile` reproduces retail's load order exactly, `0x34, 0x28, 0x8,
+0x28, 0x2c`, and the double load with it. So `volatile` is not just a reload lever for a single
+re-read value: applied to a small group of adjacent reads it also pins their schedule, which is the
+only reliable way found so far to make mwcc emit a load order retail chose.
+
+What is left there is 4 bytes of address form: retail materialises `add lr, r0, #0x28` first and
+addresses the load and the store through `[lr]`, keeping the trampoline object in r4 and pushing
+`{r4, lr}`; mwcc folds every access to `[r0, #0x28]`, keeps the object in ip, and pays for a
+`stmdb {lr}` frame because lr becomes a temporary. Same split-materialisation wall as
+`0x020e198c` and `0x0204cd20`, now in arm9.
+
+`arm9 0x02023df8` is a cleaner near-miss: a void `if/else` forwarding to `func_020268e0(handle, a0,
+0x6600000 + a1, a2)` or `func_020269ec(a0, 0x6600000 + a1, a2)`. Branch layout, argument order and
+both `bl`-then-epilogue tails are right; the 4-byte gap is that retail hoists `mov ip, #0x6600000`
+once before the `beq` while mwcc folds the constant into each `add` as an immediate. That is the
+reverse of the usual case - retail *worse* than mwcc - and no spelling (inline constant, named
+local) stops the fold.
+
+`arm9 0x02033bd0` is not writable from C at all: its first two instructions are `ldr r1, [pc]; bx r1`,
+a jump into the real body, which the delink treated as the function start. Left as assembly.

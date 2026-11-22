@@ -1225,3 +1225,25 @@ ov003 0x02066a54 180B (family: 0x02066a54 0x020b85b8 0x020db6ec 180B; 0x020d72f8
 ov003 0x020b6b60 52B (twin 0x020b732c) -- `sub sp, #0x10` then six stores of zero to three adjacent
   u16 pairs in the frame and nothing else: dead local initialisation that no C source will make mwcc
   emit. Left as delinked assembly.
+arm9 0x02028920 56B (twin 0x02028958) -- indirect-call trampoline: accumulates
+  *(u32 *)(s + 0x28) += *(u32 *)(s + 0x34) and then calls the function pointer at
+  *(void **)(*(u8 **)(s + 8) + 0x40) with (that object, *(u32 *)(s + 0x2c), the pre-update value of
+  s + 0x28). The double read of s + 0x28 is real - retail emits two `ldr` before the `str` - and
+  marking both reads `volatile` plus the `u32 d = *(volatile u32 *)(s + 0x34)` read reproduces
+  retail's exact load order (0x34, 0x28, 0x8, 0x28, 0x2c). Residue is 60B vs 56B: retail materialises
+  `add lr, r0, #0x28` as the first instruction and addresses both the load and the store through
+  `[lr]`, keeps the trampoline object in r4 and pushes `{r4, lr}`; mwcc folds every access to
+  `[r0, #0x28]`, keeps the object in ip, and needs `stmdb {lr}` + `sub sp, #4` because lr is used as
+  a temporary.
+arm9 0x02023df8 96B (twin 0x02023e58) -- forwards to one of two functions on whether
+  *(u32 *)data_02042370 is 0xffffffff: func_020268e0(handle, a0, 0x6600000 + a1, a2) otherwise
+  func_020269ec(a0, 0x6600000 + a1, a2); both paths are `bl` + epilogue, so the void `if/else` form is
+  right and the branch layout matches. 92B vs 96B: retail hoists `mov ip, #0x6600000` once before the
+  `beq` and emits `add r2, ip, r4` / `add r1, ip, r4`, while mwcc folds the constant into each add as
+  an immediate (`add r2, r4, #0x6600000`), which is one instruction shorter. Tried: the constant
+  inline, and a `u32 base = 0x6600000` local - both fold.
+arm9 0x02033bd0 60B (twin 0x02033c1c) -- APSR interrupt-mask helper: `ldr r1, [pc]; bx r1` jump into
+  a body that reads apsr, sets or clears the 0x40 mask by `orreq`/`bicne` on the value and returns
+  whether the bit was previously set. The pc-relative `bx r1` entry stub is not something the C
+  compiler emits; the function entry is really the target of that jump, so this unit cannot be
+  written from C as delinked.
