@@ -1150,3 +1150,16 @@ ov002 0x02080ca4 68B -- copies four s16 from data_ov002_020fc68c into a 0x300-of
   keeps one counter in ip and uses the operand-shift forms (`lsl r1, ip, #1`,
   `add r1, r0, ip, lsl #3`) for both addresses, which mwcc will not emit from any of the offset
   orderings tried (`0x300 + 0xe6 + i * 8`, `i * 8 + 0x300 + 0xe6`).
+ov002 0x02082090 96B -- mode gate: bail if `*(u8 *)(base + 0x2e4)` is zero; `m = *(u8 *)(base + 0x2e6) >> 1`;
+  m == 0 requires `*(u8 *)(base + 0x100) == 3`, m == 1 requires `== 2`, anything else returns;
+  on success `*(u8 *)(base + 0x36ac + 0x2a) = 1`. 96/96 bytes with `u8 *p = base + 0x36ac;` declared
+  at the top (the `add r3, ip, r0` has to happen before the checks, as retail does). Residue:
+  mwcc reloads the shift result into r0 for the `m != 1` test and drops the `bxne` into a
+  `bx lr` plus a reordered block, where retail keeps m in r1 for both comparisons.
+ov002 0x0204f98c 104B -- distance cull: if `*(u32 *)(base + 0x1824 + 0xc8) & 0xc0` is non-zero and
+  `*(u8 *)(base + 0x18b1) == 1`, compute `dx = s16[+2] - s16[+0x1a]`, `dy = s16[+6] - s16[+0x1e]`
+  and clear the 0xc0 bits when `dx*dx + dy*dy > 0x1000`. Retail has NO stack frame and returns with
+  two bare `bx` instructions; every spelling here - separate locals, one nested expression, a
+  single `&&` chain - makes mwcc take `stmdb {lr}` + `sub sp, #4` and 128B, because it cannot keep
+  the base plus four s16 temps in r0-r3/ip without spilling. The `s16` promotion itself is right;
+  the frame is the whole gap.

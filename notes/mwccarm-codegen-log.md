@@ -3220,3 +3220,33 @@ count rather than the registers: the shift needs `(u32)*(u8 *)p >> 1` (otherwise
 offset chain has to be collapsed into a named pointer once (`p = base + 0x1e6c + i;` then
 `p[0x680] = ...`), because writing `t[i + 0x680]` makes mwcc recompute the address for each of the
 three stores and the unit grows to 100 B.
+
+## 3.12 Three-way OR guard matches; frame elimination is not reachable (2026-11-22)
+
+`0x0207be2c` (72 B, **matched**) writes three zero bytes when a per-index mode byte is one of
+three values:
+
+```c
+    u8 v = *(u8 *)(base + 0x3d + a0);
+    if (v == 0xc || v == 0xd || v == 0x11) {
+        *(u8 *)(base + 0x3f + a0) = 0;
+        *(u8 *)(base + 0x3d + a0) = 0;
+        *(u8 *)(base + 0x43 + a0) = 0;
+    }
+```
+
+It matched first time, and the shape is worth noting: retail tests 0xc and 0xd with two `beq`s to
+the same block and then `cmp #0x11; bxne lr`, i.e. a chained `||` in a single `if` with a
+fall-through return - not a `switch`, which would have produced a different test order.
+
+`0x0204f98c` (104 B, parked) is the clearest frame-elimination wall so far. Retail has no prologue
+at all and returns with bare `bxeq`/`bxne`; the body needs the base plus four `s16` loads plus two
+differences live at once. Every spelling tried - two locals, four locals, one nested expression,
+a single `&&` chain - makes mwcc emit `stmdb {lr}` + `sub sp, #4` and land at 128 B. When retail is
+frameless and your build is not, the gap is not the arithmetic: it is the register budget, and no
+formulation of the same computation changes it.
+
+`0x02082090` (96 B, parked) reached full size with the `base + K` pointer declared at the top of
+the function - which is now the third unit where an early-computed `base + const` pointer is the
+difference between 88 and 96 bytes - but keeps a `bx lr` where retail has `bxne` after the
+m==1 test.
