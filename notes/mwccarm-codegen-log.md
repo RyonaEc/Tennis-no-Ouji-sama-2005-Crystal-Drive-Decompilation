@@ -3527,3 +3527,33 @@ Also confirmed again on `arm9 0x02037660`: a byte field read into a local lands 
 for retail at identical size, the third instance of that register-name residue.
 
 No new matches landed in this stretch; the parks are all size-exact or within one scheduling slot.
+
+## 3.23 The if-conversion wall is systematic, not a one-off (2026-11-22)
+
+`arm9 0x020208b0` (display-mode setter, 140B) is the second, cleaner instance of the shape recorded in
+3.22. Its `mode == 0` arm is four instructions including two literal-pool loads, and mwcc turns the
+whole arm into predicated instructions:
+
+    cmp   r0, #0
+    ldreq r1, [pc, #0x4c]
+    ldreq r0, [r1]
+    biceq r0, r0, #0x80000000
+    streq r0, [r1]
+    beq   <tail>
+
+Retail emits `beq` to that arm, placed out of line after the `mode == 0x100` arm, and never predicates
+it. Predicating pool loads is safe for mwcc because the addresses are constants, which is presumably
+why the threshold is generous - but it means that any retail function whose small arm contains a
+hardware-register read-modify-write is unreproducible from C here, because our compiler always sees a
+predicable block. Seven spellings were tried on this unit (if/else-if, empty else, reversed arms, a
+shared hardware pointer local, a `switch`, and a block pointer), and the switch is the only one that
+branches - but it produces a two-level dispatch with an extra comparison block and a stray `b`, 144
+bytes.
+
+The lesson for matching: if retail shows a *branched* small arm on a hardware register, do not keep
+reformulating. The arm is predicable by construction and our compilers will always predication it.
+Pick units whose small arms end in a call or another branch instead.
+
+Also confirmed on `arm9 0x02028920`: keeping the base pointer in the incoming r0 and materialising a
+field address in lr is an allocation we cannot request; our best form is two instructions shorter of
+work and therefore needs fewer registers than retail does.

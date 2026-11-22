@@ -1336,3 +1336,20 @@ arm9 0x0203b4e4 40B -- `p = func_0203b6d0(a0, a1, a2); old = *p; *p = (old & ~a0
   Every spelling of the source (locals, no locals, pointer return cast, u32 return) makes 1.2/b56 and
   1.2/sp2 both emit `push {r4, r5, lr}; sub sp, sp, #4` with a real frame instead, 56B. The trigger
   for the push-argument-registers prologue is still unknown.
+arm9 0x020208b0 140B + twin 0x0202093c -- display-mode setter: reads two u16s out of data_02048c74
+  (`a = p[0xc]`, `b = p[0]`), stores the mode to p[0xc], writes `p[0] = (a | b) & ~mode`, then
+  `mode == 0` clears bit 31 of 0x04001000, `mode == 0x100` sets it and stores 0x83 to 0x04000249, and
+  the tail is `func_02021538(*(u16 *)data_02048c74)`. Ours is 136B: mwcc IF-CONVERTS the whole
+  `mode == 0` arm into `ldreq`/`ldreq`/`biceq`/`streq`/`beq` where retail emits `beq` to that arm out of
+  line at the end of the function. Tried: plain if/else-if, an explicit empty `else`, the two arms in
+  the reverse order, a shared `volatile u32 *disp` local for the hardware register, a pointer for the
+  u16 block, and a `switch` (which produced a different dispatch - `beq` to a compare block plus a
+  stray `b` - at 144B). Both 1.2/b56 and 1.2/sp2 produce the same 136B if-converted form.
+arm9 0x02028920 56B + twin 0x02028958 -- `obj = *(u8 **)(a0 + 8); cur = *(u32 *)(a0 + 0x28);
+  *(u32 *)(a0 + 0x28) = cur + *(u32 *)(a0 + 0x34); (*(Cb *)(obj + 0x40))(obj, *(u32 *)(a0 + 0x2c), cur);`
+  (twin differs only in the callback offset: 0x3c). Size-exact at 56/56 with several spellings, but
+  retail needs THREE allocations we do not get: the base pointer left in r0 (never copied), the field
+  address materialised in lr, and the callee-saved pair `push {r4, lr}` with obj in r4. Our best form
+  copies the base to r3, folds the field address into `[r3, #0x28]` and needs no callee-saved register
+  at all. Marking both the duplicate `[0x28]` load and the field pointer `volatile` restores the
+  duplicate load (r2 before the store, as retail) but moves the base to ip and grows to 60B.
