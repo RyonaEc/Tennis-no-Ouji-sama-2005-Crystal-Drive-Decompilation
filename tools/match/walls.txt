@@ -1776,3 +1776,17 @@ forces that pairing turns up.
   brackets the call with `push {r0,r1,r2,ip,lr}` / `pop {r0,r1,r2,ip,lr}` and does the mask with
   `bic ip, r2, r0`, so no frame and no callee-saved registers. mwcc b56 always allocates
   r4/r5 + `sub sp,#4` (56B), with or without a prototype for the callee.
+
+=== ov002 large families: Ghidra decode available ===
+
+  0x0208f860 (13 members, 756B each; also 0x0209a5f4 0x0209c728 0x0209eb18 0x020a8ba0 0x020ad2b0
+  ...) -- decompilation dumped to build/ghidra/out9.txt. Structure: entity record at
+  base + 0x158*arg + 0x2e4 (base = *(u32*)data_ov002_02102070), fields +0x2e6 (byte, >>1),
+  +0x128, +0x4c (bit 2 selects a branch), +0x50 (bits 0x10/0x20 shift a value up/down), +0x2e4
+  and +0x300 read as call arguments. Calls in order: 0205bf64, 02034148(0x??48 literal),
+  02053468, 0205bee4(0x1e, rec), 0204f770, 020532e4, 0204f6ac, 0203b0c0 (twice), 02057068
+  (11 args, incl. constant 0x42000000 and 9), 020780f8, then clears bit 0 of *(u32*)(base+0x38).
+  Contains a second pool-record pointer (base + iRam0208fb44) with fields [1] and [2] used as a
+  height/limit and a 0x2d0000 term, and a counter loop bounded at 100 iterations. This is a
+  multi-session transcription; the decompiler's division and loop reconstructions are wrong and
+  the fixed-point `smull` block must be re-derived from the disassembly.

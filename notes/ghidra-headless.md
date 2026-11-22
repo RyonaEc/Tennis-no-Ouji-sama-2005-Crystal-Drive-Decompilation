@@ -87,3 +87,20 @@ stays parked until a source shape provokes the spill — do not force it.
 5. When the byte count lands within 4 and the diff is one instruction, the residue is
    codegen, not the algorithm: record the exact pair of instructions in
    `tools/match/walls.txt` and move on rather than rewriting logic that already matches.
+
+## Imported projects (as of 2026-11-22)
+
+| Overlay | Project | Base | Source binary |
+|---|---|---|---|
+| ov003 | `ATOJOV3` | `0x0204c7c0` | `build/ATOJ/build/arm9_ov003.bin` |
+| ov002 | `ATOJOV2` | `0x0204c7c0` | `build/ATOJ/build/arm9_ov002.bin` |
+
+First dump of an overlay must **import** (`-import <bin> -loader-baseAddr 0x0204c7c0`), later
+dumps use `-process "ov00N.bin"`. Import costs about three minutes of JVM startup plus analysis
+of the script's 0x400-byte window; run it with output redirected and poll, do not leave it in a
+5-minute foreground command. Working scripts: `build/ghidra/dump9.bat` (ov002 import + dump),
+`build/ghidra/dump7.bat` (ov003 re-dump).
+
+Decompiler output is a reading aid only. In `FUN_0208f860` it renders the retail's fixed-point
+`smull` sequence as `(ulonglong >> 0x20) + iVar8 * 0x100 >> 8` gibberish and invents a `do/while`
+that is an unrolled counter; the bytes still have to be matched by compiling.
