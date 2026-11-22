@@ -19,7 +19,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import fastmatch as f
 
-VERSIONS = ("1.2/b56", "1.2/sp2")
+VERSIONS = ("1.2/b56", "1.2/sp2", "2.0/base")
 WALLS = pathlib.Path("tools/match/walls.txt")
 CAND = pathlib.Path("build/cand")
 MOD_RE = re.compile(r"\b(arm9|itcm|dtcm|ov\d{3}) 0x([0-9a-f]{8})")

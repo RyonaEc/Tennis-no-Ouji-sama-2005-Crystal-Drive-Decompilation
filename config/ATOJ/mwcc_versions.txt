@@ -11,3 +11,4 @@
 # still match, and the tag must exist under tools/mwccarm/<tag>/mwccarm.exe.
 #
 # Format: <source path> = <version tag>
+src/arm9/func_0201fcc8.c = 2.0/base

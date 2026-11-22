@@ -4247,3 +4247,51 @@ more in `0x020045xx`. Zero matched units sit at such an address, which confirms 
 and also that it is a 38-byte corner, not a systemic obstacle — re-tooling the linker for it is
 not worth the risk to the 1,536 units that link today. `tools/match/walls.txt` now lists them
 with the reason.
+
+## 2.82 Some arm9 Thumb units need mwccarm 2.0, not 1.2/b56 (2026-11-22)
+
+`func_0201fcc8` (`0x0201fcc8`, 28 B, `kind:function(thumb)`) is a nine-word fixed-point block
+initialiser:
+
+```c
+#pragma thumb on
+void func_0201fcc8(u32 *p, u32 a, u32 b)
+{
+    p[0] = 0x1000;  p[1] = 0;  p[2] = 0;  p[3] = 0;
+    p[4] = b;       p[5] = a;  p[6] = 0;  p[7] = -a;  p[8] = b;
+}
+```
+
+Under 1.2 (all six builds) the `0x1000` becomes a literal-pool load and the unit is 32 B:
+
+```
+0249 0360 7047 c046 00100000        ldr r3,[pc]; str; bx; pool
+```
+
+Every 2.0 build emits retail's form instead:
+
+```
+0123 1b03 0360 7047                 movs r3,#1; lsls r3,#0xc; str; bx
+```
+
+Installed with `reg.py ... 2.0/base`; the full ROM digest still matches, so this is a split
+build artefact and not a flag problem: a `2.0/base` entry for one file in `mwcc_versions.txt` is
+the same evidence standard as any other override. Primitive probe: compiling
+`p[0] = 0x1000;` under 1.2/* yields `0149 0160 7047 c046 00100000`, under every 2.0/* and dsi/*
+build it yields `0121 0903 0160 7047`. So when a Thumb unit is a couple of bytes short and has a
+pool word that fits `1 << n`, try 2.0 before rewriting the source.
+
+`tools/match/wallprobe.py` now probes `2.0/base` as well (543 previously parked bodies across
+arm9 and the overlays: no wall converts, so the parked list is unaffected by the finding).
+
+The `0x1000` constant is not the only thing 2.0 changes: the same function's two neighbours
+(`0x0201fce4` 28 B, `0x0201fd00` 24 B) are byte-identical to their source under 2.0 except for
+which of r2/r3 carries the zero and the negation, and `0x0201fd00` additionally wants `stm r0!`
+stores where both compilers emit `str` for the array form. Both are still open and remain
+unparked.
+
+Tooling note: `var3.py` disassembles the retail side with the *module* mode (`arm9`), so a Thumb
+unit's diff is printed as ARM nonsense even though the byte comparison itself is correct. The
+`got`/`want` sizes and the byte compare are trustworthy; the instruction listing is not, for
+`kind:function(thumb)` units in arm9. Use `udis.py`/capstone with `CS_MODE_THUMB` when reading
+those.
