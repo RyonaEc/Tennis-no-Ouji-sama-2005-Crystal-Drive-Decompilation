@@ -2484,3 +2484,12 @@ written off.
   best orders all score 40 on permute's metric and the ones it ranks first move the load and the store
   apart from their uses, so they are not semantically valid even though they compile. The unit stays at
   112B against 116B. Same for the ordering axes on 0x0201ff64, which are already closed.
+  ov002 0x0205bee4 128B -- movement-step scaler, source recovered: `g = *(u8 **)data_ov002_02102070`;
+  `t = g + 0x274 + *(u8 *)(a1 + 2) * 0x1c`; `src = 0` when `*(u8 *)(a1 + 0xd1) == 0` and
+  `((*(u8 *)(t + 2) + 0xd9) & 0xff) <= 1`, else `src = *(u16 *)(a1 + 0xe8)`; then
+  `n = (src & 0xffff) >> 1`, `if (n > 2) n = 2`, `return (s32)(a0 * (2 - n)) / 2;`. That spelling is
+  exactly 128B with only two residues: mwcc if-converts the src selection (`movls r2,#0; bls`) where
+  retail branches (`mov r1,#0; b` then `ldrh r1,[r1,#0xe8]`), and mwcc masks the u16 with a pooled
+  `and` where retail truncates with `lsl #0xf`/`lsr #0x10`. Writing the selection as
+  `src = 0; if (!(cond)) src = ...` or casting `(u32)(u16)src` instead of masking drops the unit to
+  120B, so both of those moves lose the branch retail keeps. Parked at 128B.
