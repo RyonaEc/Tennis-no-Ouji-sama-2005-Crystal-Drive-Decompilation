@@ -11337,3 +11337,11 @@ written off.
   array-of-struct, unrolled stores and unrolled nested loops all collapse to `bx lr` (4 B)
   because the stores are dead; only `volatile` keeps them, and volatile also changes the
   address schedule, so the original source shape is not reachable this way.
+- `ov002 0x020bcfe0` / `0x020c2ba8` / `0x020f78c0` (136 B, 3x). Size and every other slot
+  match with `s16 a = *(s16 *)(p + 0x66);` reused for the two `func_0203b0c0` calls and the
+  third block re-reading the field inline. Only the first block's load schedule is left:
+  retail loads `ldrsh a` first, then `[0x90]`, `[0x9c]` and `ldrh [0x8c]` before the `sub`,
+  while 1.2/b56 always loads the two words first, `ldrsh` third and the halfword after the
+  `sub` (same five instructions, same registers, 24 diff lines that never reorder). Swapping
+  the `*` operands, scoping `base` inside the block, hoisting the halfword into a local and
+  computing the difference into its own variable all leave the order unchanged.

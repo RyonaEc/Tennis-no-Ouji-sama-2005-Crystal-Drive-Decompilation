@@ -36,13 +36,13 @@ tennis_ATOJ.nds: OK
 
 | | Matching C | Total | Share |
 |---|---:|---:|---:|
-| Functions | 1,627 | 3,806 | 42.75% |
-| Code | 120,336 B | 1,841,700 B | 6.53% |
+| Functions | 1,630 | 3,806 | 42.83% |
+| Code | 120,792 B | 1,841,700 B | 6.56% |
 | Data | 630,724 B | 801,936 B | 78.65% |
-| Units | 3,916 | 4,556 | 85.95% |
+| Units | 3,919 | 4,564 | 85.87% |
 
 The badges above use objdiff's stricter pair, `matched_functions` and `matched_code`, which
-now agree with the complete counts exactly: every one of the 3,916 units scores 100%, so a
+now agree with the complete counts exactly: every one of the 3,919 units scores 100%, so a
 complete unit and a matched unit are the same thing today.
 
 Data is now matched through the same pipeline as code: a delinks entry with a `.data`

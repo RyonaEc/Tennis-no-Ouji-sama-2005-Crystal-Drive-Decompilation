@@ -3280,3 +3280,15 @@ src/ov002/data_ov002_02100208.c:
 src/ov002/data_ov002_02100a00.c:
     complete
     .data       start:0x02100a00 end:0x02100a14
+
+src/ov002/func_ov002_020a19f4.c:
+    complete
+    .text       start:0x020a19f4 end:0x020a1a8c
+
+src/ov002/func_ov002_020b69bc.c:
+    complete
+    .text       start:0x020b69bc end:0x020b6a54
+
+src/ov002/func_ov002_020f39a8.c:
+    complete
+    .text       start:0x020f39a8 end:0x020f3a40
