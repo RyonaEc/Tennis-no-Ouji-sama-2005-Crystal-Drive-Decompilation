@@ -2080,3 +2080,7 @@ src/ov004/data_ov004_020637c8.c:
 src/ov004/func_ov004_0204cbdc.c:
     complete
     .text       start:0x0204cbdc end:0x0204cbfc
+
+src/ov004/func_ov004_020528c8.c:
+    complete
+    .text       start:0x020528c8 end:0x02052940
