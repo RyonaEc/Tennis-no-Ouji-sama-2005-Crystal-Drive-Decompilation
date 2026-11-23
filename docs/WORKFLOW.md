@@ -73,10 +73,14 @@ Two `dsd` helpers are worth knowing:
 
 ## Matching tips
 
-The retail build used one CodeWarrior service pack. Until you have confirmed
-which, sweep `--mwcc-version` (for example `1.2/sp2`, `2.0/sp2p2`, `1.2/sp2p3`)
-on a function you can match confidently, then pin the winner as
-`DEFAULT_MWCC_VERSION` in `tools/configure.py`.
+Retail's game code came from one CodeWarrior build, `1.2/b56` (build 56,
+`Runtime Built: Sep 16 2004`): it rebuilds the whole ROM to the digest with no
+per-file overrides, and it is `DEFAULT_MWCC_VERSION` in `tools/configure.py`.
+Later service packs such as `1.2/sp2` are still on disk, but they are not the
+default and are not the expected answer to a stubborn function. If one unit has
+evidence of a different origin, sweep `--mwcc-version` for that unit, confirm the
+full digest still matches, and record the tag in `config/ATOJ/mwcc_versions.txt`
+rather than changing the default.
 
 `CC_FLAGS` mirrors the standard DS release configuration (`-O4,p -proc arm946e
 -interworking -enum int`). One changed flag changes every file, so change them

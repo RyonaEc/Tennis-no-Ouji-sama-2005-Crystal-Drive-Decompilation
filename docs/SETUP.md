@@ -78,7 +78,8 @@ python tools/configure.py ATOJ --compiler /path/to/mwccarm
 
 The directory must contain `<version>/mwccarm.exe`, for example
 `tools/mwccarm/1.2/b56/mwccarm.exe`. Select another build with
-`--mwcc-version 1.2/sp2`.
+`--mwcc-version <tag>`; the default is `1.2/b56`, the build retail used, so
+changing it is a deliberate experiment and not a normal setup step.
 
 ### Per-unit compiler versions
 
@@ -91,7 +92,7 @@ match. Keep a build available if you add an entry for it:
 
 ```
 tools/mwccarm/1.2/b56/mwccarm.exe
-tools/mwccarm/1.2/sp2/mwccarm.exe
+tools/mwccarm/2.0/base/mwccarm.exe
 ```
 
 A version missing from the tree is a configure error, not a silent fallback. This
