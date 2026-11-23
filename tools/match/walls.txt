@@ -11290,8 +11290,9 @@ written off.
   and computing the mask first all leave the schedule unchanged. arm9 0x020208b0 / 0x0202093c (140B,
   `data_02048c74[0] = ~a0 & (data[0] | data[0xc])` plus a 0x04001000 enable bit): the inverted-
   if form (`if (a0 != 0) { if (a0 == 0x100) ... } else ...`) reproduces retail's two-branch layout and the
-  full 140 bytes, leaving only an ip/r3 swap for the two single-use temporaries (retail: mask in ip, control
-  word in r3; 1.2/b56 always the reverse), which no declaration or expression order changed.
+  full 140 bytes. SOLVED 2026-11-23: the remaining ip/r3 swap was the store order; writing the old-value
+  store (`data[0] = (data[0] | data[0xc]) & ~a0;`) before the new-value store (`data[0xc] = a0;`) gives
+  the retail allocation, and both units are matched in `src/arm9/`.
 
 ## 2026-11-23 (later session): register-tie walls
 
@@ -11315,3 +11316,24 @@ written off.
   variable, or by reading the field twice.
 - `arm9 0x02036730` (216 B): hand-optimised word `strcpy` (`0x01010101`/`0x80808080`, first
   word tested before it is stored). No matched analogue in `src/`; not attempted.
+## 2026-11-23 (third session): ov003 dead ends around the audio twins
+
+- `ov003 0x020d72f8` / `0x020d9f2c` (164 B, 2x). The body reproduces at exactly 164 B with
+  `if (a0 == 0) { ... } return 0;` (the early-return spelling if-converts to
+  `addne sp / movne r0 / popne / bxne` and grows to 176 B), `u8 *q = base + i * 2;` and
+  `(i % 4) == 0`. Only an `ip`/`lr` swap is left: retail keeps the zero constant in `lr`
+  and the row pointer in `ip`, mwcc always picks the reverse. Unchanged by addressing the
+  row as `u8 *`, `u32`, `&base[i * 2]` or a second `u8 *r = q + 0x8de8`, by `volatile` on
+  the halfword store, by `while` instead of `for`, by writing `i % 4 != 0 {} else {}`, and
+  by `(u32)i` / `(u32)base` casts (all 164 B, same swap).
+- `ov003 0x02082220` / `0x020c806c` (96 B, 2x). Retail keeps three arms that assign the same
+  constants (h = 0x1e, w = 0x3c), the first one jumping past the other two
+  (`blt` to the join), and compares the argument against 0x5a and then 0xb4. Every source
+  spelling tried (`if/else if/else`, an explicit `else { if ... }`, the same with `goto`)
+  lets 1.2/b56 merge arms two and three and then arm one with them, giving a single
+  two-way select in 80 B.
+- `ov003 0x020b6b60` / `0x020b732c` (52 B, 2x). Twin no-argument functions that zero six
+  halfwords in a 12-byte stack frame and read none of them. Array (`s16 t[6]`, `s16[3][2]`),
+  array-of-struct, unrolled stores and unrolled nested loops all collapse to `bx lr` (4 B)
+  because the stores are dead; only `volatile` keeps them, and volatile also changes the
+  address schedule, so the original source shape is not reachable this way.
