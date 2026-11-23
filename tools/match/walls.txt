@@ -11345,3 +11345,28 @@ written off.
   `sub` (same five instructions, same registers, 24 diff lines that never reorder). Swapping
   the `*` operands, scoping `base` inside the block, hoisting the halfword into a local and
   computing the difference into its own variable all leave the order unchanged.
+## 2026-11-23 (fourth session): ov002 family reconstructions that stop at scheduling
+
+- `ov002 0x0204f320` / `0x0204f3cc` (172 B, 2x). Full body recovered: read the id
+  byte at `0x36d8`, take `count = table[0x1820 + id*4]`, bail with 0 above `0x40`,
+  else store three arguments into `slot[0x1828 + id*0x300 + count*0xc]` and bump the
+  count. 1.2/b56 emits 168 B because it CSEs the two id-byte loads that retail keeps
+  separate (retail reloads the id after reusing its register for the count address);
+  every spelling tried, including separate statements, a `u32 *cnt` pointer and
+  computing the row pointer first, stays at 160-168 B.
+- `ov002 0x020959a8` / `0x020f6258` (252 B, 2x). Body recovered in full: flag test on
+  `slot+0xd8 & 0x80`, `n = *(u16 *)(base + 0x1824 + 0xaa) - 0xc`, a 12-byte `Vec3`
+  copy out of `base + 0x1934 + n*0x14 + 4`, field shuffle to `+0x90/+0x94/+0x9c/+0xa0`,
+  then the four calls. Naming the three base pointers up front reproduces retail's
+  prologue but comes out 256 B instead of 252 B (one extra instruction), and mwcc
+  keeps if-converting the early `return 0` into `addeq/moveq/popeq/bxeq` where retail
+  branches to a single exit; the `else { r = 0; }` spelling grows it to 260 B.
+- `ov002 0x020a5d48` / `0x020c583c` (168 B, 2x). Two-call spawner with a 4-word
+  stack block reused between the calls (`0x10000000`, `slot[0]`, `0`, `index`) and a
+  `0x34`-stride table indexed by `slot[0]`; the first call's fourth argument is
+  `(*(u8 *)(base + index*0x158 + 0x2e6) >> 1) == 0`. Not attempted past the read.
+- `ov002 0x0208f38c` and its 12 byte-identical siblings (608 B, 13x, `0x0208f860`
+  group) are fully mapped but not reconstructed: `index*0x158` slot, `0x1744 + index*0x38`
+  record, `§/5` on `slot[0x128]*4`, `/360` on the shifted y, the 0x200000 direction
+  word flipped when the slot type is 1, an eleven-argument `func_ov002_02057068` call,
+  then clearing bit 0 of `base[0x38]`.
