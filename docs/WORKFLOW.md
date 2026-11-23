@@ -122,3 +122,12 @@ bytes land at the original address; `ninja sha1` proves it. Two things to rememb
   `Specified file ...data_02042240.o not found`.
 * `tools/match/progress.py` counts a pure data unit as a complete unit but not as a function;
   keep that distinction if you touch the aggregation.
+
+Carving a range out of the *middle* of the main `.rodata` block does not work by
+just adding an entry: adding `src/arm9/data_0203d78c.c` with
+`.rodata start:0x0203d78c end:0x0203d7ac` builds and links, but the digest fails
+with ~31,000 differing bytes, and the differences include `.text` jump tables
+whose pointers moved by the size of the carved block. The one working data unit
+(`data_02042240`) is a `.data` range that starts exactly at the beginning of its
+section. Splitting the anonymous block in `delinks.txt` so the surrounding gap no
+longer spans the carved range is the untried step.
