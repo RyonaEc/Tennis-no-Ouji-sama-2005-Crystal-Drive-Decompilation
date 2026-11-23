@@ -124,3 +124,45 @@ then switches on the word at `+0xcc` with cases clustered around `0x14`..`0x18`.
 
 Those two plus `0x02053468` (0xdc), `0x020532e4` (0x184), `0x02057068` (0xa34) and
 `func_0203b0c0` (0x20c) are what remain before the family body can be written.
+
+## Full Ghidra pass (2026-11-23)
+
+The headless decompiler was run over the representative and every unresolved
+callee in one job (`build/ghidra/dump_f38c.bat`). Signatures recovered:
+
+| callee | signature | notes |
+|---|---|---|
+| `func_ov002_0205bf64` | `s16 (void)` | `*(s16 *)(g + 0x1e5c)` |
+| `func_ov002_02053468` | `s16 (void)` | takes no arguments; the `mov r0,#0x200000` before the call is the `v28` initialiser being scheduled, not an argument |
+| `func_ov002_0205bee4` | `s32 (s32, u8 *)` | |
+| `func_ov002_0204f770` | `void (s32 amp, u32 angle, s32 *out)` | `out[0..2]`, third word zeroed |
+| `func_ov002_020532e4` | `s32 (s32, s32, s32 *, s32)` | |
+| `func_0203b0c0` | `s32 (s32)` | one argument at this call site |
+| `func_ov002_020528cc` | `void (s32 *, s32, s32)` | |
+| `func_ov002_02057068` | `void` x11 args | 3 in registers, 8 on the stack |
+| `func_ov002_020780f8` | `void (void)` | |
+
+Algorithm confirmed in order: `n = rec[2] >> 1` (unsigned shift - cast to `u32`
+first or mwcc emits `asr`), `sign = 1 - 2n` as an `s8`, `q = rec->0x128 * 4 / 5`,
+`x = (func_0205bf64() - 0x14) << 16`, `y = (s16)func_02053468()`,
+`m = func_0205bee4(0x14, rec)`, direction branch (`rec->0x4c & 4` selects the
+`p38[8]` byte path, else the `rec->0x50` bitfield path; `2` adds, `0` subtracts),
+`func_0204f770(q * sign, (s8)(sign * ((y << 8) / 360)) & 0xff, out)`, then
+`if (n == 1) v28 = -0x200000`, the two `out[0]`-driven `x` negations,
+`y = func_020532e4(x, v28, out, q * sign)`,
+`out[2] = func_0203b0c0(0x30000 - sb[8] + y*y*0x157c/2)`,
+`func_020528cc(out, 0x320000, 0)`, the 11-argument call, the effect trigger and
+`*(u32 *)(g + 0x38) &= ~1`.
+
+`build/cand/g_8f38c.c` holds a complete draft: 584 B against retail's 608 B with
+every call, constant and branch in the right order. What is left is allocation,
+not algorithm: retail spills `idx` to `sp+0x20` immediately after `mul` and keeps
+`rec` in `sl`, with locals laid out `idx 0x20, p38 0x24, v28 0x28, out 0x2c`
+(frame `0x3c`); mwcc keeps `idx` in `sl`, `rec` in `r8` and a smaller frame
+(`0x34`). Tried and no help: parenthesising the base (`(g + 0x2e4) + i * 0x158`),
+a separate `u32 i = idx;`, signed/unsigned loop types, and reordering the
+`func_0205bf64`/`q` statements. The remaining lever is a source shape that makes
+`idx` not worth a callee-saved register (retail also reloads it for the last
+argument), which is the same class of wall as `func_02033f40` in
+`notes/ghidra-headless.md`.
+
