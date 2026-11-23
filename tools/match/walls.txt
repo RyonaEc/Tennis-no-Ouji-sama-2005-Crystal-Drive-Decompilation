@@ -11215,3 +11215,9 @@ written off.
   are 4-8KB each, all change the digest, so size rather than alignment is the next thing to explain. A range
   whose start is not word aligned cannot be carved at all: 0x02040505 2114B was retested and still fails, so
   the filter in accept() is correct.
+  data runs, second pass -- the large runs failed to link because a run contains several data symbols from
+  symbols.txt and the unit only defined the first (`undefined symbol`, referenced from a neighbour unit).
+  runs() now emits every symbol inside the run as its own array in the same unit, which fixes the link, but
+  the large runs then link and still change the digest (ov006 0x02076024, 7168B, 2 parts -> 8fcd8eec vs
+  9eec3248). So the remaining cause is a byte difference, not definition or placement; bisecting those bytes
+  against retail for one run is the next step.

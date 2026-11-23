@@ -136,6 +136,16 @@ def occupied(mod):
     return sorted(out)
 
 
+def data_symbols(mod):
+    rows = []
+    for line in symbols_for(mod).read_text(encoding='utf-8', errors='ignore').splitlines():
+        m = re.match(r'^(\S+)\s+kind:data\(([^)]*)\)\s+addr:0x(\w+)', line.strip())
+        if m:
+            rows.append((int(m.group(3), 16), m.group(1)))
+    rows.sort()
+    return rows
+
+
 def runs(mod, minlen=16):
     """Candidates for the space between claimed units.
 
@@ -157,31 +167,49 @@ def runs(mod, minlen=16):
             cur = max(cur, b)
         if cur < hi:
             out.append((cur, hi))
+    syms = data_symbols(mod)
     cands = []
     for g0, g1 in out:
         s = (g0 + 3) & ~3
         e = g1 & ~3
         if e - s < minlen:
             continue
-        name = (f'data_{s:08x}' if mod == 'arm9' else f'data_{mod}_{s:08x}')
         sec = next((n for n, a, b in module_sections(mod)
                     if a <= s and e <= b), None)
         if not sec:
             continue
-        cands.append({'name': name, 'addr': s, 'span': e - s, 'sec': sec,
-                      'hex': fm.retail(mod, s, e - s).hex()})
+        # Every data symbol that starts in this run has to be defined by the
+        # unit, or the link fails with an undefined symbol referenced by a
+        # neighbour. sizes come from the next symbol, the last one from the run.
+        inside = [(a, n) for a, n in syms if s <= a < e]
+        parts = []
+        for i, (a, n) in enumerate(inside):
+            end = inside[i + 1][0] if i + 1 < len(inside) else e
+            parts.append({'name': n, 'addr': a, 'span': end - a,
+                          'hex': fm.retail(mod, a, end - a).hex()})
+        if not parts:
+            parts = [{'name': f'data_{mod}_{s:08x}' if mod != 'arm9' else f'data_{s:08x}',
+                      'addr': s, 'span': e - s, 'hex': fm.retail(mod, s, e - s).hex()}]
+        cands.append({'name': parts[0]['name'], 'addr': s, 'span': e - s,
+                      'sec': sec, 'parts': parts,
+                      'hex': ''.join(p['hex'] for p in parts)})
     return cands
 
 
 def body_for(c):
-    data = bytes.fromhex(c['hex'])
+    parts = c.get('parts') or [c]
     qual = 'const ' if c['sec'] == '.rodata' else ''
-    if c['span'] % 4 == 0 and c['addr'] % 4 == 0:
-        vals = ', '.join('0x%08x' % int.from_bytes(data[i:i + 4], 'little')
-                         for i in range(0, c['span'], 4))
-        return f'{qual}u32 {c["name"]}[{c["span"] // 4}] = {{ {vals} }};\n'
-    vals = ', '.join('0x%02x' % b for b in data)
-    return f'{qual}u8 {c["name"]}[{c["span"]}] = {{ {vals} }};\n'
+    out = ''
+    for p in parts:
+        data = bytes.fromhex(p['hex'])
+        if p['span'] % 4 == 0 and p['addr'] % 4 == 0:
+            vals = ', '.join('0x%08x' % int.from_bytes(data[i:i + 4], 'little')
+                             for i in range(0, p['span'], 4))
+            out += f'{qual}u32 {p["name"]}[{p["span"] // 4}] = {{ {vals} }};\n'
+        else:
+            vals = ', '.join('0x%02x' % b for b in data)
+            out += f'{qual}u8 {p["name"]}[{p["span"]}] = {{ {vals} }};\n'
+    return out
 
 
 def entry_for(mod, c):
