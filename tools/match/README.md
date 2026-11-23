@@ -20,7 +20,7 @@ output under `build/` (gitignored).
 | Script | Purpose |
 |---|---|
 | `carve_data.py` | `list <mod> [lo] [hi]` writes the unclaimed `.rodata`/`.data` ranges as byte arrays; `accept <mod> [budget] [step]` keeps the groups whose addition still reproduces the digest, bisecting a failing group down to the one range that breaks it |
-| `symreloc.py` | `scan <mod>...` reports the literal address words in existing data units that have a named relocation target; `apply <mod>... [budget]` rewrites them as symbol references, keeps only the units whose module still reproduces the digest, and restores the rest. Only word-aligned `u32` units, and only words whose stored value is exactly the relocation target |
+| `symreloc.py` | `scan <mod>...` reports the literal address words in existing data units whose relocation target is named, in this module or another one; `apply <mod>... [budget]` rewrites them as symbol references, keeps only the units whose module still reproduces the digest, and restores the rest. Only word-aligned `u32` units, and only words whose stored value is exactly the relocation target |
 
 **Runtime evidence**
 

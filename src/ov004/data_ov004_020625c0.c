@@ -1,5 +1,15 @@
 #include "types.h"
 
+extern u8 data_02048ef7[];
+extern u8 data_ov003_020e8f7e[];
+extern u8 data_ov004_02068f43[];
+extern u8 data_ov005_02078f47[];
+extern u8 data_ov005_02088f49[];
+extern u8 data_ov005_02098f5c[];
+extern u8 data_ov005_020a8f60[];
+extern u8 data_ov005_020b8f6f[];
+extern u8 data_ov005_020c8f74[];
+
 extern u8 data_ov004_02068f43[];
 
 u32 data_ov004_020625c0[618] = {
@@ -89,8 +99,8 @@ u32 data_ov004_020625c0[618] = {
 0x01f28e6e, 0x01f38e71, 0x01f48e84, 0x01f58e8e, 0x01f68e96, 0x01f78e99,
 0x01f88e9c, 0x01f98e9d, 0x01fa8e9e, 0x01fb8e9f, 0x01fc8ea1, 0x01fd8ea6,
 0x01fe8ea9, 0x01ff8eb3, 0x02008eba, 0x02018ec0, 0x02028ee1, 0x02038ee8,
-0x02048ef7, 0x02058efc, (u32)&data_ov004_02068f43, 0x02078f47, 0x02088f49, 0x02098f5c,
-0x020a8f60, 0x020b8f6f, 0x020c8f74, 0x020d8f75, 0x020e8f7e, 0x020f8f83,
+(u32)&data_02048ef7, 0x02058efc, (u32)&data_ov004_02068f43, (u32)&data_ov005_02078f47, (u32)&data_ov005_02088f49, (u32)&data_ov005_02098f5c,
+(u32)&data_ov005_020a8f60, (u32)&data_ov005_020b8f6f, (u32)&data_ov005_020c8f74, 0x020d8f75, (u32)&data_ov003_020e8f7e, 0x020f8f83,
 0x02108f8a, 0x02118f91, 0x02128f95, 0x02138f9f, 0x02148fa4, 0x02158fb5,
 0x02168fc4, 0x02178fd8, 0x02188fe1, 0x02198fe3, 0x021a8fe9, 0x021b8fea,
 0x021c8ff6, 0x021d9046, 0x021e9048, 0x021f9054, 0x0220905b, 0x0221905c,

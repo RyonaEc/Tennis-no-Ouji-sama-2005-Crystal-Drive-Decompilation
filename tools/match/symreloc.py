@@ -64,6 +64,34 @@ def symbols(mod):
     return table
 
 
+MODULES = ['arm9'] + [f'ov{i:03d}' for i in range(11)]
+_TABLES = {}
+
+
+def all_symbols():
+    for m in MODULES:
+        if m not in _TABLES:
+            try:
+                _TABLES[m] = symbols(m)
+            except FileNotFoundError:
+                pass
+    return _TABLES
+
+
+def resolve(mod, addr):
+    """Name for an address, preferring this module's table.
+
+    Overlays share their address range with arm9, and retail pointers do cross
+    modules, so a target is often named only in the other module's symbols.txt.
+    """
+    if addr in _TABLES.get(mod, {}):
+        return _TABLES[mod][addr], mod
+    for m, table in all_symbols().items():
+        if m != mod and addr in table:
+            return table[addr], m
+    return None, None
+
+
 def relocs(mod):
     _, _, rel, _ = paths_for(mod)
     out = []
@@ -78,8 +106,16 @@ ARRAY = re.compile(r'=\s*\{(.*)\}\s*;', re.S)
 WORD = re.compile(r'0x([0-9a-fA-F]{8})\b')
 
 
+TOKEN = re.compile(r'^0x([0-9a-fA-F]{8})$')
+SYMTOK = re.compile(r'^\(u32\)&(\S+)$')
+
+
 def rewrite(text, start, end, edits, self_name):
-    """Return the rewritten unit, or (None, reason)."""
+    """Return the rewritten unit, or (None, reason).
+
+    Idempotent and incremental: a word that is already a symbol expression is
+    kept (or renamed), so a unit can be revisited as more targets get names.
+    """
     nl = '\r\n' if '\r\n' in text else '\n'
     m = ARRAY.search(text)
     if not m:
@@ -87,20 +123,28 @@ def rewrite(text, start, end, edits, self_name):
     decl = text[:m.start()]
     if not re.search(r'\bu32\b', decl):
         return None, 'not a u32 array'
-    values = WORD.findall(m.group(1))
+    words = [t.strip() for t in m.group(1).split(',')]
+    words = [t for t in words if t]
     span = end - start
-    if len(values) * 4 != span:
-        return None, f'{len(values)} words for {span} bytes'
-    names = []
+    if len(words) * 4 != span:
+        return None, f'{len(words)} words for {span} bytes'
     for offset, target, name in edits:
         idx = offset // 4
-        if idx >= len(values):
+        if idx >= len(words):
             return None, 'relocation past the end'
-        if int(values[idx], 16) != target:
-            return None, f'word {idx} is 0x{values[idx]}, not 0x{target:08x}'
-        values[idx] = f'(u32)&{name}'
-        if name != self_name:
-            names.append(name)
+        cur = words[idx]
+        sym = SYMTOK.match(cur)
+        if sym:
+            if sym.group(1) == name:
+                continue
+        else:
+            lit = TOKEN.match(cur)
+            if not lit or int(lit.group(1), 16) != target:
+                return None, f'word {idx} is {cur}, not 0x{target:08x}'
+        words[idx] = f'(u32)&{name}'
+
+    names = {SYMTOK.match(w).group(1) for w in words
+             if SYMTOK.match(w)} - {self_name}
     head, tail = text[:m.start()], text[m.end():]
     if names:
         # The externs have to sit above the declaration: it is `u32 name[N]`
@@ -108,30 +152,24 @@ def rewrite(text, start, end, edits, self_name):
         lines = head.split(nl)
         last = max(i for i, line in enumerate(lines)
                    if line.strip().startswith('#include'))
-        block = [''] + [f'extern u8 {n}[];' for n in sorted(set(names))]
+        block = [''] + [f'extern u8 {n}[];' for n in sorted(names)]
         lines[last + 1:last + 1] = block
         head = nl.join(lines)
-    def emit(v):
-        # findall() keeps the digits only, so the untouched words need their
-        # prefix back; symbol expressions already carry their own syntax.
-        return v if v.startswith('(') else '0x' + v
 
-    body = (',' + nl).join((', '.join(emit(v) for v in values[i:i + 6])
-                            for i in range(0, len(values), 6)))
+    body = (',' + nl).join((', '.join(words[i:i + 6])
+                            for i in range(0, len(words), 6)))
     return head + '= {' + nl + body + nl + '};' + tail, 'ok'
 
 
 def plan(mod):
     """[(unit, [(offset, target, name)])] plus the words that cannot be named."""
-    by_addr = symbols(mod)
+    _TABLES.setdefault(mod, symbols(mod))
     rel = relocs(mod)
     rows = []
     unresolved = 0
     for u in units(mod):
         if not u['path'].exists() or not u['secs']:
             continue
-        if '(u32)&' in u['path'].read_bytes().decode('utf-8', 'ignore'):
-            continue  # already symbolised by an earlier run
         for sec, start, end in u['secs']:
             if start % 4 or (end - start) % 4:
                 continue
@@ -139,7 +177,7 @@ def plan(mod):
             for frm, kind, to in rel:
                 if not start <= frm < end or (frm - start) % 4:
                     continue
-                name = by_addr.get(to)
+                name, _owner = resolve(mod, to)
                 if not name:
                     unresolved += 1
                     continue
