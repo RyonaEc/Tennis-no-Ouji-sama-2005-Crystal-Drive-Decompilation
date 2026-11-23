@@ -1976,3 +1976,7 @@ src/ov003/func_ov003_02063f68.c:
 src/ov003/func_ov003_0205ecd4.c:
     complete
     .text       start:0x0205ecd4 end:0x0205ee64
+
+src/ov003/func_ov003_020617c4.c:
+    complete
+    .text       start:0x020617c4 end:0x02061a20
