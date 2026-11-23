@@ -196,3 +196,19 @@ src/ov009/data_ov009_0205457c.c:
 src/ov009/data_ov009_020534fc.c:
     complete
     .rodata     start:0x020534fc end:0x02053f44
+
+src/ov009/func_ov009_0204d680.c:
+    complete
+    .text       start:0x0204d680 end:0x0204d6f8
+
+src/ov009/func_ov009_0204d6f8.c:
+    complete
+    .text       start:0x0204d6f8 end:0x0204d77c
+
+src/ov009/func_ov009_0204d7ac.c:
+    complete
+    .text       start:0x0204d7ac end:0x0204d830
+
+src/ov009/func_ov009_0204d830.c:
+    complete
+    .text       start:0x0204d830 end:0x0204d8a8
