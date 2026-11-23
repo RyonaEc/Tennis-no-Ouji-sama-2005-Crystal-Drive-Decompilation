@@ -1,0 +1,3 @@
+#include "types.h"
+
+const u32 data_02041fdc[8] = { 0x666e4970, 0x6d3e2d6f, 0x666e695f, 0x5d695b6f, 0x565f6d2e, 0x3c20414d, 0x566e203d, 0x0000414d };

@@ -1,0 +1,3 @@
+#include "types.h"
+
+const u32 data_0204208c[8] = { 0x666e4970, 0x6d3e2d6f, 0x666e695f, 0x20695b6f, 0x5d6a202b, 0x535f6d2e, 0x20455a49, 0x0030203e };
