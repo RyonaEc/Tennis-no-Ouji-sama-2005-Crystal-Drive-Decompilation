@@ -12,7 +12,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 EXE = [str(ROOT / 'tools' / 'sjiswrap.exe'),
-       str(ROOT / 'tools' / 'mwccarm' / '1.2' / 'sp2' / 'mwccarm.exe')]
+       str(ROOT / 'tools' / 'mwccarm' / '1.2' / 'b56' / 'mwccarm.exe')]
 FLAGS = ('-O4,p -enum int -proc arm946e -gccext,on -fp soft -char signed '
          '-inline on,noauto -Cpp_exceptions off -gccinc -interworking -sym on '
          '-nolink -msgstyle gcc -str reuse -enc sjis -i include -lang=c -d ATOJ '

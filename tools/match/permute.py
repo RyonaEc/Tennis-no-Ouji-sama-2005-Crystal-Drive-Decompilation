@@ -13,6 +13,7 @@ already covered by hand; statement order is the axis nothing else searches.
 """
 import importlib.util
 import itertools
+import re
 import sys
 from pathlib import Path
 
@@ -24,7 +25,8 @@ def load_version(tag):
     if not path.exists():
         base = Path("tools/match/fastmatch.py").read_text(encoding="utf-8")
         path.write_text(
-            base.replace("tools/mwccarm/1.2/sp2/mwccarm.exe", f"tools/mwccarm/{tag}/mwccarm.exe"),
+            re.sub(r"tools/mwccarm/[^\"']+/mwccarm\.exe",
+                   f"tools/mwccarm/{tag}/mwccarm.exe", base),
             encoding="utf-8",
         )
     spec = importlib.util.spec_from_file_location(f"fm_{tag}", path)

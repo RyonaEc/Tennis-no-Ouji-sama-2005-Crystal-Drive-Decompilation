@@ -52,8 +52,8 @@ digest unchanged, and objdiff scores it (`data_02042240`, 36 B). Adding a source
 configure time.
 
 The remaining 2,208 functions are still delinked assembly. Complete units compile with
-`mwccarm` 1.2/sp2, or 1.2/b56 where retail used it, link at the original addresses, and
-leave the ROM digest unchanged. [PROGRESS.md](PROGRESS.md) has the fuller breakdown - code,
+`mwccarm` 1.2/b56 - build 56, `Runtime Built: Sep 16 2004`, the single build retail used -
+link at the original addresses, and leave the ROM digest unchanged. [PROGRESS.md](PROGRESS.md) has the fuller breakdown - code,
 functions, fuzzy match, data and a per-module table - and `python tools/match/progress.py`
 regenerates it.
 
@@ -68,9 +68,9 @@ included in this repository.
 * [Ninja](https://ninja-build.org/) (`python -m pip install ninja`)
 * Windows, or Linux with [Wibo](https://github.com/decompals/wibo) (downloaded automatically)
 
-The 32-bit CodeWarrior compilers are vendored under `tools/mwccarm/`,
-including the `1.2/sp2` and `1.2/b56` builds retail used, so a clean checkout
-builds without downloading them. See [docs/SETUP.md](docs/SETUP.md) if you
+The 32-bit CodeWarrior compilers are vendored under `tools/mwccarm/`, including
+`1.2/b56`, the build retail used, so a clean checkout builds without downloading
+them. See [docs/SETUP.md](docs/SETUP.md) if you
 would rather use an installation elsewhere.
 
 ### 1. Provide the base ROM
