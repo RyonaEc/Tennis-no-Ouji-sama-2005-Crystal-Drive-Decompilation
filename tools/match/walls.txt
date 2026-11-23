@@ -11477,6 +11477,11 @@ written off.
   pokes after the struct copies). The pointer/struct split that *did* matter:
   the copy must be a struct assignment from `*(P2 *)data_ov004_02063ac4`, not two
   field loads.
+  Rechecked: eight declaration orders of `p`/`g`/`a`/`b`/`q` all give the same
+  three-register rotation (declaration order does move callee-saved colours, but
+  not these caller-saved scratch ones), and the underlying residue is the
+  scheduler emitting the `a` zero-init before the `b` copy where retail copies
+  `b` first; swapping the two statements in the source does not change it.
 - `ov009 0x0204f93c` / `0x02051080` (212 B x2) -- UPDATE: moving the zeroed
   vector to a declaration-time initialiser (`Vec3 v1 = { 0, 0, 0 };`) makes the
   size exact at 212 B, but it also moves the three zero stores to function entry,
