@@ -286,3 +286,15 @@ src/ov006/data_ov006_0204fe5c.c:
 src/ov006/data_ov006_02077e0c.c:
     complete
     .data       start:0x02077e0c end:0x02077e40
+src/ov006/data_ov006_02060104.c:
+    complete
+    .rodata     start:0x02060104 end:0x02061024
+src/ov006/data_ov006_02065024.c:
+    complete
+    .rodata     start:0x02065024 end:0x02066024
+src/ov006/data_ov006_0206b024.c:
+    complete
+    .rodata     start:0x0206b024 end:0x0206c024
+src/ov006/data_ov006_02076024.c:
+    complete
+    .rodata     start:0x02076024 end:0x02077c24

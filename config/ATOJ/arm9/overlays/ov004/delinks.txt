@@ -2073,3 +2073,6 @@ src/ov004/data_ov004_020625c0.c:
 src/ov004/data_ov004_02068fac.c:
     complete
     .data       start:0x02068fac end:0x020690a0
+src/ov004/data_ov004_020637c8.c:
+    complete
+    .data       start:0x020637c8 end:0x020637d8

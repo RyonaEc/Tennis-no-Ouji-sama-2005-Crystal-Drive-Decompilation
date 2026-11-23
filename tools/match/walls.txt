@@ -11252,3 +11252,18 @@ written off.
   difference 0x0204db14 reads 0x02076028 for retail's 0x02076024). The route needs one symbol at offset 0
   and the interior names placed by the delinker rather than by separate C objects, so it is a dsd/symbol
   question, not a byte question.
+
+  segmented table carving -- the packed string tables were carveable after all. Two facts decide it: the
+  linker pads every section to 4, so a unit must start and end word aligned; and a section may end inside a
+  string only if no still-unowned reference needs a symbol there. So each aligned gap is cut at the interior
+  symbols that delinked gap objects (assembly we do not own) or function units still need; every remaining
+  stretch becomes one array of exactly its retail bytes, with no per-array alignment that could pad it.
+  Interior names used only by carved data units have their `(u32)&name` replaced by the plain address, which
+  keeps the bytes and removes the undefined symbol. dsd also infers a gap object's last symbol as running to
+  the next symbol, so a boundary must be a symbols.txt address or configure fails with a range error.
+  Relocation targets must be attributed through the relocs `module:` field, not the address: overlays load
+  over one another, so their address ranges overlap. A missed reference is silent -- mwldarm resolves the
+  undefined symbol to 0 (measured: an arm9 table pointing at ov001 strings zeroed 6 words).
+  Measured: 16 units kept, 49,636 B (ov005 9/29,068, ov006 4/19,232, ov003 2/1,276, ov002 2/44, ov004 1/16),
+  data 612,848 -> 630,724 B. ov001 0x0204ff10 (2,968 B) is blocked: a delinked arm9 rodata object references
+  0x02050104 and friends there, so none of those names can disappear.

@@ -1946,3 +1946,9 @@ src/ov003/data_ov003_020e9c90.c:
 src/ov003/data_ov003_020eb710.c:
     complete
     .data       start:0x020eb710 end:0x020eb720
+src/ov003/data_ov003_020dea90.c:
+    complete
+    .rodata     start:0x020dea90 end:0x020dee90
+src/ov003/data_ov003_020e8eb0.c:
+    complete
+    .rodata     start:0x020e8eb0 end:0x020e8fac

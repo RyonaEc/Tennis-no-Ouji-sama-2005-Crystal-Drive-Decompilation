@@ -944,3 +944,30 @@ src/ov005/data_ov005_020c8998.c:
 src/ov005/data_ov005_020c9730.c:
     complete
     .data       start:0x020c9730 end:0x020c9740
+src/ov005/data_ov005_02078e84.c:
+    complete
+    .rodata     start:0x02078e84 end:0x020790a0
+src/ov005/data_ov005_020790a0.c:
+    complete
+    .rodata     start:0x020790a0 end:0x020798a0
+src/ov005/data_ov005_0207a7d8.c:
+    complete
+    .rodata     start:0x0207a7d8 end:0x0207aeb8
+src/ov005/data_ov005_02080368.c:
+    complete
+    .rodata     start:0x02080368 end:0x020811c8
+src/ov005/data_ov005_020859a8.c:
+    complete
+    .rodata     start:0x020859a8 end:0x02086808
+src/ov005/data_ov005_020884c8.c:
+    complete
+    .rodata     start:0x020884c8 end:0x02089328
+src/ov005/data_ov005_0209b438.c:
+    complete
+    .rodata     start:0x0209b438 end:0x0209c518
+src/ov005/data_ov005_020a1c48.c:
+    complete
+    .rodata     start:0x020a1c48 end:0x020a2dc8
+src/ov005/data_ov005_020b8718.c:
+    complete
+    .rodata     start:0x020b8718 end:0x020b9a28
