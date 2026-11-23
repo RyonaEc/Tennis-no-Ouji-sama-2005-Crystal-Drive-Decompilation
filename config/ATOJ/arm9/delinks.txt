@@ -4095,3 +4095,33 @@ src/arm9/data_02042a14.c:
 src/arm9/data_02042a1c.c:
     complete
     .data       start:0x02042a1c end:0x02042a24
+src/arm9/data_0203b6e8.c:
+    complete
+    .rodata     start:0x0203b6e8 end:0x0203b828
+src/arm9/data_0203bca8.c:
+    complete
+    .rodata     start:0x0203bca8 end:0x0203be00
+src/arm9/data_0203be00.c:
+    complete
+    .rodata     start:0x0203be00 end:0x0203bf70
+src/arm9/data_0203c2b8.c:
+    complete
+    .rodata     start:0x0203c2b8 end:0x0203c678
+src/arm9/data_0203cb78.c:
+    complete
+    .rodata     start:0x0203cb78 end:0x0203d06c
+src/arm9/data_02041908.c:
+    complete
+    .rodata     start:0x02041908 end:0x02041a08
+src/arm9/data_02041a78.c:
+    complete
+    .rodata     start:0x02041a78 end:0x02041b78
+src/arm9/data_02041b78.c:
+    complete
+    .rodata     start:0x02041b78 end:0x02041e4c
+src/arm9/data_02042490.c:
+    complete
+    .data       start:0x02042490 end:0x02042690
+src/arm9/data_02042690.c:
+    complete
+    .data       start:0x02042690 end:0x02042774
