@@ -6,6 +6,9 @@ extern u8 data_ov005_02080fdf[];
 extern u8 data_ov003_020e0fde[];
 extern u8 data_ov005_02080fdf[];
 
+extern u8 data_ov003_020e0fde[];
+extern u8 data_ov005_02080fdf[];
+
 const u32 data_0203d908[2495] = {
 0x10000000, 0x10000006, 0x1000000d, 0x10000013, 0x10000019, 0x1000001f,
 0x10000026, 0x1000002c, 0x10000032, 0x10000039, 0x1000003f, 0x0fff0045,

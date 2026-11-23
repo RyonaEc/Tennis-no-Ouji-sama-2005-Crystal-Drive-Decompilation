@@ -8,6 +8,10 @@ extern u8 data_02040203[];
 extern u8 data_ov002_0210020f[];
 extern u8 func_02020000[];
 
+extern u8 data_02040203[];
+extern u8 data_ov002_0210020f[];
+extern u8 func_02020000[];
+
 extern u8 data_ov002_0210020f[];
 
 const u32 data_ov002_020fc874[256] = {

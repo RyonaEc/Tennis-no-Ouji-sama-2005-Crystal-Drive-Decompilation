@@ -72,3 +72,6 @@ src/ov001/data_ov001_02051c98.c:
 src/ov001/data_ov001_02051cac.c:
     complete
     .data       start:0x02051cac end:0x02051cc0
+src/ov001/data_ov001_02050aa8.c:
+    complete
+    .rodata     start:0x02050aa8 end:0x02051b90

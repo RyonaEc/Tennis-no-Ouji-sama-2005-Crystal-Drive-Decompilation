@@ -190,15 +190,30 @@ def runs(mod, minlen=16):
         if not parts:
             parts = [{'name': f'data_{mod}_{s:08x}' if mod != 'arm9' else f'data_{s:08x}',
                       'addr': s, 'span': e - s, 'hex': fm.retail(mod, s, e - s).hex()}]
-        # A symbol at an odd or half-word address makes the linker pad and the
-        # data shifts by a byte (measured: ov006 0x02076024, symbol 0x0207623b,
-        # 1665 bytes differ in 109 runs, each record gaining a leading 00).
-        # Such runs cannot be carved until the odd symbol itself is understood.
-        if any(p['addr'] % 4 or p['span'] % 4 for p in parts):
-            continue
-        cands.append({'name': parts[0]['name'], 'addr': s, 'span': e - s,
-                      'sec': sec, 'parts': parts,
-                      'hex': ''.join(p['hex'] for p in parts)})
+        # A symbol at an odd or half-word address makes the linker shift the
+        # data that follows it (measured: ov006 0x02076024, symbol
+        # data_ov006_0207623b at 0x0207623b, 1665 bytes differ in 109 runs, each
+        # record gaining a leading 00). Such a symbol cannot be covered, but the
+        # aligned stretches on either side of it can, so split the run at it.
+        bad = [p for p in parts if p['addr'] % 4 or p['span'] % 4]
+        groups, cur = [], []
+        for p in parts:
+            if p in bad:
+                if cur:
+                    groups.append(cur)
+                cur = []
+            else:
+                cur.append(p)
+        if cur:
+            groups.append(cur)
+        for g in groups:
+            s2 = g[0]['addr']
+            e2 = g[-1]['addr'] + g[-1]['span']
+            if s2 % 4 or e2 % 4 or e2 - s2 < minlen:
+                continue
+            cands.append({'name': g[0]['name'], 'addr': s2, 'span': e2 - s2,
+                          'sec': sec, 'parts': g,
+                          'hex': ''.join(p['hex'] for p in g)})
     return cands
 
 

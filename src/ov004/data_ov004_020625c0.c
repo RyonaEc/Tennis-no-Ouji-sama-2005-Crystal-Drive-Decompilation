@@ -20,6 +20,16 @@ extern u8 data_ov005_020a8f60[];
 extern u8 data_ov005_020b8f6f[];
 extern u8 data_ov005_020c8f74[];
 
+extern u8 data_02048ef7[];
+extern u8 data_ov003_020e8f7e[];
+extern u8 data_ov004_02068f43[];
+extern u8 data_ov005_02078f47[];
+extern u8 data_ov005_02088f49[];
+extern u8 data_ov005_02098f5c[];
+extern u8 data_ov005_020a8f60[];
+extern u8 data_ov005_020b8f6f[];
+extern u8 data_ov005_020c8f74[];
+
 extern u8 data_ov004_02068f43[];
 
 u32 data_ov004_020625c0[618] = {

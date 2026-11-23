@@ -11226,3 +11226,9 @@ written off.
   extract/ATOJ/arm9_overlays/ov006.bin: 1665 bytes differ over 109 runs, each record gaining a leading 00 -
   the linker pads around the unaligned symbol and the data shifts by one byte. runs() now skips any run
   containing a symbol whose address or span is not word aligned; what remains links and is byte exact.
+  remaining data runs -- after the aligned-stretch split, what is left is packed string tables: in every ov006
+  gap between claimed units the symbols are odd-addressed and odd-length with no aligned interior at all
+  (0x0205025c span 169, 0x02050305 span 253, 0x02050505 span 343, ...). runs() now carves the aligned
+  stretches on either side of an unaligned symbol instead of dropping the run; that is what took ov001's
+  4328-byte stretch. Reaching the string tables needs each string as its own sized unit, which is a data
+  modelling pass rather than a carve.

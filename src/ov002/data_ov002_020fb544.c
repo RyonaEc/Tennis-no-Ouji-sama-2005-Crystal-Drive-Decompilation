@@ -12,6 +12,12 @@ extern u8 data_02040404[];
 extern u8 data_02040505[];
 extern u8 func_ov002_0205d9ac[];
 
+extern u8 data_02040103[];
+extern u8 data_02040403[];
+extern u8 data_02040404[];
+extern u8 data_02040505[];
+extern u8 func_ov002_0205d9ac[];
+
 extern u8 func_ov002_0205d9ac[];
 
 const u32 data_ov002_020fb544[767] = {
