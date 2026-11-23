@@ -1,0 +1,3 @@
+#include "types.h"
+
+const u32 data_ov002_020fb3d4[8] = { 0x03ff03ff, 0x03ff03ff, 0x03ff03ff, 0x03ff03ff, 0x03ff03ff, 0x03ff03ff, 0x03ff03ff, 0x03ff03ff };

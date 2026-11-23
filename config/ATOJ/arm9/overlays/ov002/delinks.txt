@@ -1582,3 +1582,75 @@ src/ov002/func_ov002_0207c530.c:
 src/ov002/func_ov002_0207ccd4.c:
     complete
     .text       start:0x0207ccd4 end:0x0207cd24
+src/ov002/data_ov002_020fb394.c:
+    complete
+    .rodata     start:0x020fb394 end:0x020fb3b4
+src/ov002/data_ov002_020fb3b4.c:
+    complete
+    .rodata     start:0x020fb3b4 end:0x020fb3d4
+src/ov002/data_ov002_020fb3d4.c:
+    complete
+    .rodata     start:0x020fb3d4 end:0x020fb3f4
+src/ov002/data_ov002_020fb3f4.c:
+    complete
+    .rodata     start:0x020fb3f4 end:0x020fb408
+src/ov002/data_ov002_020fc140.c:
+    complete
+    .rodata     start:0x020fc140 end:0x020fc150
+src/ov002/data_ov002_020fc150.c:
+    complete
+    .rodata     start:0x020fc150 end:0x020fc190
+src/ov002/data_ov002_020fc208.c:
+    complete
+    .rodata     start:0x020fc208 end:0x020fc288
+src/ov002/data_ov002_020fc488.c:
+    complete
+    .rodata     start:0x020fc488 end:0x020fc4c8
+src/ov002/data_ov002_020fc4c8.c:
+    complete
+    .rodata     start:0x020fc4c8 end:0x020fc508
+src/ov002/data_ov002_020fc508.c:
+    complete
+    .rodata     start:0x020fc508 end:0x020fc538
+src/ov002/data_ov002_020fc538.c:
+    complete
+    .rodata     start:0x020fc538 end:0x020fc558
+src/ov002/data_ov002_020fc558.c:
+    complete
+    .rodata     start:0x020fc558 end:0x020fc578
+src/ov002/data_ov002_020fc578.c:
+    complete
+    .rodata     start:0x020fc578 end:0x020fc614
+src/ov002/data_ov002_020fc68c.c:
+    complete
+    .rodata     start:0x020fc68c end:0x020fc694
+src/ov002/data_ov002_020fc694.c:
+    complete
+    .rodata     start:0x020fc694 end:0x020fc6a4
+src/ov002/data_ov002_020fc6a4.c:
+    complete
+    .rodata     start:0x020fc6a4 end:0x020fc6e4
+src/ov002/data_ov002_020fc6e4.c:
+    complete
+    .rodata     start:0x020fc6e4 end:0x020fc74c
+src/ov002/data_ov002_020fc74c.c:
+    complete
+    .rodata     start:0x020fc74c end:0x020fc774
+src/ov002/data_ov002_020fce08.c:
+    complete
+    .rodata     start:0x020fce08 end:0x020fce60
+src/ov002/data_ov002_020fce60.c:
+    complete
+    .rodata     start:0x020fce60 end:0x020fce9c
+src/ov002/data_ov002_020fd288.c:
+    complete
+    .rodata     start:0x020fd288 end:0x020fd2fc
+src/ov002/data_ov002_020fd2fc.c:
+    complete
+    .rodata     start:0x020fd2fc end:0x020fd338
+src/ov002/data_ov002_020fd338.c:
+    complete
+    .rodata     start:0x020fd338 end:0x020fd384
+src/ov002/data_ov002_020fd384.c:
+    complete
+    .rodata     start:0x020fd384 end:0x020fd41c
