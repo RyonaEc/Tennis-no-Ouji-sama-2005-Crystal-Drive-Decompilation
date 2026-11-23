@@ -11443,3 +11443,17 @@ written off.
   apparent easy wins collapse under compilation: `ov003 0x02050f2c` (16 B,
   `cmp/moveq r0,#0/movne r0,#0`) folds to 8 bytes from every spelling because
   both arms return the same constant.
+- `ov009 0x0204f93c` / `0x02051080` (212 B x2, famsurvey group). Overlay display
+  setup: an aggregate-initialised three-`u16` block, a 0x30-byte clear, a
+  `DISPCNT` field update, one 3-word vector copy from `data_ov009_02054f50`, one
+  zeroed vector, one 3-word copy from `data_ov009_02054f44`, then
+  `func_02022994(&v0, &v2, &v1, 0)` and two writes to `0x040004c8`/`0x040004cc`.
+  Two useful facts fell out: the three `strh` only survive as a *declaration-time*
+  aggregate initialiser (`struct { u16 a, b, c; } s = { 0, 0, 0 };` -- separate
+  assignments are dead-store eliminated), and the 0x30-byte scratch buffer must be
+  a `u32 buf[0xc]` (a `u8 buf[0x30]` is not aligned to 4 and shifts every later
+  local by two, so the whole tail lands two bytes off). Best draft is 208 of 212
+  bytes: retail keeps the `v0` address in `r5` and reuses it (`add r5, sp, #0x3c`
+  ... `mov r0, r5`), materialises the zero struct as `mov lr, #0`, and has one
+  extra pool load; the draft uses `r4`, `mov r3, #0` and an `ldr lr, [pc]`. Pure
+  register-allocation residue, 52 instructions against retail's 53.
