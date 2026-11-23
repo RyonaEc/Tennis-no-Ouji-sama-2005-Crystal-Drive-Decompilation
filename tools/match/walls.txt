@@ -11457,3 +11457,30 @@ written off.
   ... `mov r0, r5`), materialises the zero struct as `mov lr, #0`, and has one
   extra pool load; the draft uses `r4`, `mov r3, #0` and an `ldr lr, [pc]`. Pure
   register-allocation residue, 52 instructions against retail's 53.
+- `ov004 0x020579c0` / `0x02057dcc` (372 B x2, famsurvey group). Scene setup: two
+  bss base pointers, `memset(p, 0, 0x10)` with `*(u32 *)(p + 4) = -1`, an early
+  `if (func_ov004_02053510(g + 0x178) == 0)` path that pokes `0x0400000a`
+  (`(v & 0x43) | 0x18c` then `&= ~0x40`), copies a two-`u16` struct out of
+  `data_ov004_02063ac4`, and makes the **fourteen-argument** call
+  `func_ov004_02053a00(data_ov004_02063ac8, *(u32 *)(g + 0x18), 0, 0, &a, &b, 1,
+  0, 2, 1, 0, 0, 1, g + 0x178)`; then `func_ov004_020528c0` /
+  `func_ov004_020528c8` (the 120 B teardown matched this session), a second
+  `memset(q, 0, 0xac)`, `func_ov004_02057864(0x340, q)`,
+  `func_ov004_020576bc(0x340, func_0200fd40())`, `0x04000000`'s `0x1f00` field set
+  to `0x1e00`, `func_ov004_02052464(g + 0x35f0, -0x10, 0, 0x1e)` and `return 1`.
+  The whole body reproduces at exactly 372 bytes and 93 instructions; only three
+  instructions differ, all register choice in one cluster: retail keeps the
+  `0x0400000a` pointer in `lr`, the first struct's address in `r3` and the
+  second's in `r5`, while mwcc hands the same three values out as
+  `r5`/`r3`/`lr` in every spelling tried (`u16 a[2]`/`P2` struct, `(u32)a`
+  versus `(u32)&a`, a named `volatile u16 *reg`, and reordering the register
+  pokes after the struct copies). The pointer/struct split that *did* matter:
+  the copy must be a struct assignment from `*(P2 *)data_ov004_02063ac4`, not two
+  field loads.
+- `ov009 0x0204f93c` / `0x02051080` (212 B x2) -- UPDATE: moving the zeroed
+  vector to a declaration-time initialiser (`Vec3 v1 = { 0, 0, 0 };`) makes the
+  size exact at 212 B, but it also moves the three zero stores to function entry,
+  where retail has them after the first vector copy, and mwcc then needs no
+  callee-saved registers at all. The 208 B draft keeps retail's store order and
+  is one instruction short. Both variants are recorded here so the next pass does
+  not re-derive the trade.
