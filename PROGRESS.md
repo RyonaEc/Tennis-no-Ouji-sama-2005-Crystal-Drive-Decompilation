@@ -13,11 +13,11 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 | Metric | Matched | Total | Progress |
 |---|---:|---:|---|
-| Code | 117,832 B | 1,841,700 B | 6.40% `██░░░░░░░░░░░░░░░░░░░░░░` |
-| Functions | 1,619 | 3,806 | 42.54% `██████████░░░░░░░░░░░░░░` |
-| Fuzzy match | 6.40% | n/a | `██░░░░░░░░░░░░░░░░░░░░░░` |
+| Code | 118,896 B | 1,841,700 B | 6.46% `██░░░░░░░░░░░░░░░░░░░░░░` |
+| Functions | 1,622 | 3,806 | 42.62% `██████████░░░░░░░░░░░░░░` |
+| Fuzzy match | 6.46% | n/a | `██░░░░░░░░░░░░░░░░░░░░░░` |
 | Data | 630,724 B | 801,936 B | 78.65% `███████████████████░░░░░` |
-| Complete units | 3,908 | 4,547 | 85.95% `█████████████████████░░░` |
+| Complete units | 3,911 | 4,551 | 85.94% `█████████████████████░░░` |
 
 ## By module
 
@@ -25,7 +25,7 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 |---|---:|---:|---:|---:|---:|
 | ARM9 main | 25.52% (57,316 / 224,616 B) | 935 / 1,377 (67.9%) | 25.52% | 13.20% (9,224 / 69,856 B) | 1,066 / 1,276 |
 | OV002 | 5.25% (37,596 / 715,724 B) | 402 / 1,360 (29.6%) | 5.25% | 61.19% (20,904 / 34,164 B) | 958 / 1,175 |
-| OV003 | 1.50% (8,792 / 586,712 B) | 108 / 547 (19.7%) | 1.50% | 82.87% (53,572 / 64,648 B) | 615 / 691 |
+| OV003 | 1.68% (9,856 / 586,712 B) | 111 / 547 (20.3%) | 1.68% | 82.87% (53,572 / 64,648 B) | 618 / 695 |
 | OV004 | 4.29% (3,844 / 89,584 B) | 60 / 170 (35.3%) | 4.29% | 86.66% (23,748 / 27,404 B) | 673 / 724 |
 | OV005 | 3.49% (4,988 / 142,964 B) | 50 / 166 (30.1%) | 3.49% | 87.59% (323,324 / 369,132 B) | 306 / 339 |
 | OV006 | 0.71% (52 / 7,324 B) | 1 / 16 (6.2%) | 0.71% | 80.25% (136,836 / 170,504 B) | 98 / 108 |
@@ -36,6 +36,6 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 ## Against the whole ROM
 
-1,619 of 3,806 functions (42.54%) and 117,832 of 1,841,700 code bytes (6.40%) are matching C; the rest are still delinked assembly.
+1,622 of 3,806 functions (42.62%) and 118,896 of 1,841,700 code bytes (6.46%) are matching C; the rest are still delinked assembly.
 
 630,724 bytes of `.data` are matching C definitions; the rest of the data sections are still raw bytes in the delinked image.
