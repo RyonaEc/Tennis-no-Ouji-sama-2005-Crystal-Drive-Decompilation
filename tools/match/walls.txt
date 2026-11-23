@@ -11401,3 +11401,18 @@ written off.
   pre-indexed `ldr r0, [r1, r0]!`, while every spelling (`*(u32 *)0x027c3ff8`,
   `(u8 *)0x027c0000 + 0x3ff8`, a `u32 *p = 0x027c0000; p[0xffe]`, volatile or not)
   folds the address into one constant and compiles to 48-52 B.
+- `ov002 0x0208f38c` (608 B, 13 byte-identical members) -- UPDATE: the draft now
+  reaches 604 of 608 bytes with the frame and spill layout identical to retail
+  (`idx` at `sp+0x20`, `p` at `sp+0x24`, `v` at `sp+0x28`, the `Vec3` out at
+  `sp+0x2c..0x34`, eight outgoing argument slots, frame `0x3c`). Two corrections
+  were needed: the screen call `func_ov002_02057068` takes **twelve** arguments
+  -- `(res.x, res.y, res.z, 0, 0, 0, t2, 0x8000000, 0xb, *(u8 *)slot,
+  *(u16 *)(slot + 0x12c), idx)` -- not eleven (the third literal zero supplies
+  the eighth stack slot), and `ang` must be `u32`, not `s32`: retail negates it
+  as `mvn r0, #0` + unsigned `mul`, which an `s32` turns into a single `rsb`.
+  Residual: retail emits `add r0, r0, #0` after `func_ov002_02053468` (no cast
+  spelling tried reproduces it; `(s16)(u16)` gives `lsl`/`lsr` instead), loads
+  `v` back from `sp+0x28` for the `t2 == 1` negation (`ldr`/`mvn`/`mul` versus
+  the draft's folded `addeq sp` + `rsb`; a `volatile s32 v` gets `ldr`/`rsb` and
+  costs four bytes), and schedules `mul r0, r6, fp` before the `/360` yaw
+  division where the draft emits it after.
