@@ -11505,3 +11505,16 @@ written off.
   destination, `r4` = source) across every declaration order tried, including
   naming the source and assigning it first. Eight differing instructions, all
   register choice; abandoned as a colouring tie.
+- `ov009 0x0204f93c` / `0x02051080` (212 B x2) -- UPDATE with the closest draft so
+  far, `build/cand/h4f93c.c` at exactly 204 B / 0x64 frame. Layout decoded: the
+  outgoing fifth argument occupies `[sp]`, a `u16` at `sp+4`, the `u32 buf[0xc]`
+  at `sp+0xc`, then `v0` at `sp+0x3c`, `v1` at `sp+0x48`, `v2` at `sp+0x54`;
+  `func_02022994(&v0, &v2, &v1, 1, 0)` takes **five** arguments with the last on
+  the stack and `r3 = 1` left over from `*(u32 *)0x04000448 = 1`. The two missing
+  instructions are both address materialisation: retail keeps `sp+6` in `r1` for
+  the paired `strh r0, [r1] / [r1, #2]` and `sp+0x48` in `r4` for the three
+  `str lr, [r4] / [r4, #4] / [r4, #8]` zero stores, while the same statements
+  written with `sp` offsets compile to 204 B (mwcc rematerialises). Grouping the
+  pair as a `Vec2` or writing the zeros as compound literals both change the
+  frame size (0x60 / 0x6c) and lose the match; a function-scope pointer variable
+  makes the address live too long and shifts the whole allocation.
