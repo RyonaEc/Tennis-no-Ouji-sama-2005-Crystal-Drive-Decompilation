@@ -1,3 +1,28 @@
 #include "types.h"
 
-const u32 data_ov002_020fd338[19] = { 0x020fdd70, 0x021003e8, 0x021006d8, 0x020ffe48, 0x02100400, 0x020ff4e8, 0x02100418, 0x020ff530, 0x021006f4, 0x02100924, 0x020ff548, 0x02100710, 0x020ffea8, 0x02100748, 0x020ffed8, 0x02100478, 0x02100860, 0x02100764, 0x02100780 };
+extern u8 data_ov002_020fdd70[];
+extern u8 data_ov002_020ff4e8[];
+extern u8 data_ov002_020ff530[];
+extern u8 data_ov002_020ff548[];
+extern u8 data_ov002_020ffe48[];
+extern u8 data_ov002_020ffea8[];
+extern u8 data_ov002_020ffed8[];
+extern u8 data_ov002_021003e8[];
+extern u8 data_ov002_02100400[];
+extern u8 data_ov002_02100418[];
+extern u8 data_ov002_02100478[];
+extern u8 data_ov002_021006d8[];
+extern u8 data_ov002_021006f4[];
+extern u8 data_ov002_02100710[];
+extern u8 data_ov002_02100748[];
+extern u8 data_ov002_02100764[];
+extern u8 data_ov002_02100780[];
+extern u8 data_ov002_02100860[];
+extern u8 data_ov002_02100924[];
+
+const u32 data_ov002_020fd338[19] = {
+(u32)&data_ov002_020fdd70, (u32)&data_ov002_021003e8, (u32)&data_ov002_021006d8, (u32)&data_ov002_020ffe48, (u32)&data_ov002_02100400, (u32)&data_ov002_020ff4e8,
+(u32)&data_ov002_02100418, (u32)&data_ov002_020ff530, (u32)&data_ov002_021006f4, (u32)&data_ov002_02100924, (u32)&data_ov002_020ff548, (u32)&data_ov002_02100710,
+(u32)&data_ov002_020ffea8, (u32)&data_ov002_02100748, (u32)&data_ov002_020ffed8, (u32)&data_ov002_02100478, (u32)&data_ov002_02100860, (u32)&data_ov002_02100764,
+(u32)&data_ov002_02100780
+};

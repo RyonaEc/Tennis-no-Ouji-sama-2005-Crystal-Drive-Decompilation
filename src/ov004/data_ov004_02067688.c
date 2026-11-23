@@ -1,3 +1,116 @@
 #include "types.h"
 
-u32 data_ov004_02067688[95] = { 0x02064cbc, 0x0206703c, 0x02065088, 0x02066220, 0x02065910, 0x02064d3c, 0x020651b4, 0x02065594, 0x020655cc, 0x02065764, 0x020650ac, 0x02066f24, 0x02066d58, 0x02066db4, 0x02066c50, 0x02066e10, 0x02066938, 0x02066834, 0x020665e8, 0x02065c38, 0x02065bf4, 0x02065b6c, 0x020664a0, 0x020662c0, 0x02066e6c, 0x02066098, 0x02065cc8, 0x02065c80, 0x02066310, 0x02066a40, 0x02065ed0, 0x020660e4, 0x02066af0, 0x02066130, 0x020666e4, 0x02066360, 0x02065da0, 0x0206513c, 0x02064cec, 0x02066b48, 0x02064de8, 0x0206555c, 0x02066fdc, 0x020658d0, 0x02065674, 0x020656b0, 0x0206722c, 0x02065990, 0x020656ec, 0x02065890, 0x0206709c, 0x02065390, 0x020652d4, 0x020657a0, 0x020654f4, 0x020653c0, 0x0206678c, 0x020670fc, 0x0206663c, 0x02066f80, 0x02065818, 0x02067540, 0x02067460, 0x02065950, 0x02064f98, 0x02064d9c, 0x02064ec8, 0x020673e0, 0x020663b0, 0x02064dcc, 0x02064e04, 0x02065204, 0x02064e3c, 0x0206522c, 0x0206518c, 0x02066400, 0x020671c4, 0x02064e74, 0x02065254, 0x02064ccc, 0x02064db4, 0x02064ff8, 0x020650d0, 0x02064ca4, 0x02065064, 0x02064e90, 0x02064eac, 0x02064f1c, 0x02065854, 0x02065458, 0x02065300, 0x02065118, 0x02064e20, 0x02064d84, 0x020651dc };
+extern u8 data_ov004_02064ca4[];
+extern u8 data_ov004_02064cbc[];
+extern u8 data_ov004_02064ccc[];
+extern u8 data_ov004_02064cec[];
+extern u8 data_ov004_02064d3c[];
+extern u8 data_ov004_02064d84[];
+extern u8 data_ov004_02064d9c[];
+extern u8 data_ov004_02064db4[];
+extern u8 data_ov004_02064dcc[];
+extern u8 data_ov004_02064de8[];
+extern u8 data_ov004_02064e04[];
+extern u8 data_ov004_02064e20[];
+extern u8 data_ov004_02064e3c[];
+extern u8 data_ov004_02064e74[];
+extern u8 data_ov004_02064e90[];
+extern u8 data_ov004_02064eac[];
+extern u8 data_ov004_02064ec8[];
+extern u8 data_ov004_02064f1c[];
+extern u8 data_ov004_02064f98[];
+extern u8 data_ov004_02064ff8[];
+extern u8 data_ov004_02065064[];
+extern u8 data_ov004_02065088[];
+extern u8 data_ov004_020650ac[];
+extern u8 data_ov004_020650d0[];
+extern u8 data_ov004_02065118[];
+extern u8 data_ov004_0206513c[];
+extern u8 data_ov004_0206518c[];
+extern u8 data_ov004_020651b4[];
+extern u8 data_ov004_020651dc[];
+extern u8 data_ov004_02065204[];
+extern u8 data_ov004_0206522c[];
+extern u8 data_ov004_02065254[];
+extern u8 data_ov004_020652d4[];
+extern u8 data_ov004_02065300[];
+extern u8 data_ov004_02065390[];
+extern u8 data_ov004_020653c0[];
+extern u8 data_ov004_02065458[];
+extern u8 data_ov004_020654f4[];
+extern u8 data_ov004_0206555c[];
+extern u8 data_ov004_02065594[];
+extern u8 data_ov004_020655cc[];
+extern u8 data_ov004_02065674[];
+extern u8 data_ov004_020656b0[];
+extern u8 data_ov004_020656ec[];
+extern u8 data_ov004_02065764[];
+extern u8 data_ov004_020657a0[];
+extern u8 data_ov004_02065818[];
+extern u8 data_ov004_02065854[];
+extern u8 data_ov004_02065890[];
+extern u8 data_ov004_020658d0[];
+extern u8 data_ov004_02065910[];
+extern u8 data_ov004_02065950[];
+extern u8 data_ov004_02065990[];
+extern u8 data_ov004_02065b6c[];
+extern u8 data_ov004_02065bf4[];
+extern u8 data_ov004_02065c38[];
+extern u8 data_ov004_02065c80[];
+extern u8 data_ov004_02065cc8[];
+extern u8 data_ov004_02065da0[];
+extern u8 data_ov004_02065ed0[];
+extern u8 data_ov004_02066098[];
+extern u8 data_ov004_020660e4[];
+extern u8 data_ov004_02066130[];
+extern u8 data_ov004_02066220[];
+extern u8 data_ov004_020662c0[];
+extern u8 data_ov004_02066310[];
+extern u8 data_ov004_02066360[];
+extern u8 data_ov004_020663b0[];
+extern u8 data_ov004_02066400[];
+extern u8 data_ov004_020664a0[];
+extern u8 data_ov004_020665e8[];
+extern u8 data_ov004_0206663c[];
+extern u8 data_ov004_020666e4[];
+extern u8 data_ov004_0206678c[];
+extern u8 data_ov004_02066834[];
+extern u8 data_ov004_02066938[];
+extern u8 data_ov004_02066a40[];
+extern u8 data_ov004_02066af0[];
+extern u8 data_ov004_02066b48[];
+extern u8 data_ov004_02066c50[];
+extern u8 data_ov004_02066d58[];
+extern u8 data_ov004_02066db4[];
+extern u8 data_ov004_02066e10[];
+extern u8 data_ov004_02066e6c[];
+extern u8 data_ov004_02066f24[];
+extern u8 data_ov004_02066f80[];
+extern u8 data_ov004_02066fdc[];
+extern u8 data_ov004_0206703c[];
+extern u8 data_ov004_0206709c[];
+extern u8 data_ov004_020670fc[];
+extern u8 data_ov004_020671c4[];
+extern u8 data_ov004_0206722c[];
+extern u8 data_ov004_020673e0[];
+extern u8 data_ov004_02067460[];
+extern u8 data_ov004_02067540[];
+
+u32 data_ov004_02067688[95] = {
+(u32)&data_ov004_02064cbc, (u32)&data_ov004_0206703c, (u32)&data_ov004_02065088, (u32)&data_ov004_02066220, (u32)&data_ov004_02065910, (u32)&data_ov004_02064d3c,
+(u32)&data_ov004_020651b4, (u32)&data_ov004_02065594, (u32)&data_ov004_020655cc, (u32)&data_ov004_02065764, (u32)&data_ov004_020650ac, (u32)&data_ov004_02066f24,
+(u32)&data_ov004_02066d58, (u32)&data_ov004_02066db4, (u32)&data_ov004_02066c50, (u32)&data_ov004_02066e10, (u32)&data_ov004_02066938, (u32)&data_ov004_02066834,
+(u32)&data_ov004_020665e8, (u32)&data_ov004_02065c38, (u32)&data_ov004_02065bf4, (u32)&data_ov004_02065b6c, (u32)&data_ov004_020664a0, (u32)&data_ov004_020662c0,
+(u32)&data_ov004_02066e6c, (u32)&data_ov004_02066098, (u32)&data_ov004_02065cc8, (u32)&data_ov004_02065c80, (u32)&data_ov004_02066310, (u32)&data_ov004_02066a40,
+(u32)&data_ov004_02065ed0, (u32)&data_ov004_020660e4, (u32)&data_ov004_02066af0, (u32)&data_ov004_02066130, (u32)&data_ov004_020666e4, (u32)&data_ov004_02066360,
+(u32)&data_ov004_02065da0, (u32)&data_ov004_0206513c, (u32)&data_ov004_02064cec, (u32)&data_ov004_02066b48, (u32)&data_ov004_02064de8, (u32)&data_ov004_0206555c,
+(u32)&data_ov004_02066fdc, (u32)&data_ov004_020658d0, (u32)&data_ov004_02065674, (u32)&data_ov004_020656b0, (u32)&data_ov004_0206722c, (u32)&data_ov004_02065990,
+(u32)&data_ov004_020656ec, (u32)&data_ov004_02065890, (u32)&data_ov004_0206709c, (u32)&data_ov004_02065390, (u32)&data_ov004_020652d4, (u32)&data_ov004_020657a0,
+(u32)&data_ov004_020654f4, (u32)&data_ov004_020653c0, (u32)&data_ov004_0206678c, (u32)&data_ov004_020670fc, (u32)&data_ov004_0206663c, (u32)&data_ov004_02066f80,
+(u32)&data_ov004_02065818, (u32)&data_ov004_02067540, (u32)&data_ov004_02067460, (u32)&data_ov004_02065950, (u32)&data_ov004_02064f98, (u32)&data_ov004_02064d9c,
+(u32)&data_ov004_02064ec8, (u32)&data_ov004_020673e0, (u32)&data_ov004_020663b0, (u32)&data_ov004_02064dcc, (u32)&data_ov004_02064e04, (u32)&data_ov004_02065204,
+(u32)&data_ov004_02064e3c, (u32)&data_ov004_0206522c, (u32)&data_ov004_0206518c, (u32)&data_ov004_02066400, (u32)&data_ov004_020671c4, (u32)&data_ov004_02064e74,
+(u32)&data_ov004_02065254, (u32)&data_ov004_02064ccc, (u32)&data_ov004_02064db4, (u32)&data_ov004_02064ff8, (u32)&data_ov004_020650d0, (u32)&data_ov004_02064ca4,
+(u32)&data_ov004_02065064, (u32)&data_ov004_02064e90, (u32)&data_ov004_02064eac, (u32)&data_ov004_02064f1c, (u32)&data_ov004_02065854, (u32)&data_ov004_02065458,
+(u32)&data_ov004_02065300, (u32)&data_ov004_02065118, (u32)&data_ov004_02064e20, (u32)&data_ov004_02064d84, (u32)&data_ov004_020651dc
+};

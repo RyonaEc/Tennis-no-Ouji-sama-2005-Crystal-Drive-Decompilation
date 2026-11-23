@@ -1,3 +1,141 @@
 #include "types.h"
 
-const u32 data_ov002_020fcea0[117] = { 0x00000000, 0x02092e68, 0x02090de4, 0x02096008, 0x02094f6c, 0x020980e4, 0x02096f70, 0x02099fa0, 0x0209970c, 0x0209bcc4, 0x0209ae3c, 0x0209d688, 0x0209ca1c, 0x020a012c, 0x0209f0c0, 0x020a181c, 0x020a0bf8, 0x020a38bc, 0x020a2540, 0x020a5488, 0x020a4a58, 0x020a6820, 0x020a5df0, 0x020a85b8, 0x020a78e4, 0x020a9e34, 0x020a95f4, 0x020aae64, 0x020aa930, 0x020ac9c0, 0x020abad0, 0x020aeb68, 0x020ade04, 0x020b0664, 0x020af8dc, 0x020b1888, 0x020b124c, 0x020b2ac4, 0x020b23fc, 0x020b42c8, 0x020b365c, 0x020b5ff8, 0x020b5148, 0x020b8238, 0x020b7268, 0x020b9fc0, 0x020b8c7c, 0x020bb434, 0x020bab90, 0x020bcd28, 0x020bc3f4, 0x020c0cf0, 0x020beec0, 0x020c27a8, 0x020c1764, 0x020c4dec, 0x020c3a04, 0x020c6ecc, 0x020c62b0, 0x020c8510, 0x020c75c4, 0x020c9c48, 0x020c9448, 0x020cb9d0, 0x020cad2c, 0x020cdc44, 0x020cca9c, 0x020cfcb8, 0x020cf204, 0x020d17ec, 0x020d0854, 0x020d3050, 0x020d264c, 0x020d53c4, 0x020d43c0, 0x020d66e8, 0x020d5dd4, 0x020d8064, 0x020d75b0, 0x020daad4, 0x020d94d0, 0x020dd9dc, 0x020dc350, 0x020e0e2c, 0x020dfa8c, 0x020e2914, 0x020e1f28, 0x020e4214, 0x020e3968, 0x020e5f54, 0x020e5150, 0x020e8368, 0x020e719c, 0x020eacc8, 0x020e9b98, 0x020ec934, 0x020ebaa4, 0x020ed674, 0x020ed124, 0x020eedf4, 0x020ee4bc, 0x020f0654, 0x020efbc0, 0x020f1af0, 0x020f13d0, 0x020f2e90, 0x020f20f4, 0x020f4728, 0x020f3cf4, 0x020f663c, 0x020f5604, 0x020f7554, 0x020f6bbc, 0x020f94b0, 0x020f8448, 0x020fafe0, 0x020fa158 };
+extern u8 func_ov002_02090de4[];
+extern u8 func_ov002_02092e68[];
+extern u8 func_ov002_02094f6c[];
+extern u8 func_ov002_02096008[];
+extern u8 func_ov002_02096f70[];
+extern u8 func_ov002_020980e4[];
+extern u8 func_ov002_0209970c[];
+extern u8 func_ov002_02099fa0[];
+extern u8 func_ov002_0209ae3c[];
+extern u8 func_ov002_0209bcc4[];
+extern u8 func_ov002_0209ca1c[];
+extern u8 func_ov002_0209d688[];
+extern u8 func_ov002_0209f0c0[];
+extern u8 func_ov002_020a012c[];
+extern u8 func_ov002_020a0bf8[];
+extern u8 func_ov002_020a181c[];
+extern u8 func_ov002_020a2540[];
+extern u8 func_ov002_020a38bc[];
+extern u8 func_ov002_020a4a58[];
+extern u8 func_ov002_020a5488[];
+extern u8 func_ov002_020a5df0[];
+extern u8 func_ov002_020a6820[];
+extern u8 func_ov002_020a78e4[];
+extern u8 func_ov002_020a85b8[];
+extern u8 func_ov002_020a95f4[];
+extern u8 func_ov002_020a9e34[];
+extern u8 func_ov002_020aa930[];
+extern u8 func_ov002_020aae64[];
+extern u8 func_ov002_020abad0[];
+extern u8 func_ov002_020ac9c0[];
+extern u8 func_ov002_020ade04[];
+extern u8 func_ov002_020aeb68[];
+extern u8 func_ov002_020af8dc[];
+extern u8 func_ov002_020b0664[];
+extern u8 func_ov002_020b124c[];
+extern u8 func_ov002_020b1888[];
+extern u8 func_ov002_020b23fc[];
+extern u8 func_ov002_020b2ac4[];
+extern u8 func_ov002_020b365c[];
+extern u8 func_ov002_020b42c8[];
+extern u8 func_ov002_020b5148[];
+extern u8 func_ov002_020b5ff8[];
+extern u8 func_ov002_020b7268[];
+extern u8 func_ov002_020b8238[];
+extern u8 func_ov002_020b8c7c[];
+extern u8 func_ov002_020b9fc0[];
+extern u8 func_ov002_020bab90[];
+extern u8 func_ov002_020bb434[];
+extern u8 func_ov002_020bc3f4[];
+extern u8 func_ov002_020bcd28[];
+extern u8 func_ov002_020beec0[];
+extern u8 func_ov002_020c0cf0[];
+extern u8 func_ov002_020c1764[];
+extern u8 func_ov002_020c27a8[];
+extern u8 func_ov002_020c3a04[];
+extern u8 func_ov002_020c4dec[];
+extern u8 func_ov002_020c62b0[];
+extern u8 func_ov002_020c6ecc[];
+extern u8 func_ov002_020c75c4[];
+extern u8 func_ov002_020c8510[];
+extern u8 func_ov002_020c9448[];
+extern u8 func_ov002_020c9c48[];
+extern u8 func_ov002_020cad2c[];
+extern u8 func_ov002_020cb9d0[];
+extern u8 func_ov002_020cca9c[];
+extern u8 func_ov002_020cdc44[];
+extern u8 func_ov002_020cf204[];
+extern u8 func_ov002_020cfcb8[];
+extern u8 func_ov002_020d0854[];
+extern u8 func_ov002_020d17ec[];
+extern u8 func_ov002_020d264c[];
+extern u8 func_ov002_020d3050[];
+extern u8 func_ov002_020d43c0[];
+extern u8 func_ov002_020d53c4[];
+extern u8 func_ov002_020d5dd4[];
+extern u8 func_ov002_020d66e8[];
+extern u8 func_ov002_020d75b0[];
+extern u8 func_ov002_020d8064[];
+extern u8 func_ov002_020d94d0[];
+extern u8 func_ov002_020daad4[];
+extern u8 func_ov002_020dc350[];
+extern u8 func_ov002_020dd9dc[];
+extern u8 func_ov002_020dfa8c[];
+extern u8 func_ov002_020e0e2c[];
+extern u8 func_ov002_020e1f28[];
+extern u8 func_ov002_020e2914[];
+extern u8 func_ov002_020e3968[];
+extern u8 func_ov002_020e4214[];
+extern u8 func_ov002_020e5150[];
+extern u8 func_ov002_020e5f54[];
+extern u8 func_ov002_020e719c[];
+extern u8 func_ov002_020e8368[];
+extern u8 func_ov002_020e9b98[];
+extern u8 func_ov002_020eacc8[];
+extern u8 func_ov002_020ebaa4[];
+extern u8 func_ov002_020ec934[];
+extern u8 func_ov002_020ed124[];
+extern u8 func_ov002_020ed674[];
+extern u8 func_ov002_020ee4bc[];
+extern u8 func_ov002_020eedf4[];
+extern u8 func_ov002_020efbc0[];
+extern u8 func_ov002_020f0654[];
+extern u8 func_ov002_020f13d0[];
+extern u8 func_ov002_020f1af0[];
+extern u8 func_ov002_020f20f4[];
+extern u8 func_ov002_020f2e90[];
+extern u8 func_ov002_020f3cf4[];
+extern u8 func_ov002_020f4728[];
+extern u8 func_ov002_020f5604[];
+extern u8 func_ov002_020f663c[];
+extern u8 func_ov002_020f6bbc[];
+extern u8 func_ov002_020f7554[];
+extern u8 func_ov002_020f8448[];
+extern u8 func_ov002_020f94b0[];
+extern u8 func_ov002_020fa158[];
+extern u8 func_ov002_020fafe0[];
+
+const u32 data_ov002_020fcea0[117] = {
+00000000, (u32)&func_ov002_02092e68, (u32)&func_ov002_02090de4, (u32)&func_ov002_02096008, (u32)&func_ov002_02094f6c, (u32)&func_ov002_020980e4,
+(u32)&func_ov002_02096f70, (u32)&func_ov002_02099fa0, (u32)&func_ov002_0209970c, (u32)&func_ov002_0209bcc4, (u32)&func_ov002_0209ae3c, (u32)&func_ov002_0209d688,
+(u32)&func_ov002_0209ca1c, (u32)&func_ov002_020a012c, (u32)&func_ov002_0209f0c0, (u32)&func_ov002_020a181c, (u32)&func_ov002_020a0bf8, (u32)&func_ov002_020a38bc,
+(u32)&func_ov002_020a2540, (u32)&func_ov002_020a5488, (u32)&func_ov002_020a4a58, (u32)&func_ov002_020a6820, (u32)&func_ov002_020a5df0, (u32)&func_ov002_020a85b8,
+(u32)&func_ov002_020a78e4, (u32)&func_ov002_020a9e34, (u32)&func_ov002_020a95f4, (u32)&func_ov002_020aae64, (u32)&func_ov002_020aa930, (u32)&func_ov002_020ac9c0,
+(u32)&func_ov002_020abad0, (u32)&func_ov002_020aeb68, (u32)&func_ov002_020ade04, (u32)&func_ov002_020b0664, (u32)&func_ov002_020af8dc, (u32)&func_ov002_020b1888,
+(u32)&func_ov002_020b124c, (u32)&func_ov002_020b2ac4, (u32)&func_ov002_020b23fc, (u32)&func_ov002_020b42c8, (u32)&func_ov002_020b365c, (u32)&func_ov002_020b5ff8,
+(u32)&func_ov002_020b5148, (u32)&func_ov002_020b8238, (u32)&func_ov002_020b7268, (u32)&func_ov002_020b9fc0, (u32)&func_ov002_020b8c7c, (u32)&func_ov002_020bb434,
+(u32)&func_ov002_020bab90, (u32)&func_ov002_020bcd28, (u32)&func_ov002_020bc3f4, (u32)&func_ov002_020c0cf0, (u32)&func_ov002_020beec0, (u32)&func_ov002_020c27a8,
+(u32)&func_ov002_020c1764, (u32)&func_ov002_020c4dec, (u32)&func_ov002_020c3a04, (u32)&func_ov002_020c6ecc, (u32)&func_ov002_020c62b0, (u32)&func_ov002_020c8510,
+(u32)&func_ov002_020c75c4, (u32)&func_ov002_020c9c48, (u32)&func_ov002_020c9448, (u32)&func_ov002_020cb9d0, (u32)&func_ov002_020cad2c, (u32)&func_ov002_020cdc44,
+(u32)&func_ov002_020cca9c, (u32)&func_ov002_020cfcb8, (u32)&func_ov002_020cf204, (u32)&func_ov002_020d17ec, (u32)&func_ov002_020d0854, (u32)&func_ov002_020d3050,
+(u32)&func_ov002_020d264c, (u32)&func_ov002_020d53c4, (u32)&func_ov002_020d43c0, (u32)&func_ov002_020d66e8, (u32)&func_ov002_020d5dd4, (u32)&func_ov002_020d8064,
+(u32)&func_ov002_020d75b0, (u32)&func_ov002_020daad4, (u32)&func_ov002_020d94d0, (u32)&func_ov002_020dd9dc, (u32)&func_ov002_020dc350, (u32)&func_ov002_020e0e2c,
+(u32)&func_ov002_020dfa8c, (u32)&func_ov002_020e2914, (u32)&func_ov002_020e1f28, (u32)&func_ov002_020e4214, (u32)&func_ov002_020e3968, (u32)&func_ov002_020e5f54,
+(u32)&func_ov002_020e5150, (u32)&func_ov002_020e8368, (u32)&func_ov002_020e719c, (u32)&func_ov002_020eacc8, (u32)&func_ov002_020e9b98, (u32)&func_ov002_020ec934,
+(u32)&func_ov002_020ebaa4, (u32)&func_ov002_020ed674, (u32)&func_ov002_020ed124, (u32)&func_ov002_020eedf4, (u32)&func_ov002_020ee4bc, (u32)&func_ov002_020f0654,
+(u32)&func_ov002_020efbc0, (u32)&func_ov002_020f1af0, (u32)&func_ov002_020f13d0, (u32)&func_ov002_020f2e90, (u32)&func_ov002_020f20f4, (u32)&func_ov002_020f4728,
+(u32)&func_ov002_020f3cf4, (u32)&func_ov002_020f663c, (u32)&func_ov002_020f5604, (u32)&func_ov002_020f7554, (u32)&func_ov002_020f6bbc, (u32)&func_ov002_020f94b0,
+(u32)&func_ov002_020f8448, (u32)&func_ov002_020fafe0, (u32)&func_ov002_020fa158
+};

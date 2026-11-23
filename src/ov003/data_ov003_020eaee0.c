@@ -1,3 +1,87 @@
 #include "types.h"
 
-u32 data_ov003_020eaee0[70] = { 0x020ea008, 0x020ea2d8, 0x020e9e70, 0x020e9d68, 0x020ea068, 0x020ea1d0, 0x020ea1b8, 0x020e9fa8, 0x020ea2a8, 0x020ea0c8, 0x020e9eb8, 0x020ea110, 0x020e9dc8, 0x020ea140, 0x020ea230, 0x020ea278, 0x020e9f60, 0x020e9fd8, 0x020e9ff0, 0x020e9fc0, 0x020ea038, 0x020ea188, 0x020e9ed0, 0x020ea158, 0x020ea1a0, 0x020ea260, 0x020e9f78, 0x020e9f30, 0x020e9e58, 0x020e9ea0, 0x020e9de0, 0x020e9f18, 0x020ea380, 0x020ea170, 0x020e9d20, 0x020ea368, 0x020e9d80, 0x020e9d50, 0x020ea290, 0x020e9db0, 0x020e9d38, 0x020ea080, 0x020e9e88, 0x020ea320, 0x020ea218, 0x020ea248, 0x020ea350, 0x020ea020, 0x020ea098, 0x020e9f00, 0x020e9f90, 0x020ea2f0, 0x020ea1e8, 0x020ea0f8, 0x020ea2c0, 0x020ea398, 0x020ea308, 0x020ea338, 0x020ea0e0, 0x020e9df8, 0x020e9ee8, 0x020e9e10, 0x020ea128, 0x020ea0b0, 0x020e9d98, 0x020e9f48, 0x020ea050, 0x020ea200, 0x020e9e28, 0x020e9e40 };
+extern u8 data_ov003_020e9d20[];
+extern u8 data_ov003_020e9d38[];
+extern u8 data_ov003_020e9d50[];
+extern u8 data_ov003_020e9d68[];
+extern u8 data_ov003_020e9d80[];
+extern u8 data_ov003_020e9d98[];
+extern u8 data_ov003_020e9db0[];
+extern u8 data_ov003_020e9dc8[];
+extern u8 data_ov003_020e9de0[];
+extern u8 data_ov003_020e9df8[];
+extern u8 data_ov003_020e9e10[];
+extern u8 data_ov003_020e9e28[];
+extern u8 data_ov003_020e9e40[];
+extern u8 data_ov003_020e9e58[];
+extern u8 data_ov003_020e9e70[];
+extern u8 data_ov003_020e9e88[];
+extern u8 data_ov003_020e9ea0[];
+extern u8 data_ov003_020e9eb8[];
+extern u8 data_ov003_020e9ed0[];
+extern u8 data_ov003_020e9ee8[];
+extern u8 data_ov003_020e9f00[];
+extern u8 data_ov003_020e9f18[];
+extern u8 data_ov003_020e9f30[];
+extern u8 data_ov003_020e9f48[];
+extern u8 data_ov003_020e9f60[];
+extern u8 data_ov003_020e9f78[];
+extern u8 data_ov003_020e9f90[];
+extern u8 data_ov003_020e9fa8[];
+extern u8 data_ov003_020e9fc0[];
+extern u8 data_ov003_020e9fd8[];
+extern u8 data_ov003_020e9ff0[];
+extern u8 data_ov003_020ea008[];
+extern u8 data_ov003_020ea020[];
+extern u8 data_ov003_020ea038[];
+extern u8 data_ov003_020ea050[];
+extern u8 data_ov003_020ea068[];
+extern u8 data_ov003_020ea080[];
+extern u8 data_ov003_020ea098[];
+extern u8 data_ov003_020ea0b0[];
+extern u8 data_ov003_020ea0c8[];
+extern u8 data_ov003_020ea0e0[];
+extern u8 data_ov003_020ea0f8[];
+extern u8 data_ov003_020ea110[];
+extern u8 data_ov003_020ea128[];
+extern u8 data_ov003_020ea140[];
+extern u8 data_ov003_020ea158[];
+extern u8 data_ov003_020ea170[];
+extern u8 data_ov003_020ea188[];
+extern u8 data_ov003_020ea1a0[];
+extern u8 data_ov003_020ea1b8[];
+extern u8 data_ov003_020ea1d0[];
+extern u8 data_ov003_020ea1e8[];
+extern u8 data_ov003_020ea200[];
+extern u8 data_ov003_020ea218[];
+extern u8 data_ov003_020ea230[];
+extern u8 data_ov003_020ea248[];
+extern u8 data_ov003_020ea260[];
+extern u8 data_ov003_020ea278[];
+extern u8 data_ov003_020ea290[];
+extern u8 data_ov003_020ea2a8[];
+extern u8 data_ov003_020ea2c0[];
+extern u8 data_ov003_020ea2d8[];
+extern u8 data_ov003_020ea2f0[];
+extern u8 data_ov003_020ea308[];
+extern u8 data_ov003_020ea320[];
+extern u8 data_ov003_020ea338[];
+extern u8 data_ov003_020ea350[];
+extern u8 data_ov003_020ea368[];
+extern u8 data_ov003_020ea380[];
+extern u8 data_ov003_020ea398[];
+
+u32 data_ov003_020eaee0[70] = {
+(u32)&data_ov003_020ea008, (u32)&data_ov003_020ea2d8, (u32)&data_ov003_020e9e70, (u32)&data_ov003_020e9d68, (u32)&data_ov003_020ea068, (u32)&data_ov003_020ea1d0,
+(u32)&data_ov003_020ea1b8, (u32)&data_ov003_020e9fa8, (u32)&data_ov003_020ea2a8, (u32)&data_ov003_020ea0c8, (u32)&data_ov003_020e9eb8, (u32)&data_ov003_020ea110,
+(u32)&data_ov003_020e9dc8, (u32)&data_ov003_020ea140, (u32)&data_ov003_020ea230, (u32)&data_ov003_020ea278, (u32)&data_ov003_020e9f60, (u32)&data_ov003_020e9fd8,
+(u32)&data_ov003_020e9ff0, (u32)&data_ov003_020e9fc0, (u32)&data_ov003_020ea038, (u32)&data_ov003_020ea188, (u32)&data_ov003_020e9ed0, (u32)&data_ov003_020ea158,
+(u32)&data_ov003_020ea1a0, (u32)&data_ov003_020ea260, (u32)&data_ov003_020e9f78, (u32)&data_ov003_020e9f30, (u32)&data_ov003_020e9e58, (u32)&data_ov003_020e9ea0,
+(u32)&data_ov003_020e9de0, (u32)&data_ov003_020e9f18, (u32)&data_ov003_020ea380, (u32)&data_ov003_020ea170, (u32)&data_ov003_020e9d20, (u32)&data_ov003_020ea368,
+(u32)&data_ov003_020e9d80, (u32)&data_ov003_020e9d50, (u32)&data_ov003_020ea290, (u32)&data_ov003_020e9db0, (u32)&data_ov003_020e9d38, (u32)&data_ov003_020ea080,
+(u32)&data_ov003_020e9e88, (u32)&data_ov003_020ea320, (u32)&data_ov003_020ea218, (u32)&data_ov003_020ea248, (u32)&data_ov003_020ea350, (u32)&data_ov003_020ea020,
+(u32)&data_ov003_020ea098, (u32)&data_ov003_020e9f00, (u32)&data_ov003_020e9f90, (u32)&data_ov003_020ea2f0, (u32)&data_ov003_020ea1e8, (u32)&data_ov003_020ea0f8,
+(u32)&data_ov003_020ea2c0, (u32)&data_ov003_020ea398, (u32)&data_ov003_020ea308, (u32)&data_ov003_020ea338, (u32)&data_ov003_020ea0e0, (u32)&data_ov003_020e9df8,
+(u32)&data_ov003_020e9ee8, (u32)&data_ov003_020e9e10, (u32)&data_ov003_020ea128, (u32)&data_ov003_020ea0b0, (u32)&data_ov003_020e9d98, (u32)&data_ov003_020e9f48,
+(u32)&data_ov003_020ea050, (u32)&data_ov003_020ea200, (u32)&data_ov003_020e9e28, (u32)&data_ov003_020e9e40
+};

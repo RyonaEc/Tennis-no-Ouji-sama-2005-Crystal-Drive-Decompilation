@@ -1,3 +1,16 @@
 #include "types.h"
 
-const u32 data_02041e4c[9] = { 0x02028958, 0x02028920, 0x02028888, 0x02028774, 0x02028558, 0x02028198, 0x0202811c, 0x020280f4, 0x020280ec };
+extern u8 func_020280ec[];
+extern u8 func_020280f4[];
+extern u8 func_0202811c[];
+extern u8 func_02028198[];
+extern u8 func_02028558[];
+extern u8 func_02028774[];
+extern u8 func_02028888[];
+extern u8 func_02028920[];
+extern u8 func_02028958[];
+
+const u32 data_02041e4c[9] = {
+(u32)&func_02028958, (u32)&func_02028920, (u32)&func_02028888, (u32)&func_02028774, (u32)&func_02028558, (u32)&func_02028198,
+(u32)&func_0202811c, (u32)&func_020280f4, (u32)&func_020280ec
+};

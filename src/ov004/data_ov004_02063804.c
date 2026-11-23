@@ -1,3 +1,14 @@
 #include "types.h"
 
-u32 data_ov004_02063804[10] = { 0x020637d8, 0x020637c8, 0x020637d0, 0x020637cc, 0x020637f8, 0x020637f0, 0x020637d4, 0x00000000, 0x00000000, 0x00000000 };
+extern u8 data_ov004_020637c8[];
+extern u8 data_ov004_020637cc[];
+extern u8 data_ov004_020637d0[];
+extern u8 data_ov004_020637d4[];
+extern u8 data_ov004_020637d8[];
+extern u8 data_ov004_020637f0[];
+extern u8 data_ov004_020637f8[];
+
+u32 data_ov004_02063804[10] = {
+(u32)&data_ov004_020637d8, (u32)&data_ov004_020637c8, (u32)&data_ov004_020637d0, (u32)&data_ov004_020637cc, (u32)&data_ov004_020637f8, (u32)&data_ov004_020637f0,
+(u32)&data_ov004_020637d4, 00000000, 00000000, 00000000
+};

@@ -1,3 +1,8 @@
 #include "types.h"
 
-u32 data_ov002_020fe520[5] = { 0x020ff008, 0x020fdd70, 0x020fdd70, 0x020fdd70, 0x020fdd70 };
+extern u8 data_ov002_020fdd70[];
+extern u8 data_ov002_020ff008[];
+
+u32 data_ov002_020fe520[5] = {
+(u32)&data_ov002_020ff008, (u32)&data_ov002_020fdd70, (u32)&data_ov002_020fdd70, (u32)&data_ov002_020fdd70, (u32)&data_ov002_020fdd70
+};
