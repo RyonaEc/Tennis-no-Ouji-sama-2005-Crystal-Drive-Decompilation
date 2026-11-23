@@ -1956,3 +1956,15 @@ src/ov003/data_ov003_020e8eb0.c:
 src/ov003/func_ov003_0204db30.c:
     complete
     .text       start:0x0204db30 end:0x0204db9c
+
+src/ov003/func_ov003_02062ec0.c:
+    complete
+    .text       start:0x02062ec0 end:0x02063024
+
+src/ov003/func_ov003_02063184.c:
+    complete
+    .text       start:0x02063184 end:0x020632e8
+
+src/ov003/func_ov003_02063024.c:
+    complete
+    .text       start:0x02063024 end:0x02063184
