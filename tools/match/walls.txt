@@ -11283,3 +11283,12 @@ written off.
   array, symbol vs literal, u16/u32, extra parameters); a register-allocation tie. ov003 0x020b6b60 (three
   stack u16[2] zero initialisers) matches instruction count and offsets but schedules the base pointers
   r0/r2/r1 where retail uses r1/r2/r1, for every declaration and initialiser form tried -- same class.
+
+  ties found while cloning -- arm9 0x020124e0 / ov004 0x0206256c (68B, `p[a0/8] & (1 << (a0%8))` behind
+  a null-checked func_0200faa8()): size and every other slot match, but 1.2/b56 emits the byte load at 0x2c
+  and the `% 8` chain at 0x30 where retail has them the other way round; operand order, named temporaries
+  and computing the mask first all leave the schedule unchanged. arm9 0x020208b0 / 0x0202093c (140B,
+  `data_02048c74[0] = ~a0 & (data[0] | data[0xc])` plus a 0x04001000 enable bit): the inverted-
+  if form (`if (a0 != 0) { if (a0 == 0x100) ... } else ...`) reproduces retail's two-branch layout and the
+  full 140 bytes, leaving only an ip/r3 swap for the two single-use temporaries (retail: mask in ip, control
+  word in r3; 1.2/b56 always the reverse), which no declaration or expression order changed.
