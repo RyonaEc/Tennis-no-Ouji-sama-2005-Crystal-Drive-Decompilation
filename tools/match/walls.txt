@@ -11292,3 +11292,26 @@ written off.
   if form (`if (a0 != 0) { if (a0 == 0x100) ... } else ...`) reproduces retail's two-branch layout and the
   full 140 bytes, leaving only an ip/r3 swap for the two single-use temporaries (retail: mask in ip, control
   word in r3; 1.2/b56 always the reverse), which no declaration or expression order changed.
+
+## 2026-11-23 (later session): register-tie walls
+
+- `arm9 0x02066a54` / `0x020b85b8` / `0x020db6ec` (180 B, 3x). The whole body reproduces
+  instruction for instruction with `if (a0 == 0) { ... } else { ... }` (the inverted
+  `if (a0 != 0)` either puts the small block first or grows the unit), `u8 *q = base + i*2;`
+  and `(i % 4) == 0` — note `i & 3` compiles to `ands` while `i % 4` gives retail's
+  `lsr #31 / rsb / adds ... ror #30` sequence. Only an `ip`/`lr` swap is left: retail keeps
+  the zero constant in `lr` and the row pointer in `ip`, mwcc always picks the reverse,
+  whether the zero is a literal, a `u16`, or a `u32` variable, and whether `q` is declared
+  inside the loop, outside it, or spelled inline.
+- `arm9 0x0202d158` / `0x0202d22c` (212 B, 2x). Size, field stores, call order and argument
+  shuffling all reproduce. Two residues: mwcc emits `mov r1, r6 / ldr r0, [r1, #0x34]`
+  where retail has a single `ldr r1, [r6, #0x34]`, and the `0xd0` store reuses `r6` where
+  retail rematerialises `data_0204aec0` into `r1`; writing that store through the symbol
+  instead fixes the store but then costs a fifth instruction and the unit grows to 216 B.
+- `arm9 0x02028920` / `0x02028958` (56 B, 2x). Retail pushes `{r4, lr}` and keeps the target
+  object in `r4` across the indirect call; mwcc never allocates `r4` here (it emits
+  `stmdb sp!, {lr}; sub sp, sp, #4`) and keeps the object in `ip`. Same instructions, same
+  order, different callee-saved choice, unchanged by `register`, by moving the base into a
+  variable, or by reading the field twice.
+- `arm9 0x02036730` (216 B): hand-optimised word `strcpy` (`0x01010101`/`0x80808080`, first
+  word tested before it is stored). No matched analogue in `src/`; not attempted.
