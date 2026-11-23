@@ -11416,3 +11416,30 @@ written off.
   the draft's folded `addeq sp` + `rsb`; a `volatile s32 v` gets `ldr`/`rsb` and
   costs four bytes), and schedules `mul r0, r6, fp` before the `/360` yaw
   division where the draft emits it after.
+- `ov002 0x0208f38c` (608 B x13) -- UPDATE 2: the draft is now exactly 608 bytes
+  with retail's frame and spill offsets. Making `v` a **`u32`** (not `s32`) and
+  reading it back through a pointer (`u32 *vp = &v; v = *vp * -1;`) reproduces
+  retail's `ldr`/`mvn r1, #0`/`mul` negation, and that closed the last four bytes.
+  What is left is schedule and one instruction of shape, not semantics: retail
+  spills `idx` to `sp+0x20` right after the `mul` and reloads it before the
+  `mla`, defers `lsr r3, r2, #1` until after the `mla` (the draft emits it
+  immediately after the `ldrb`), emits `add r0, r0, #0` between
+  `func_ov002_02053468` and its `(s16)` conversion, and computes `mul r0, r6, fp`
+  before the `/360` yaw division where the draft emits it after. Moving the `dir`
+  or `t2` assignment next to its use costs 12 bytes, so the declaration order is
+  already right.
+- `arm9 0x0202612c` (20 B). `void f(void) { func_02026140(); func_020261d0(); }`.
+  Retail is `stmdb sp!, {lr}; bl; bl; ldm sp!, {lr}; bx lr` with **no frame**, but
+  mwcc 1.2/b56 reserves `sub sp, sp, #4` for every function that makes two or
+  more calls (verified with an isolated two-call probe: one call becomes a tail
+  call, two or three calls always get the four-byte frame, regardless of return
+  type, parameters or block nesting). The retail shape is therefore not
+  reachable from C with this compiler.
+- Tiny band, exhaustively re-scanned: only 27 unmatched functions of 0x30 bytes
+  or less remain across arm9 and all overlays (an earlier scan that reported 248
+  was wrong -- it keyed `src/arm9/<name>.c` for overlay symbols). The remainder is
+  BIOS `svc` wrappers, `ldm`/`stm` block-copy loops, ARM/Thumb interworking stubs,
+  delinked epilogue fragments and `udf`, i.e. the tiny band is exhausted. Two
+  apparent easy wins collapse under compilation: `ov003 0x02050f2c` (16 B,
+  `cmp/moveq r0,#0/movne r0,#0`) folds to 8 bytes from every spelling because
+  both arms return the same constant.
