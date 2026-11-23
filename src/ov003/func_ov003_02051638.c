@@ -2,10 +2,11 @@
 
 extern u32 func_02008c60(void);
 extern void func_ov003_02052100(u32, u32, u32);
+extern u32 data_ov003_020eb720;
 
 void func_ov003_02051638(void)
 {
-    u8 *base = (u8 *)*(u32 *)0x020eb720;
+    u8 *base = (u8 *)data_ov003_020eb720;
     u16 n = (u16)func_02008c60();
     u16 i;
 

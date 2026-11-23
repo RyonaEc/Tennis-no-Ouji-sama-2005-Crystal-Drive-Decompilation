@@ -16,6 +16,7 @@ extern Ctx data_0204ad00;
 extern void func_02027d68(void);
 extern u32 func_02027f4c(u32, u32);
 extern void func_02027f74(u32, u32);
+extern void func_0202c4dc(void);
 
 void func_0202cb38(void)
 {
@@ -30,5 +31,5 @@ void func_0202cb38(void)
     func_02027d68();
     while (func_02027f4c(5, 1) == 0)
         ;
-    func_02027f74(5, 0x0202c4dc);
+    func_02027f74(5, (u32)func_0202c4dc);
 }
