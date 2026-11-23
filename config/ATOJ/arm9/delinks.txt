@@ -4132,3 +4132,6 @@ src/arm9/data_0203d908.c:
 src/arm9/func_0201aaa0.c:
     complete
     .text       start:0x0201aaa0 end:0x0201ab0c
+src/arm9/data_02042128.c:
+    complete
+    .rodata     start:0x02042128 end:0x02042228

@@ -11221,3 +11221,8 @@ written off.
   the large runs then link and still change the digest (ov006 0x02076024, 7168B, 2 parts -> 8fcd8eec vs
   9eec3248). So the remaining cause is a byte difference, not definition or placement; bisecting those bytes
   against retail for one run is the next step.
+  data runs, resolved -- the large runs differ because a symbol inside them sits at an odd address
+  (ov006 0x02076024..0x0207c024 contains data_ov006_0207623b at 0x0207623b). Built overlay vs
+  extract/ATOJ/arm9_overlays/ov006.bin: 1665 bytes differ over 109 runs, each record gaining a leading 00 -
+  the linker pads around the unaligned symbol and the data shifts by one byte. runs() now skips any run
+  containing a symbol whose address or span is not word aligned; what remains links and is byte exact.

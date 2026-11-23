@@ -212,3 +212,9 @@ src/ov009/func_ov009_0204d7ac.c:
 src/ov009/func_ov009_0204d830.c:
     complete
     .text       start:0x0204d830 end:0x0204d8a8
+src/ov009/data_ov009_02054d7c.c:
+    complete
+    .rodata     start:0x02054d7c end:0x02054e48
+src/ov009/data_ov009_02054f68.c:
+    complete
+    .data       start:0x02054f68 end:0x02054f80

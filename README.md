@@ -38,7 +38,7 @@ tennis_ATOJ.nds: OK
 |---|---:|---:|---:|
 | Functions | 1,615 | 3,806 | 42.43% |
 | Code | 117,456 B | 1,841,700 B | 6.38% |
-| Data | 601,252 B | 801,936 B | 74.98% |
+| Data | 608,444 B | 801,936 B | 75.87% |
 | Units | 3,850 | 4,519 | 85.20% |
 
 The badges above use objdiff's stricter pair, `matched_functions` and `matched_code`, which

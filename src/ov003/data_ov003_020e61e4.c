@@ -4,6 +4,10 @@ extern u8 data_02040203[];
 extern u8 data_ov002_0210020f[];
 extern u8 data_ov003_020e020d[];
 
+extern u8 data_02040203[];
+extern u8 data_ov002_0210020f[];
+extern u8 data_ov003_020e020d[];
+
 extern u8 data_ov003_020e020d[];
 
 const u32 data_ov003_020e61e4[384] = {

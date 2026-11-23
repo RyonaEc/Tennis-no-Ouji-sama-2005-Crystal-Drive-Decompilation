@@ -69,3 +69,6 @@ src/ov001/data_ov001_02051c84.c:
 src/ov001/data_ov001_02051c98.c:
     complete
     .data       start:0x02051c98 end:0x02051cac
+src/ov001/data_ov001_02051cac.c:
+    complete
+    .data       start:0x02051cac end:0x02051cc0

@@ -190,6 +190,12 @@ def runs(mod, minlen=16):
         if not parts:
             parts = [{'name': f'data_{mod}_{s:08x}' if mod != 'arm9' else f'data_{s:08x}',
                       'addr': s, 'span': e - s, 'hex': fm.retail(mod, s, e - s).hex()}]
+        # A symbol at an odd or half-word address makes the linker pad and the
+        # data shifts by a byte (measured: ov006 0x02076024, symbol 0x0207623b,
+        # 1665 bytes differ in 109 runs, each record gaining a leading 00).
+        # Such runs cannot be carved until the odd symbol itself is understood.
+        if any(p['addr'] % 4 or p['span'] % 4 for p in parts):
+            continue
         cands.append({'name': parts[0]['name'], 'addr': s, 'span': e - s,
                       'sec': sec, 'parts': parts,
                       'hex': ''.join(p['hex'] for p in parts)})

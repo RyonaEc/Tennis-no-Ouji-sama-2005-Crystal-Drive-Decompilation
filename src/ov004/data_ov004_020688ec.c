@@ -56,6 +56,34 @@ extern u8 data_ov004_020688ac[];
 extern u8 data_ov004_020688c0[];
 extern u8 data_ov004_020688d4[];
 
+extern u8 data_ov004_02068714[];
+extern u8 data_ov004_0206871c[];
+extern u8 data_ov004_02068728[];
+extern u8 data_ov004_02068734[];
+extern u8 data_ov004_02068740[];
+extern u8 data_ov004_0206874c[];
+extern u8 data_ov004_02068758[];
+extern u8 data_ov004_02068764[];
+extern u8 data_ov004_02068774[];
+extern u8 data_ov004_02068784[];
+extern u8 data_ov004_02068794[];
+extern u8 data_ov004_020687a8[];
+extern u8 data_ov004_020687bc[];
+extern u8 data_ov004_020687d0[];
+extern u8 data_ov004_020687e4[];
+extern u8 data_ov004_020687f8[];
+extern u8 data_ov004_0206880c[];
+extern u8 data_ov004_02068820[];
+extern u8 data_ov004_02068834[];
+extern u8 data_ov004_02068848[];
+extern u8 data_ov004_0206885c[];
+extern u8 data_ov004_02068870[];
+extern u8 data_ov004_02068884[];
+extern u8 data_ov004_02068898[];
+extern u8 data_ov004_020688ac[];
+extern u8 data_ov004_020688c0[];
+extern u8 data_ov004_020688d4[];
+
 u32 data_ov004_020688ec[108] = {
 (u32)&data_ov004_0206874c, 0x000927c0, 0x00000000, 0x00000000, (u32)&data_ov004_02068740, 0x000927c0,
 0x00000001, 0x00000000, (u32)&data_ov004_02068764, 0x004c4b40, 0x00000002, 0x00000000,

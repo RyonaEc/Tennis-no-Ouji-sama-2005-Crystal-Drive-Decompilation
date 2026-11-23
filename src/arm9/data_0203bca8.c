@@ -6,6 +6,12 @@ extern u8 data_ov005_0207152d[];
 extern u8 data_ov005_020a072b[];
 extern u8 data_ov005_020a2b06[];
 
+extern u8 data_ov003_020e1b25[];
+extern u8 data_ov005_02070d07[];
+extern u8 data_ov005_0207152d[];
+extern u8 data_ov005_020a072b[];
+extern u8 data_ov005_020a2b06[];
+
 const u32 data_0203bca8[86] = {
 0x000e2233, 0x00121d04, 0x0004102a, 0x00061a2a, 0x00000109, 0x00141805,
 0x00030c14, 0x00073820, 0x00090429, 0x00030936, 0x00123736, 0x00003734,

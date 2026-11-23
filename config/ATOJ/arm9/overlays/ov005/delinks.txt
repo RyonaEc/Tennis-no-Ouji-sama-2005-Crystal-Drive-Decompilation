@@ -938,3 +938,9 @@ src/ov005/func_ov005_0204ef68.c:
 src/ov005/func_ov005_0204efec.c:
     complete
     .text       start:0x0204efec end:0x0204f064
+src/ov005/data_ov005_020c8998.c:
+    complete
+    .rodata     start:0x020c8998 end:0x020c8a40
+src/ov005/data_ov005_020c9730.c:
+    complete
+    .data       start:0x020c9730 end:0x020c9740
