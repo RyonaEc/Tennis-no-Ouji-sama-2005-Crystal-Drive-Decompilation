@@ -11186,3 +11186,11 @@ written off.
   arm9 0x02025e48 172B -- switch on 0..6 returning constants, with a case that loads a pooled literal 0 into
   r1, tests it (`cmp r1,#0; bne`) and then uses it in `subge r0,r2,r1`. The zero literal needs a spelling
   that makes mwcc load a pooled zero instead of `mov`; not attempted past the transcription.
+  ov003 0x02082220 96B (twin 0x020c806c) -- minute/second scaler. All three if/else arms assign the same
+  constants (0x1e, 0x3c), yet retail keeps a real branch for the first arm and predication for the second
+  and third; the equivalent source collapses to one cmp with two predicated pairs (80B). The branch only
+  survives if the first arm's test is not the same block-level compare the optimiser can merge.
+  ov003 0x020b6b60 52B (twin 0x020b732c) -- six u16 stack slots zeroed through three pointer bases and
+  then discarded. Plain source is eliminated outright (4B); `volatile u16` keeps the stores but bases
+  every one on sp (40B) instead of the `add rX,sp,#0/4/8` re-basing retail uses, which needs a spelling
+  where each pair is reached through its own register.
