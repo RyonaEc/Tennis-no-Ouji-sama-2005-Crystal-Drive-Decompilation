@@ -11389,3 +11389,15 @@ written off.
   and its argument block is one word shorter, so the frame is 0x34 instead of
   0x3c and the prologue schedules differently; retail also emits
   `add r0, r0, #0` after `func_ov002_02053468` where the draft does not.
+- `ov002 0x02068c78` (64 B). Three byte stores into `base + 0x1e6c + (slot[2] >> 1)`.
+  Reproduces at exactly 64 B with the shift as an unsigned `u32` (a `u8` shift emits
+  `asr`, retail has `lsr`); the only residue is the register mirror: retail keeps
+  `base` in `ip`, the shifted byte in `r3` and the target pointer in `r1`, 1.2/b56
+  keeps them in `r3`, `r2` and `r2`.
+- `ov002 0x02081078` (60 B) and `0x0206308c` (56 B). Both reproduce at their retail
+  size but with a different first temporary: 0x02081078 wants the `data_ov002_02102070`
+  pointer and the slot offset in `r2` and gets them in `r1`/`r0`; 0x0206308c wants
+  `0x027c0000` and `0x3ff8` split across two pooled constants read back through a
+  pre-indexed `ldr r0, [r1, r0]!`, while every spelling (`*(u32 *)0x027c3ff8`,
+  `(u8 *)0x027c0000 + 0x3ff8`, a `u32 *p = 0x027c0000; p[0xffe]`, volatile or not)
+  folds the address into one constant and compiles to 48-52 B.
