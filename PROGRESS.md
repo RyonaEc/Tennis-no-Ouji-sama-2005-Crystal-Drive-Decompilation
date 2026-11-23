@@ -13,11 +13,11 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 | Metric | Matched | Total | Progress |
 |---|---:|---:|---|
-| Code | 119,672 B | 1,841,700 B | 6.50% `██░░░░░░░░░░░░░░░░░░░░░░` |
-| Functions | 1,624 | 3,806 | 42.67% `██████████░░░░░░░░░░░░░░` |
-| Fuzzy match | 6.50% | n/a | `██░░░░░░░░░░░░░░░░░░░░░░` |
+| Code | 120,056 B | 1,841,700 B | 6.52% `██░░░░░░░░░░░░░░░░░░░░░░` |
+| Functions | 1,625 | 3,806 | 42.70% `██████████░░░░░░░░░░░░░░` |
+| Fuzzy match | 6.52% | n/a | `██░░░░░░░░░░░░░░░░░░░░░░` |
 | Data | 630,724 B | 801,936 B | 78.65% `███████████████████░░░░░` |
-| Complete units | 3,913 | 4,554 | 85.92% `█████████████████████░░░` |
+| Complete units | 3,914 | 4,556 | 85.91% `█████████████████████░░░` |
 
 ## By module
 
@@ -27,7 +27,7 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 | OV002 | 5.25% (37,596 / 715,724 B) | 402 / 1,360 (29.6%) | 5.25% | 61.19% (20,904 / 34,164 B) | 958 / 1,175 |
 | OV003 | 1.75% (10,244 / 586,712 B) | 112 / 547 (20.5%) | 1.75% | 82.87% (53,572 / 64,648 B) | 619 / 697 |
 | OV004 | 4.29% (3,844 / 89,584 B) | 60 / 170 (35.3%) | 4.29% | 86.66% (23,748 / 27,404 B) | 673 / 724 |
-| OV005 | 3.76% (5,376 / 142,964 B) | 51 / 166 (30.7%) | 3.76% | 87.59% (323,324 / 369,132 B) | 307 / 340 |
+| OV005 | 4.03% (5,760 / 142,964 B) | 52 / 166 (31.3%) | 4.03% | 87.59% (323,324 / 369,132 B) | 308 / 342 |
 | OV006 | 0.71% (52 / 7,324 B) | 1 / 16 (6.2%) | 0.71% | 80.25% (136,836 / 170,504 B) | 98 / 108 |
 | OV008 | 15.03% (1,644 / 10,940 B) | 27 / 55 (49.1%) | 15.03% | 93.33% (448 / 480 B) | 47 / 64 |
 | OV009 | 10.88% (2,696 / 24,788 B) | 26 / 61 (42.6%) | 10.88% | 99.68% (9,940 / 9,972 B) | 63 / 75 |
@@ -36,6 +36,6 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 ## Against the whole ROM
 
-1,624 of 3,806 functions (42.67%) and 119,672 of 1,841,700 code bytes (6.50%) are matching C; the rest are still delinked assembly.
+1,625 of 3,806 functions (42.70%) and 120,056 of 1,841,700 code bytes (6.52%) are matching C; the rest are still delinked assembly.
 
 630,724 bytes of `.data` are matching C definitions; the rest of the data sections are still raw bytes in the delinked image.
