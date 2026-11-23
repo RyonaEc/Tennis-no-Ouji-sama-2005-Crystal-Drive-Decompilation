@@ -11370,3 +11370,22 @@ written off.
   record, `§/5` on `slot[0x128]*4`, `/360` on the shifted y, the 0x200000 direction
   word flipped when the slot type is 1, an eleven-argument `func_ov002_02057068` call,
   then clearing bit 0 of `base[0x38]`.
+## 2026-11-23 (fifth session): the 608-byte ov002 screen writer, first reconstruction
+
+- `ov002 0x0208f38c` and 12 byte-identical siblings (608 B, 13x). A full first
+  draft now compiles to 572 B (`build/cand/note_f38c_best.c` in the build tree):
+  `slot = base + 0x2e4 + i*0x158`, `p = base + 0x1744 + i*0x38`,
+  `sb = base + 0x1824`, `t2 = *(u8 *)(base + i*0x158 + 0x2e6) >> 1`,
+  `dir = (s8)(-(t2*2 - 1))`, `ang = (func_ov002_0205bf64(i) - 0x14) << 16`,
+  `cnt = (*(s32 *)(slot + 0x128) * 4) / 5` (signed field, or the division turns
+  into `umull`), `y = (s16)func_ov002_02053468(0x200000)`, the two `+/- dv`
+  blocks on `slot[0x4c] & 4` / `slot[0x50] & 0x10|0x20`, the `/360` yaw into
+  `func_ov002_0204f770`, the `v = 0x200000` negation on `t2 == 1`, the two
+  `ang = -ang` cases, `func_ov002_020532e4`, the `0x157c` area term into
+  `func_0203b0c0`, `func_ov002_020528cc`, the eleven-argument
+  `func_ov002_02057068`, `func_ov002_020780f8`, then `base[0x38] &= ~1`.
+  Residue: retail spills `idx` and `p` to `sp+0x20` / `sp+0x24` and keeps eight
+  outgoing argument slots (`sp+0..0x1c`), while the draft keeps them in registers
+  and its argument block is one word shorter, so the frame is 0x34 instead of
+  0x3c and the prologue schedules differently; retail also emits
+  `add r0, r0, #0` after `func_ov002_02053468` where the draft does not.
