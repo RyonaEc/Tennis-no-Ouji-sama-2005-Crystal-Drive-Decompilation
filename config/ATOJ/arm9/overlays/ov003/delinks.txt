@@ -1952,3 +1952,7 @@ src/ov003/data_ov003_020dea90.c:
 src/ov003/data_ov003_020e8eb0.c:
     complete
     .rodata     start:0x020e8eb0 end:0x020e8fac
+
+src/ov003/func_ov003_0204db30.c:
+    complete
+    .text       start:0x0204db30 end:0x0204db9c
