@@ -11518,3 +11518,26 @@ written off.
   pair as a `Vec2` or writing the zeros as compound literals both change the
   frame size (0x60 / 0x6c) and lose the match; a function-scope pointer variable
   makes the address live too long and shifts the whole allocation.
+- `ov003 0x020820d0` / `0x020c7dc4` (336 B x2) -- closest draft
+  `build/cand/g0820d0.c` at 332 B: every instruction matches except one redundant
+  `sub` in the second arm. Retail arm 2 emits `sub r1, r4, #0x5a / asr r2, r0, #1
+  / sub r0, r1, #0x5a / mul r0, r2, r0` -- i.e. the source really contains
+  `(s - 0x5a) - 0x5a` -- while mwcc folds any spelling of that chain (inline,
+  temp before the call, temp after the call, `s -= 0x5a` then `s - 0x5a`,
+  `+ -0x5a`, `(s32)` casts) into the single `sub #0xb4` the third arm already
+  uses. `(s - 0x5a) + (-90)` does keep 336 B but materialises `mvn r0, #0x59` and
+  an extra `add`, not retail's two subs. `(s - 0x5a) - 0x5aU` / `- (u32)0x5a` /
+  `- 90` all come out at 340 B. Abandoned one instruction short.
+- `ov003 0x020d72f8` / `0x020d8604` (164 B x2) -- closest draft
+  `build/cand/v0d72f8_u1.c` (or `t0d72f8_s2.c`) is exactly 164 B with identical
+  instruction sequence; the only difference is which scratch register holds the
+  zero constant: retail `mov lr, r5` (zero in `lr`) then `add ip, r4, r5, lsl #1`
+  (index in `ip`), mwcc the reverse (`ip` = zero, `lr` = index). The whole
+  `%4` bit-trick, the `add r0, X, #0x8d00 / strh [r0, #0xe8]` and
+  `addeq r0, X, #0x8000 / streq [r0, #0xde8]` splits, the `bne` early exit into
+  the shared `mov r0, #0 / add sp / pop` epilogue and the `sub sp, sp, #4` frame
+  all reproduce. Variants tried: address as `base + 0x8de8 + i*2` (168 B, pool
+  literal instead of the split), split constants `0x8d00 + 0xe8` / `0x8000 +
+  0xde8` (164 B but the whole head reorders), `u16 *` base (152 B),
+  `p = base` hoisted (168 B), pointer declared at function scope (same tie).
+  Pure ip/lr colouring tie; abandoned.
