@@ -75,3 +75,7 @@ src/ov001/data_ov001_02051cac.c:
 src/ov001/data_ov001_02050aa8.c:
     complete
     .rodata     start:0x02050aa8 end:0x02051b90
+
+src/ov001/func_ov001_0204d38c.c:
+    complete
+    .text       start:0x0204d38c end:0x0204d434

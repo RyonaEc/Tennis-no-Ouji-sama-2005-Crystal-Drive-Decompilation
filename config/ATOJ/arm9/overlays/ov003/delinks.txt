@@ -1972,3 +1972,7 @@ src/ov003/func_ov003_02063024.c:
 src/ov003/func_ov003_02063f68.c:
     complete
     .text       start:0x02063f68 end:0x020640ec
+
+src/ov003/func_ov003_0205ecd4.c:
+    complete
+    .text       start:0x0205ecd4 end:0x0205ee64

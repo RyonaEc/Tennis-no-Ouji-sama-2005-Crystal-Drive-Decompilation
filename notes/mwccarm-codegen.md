@@ -451,3 +451,18 @@ Evidence: `arm9 0x02032c70`. The absolute form pools 0x027fff7c and loads
 `ldr ip, [r3]`; the struct form pools 0x027fff60 and loads `ldr ip, [r3, #0x1c]`
 exactly as retail does, worth 8 bytes on that unit and moving it from 124 B to
 136 B against retail's 144 B.
+
+## Session notes, 2026-11-23 (overlay teardown/init family)
+
+- **A compound assignment hides the reload.** `*(volatile u32 *)0x04001000 &= ~0x1f00;`
+  allocates the address register and the scratch the other way round from retail.
+  Writing the load out explicitly, `*(volatile u32 *)0x04001000 =
+  *(volatile u32 *)0x04001000 & ~0x1f00u;`, reproduces retail's `r3`/`ip` split
+  (`func_ov009_0204ebf4`).
+- **Spilled constant arguments come from `volatile` locals.** Where retail does
+  `mov r0, #0 / str r0, [sp, #8] / ldr r0, [sp, #8]` before a call, the source kept
+  the value in a `volatile u32` local. The frame is exactly one 4-byte slot per
+  local, and the slot offset is 4 x the local's declaration index, so the
+  declaration order is also how the slots are placed
+  (`func_ov002_02060344`, `func_ov008_0204e084`: declaration order `b, d, a, c, e`
+  gives the use order `a, b, c, d, e`, slots `8, 0, 0xc, 4, 0x10`).

@@ -169,3 +169,7 @@ src/ov008/data_ov008_0204f27c.c:
 src/ov008/data_ov008_0204f414.c:
     complete
     .data       start:0x0204f414 end:0x0204f440
+
+src/ov008/func_ov008_0204e084.c:
+    complete
+    .text       start:0x0204e084 end:0x0204e13c
