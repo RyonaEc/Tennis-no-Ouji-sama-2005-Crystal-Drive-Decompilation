@@ -2496,3 +2496,4 @@ written off.
   (update, 0x0205bee4) three more truncation forms measured, all worse than the 128B baseline:
   `n = (u32)((u16)src) / 2;` 120B, `n = ((u32)((u16)src) << 15) >> 16;` 120B,
   `n = ((u16)src) >> 1;` 124B. The `(src & 0xffff) >> 1` form stays the best at 128B.
+  (update, 0x0205bee4) the nested form `if (a1[0xd1] != 0) src = 0; else if (x <= 1) src = 0; else src = ldrh;` is also exactly 128B but with 18 differing instructions, versus 8 for the plain if/else, so the plain form remains the closest.
