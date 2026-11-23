@@ -11238,3 +11238,9 @@ written off.
   That rules out carrying string tables as address-placed units one symbol at a time; they need the owning
   aggregate unit reconstructed as a whole, with the strings laid out inside one section that starts on a
   word boundary. Recorded so the next pass does not re-run this experiment.
+  data runs, fourth pass -- the last word-aligned gaps are small and mostly hostile: arm9 3/3 and
+  ov004 6/6 and ov002 1/1 all change the digest (arm9 02042354/020423dc/02042a24, ov004 020637c8..020647c0,
+  ov002 020fdc94), while ov008 2/2 (0204f27c 32B rodata, 0204f414 44B data) are byte exact and were kept.
+  Symbolising the newly carved data units resolved 1,370 more relocation words (arm9 142, ov004 460,
+  ov008 9, ov002 759) and left the digest OK. Data 612,772 -> 612,848 B. Every module now reports 0 runs at
+  min 16, so the next data work is the string tables, not more carving.

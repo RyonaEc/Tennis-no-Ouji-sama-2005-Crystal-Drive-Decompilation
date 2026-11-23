@@ -163,3 +163,9 @@ src/ov008/data_ov008_0204f3ec.c:
 src/ov008/data_ov008_0204f400.c:
     complete
     .data       start:0x0204f400 end:0x0204f414
+src/ov008/data_ov008_0204f27c.c:
+    complete
+    .rodata     start:0x0204f27c end:0x0204f29c
+src/ov008/data_ov008_0204f414.c:
+    complete
+    .data       start:0x0204f414 end:0x0204f440

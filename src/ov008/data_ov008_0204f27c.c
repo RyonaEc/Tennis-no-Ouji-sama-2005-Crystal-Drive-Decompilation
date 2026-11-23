@@ -1,0 +1,3 @@
+#include "types.h"
+
+const u32 data_ov008_0204f27c[8] = { 0x7f997f99, 0x7f997f99, 0x7f997f99, 0x7f997f99, 0x7f997f99, 0x7f997f99, 0x7f997f99, 0x7f997f99 };
