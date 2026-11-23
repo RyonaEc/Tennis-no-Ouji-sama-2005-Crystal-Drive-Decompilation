@@ -186,3 +186,7 @@ src/ov010/data_ov010_0205cf98.c:
 src/ov010/data_ov010_0205e4cc.c:
     complete
     .data       start:0x0205e4cc end:0x0205e500
+
+src/ov010/func_ov010_0204e7cc.c:
+    complete
+    .text       start:0x0204e7cc end:0x0204e920
