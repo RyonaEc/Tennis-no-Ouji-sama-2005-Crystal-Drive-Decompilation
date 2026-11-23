@@ -130,6 +130,33 @@ Two things bite when writing a client against this API from this repository:
 Results come back as dataclasses, not dicts: `MetadataResult.entries[i].exec`,
 `CoverageResult.ranges[i].start/end/count/overlay`.
 
+## What one played match changed (2026-11-23)
+
+`tools/match/coverage.py` reports, per module, how many unmatched functions the
+recorded sessions executed. Driving the emulator through the API (`screen_capture`
+to read the screen, `input_send(buttons=['A'], frames=N)` to press) from the title
+screen into one official-match singles game took the numbers from:
+
+| module | unmatched | executed, before | executed, after one match |
+|---|---:|---:|---:|
+| arm9 | 432 / 165,980 B | 151 / 33,114 B | 184 / 56,214 B |
+| ov002 | 966 / 679,532 B | 25 / 10,168 B | 192 / 111,680 B |
+| ov003 | 440 / 578,028 B | 16 / 12,900 B | 159 / 215,952 B |
+| ov004 | 111 / 85,772 B | 24 / 12,684 B | 49 / 35,436 B |
+| ov005 | 120 / 138,480 B | 18 / 13,676 B | 57 / 70,884 B |
+| ov006 | 15 / 7,272 B | 12 / 6,092 B | 14 / 6,940 B |
+| ov008 | 28 / 9,296 B | 23 / 6,840 B | 27 / 8,800 B |
+| ov009 | 39 / 22,596 B | 23 / 12,120 B | 31 / 17,728 B |
+| ov010 | 26 / 24,560 B | 8 / 11,980 B | 14 / 16,816 B |
+
+So a single match roughly doubles the code known to be live, and the earlier
+sessions (title and menus only) had misrepresented ov002 and ov003 as mostly dead.
+The largest live unmatched functions after that match were `arm9 0x0200a904`
+(14,312 B), `ov003 0x0208af10` (13,540 B), `ov005 0x02051cac` and
+`ov003 0x020589d0` (11,292 B each, the same size - check them for a cross-module twin
+before writing either), `ov003 0x0205ee64` (9,240 B) and `ov010 0x0204c7c0`
+(8,204 B, the overlay entry point).
+
 ## What it does not do
 
 - It does not produce source, and it does not gate a unit: the digest does that.
