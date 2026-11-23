@@ -217,6 +217,51 @@ def runs(mod, minlen=16):
     return cands
 
 
+def whole(mod, minlen=16):
+    """One candidate per whole unclaimed gap, strings at their natural offsets.
+
+    Packed string tables are odd-addressed and odd-length with no aligned
+    interior, so `runs` cannot take them (measured: a unit starting on an odd
+    address rebases 122,543 bytes). The gap between two claimed units is usually
+    word aligned at both ends, though, so the whole gap can be one unit whose
+    parts keep their retail offsets inside a single section.
+    """
+    secs = module_sections(mod)
+    occ = occupied(mod)
+    syms = data_symbols(mod)
+    cands = []
+    for sec, lo, hi in secs:
+        gaps, cur = [], lo
+        for a, b in occ:
+            if b <= lo or a >= hi:
+                continue
+            if a > cur:
+                gaps.append((cur, min(a, hi)))
+            cur = max(cur, b)
+        if cur < hi:
+            gaps.append((cur, hi))
+        for g0, g1 in gaps:
+            s, e = (g0 + 3) & ~3, g1 & ~3
+            if e - s < minlen:
+                continue
+            inside = [(a, n) for a, n in syms if s <= a < e]
+            parts = []
+            if not inside or inside[0][0] > s:
+                parts.append({'name': (f'data_{mod}_{s:08x}' if mod != 'arm9'
+                                       else f'data_{s:08x}'),
+                              'addr': s,
+                              'span': (inside[0][0] if inside else e) - s})
+            for i, (a, n) in enumerate(inside):
+                end = inside[i + 1][0] if i + 1 < len(inside) else e
+                parts.append({'name': n, 'addr': a, 'span': end - a})
+            for p in parts:
+                p['hex'] = fm.retail(mod, p['addr'], p['span']).hex()
+            cands.append({'name': parts[0]['name'], 'addr': s, 'span': e - s,
+                          'sec': sec, 'parts': parts,
+                          'hex': ''.join(p['hex'] for p in parts)})
+    return cands
+
+
 def body_for(c):
     parts = c.get('parts') or [c]
     qual = 'const ' if c['sec'] == '.rodata' else ''
@@ -319,6 +364,16 @@ def main():
               f'(min {minlen})')
         for c in cands[:12]:
             print(f'  {c["addr"]:08x} {c["span"]:6d} {c["sec"]:8s}  {c["name"]}')
+        return 0
+    if cmd == 'gaps':
+        minlen = int(sys.argv[3]) if len(sys.argv) > 3 else 16
+        cands = whole(mod, minlen)
+        pathlib.Path(f'build/datacands_{mod}.json').write_text(json.dumps(cands))
+        print(f'{mod}: {len(cands)} whole gaps, {sum(c["span"] for c in cands)} bytes '
+              f'(min {minlen})')
+        for c in cands[:12]:
+            print(f'  {c["addr"]:08x} {c["span"]:6d} {c["sec"]:8s}  {c["name"]} '
+                  f'({len(c["parts"])} parts)')
         return 0
     if cmd == 'list':
         lo = int(sys.argv[3]) if len(sys.argv) > 3 else 8

@@ -11244,3 +11244,11 @@ written off.
   Symbolising the newly carved data units resolved 1,370 more relocation words (arm9 142, ov004 460,
   ov008 9, ov002 759) and left the digest OK. Data 612,772 -> 612,848 B. Every module now reports 0 runs at
   min 16, so the next data work is the string tables, not more carving.
+  whole-gap units -- carve_data.py gaps <mod> emits each entire unclaimed gap as one unit, every data
+  symbol inside it as a consecutive array, so the strings keep their retail offsets in a section that
+  starts and ends word aligned. All 8 ov006 gaps (36,452B) link but change the digest. Measured on
+  0x02062024 (3908B, parts 321/32/3555): mwcc word aligns each array, so the third starts at 356 not 353,
+  the unit grows by 4 bytes and dsd emits it 32 bytes late, which shifts every pointer into it (first
+  difference 0x0204db14 reads 0x02076028 for retail's 0x02076024). The route needs one symbol at offset 0
+  and the interior names placed by the delinker rather than by separate C objects, so it is a dsd/symbol
+  question, not a byte question.
