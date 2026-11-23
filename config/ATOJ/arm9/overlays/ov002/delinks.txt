@@ -3211,3 +3211,27 @@ src/ov002/data_ov002_02100a28.c:
 src/ov002/data_ov002_02100a38.c:
     complete
     .data       start:0x02100a38 end:0x02100a5c
+src/ov002/data_ov002_020fb40c.c:
+    complete
+    .rodata     start:0x020fb40c end:0x020fb544
+src/ov002/data_ov002_020fc288.c:
+    complete
+    .rodata     start:0x020fc288 end:0x020fc488
+src/ov002/data_ov002_020fc790.c:
+    complete
+    .rodata     start:0x020fc790 end:0x020fc874
+src/ov002/data_ov002_020fc874.c:
+    complete
+    .rodata     start:0x020fc874 end:0x020fcc74
+src/ov002/data_ov002_020fcc74.c:
+    complete
+    .rodata     start:0x020fcc74 end:0x020fce08
+src/ov002/data_ov002_020fcea0.c:
+    complete
+    .rodata     start:0x020fcea0 end:0x020fd074
+src/ov002/data_ov002_020fd074.c:
+    complete
+    .rodata     start:0x020fd074 end:0x020fd288
+src/ov002/data_ov002_020fd41c.c:
+    complete
+    .rodata     start:0x020fd41c end:0x020fd6ec

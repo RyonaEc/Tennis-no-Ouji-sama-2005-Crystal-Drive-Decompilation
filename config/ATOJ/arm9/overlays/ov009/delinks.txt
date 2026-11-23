@@ -178,3 +178,18 @@ src/ov009/data_ov009_02054f50.c:
 src/ov009/data_ov009_02054f5c.c:
     complete
     .data       start:0x02054f5c end:0x02054f68
+src/ov009/data_ov009_02052894.c:
+    complete
+    .rodata     start:0x02052894 end:0x02052994
+src/ov009/data_ov009_02052adc.c:
+    complete
+    .rodata     start:0x02052adc end:0x020532dc
+src/ov009/data_ov009_02053f44.c:
+    complete
+    .rodata     start:0x02053f44 end:0x02054144
+src/ov009/data_ov009_0205417c.c:
+    complete
+    .rodata     start:0x0205417c end:0x0205457c
+src/ov009/data_ov009_0205457c.c:
+    complete
+    .rodata     start:0x0205457c end:0x02054d7c

@@ -61,3 +61,138 @@ src/ov006/data_ov006_02077dd4.c:
 src/ov006/data_ov006_02077df4.c:
     complete
     .data       start:0x02077df4 end:0x02077e0c
+src/ov006/data_ov006_0204e4b0.c:
+    complete
+    .rodata     start:0x0204e4b0 end:0x0204e584
+src/ov006/data_ov006_0204e584.c:
+    complete
+    .rodata     start:0x0204e584 end:0x0204e658
+src/ov006/data_ov006_0204e65c.c:
+    complete
+    .rodata     start:0x0204e65c end:0x0204e7cc
+src/ov006/data_ov006_0204e920.c:
+    complete
+    .rodata     start:0x0204e920 end:0x0204ea5c
+src/ov006/data_ov006_0204ea5c.c:
+    complete
+    .rodata     start:0x0204ea5c end:0x0204ebf4
+src/ov006/data_ov006_0204ec5c.c:
+    complete
+    .rodata     start:0x0204ec5c end:0x0204ed6c
+src/ov006/data_ov006_0204ed6c.c:
+    complete
+    .rodata     start:0x0204ed6c end:0x0204ee5c
+src/ov006/data_ov006_0204ee5c.c:
+    complete
+    .rodata     start:0x0204ee5c end:0x0204f05c
+src/ov006/data_ov006_0204f05c.c:
+    complete
+    .rodata     start:0x0204f05c end:0x0204f25c
+src/ov006/data_ov006_0204f25c.c:
+    complete
+    .rodata     start:0x0204f25c end:0x0204f45c
+src/ov006/data_ov006_0204f45c.c:
+    complete
+    .rodata     start:0x0204f45c end:0x0204f65c
+src/ov006/data_ov006_0204f65c.c:
+    complete
+    .rodata     start:0x0204f65c end:0x0204f73c
+src/ov006/data_ov006_0204f73c.c:
+    complete
+    .rodata     start:0x0204f73c end:0x0204f85c
+src/ov006/data_ov006_0204f85c.c:
+    complete
+    .rodata     start:0x0204f85c end:0x0204f980
+src/ov006/data_ov006_0204f980.c:
+    complete
+    .rodata     start:0x0204f980 end:0x0204fa5c
+src/ov006/data_ov006_0204fac4.c:
+    complete
+    .rodata     start:0x0204fac4 end:0x0204fc5c
+src/ov006/data_ov006_0204fc5c.c:
+    complete
+    .rodata     start:0x0204fc5c end:0x0204fe5c
+src/ov006/data_ov006_02050104.c:
+    complete
+    .rodata     start:0x02050104 end:0x0205025c
+src/ov006/data_ov006_02050708.c:
+    complete
+    .rodata     start:0x02050708 end:0x0205085c
+src/ov006/data_ov006_0205085c.c:
+    complete
+    .rodata     start:0x0205085c end:0x02050a5c
+src/ov006/data_ov006_02050aa8.c:
+    complete
+    .rodata     start:0x02050aa8 end:0x02050c5c
+src/ov006/data_ov006_02050c5c.c:
+    complete
+    .rodata     start:0x02050c5c end:0x02050e5c
+src/ov006/data_ov006_02050e5c.c:
+    complete
+    .rodata     start:0x02050e5c end:0x0205105c
+src/ov006/data_ov006_0205105c.c:
+    complete
+    .rodata     start:0x0205105c end:0x0205125c
+src/ov006/data_ov006_0205125c.c:
+    complete
+    .rodata     start:0x0205125c end:0x02051350
+src/ov006/data_ov006_02051350.c:
+    complete
+    .rodata     start:0x02051350 end:0x0205145c
+src/ov006/data_ov006_0205145c.c:
+    complete
+    .rodata     start:0x0205145c end:0x0205165c
+src/ov006/data_ov006_0205165c.c:
+    complete
+    .rodata     start:0x0205165c end:0x0205185c
+src/ov006/data_ov006_0205185c.c:
+    complete
+    .rodata     start:0x0205185c end:0x02051a5c
+src/ov006/data_ov006_02051a5c.c:
+    complete
+    .rodata     start:0x02051a5c end:0x02051c5c
+src/ov006/data_ov006_02051c5c.c:
+    complete
+    .rodata     start:0x02051c5c end:0x02051e5c
+src/ov006/data_ov006_02051e5c.c:
+    complete
+    .rodata     start:0x02051e5c end:0x0205205c
+src/ov006/data_ov006_0205205c.c:
+    complete
+    .rodata     start:0x0205205c end:0x0205225c
+src/ov006/data_ov006_0205225c.c:
+    complete
+    .rodata     start:0x0205225c end:0x0205245c
+src/ov006/data_ov006_0205245c.c:
+    complete
+    .rodata     start:0x0205245c end:0x0205265c
+src/ov006/data_ov006_0205265c.c:
+    complete
+    .rodata     start:0x0205265c end:0x0205285c
+src/ov006/data_ov006_0205285c.c:
+    complete
+    .rodata     start:0x0205285c end:0x02052a5c
+src/ov006/data_ov006_02052a5c.c:
+    complete
+    .rodata     start:0x02052a5c end:0x02053024
+src/ov006/data_ov006_0205ecd4.c:
+    complete
+    .rodata     start:0x0205ecd4 end:0x0205ee64
+src/ov006/data_ov006_0205ee64.c:
+    complete
+    .rodata     start:0x0205ee64 end:0x0205f024
+src/ov006/data_ov006_02060024.c:
+    complete
+    .rodata     start:0x02060024 end:0x02060104
+src/ov006/data_ov006_02061024.c:
+    complete
+    .rodata     start:0x02061024 end:0x020617c4
+src/ov006/data_ov006_02063024.c:
+    complete
+    .rodata     start:0x02063024 end:0x020630f4
+src/ov006/data_ov006_020630f4.c:
+    complete
+    .rodata     start:0x020630f4 end:0x020631f8
+src/ov006/data_ov006_02069de0.c:
+    complete
+    .rodata     start:0x02069de0 end:0x0206a024

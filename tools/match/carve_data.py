@@ -146,6 +146,14 @@ def build(mod, sub, all_names, base):
 def accept(mod, budget=600.0, step=80):
     path = pathlib.Path(f'build/datacands_{mod}.json')
     cands = json.loads(path.read_text())
+    # A range whose address or length is not word aligned cannot be placed: dsd
+    # would have to shift every byte after it. Measured on arm9: 13 of 13 such
+    # ranges failed, so they are dropped here rather than bisected one by one.
+    unaligned = [c for c in cands if c['addr'] % 4 or c['span'] % 4]
+    cands = [c for c in cands if not (c['addr'] % 4 or c['span'] % 4)]
+    if unaligned:
+        print(f'  {len(unaligned)} unaligned ranges dropped '
+              f'({sum(c["span"] for c in unaligned)} bytes)', flush=True)
     all_names = {c['name'] for c in cands}
     base = subprocess.run(f'git show HEAD:{delinks_for(mod).as_posix()}',
                           shell=True, capture_output=True, text=True).stdout.replace('\r', '')
