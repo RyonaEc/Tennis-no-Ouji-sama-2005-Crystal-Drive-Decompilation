@@ -11194,3 +11194,19 @@ written off.
   then discarded. Plain source is eliminated outright (4B); `volatile u16` keeps the stores but bases
   every one on sp (40B) instead of the `add rX,sp,#0/4/8` re-basing retail uses, which needs a spelling
   where each pair is reached through its own register.
+  ov005 0x020614a4 220B (family 0x020656d8, 0x020695bc, 0x0206bfc0 -- 4x220) -- block init: two GX calls,
+  a masked MMIO write, a 0x200-iteration u16 clear with a word store every fourth entry, then a 0x1f4
+  guard around a clear/fill pair. Every instruction matches at exactly 220B except the two dead loop
+  temps: retail materialises the stored zero in lr and `g + i*2` in ip, mwcc insists on the opposite
+  (`mov ip,r5` / `add lr,r4,r5,lsl #1`). The store address only split as `add r0,ip,#0x4a00` +
+  `[r0,#0x58]` once the base was a per-iteration `u8 *e = g + i * 2`; the second tail call also has to
+  keep its argument as the compound `(u8 *)g + 0x4658` or mwcc reuses r4 for both calls. Tried: u16/u32
+  base, `&g[i*2]`, u32 pointer, `e[0x252c]`, `0u`, `i & 0`, a zero variable live across the loop,
+  reversed if/else and both store-address groupings -- all land at the same lr/ip swap.
+  ov002 0x02089f68 204B -- two-slot jump-table walk. Table is 14 entries at 0x40: case 0 and out-of-range
+  go to `e[0x34d+i] = 0`, cases 1/8/9 to `e[0x34f+i] = 0`, cases 2-7/10-13 test `g[0x109] != g[0x10a]`
+  before clearing 0x34f; after the switch the same compare clears 0x34b and 0x34d is cleared again, so
+  retail really does store 0x34d twice (r3 then r2, both zero). Retail hoists four separate zero
+  constants into r3/r2/ip/lr before the loop and uses only 5 registers; the transcription above compiles
+  to 236B and 8 saved registers, so the loop body shape (probably a `u32 *`/struct walk rather than byte
+  indices) is still wrong.
