@@ -1,0 +1,3 @@
+#include "types.h"
+
+u32 data_ov003_020ea650[7] = { 0x7461642f, 0x654d2f61, 0x4c2f756e, 0x5f75427a, 0x6b6e6972, 0x69622e6f, 0x0000006e };
