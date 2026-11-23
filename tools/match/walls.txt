@@ -11232,3 +11232,9 @@ written off.
   stretches on either side of an unaligned symbol instead of dropping the run; that is what took ov001's
   4328-byte stretch. Reaching the string tables needs each string as its own sized unit, which is a data
   modelling pass rather than a carve.
+  string tables -- a unit placed at an odd address does not just shift its own bytes: carving ov006
+  0x0205025c (169B) leaves 122,543 bytes different, the first at 0x0204db14 in .text, where a literal pool
+  entry reads 0x02076028 instead of retail's 0x02076024, so the linker rebases around the odd section start.
+  That rules out carrying string tables as address-placed units one symbol at a time; they need the owning
+  aggregate unit reconstructed as a whole, with the strings laid out inside one section that starts on a
+  word boundary. Recorded so the next pass does not re-run this experiment.
