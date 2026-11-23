@@ -3238,3 +3238,22 @@ src/ov002/data_ov002_020fd41c.c:
 src/ov002/data_ov002_020fb544.c:
     complete
     .rodata     start:0x020fb544 end:0x020fc140
+
+src/ov002/func_ov002_020ad5a4.c:
+    complete
+    .text       start:0x020ad5a4 end:0x020ad634
+src/ov002/func_ov002_02077818.c:
+    complete
+    .text       start:0x02077818 end:0x020778b4
+
+src/ov002/func_ov002_020e6e84.c:
+    complete
+    .text       start:0x020e6e84 end:0x020e6f18
+
+src/ov002/func_ov002_020f7c3c.c:
+    complete
+    .text       start:0x020f7c3c end:0x020f7ccc
+
+src/ov002/func_ov002_020e6624.c:
+    complete
+    .text       start:0x020e6624 end:0x020e66cc

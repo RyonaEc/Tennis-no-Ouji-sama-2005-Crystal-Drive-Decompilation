@@ -11168,3 +11168,21 @@ written off.
   arm9 0x020208b0 140B -- video-state selector on the u16 pair at 0x02048c74 (fields 0 and 0xc): prev = s[0xc]; old = s[0]; s[0xc] = a0; s[0] = (old | prev) & ~a0; then if a0 == 0 clear bit 31 of 0x04001000, else if a0 == 0x100 set it and store 0x83 to 0x04000249; tail calls func_02021538(s[0]). Control flow needs the inverted form `if (a0 != 0) { if (a0 == 0x100) ... } else ...`: the natural `if (a0 == 0) ... else if ...` makes mwcc if-convert the clear into ldreq/biceq/streq and lands at 136B, and the 0x100-first order also gives 136B. Nine spellings (u16*/u8*/u32* pointer, value in a temp, volatile stores, both declaration orders) all reach exactly 140B with the branch layout matching the retail beq to 0x2020908; what is left is 8 instructions in the prologue, all register names plus one scheduling swap: retail keeps the constant pointer in r1 and the mask in ip and stores s[0xc] before the orr, mwcc always puts the pointer in ip, the mask in r2 and hoists the orr above the store. Twin of 0x0202093c in the same 2x140 famsurvey group.
   arm9 0x0202d158 212B -- two-step page/stream submit: g = data_0204aec0 (a real bss symbol, see below), h = func_02026350(), spin-wait on g->f34 bit 2 calling func_020251c0(&g->fd4), set the bit, func_02026364(h), store a1/a0/a2/a3/a4 into g->f18/f1c/f20/f28/f2c, and if the sixth argument is nonzero register the callback 0x0202d300 via func_020cf10 and return 1; otherwise g->fd0 = [0x02048d3c+8], call func_0202d300(g) and return g->f00 == 0. Body is right in every spelling (literal address, extern symbol, struct member access) and all are exactly 212B, but never the same registers: retail holds the base in r6 and the four saved arguments in sl/sb/r8/r7, mwcc 1.2/b56 puts the base in sl and shifts the arguments one register down, and it rematerialises the base from the pool after each call where retail adds to r6.
   NOTE: data_0204aec0 IS declared in config/ATOJ/arm9/symbols.txt (kind:bss). Greps for it must use the full 8-digit form 0x0204aec0; the file writes addr:0x0204aec0 and a search for 0x204aec0 matches nothing. Using the symbol instead of the literal changes the codegen: the base is loaded early into a callee-saved register like retail, but the pointer-variable and struct-member forms then cost an extra mov (208B) and the object form shifts the whole register set (212B). For 0x0202db70 the symbol form compiles to 144B, well under retail's 164B.
+  ov002 0x02084ff4 164B -- body matches instruction for instruction except the prologue allocation:
+  retail keeps g in r0 and the zero in r1 (`ldr r0,=data_ov002_02102070; mov r1,#0; ldr r3,[r0]`), mwcc puts g in
+  r1 and the zero in r0 whether the zero comes from `g[0x64]=0`, a shared `i=0`, or a chained
+  `g[0x64]=g[0x65]=0`. Everything from `strb` on is exact.
+  ov002 0x0208804c 164B -- 5-byte block swap. Scalar locals collapse to 132B (bytes stay in registers);
+  `u8 tmp[5]` with explicit `tmp[j]=g[..]` also collapses; `volatile u8 tmp[5]` restores the stack frame but
+  emits load/store pairs one statement at a time, where retail batches two loads then two stores
+  (`ldrb r3,[r0,#0x200]; ldrb r2,[r0,#0x201]; strb r3,[sp]; strb r2,[sp,#1]`). Byte-for-byte copy loops
+  with constant bounds are not unrolled by mwcc, so the batching shape has no source spelling yet.
+  ov004 0x0204e1a0 164B -- found-record setter. Retail keeps two induction variables (`r8 = arr+i*0x1c0`,
+  `r7 = i*0x1c0`) and a wider frame (7 registers + 4 bytes); one-pointer and two-pointer spellings both
+  compile to 152/184B with different register choices. The `n<=0` early return is already `movle/popeq`.
+  arm9 0x020344b4 172B -- memset. Exact at 172B except the 32-byte-block counter lands in r1 where retail
+  has r3 (`lsrs r3,r2,#5` / `subs r3,r3,#1`). Reusing the alignment temp, `for`-init, separate locals and
+  signed/unsigned variants all keep r1; retail's r3 is the alignment temp's register reused.
+  arm9 0x02025e48 172B -- switch on 0..6 returning constants, with a case that loads a pooled literal 0 into
+  r1, tests it (`cmp r1,#0; bne`) and then uses it in `subge r0,r2,r1`. The zero literal needs a spelling
+  that makes mwcc load a pooled zero instead of `mov`; not attempted past the transcription.
