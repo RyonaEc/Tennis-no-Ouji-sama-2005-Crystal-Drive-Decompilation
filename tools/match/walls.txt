@@ -11267,3 +11267,19 @@ written off.
   Measured: 16 units kept, 49,636 B (ov005 9/29,068, ov006 4/19,232, ov003 2/1,276, ov002 2/44, ov004 1/16),
   data 612,848 -> 630,724 B. ov001 0x0204ff10 (2,968 B) is blocked: a delinked arm9 rodata object references
   0x02050104 and friends there, so none of those names can disappear.
+
+  thumb swi thunks -- the BIOS wrappers (Halt, Sqrt, IsDebugger, CpuSet, GetCRC16,
+  CpuFastSet, RLUnCompReadNormalWrite8bit, LZ77UnCompReadByCallbackWrite16bit, VBlankIntrWait, Mod)
+  at 0x020040e6..0x0200470a are `swi 0xNN` + `bx lr` and the source form is the same one the matched
+  ones use (`#pragma thumb on`, `asm { swi 0x06 }`), so var3 reports MATCH for all ten. They cannot be
+  placed: every one starts or ends at 2 mod 4, and mwldarm pads each section to 4, so carving one splits
+  the surrounding gap object at an odd address and the linker inserts 2 bytes of padding before the unit.
+  Measured on 0x020040e6: the built arm9.bin holds 00 00 06 df 70 47 where retail has 06 df 70 47, and
+  that shift moves the rest of the gap (34281 differing runs up to 0x03e788). A thumb unit is placeable
+  only if both its start and its end are word aligned, which none of the thunks are.
+
+  code ties this pass -- arm9 0x0202c430 wants the global address in ip (ldr ip,=data; ldr r0,[ip] loop)
+  where 1.2/b56 always picks r0/r1, for every shape tried (while/do-while, volatile, pointer local,
+  array, symbol vs literal, u16/u32, extra parameters); a register-allocation tie. ov003 0x020b6b60 (three
+  stack u16[2] zero initialisers) matches instruction count and offsets but schedules the base pointers
+  r0/r2/r1 where retail uses r1/r2/r1, for every declaration and initialiser form tried -- same class.
