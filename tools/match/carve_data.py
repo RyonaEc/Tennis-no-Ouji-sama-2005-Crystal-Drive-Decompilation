@@ -8,6 +8,10 @@ ROM digest.
 
 Two steps:
 
+    python tools/match/carve_data.py runs <mod> [minlen]
+        Write the unclaimed space between claimed units as candidates, clamped
+        to word boundaries. `accept` then treats them like any other candidate.
+
     python tools/match/carve_data.py list <mod> [lo] [hi]
         Write `build/datacands_<mod>.json`: every `kind:data` symbol in the
         module whose distance to the next data symbol is between `lo` and `hi`
@@ -107,6 +111,68 @@ def candidates(mod, lo=8, hi=2048):
     return out
 
 
+def module_sections(mod):
+    dl = delinks_for(mod).read_text(encoding='utf-8', errors='ignore').splitlines()
+    secs = []
+    for line in dl[:14]:
+        m = re.search(r'(\.\w+)\s+start:0x(\w+) end:0x(\w+)', line)
+        if m and m.group(1) in ('.rodata', '.data'):
+            secs.append((m.group(1), int(m.group(2), 16), int(m.group(3), 16)))
+    return secs
+
+
+def occupied(mod):
+    dl = delinks_for(mod).read_text(encoding='utf-8', errors='ignore').splitlines()
+    out = []
+    for i, line in enumerate(dl):
+        m = re.search(r'start:0x(\w+) end:0x(\w+)', line)
+        if not m:
+            continue
+        j = i
+        while j >= 0 and not dl[j].rstrip().endswith(':'):
+            j -= 1
+        if j >= 0 and dl[j].strip().startswith('src/'):
+            out.append((int(m.group(1), 16), int(m.group(2), 16)))
+    return sorted(out)
+
+
+def runs(mod, minlen=16):
+    """Candidates for the space between claimed units.
+
+    Data symbol ranges usually end on an odd address, and a section cannot be
+    placed there without shifting everything after it (measured: an unaligned
+    range changes the digest). The unclaimed space between units can still be
+    carved from its aligned interior, which leaves at most three bytes at each
+    end behind.
+    """
+    occ = occupied(mod)
+    out = []
+    for sec, lo, hi in module_sections(mod):
+        cur = lo
+        for a, b in occ:
+            if b <= lo or a >= hi:
+                continue
+            if a > cur:
+                out.append((cur, min(a, hi)))
+            cur = max(cur, b)
+        if cur < hi:
+            out.append((cur, hi))
+    cands = []
+    for g0, g1 in out:
+        s = (g0 + 3) & ~3
+        e = g1 & ~3
+        if e - s < minlen:
+            continue
+        name = (f'data_{s:08x}' if mod == 'arm9' else f'data_{mod}_{s:08x}')
+        sec = next((n for n, a, b in module_sections(mod)
+                    if a <= s and e <= b), None)
+        if not sec:
+            continue
+        cands.append({'name': name, 'addr': s, 'span': e - s, 'sec': sec,
+                      'hex': fm.retail(mod, s, e - s).hex()})
+    return cands
+
+
 def body_for(c):
     data = bytes.fromhex(c['hex'])
     qual = 'const ' if c['sec'] == '.rodata' else ''
@@ -196,6 +262,15 @@ def main():
     if len(sys.argv) < 3:
         raise SystemExit(__doc__.strip().splitlines()[-1])
     cmd, mod = sys.argv[1], sys.argv[2]
+    if cmd == 'runs':
+        minlen = int(sys.argv[3]) if len(sys.argv) > 3 else 16
+        cands = runs(mod, minlen)
+        pathlib.Path(f'build/datacands_{mod}.json').write_text(json.dumps(cands))
+        print(f'{mod}: {len(cands)} runs, {sum(c["span"] for c in cands)} bytes '
+              f'(min {minlen})')
+        for c in cands[:12]:
+            print(f'  {c["addr"]:08x} {c["span"]:6d} {c["sec"]:8s}  {c["name"]}')
+        return 0
     if cmd == 'list':
         lo = int(sys.argv[3]) if len(sys.argv) > 3 else 8
         hi = int(sys.argv[4]) if len(sys.argv) > 4 else 2048

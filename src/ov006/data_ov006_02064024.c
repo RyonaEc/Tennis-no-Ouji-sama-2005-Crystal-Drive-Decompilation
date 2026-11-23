@@ -17,6 +17,23 @@ extern u8 data_ov006_02065bd7[];
 extern u8 data_ov006_02069de0[];
 extern u8 data_ov006_0206bfc6[];
 
+extern u8 data_02040204[];
+extern u8 data_0204025b[];
+extern u8 data_02040404[];
+extern u8 data_02040407[];
+extern u8 data_0204b723[];
+extern u8 data_ov002_02100a02[];
+extern u8 data_ov003_020ded99[];
+extern u8 data_ov005_0207b710[];
+extern u8 data_ov005_02085b4a[];
+extern u8 data_ov005_020a8fe4[];
+extern u8 data_ov006_02050708[];
+extern u8 data_ov006_02051350[];
+extern u8 data_ov006_0205cb55[];
+extern u8 data_ov006_02065bd7[];
+extern u8 data_ov006_02069de0[];
+extern u8 data_ov006_0206bfc6[];
+
 extern u8 data_ov006_02050708[];
 extern u8 data_ov006_02051350[];
 extern u8 data_ov006_0205cb55[];

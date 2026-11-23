@@ -11210,3 +11210,8 @@ written off.
   constants into r3/r2/ip/lr before the loop and uses only 5 registers; the transcription above compiles
   to 236B and 8 saved registers, so the loop body shape (probably a `u32 *`/struct walk rather than byte
   indices) is still wrong.
+  data runs -- carve_data.py runs <mod> carves the unclaimed space between claimed units from its word-aligned
+  interior. ov008 took 18/18 candidates (372B) and ov006 took 2/10 (564B); the 8 remaining ov006 runs, which
+  are 4-8KB each, all change the digest, so size rather than alignment is the next thing to explain. A range
+  whose start is not word aligned cannot be carved at all: 0x02040505 2114B was retested and still fails, so
+  the filter in accept() is correct.
