@@ -112,10 +112,23 @@ c.kb_import_static_analysis(path="<workbench>/import.json")
 c.recording_configure(save_session=True)      # write a .dswbs without stopping
 ```
 
-`metadata_get(...).first_exec == 0` is the cheap "did this code ever run"
-question, and it needs no write history. `writes_list` is the one to reach for
+`metadata_get(...).first_exec == 0` is the cheap "did this code ever run" question, and it needs no write history. `writes_list` is the one to reach for
 when a struct field's width or writer is the blocker; `origin_get` when the
 question is which file a buffer is.
+
+Two things bite when writing a client against this API from this repository:
+
+- `client.py` resolves `api.json` from the current directory or
+  `%APPDATA%/melonDS/workbench/`, neither of which is where the portable install
+  writes it; set `DSWB_API_INFO=<workbench>/workbench/api.json` before connecting.
+- `tools/match/queue.py` shadows the standard library's `queue` module, so the
+  client's `import queue` picks up our script and fails with
+  `module 'queue' has no attribute 'Queue'`. Drop the script's own directory from
+  `sys.path` before importing `dswb` - `tools/match/coverage.py` does exactly
+  that and is the working example.
+
+Results come back as dataclasses, not dicts: `MetadataResult.entries[i].exec`,
+`CoverageResult.ranges[i].start/end/count/overlay`.
 
 ## What it does not do
 

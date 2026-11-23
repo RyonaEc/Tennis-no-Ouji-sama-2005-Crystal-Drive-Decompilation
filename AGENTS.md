@@ -130,6 +130,37 @@ records the digest-pinned decrypted ROM, so its records are evidence about the
 code we rebuild. Setup, API recipes, the overlay table and what it cannot do:
 `notes/workbench.md`.
 
+## Standing permissions (granted by the owner, 2026-11-23)
+
+These are pre-authorised. Do not stop to ask for them again; they were asked for
+repeatedly because the agent kept asking instead of using them. None of them
+changes the definition of done above.
+
+- **Parallel module workers.** Git worktrees are allowed, one per module
+  (`git worktree add build/worktrees/<module> -b work/<module>`; `build/` is
+  gitignored). Each worker needs its own build tree - never two workers in one
+  checkout, because `configure.py`, `build.ninja` and `reg.py` are single-tree.
+  Rules: one module per worker, never two workers on the same module; workers
+  never push; a merge back to the main tree is source plus that module's
+  `delinks.txt` only, and the main tree must then pass `python tools/match/t10.py
+  --check <module>` and `ninja sha1` before anything is committed.
+- **Ghidra (headless).** Portable install at `M:\\ATOJ-tools\\ghidra11` with the
+  JDK at `M:\\ATOJ-tools\\jdk`, projects in `M:\\ATOJ-tools\\proj`, scripts in
+  `build/ghidra/`. Importing any remaining module is allowed without asking
+  (each import is ~3 min of JVM startup; run it in the background and poll).
+  Decompiler output stays a reading aid - it never decides a match.
+- **melonDS decomp workbench, including playing the game.** Install at
+  `M:\\melonDS-workbench` (executable, decrypted ROM, save, `pydswb` client,
+  `workbench/` store). Launching it, recording sessions, and inputting into /
+  playing the game are all allowed when runtime evidence would answer a question
+  faster than static analysis: call edges, argument values at a call site, write
+  history for a field, data provenance, coverage. Keep its sessions and save
+  files outside the repo, never commit the ROM, BIOS or save, and do not treat
+  an observed behaviour as a match.
+- **Scratch budget.** Long background jobs, extra worktrees and multi-minute
+  imports may be started without a check-in. Report progress from logs rather
+  than idling, and never kill a process except the exact PID that was started.
+
 ## Compiler idioms worth knowing
 
 `notes/mwccarm-codegen.md` is the project's codegen playbook (a short lever

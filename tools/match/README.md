@@ -21,6 +21,12 @@ output under `build/` (gitignored).
 |---|---|
 | `carve_data.py` | `list <mod> [lo] [hi]` writes the unclaimed `.rodata`/`.data` ranges as byte arrays; `accept <mod> [budget] [step]` keeps the groups whose addition still reproduces the digest, bisecting a failing group down to the one range that breaks it |
 
+**Runtime evidence**
+
+| Script | Purpose |
+|---|---|
+| `coverage.py` | ask the running melonDS workbench which unmatched functions ever executed, per module and largest-first (see `notes/workbench.md`) |
+
 **Installing and verifying**
 
 | Script | Purpose |
