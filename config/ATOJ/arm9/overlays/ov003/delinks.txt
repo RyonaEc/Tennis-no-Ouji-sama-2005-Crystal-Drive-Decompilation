@@ -1934,3 +1934,9 @@ src/ov003/data_ov003_020eb3c8.c:
 src/ov003/data_ov003_020eb58c.c:
     complete
     .data       start:0x020eb58c end:0x020eb670
+src/ov003/data_ov003_020dd518.c:
+    complete
+    .rodata     start:0x020dd518 end:0x020de118
+src/ov003/data_ov003_020e21b0.c:
+    complete
+    .rodata     start:0x020e21b0 end:0x020e2db0

@@ -4125,3 +4125,6 @@ src/arm9/data_02042490.c:
 src/arm9/data_02042690.c:
     complete
     .data       start:0x02042690 end:0x02042774
+src/arm9/data_0203d908.c:
+    complete
+    .rodata     start:0x0203d908 end:0x02040004

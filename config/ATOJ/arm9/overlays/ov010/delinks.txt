@@ -162,3 +162,21 @@ src/ov010/data_ov010_02056598.c:
 src/ov010/data_ov010_02056d98.c:
     complete
     .rodata     start:0x02056d98 end:0x02057598
+src/ov010/data_ov010_02057598.c:
+    complete
+    .rodata     start:0x02057598 end:0x02058098
+src/ov010/data_ov010_02058098.c:
+    complete
+    .rodata     start:0x02058098 end:0x02058f98
+src/ov010/data_ov010_02058f98.c:
+    complete
+    .rodata     start:0x02058f98 end:0x02059f98
+src/ov010/data_ov010_02059f98.c:
+    complete
+    .rodata     start:0x02059f98 end:0x0205af98
+src/ov010/data_ov010_0205af98.c:
+    complete
+    .rodata     start:0x0205af98 end:0x0205bf98
+src/ov010/data_ov010_0205bf98.c:
+    complete
+    .rodata     start:0x0205bf98 end:0x0205cf98

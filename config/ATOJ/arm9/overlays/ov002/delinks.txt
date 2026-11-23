@@ -3235,3 +3235,6 @@ src/ov002/data_ov002_020fd074.c:
 src/ov002/data_ov002_020fd41c.c:
     complete
     .rodata     start:0x020fd41c end:0x020fd6ec
+src/ov002/data_ov002_020fb544.c:
+    complete
+    .rodata     start:0x020fb544 end:0x020fc140

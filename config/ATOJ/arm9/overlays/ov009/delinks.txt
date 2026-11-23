@@ -193,3 +193,6 @@ src/ov009/data_ov009_0205417c.c:
 src/ov009/data_ov009_0205457c.c:
     complete
     .rodata     start:0x0205457c end:0x02054d7c
+src/ov009/data_ov009_020534fc.c:
+    complete
+    .rodata     start:0x020534fc end:0x02053f44
