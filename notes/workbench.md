@@ -195,3 +195,40 @@ That does not taint call graphs or coverage of the code that runs, but:
 - an all-unlocked save reaches modes and events that a fresh save would gate, so
   coverage from it is *generous*, not representative — good for finding code
   that runs, useless for judging what a normal playthrough reaches.
+
+## Reading a saved recording instead of sampling a live one (2026-11-23)
+
+The live API only answers while the emulator runs, resets an overlay's coverage
+every time that overlay reloads, and costs one tool call per look. The recording
+that `--write-history` leaves in `workbench/<GAME>_<sha1>/sessions/*.dswbs` has
+none of those limits — it is the whole run — so once the game has been closed,
+read the file.
+
+- `python -m dswb --session <file.dswbs>` (run from `<workbench>/pydswb`) prints
+the header and the section counts. The 133,943-frame match recorded on
+2026-11-23 is 67 MB: 1,306 byte-record pages, 8,953 call edges, 4,000,000
+provenance and write entries (both wrapped at the cap), 13 overlay events, 320
+sources.
+- `dswb.session.load()` gives `pages()`, `call_edges()`, `write_history()`,
+`provenance()`, `overlay_events()`, `first_frames(region, offset)`. `ByteRecord.exec_count`
+is the coverage bit; the `exec` flag needs no write history, which is why it is
+the part that does **not** wrap.
+- **Region offsets are module offsets, not physical addresses.** Main RAM and
+the overlay regions are both keyed from `0x02000000`:
+ov003's lowest page is `0x4c000`, i.e. `0x0204c000`, just below the `0x0204c7c0`
+load base. Adding the load base instead shifts every overlay record by `0x7c0`
+and still produces believable-looking byte totals, while matching zero
+functions. That mistake was made and is why this paragraph exists.
+- `tools/match/sessioncov.py <file.dswbs> [--json out.json]` turns a recording
+into executed-function coverage plus call-edge counts (`in=`/`out=` per
+function). On the match session it reproduced the live union *exactly* — 756
+unmatched functions / 596,382 B, arm9 206 / 72,350, ov002 340 / 222,192, ov003
+210 / 301,840 — so a recording is a strict superset of live sampling and the
+preferred source once the emulator has stopped.
+- It also says how much of each unit actually ran: `arm9 0x0200a904` executed
+312 B of 14,312 B and has one observed caller, so it is a mode dispatcher
+entered once, not a per-frame loop. Functions with `in=0` were reached only
+through a pointer, which is the question static analysis cannot answer.
+- ov001 loaded and executed 11,792 B during the match but is absent from the
+unmatched-function table because its units are already matched. Any module with
+zero rows was simply never resident.
