@@ -11541,3 +11541,16 @@ written off.
   0xde8` (164 B but the whole head reorders), `u16 *` base (152 B),
   `p = base` hoisted (168 B), pointer declared at function scope (same tie).
   Pure ip/lr colouring tie; abandoned.
+- `ov005 0x020614a4` / `0x020656d8` / `0x020695bc` / `0x0206bfc0` (220 B x4) -- closest
+  draft `build/cand/b_614a4.c` is exactly 220 B with the whole shape reproduced
+  (mode guard, `func_020209c8(8)`/`func_020208b0(0x100)`, the `0x04001000` RMW,
+  the 512-entry `%4` reset loop over `base+0x4a58`, the `< 0x1f4` check and the
+  `func_02025c94`/`func_02026a50` pair on `base+0x4658`). The single difference is
+  the scratch colouring inside the loop: retail materialises the stored zero in
+  `lr` (`mov lr, r5`) and the `base + i*2` pointer in `ip` (`add ip, r4, r5,
+  lsl #1`), mwcc the reverse. Tried: inline `base + 0x4a58 + i*2` (168->240 B with
+  a pool literal), `u8 *p` inside the loop, pointer declared at function scope,
+  `u16 *` base, a `u16 z = 0` store value, `flag`-as-zero, `i != 0x200` vs
+  `i < 0x200`, the two stores swapped, and expression-order permutations. All
+  land at 220 B with the same swap. Same tie as `ov003 0x020d72f8` (164 B x2, one
+  source shape, six functions, 1208 B).
