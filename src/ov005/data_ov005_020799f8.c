@@ -1,0 +1,3 @@
+#include "types.h"
+
+const u32 data_ov005_020799f8[8] = { 0x7bde7fff, 0x67396f7b, 0x52945ad6, 0x42104a52, 0x318c39ce, 0x2108294a, 0x18c61ce7, 0x08421084 };
