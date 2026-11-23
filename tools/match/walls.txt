@@ -11489,3 +11489,19 @@ written off.
   callee-saved registers at all. The 208 B draft keeps retail's store order and
   is one instruction short. Both variants are recorded here so the next pass does
   not re-derive the trade.
+- `ov006 0x0204d61c` / `ov001 0x0204eff8` (332 B x2). File-load routine: the
+  `func_02029c8c` file-info object lives in a `u8 obj[0x44]` stack frame, a
+  24-byte name is copied into `*(u8 **)data_ov006_02077e40 + 0x100c`, then
+  `func_02029930` / `func_02017b60` (size from `obj[0x24] - obj[0x20]`) /
+  `func_02029828` / `func_020298e4` / `func_02025c94`, a second allocation of
+  `*(u32 *)h >> 8` bytes stored at base `+0x21e8`, `func_02026cc0`,
+  `func_02025c94`, `func_020126bc`, and the final `func_02017b20` free.
+  The name copy is a **struct assignment** (`*(N24 *)d = *(N24 *)data_...` with
+  `typedef struct { u8 b[24]; } N24;`): a hand-written two-byte `for` loop came
+  out 16 B long and indexed, the struct copy gives retail's
+  `ldrb/ldrb/subs/strb/strb` writeback loop and the exact 332 B. `d` declared as
+  `u8 *` plus the object frame also matches retail's `r5` = handle, but the copy
+  pointers stay mirrored (retail `r4` = destination, `r3` = source; mwcc `r3` =
+  destination, `r4` = source) across every declaration order tried, including
+  naming the source and assigning it first. Eight differing instructions, all
+  register choice; abandoned as a colouring tie.
