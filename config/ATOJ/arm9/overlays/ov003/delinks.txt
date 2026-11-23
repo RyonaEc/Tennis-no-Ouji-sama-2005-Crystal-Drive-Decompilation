@@ -1980,3 +1980,15 @@ src/ov003/func_ov003_0205ecd4.c:
 src/ov003/func_ov003_020617c4.c:
     complete
     .text       start:0x020617c4 end:0x02061a20
+
+src/ov003/func_ov003_020b6c88.c:
+    complete
+    .text       start:0x020b6c88 end:0x020b6cd4
+
+src/ov003/func_ov003_02093d94.c:
+    complete
+    .text       start:0x02093d94 end:0x02093e64
+
+src/ov003/func_ov003_02097840.c:
+    complete
+    .text       start:0x02097840 end:0x020978f8
