@@ -1,0 +1,3 @@
+#include "types.h"
+
+u32 data_ov004_02064e58[7] = { 0x4f94638e, 0xb1824181, 0xea8bea82, 0xc882e88e, 0xe682cc82, 0x4281cb82, 0x00000000 };

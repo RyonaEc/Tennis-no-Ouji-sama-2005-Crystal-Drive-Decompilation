@@ -1,0 +1,3 @@
+#include "types.h"
+
+u32 data_ov004_020630f4[9] = { 0x02cd984e, 0x02ce9859, 0x02cf985a, 0x02d09861, 0x02d198a5, 0x02d298d0, 0x02d39d68, 0x02d4e056, 0x02d5e94c };

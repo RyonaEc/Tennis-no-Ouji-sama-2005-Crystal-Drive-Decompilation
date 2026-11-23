@@ -30,3 +30,93 @@ src/ov010/func_ov010_020524cc.c:
 src/ov010/func_ov010_020522c0.c:
     complete
     .text       start:0x020522c0 end:0x02052344
+src/ov010/data_ov010_020529f8.c:
+    complete
+    .rodata     start:0x020529f8 end:0x02052a78
+src/ov010/data_ov010_02052a78.c:
+    complete
+    .rodata     start:0x02052a78 end:0x02052af8
+src/ov010/data_ov010_02052af8.c:
+    complete
+    .rodata     start:0x02052af8 end:0x02052b78
+src/ov010/data_ov010_02052b78.c:
+    complete
+    .rodata     start:0x02052b78 end:0x02052bf8
+src/ov010/data_ov010_02052bf8.c:
+    complete
+    .rodata     start:0x02052bf8 end:0x02052cb8
+src/ov010/data_ov010_0205e2a0.c:
+    complete
+    .data       start:0x0205e2a0 end:0x0205e2b0
+src/ov010/data_ov010_0205e2b0.c:
+    complete
+    .data       start:0x0205e2b0 end:0x0205e2c0
+src/ov010/data_ov010_0205e2c0.c:
+    complete
+    .data       start:0x0205e2c0 end:0x0205e2d0
+src/ov010/data_ov010_0205e2d0.c:
+    complete
+    .data       start:0x0205e2d0 end:0x0205e308
+src/ov010/data_ov010_0205e30c.c:
+    complete
+    .data       start:0x0205e30c end:0x0205e324
+src/ov010/data_ov010_0205e328.c:
+    complete
+    .data       start:0x0205e328 end:0x0205e33c
+src/ov010/data_ov010_0205e33c.c:
+    complete
+    .data       start:0x0205e33c end:0x0205e350
+src/ov010/data_ov010_0205e350.c:
+    complete
+    .data       start:0x0205e350 end:0x0205e364
+src/ov010/data_ov010_0205e364.c:
+    complete
+    .data       start:0x0205e364 end:0x0205e378
+src/ov010/data_ov010_0205e378.c:
+    complete
+    .data       start:0x0205e378 end:0x0205e388
+src/ov010/data_ov010_0205e388.c:
+    complete
+    .data       start:0x0205e388 end:0x0205e398
+src/ov010/data_ov010_0205e398.c:
+    complete
+    .data       start:0x0205e398 end:0x0205e3a8
+src/ov010/data_ov010_0205e3a8.c:
+    complete
+    .data       start:0x0205e3a8 end:0x0205e3bc
+src/ov010/data_ov010_0205e3bc.c:
+    complete
+    .data       start:0x0205e3bc end:0x0205e3cc
+src/ov010/data_ov010_0205e3cc.c:
+    complete
+    .data       start:0x0205e3cc end:0x0205e3e0
+src/ov010/data_ov010_0205e3e0.c:
+    complete
+    .data       start:0x0205e3e0 end:0x0205e3f4
+src/ov010/data_ov010_0205e3f4.c:
+    complete
+    .data       start:0x0205e3f4 end:0x0205e408
+src/ov010/data_ov010_0205e408.c:
+    complete
+    .data       start:0x0205e408 end:0x0205e41c
+src/ov010/data_ov010_0205e41c.c:
+    complete
+    .data       start:0x0205e41c end:0x0205e434
+src/ov010/data_ov010_0205e434.c:
+    complete
+    .data       start:0x0205e434 end:0x0205e44c
+src/ov010/data_ov010_0205e44c.c:
+    complete
+    .data       start:0x0205e44c end:0x0205e464
+src/ov010/data_ov010_0205e464.c:
+    complete
+    .data       start:0x0205e464 end:0x0205e47c
+src/ov010/data_ov010_0205e47c.c:
+    complete
+    .data       start:0x0205e47c end:0x0205e494
+src/ov010/data_ov010_0205e494.c:
+    complete
+    .data       start:0x0205e494 end:0x0205e4b0
+src/ov010/data_ov010_0205e4b0.c:
+    complete
+    .data       start:0x0205e4b0 end:0x0205e4cc
