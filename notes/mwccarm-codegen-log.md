@@ -5325,3 +5325,32 @@ digest holds, diff its built object against the delinked one
 `.rela.text` entries (offset, type, addend). Use a symbol whenever the config
 has one, and keep the numeric address only where it has none (`0x027ffd9c` and
 `0x027c3000` here are RAM, with no symbol, and stay literal).
+
+## 2026-11-25 - promoting the best variant does not deepen the search
+
+`grind_unit` can now take a unit's best variant, make it the base, and spell the
+grid again from there (`--refine N`). Measured A/B on six real units, same
+budget of 200 compiles each, install stubbed out (`build/refine_ab.py`):
+
+| unit | size | journal slots | refine 0 | refine 2 | extra compiles |
+|---|---|---|---|---|---|
+| `arm9 0x020124e0` | 68 B | 3 | 3 (15 v) | 3 (20 v) | 5 |
+| `arm9 0x0202c430` | 24 B | 4 | 2 (13 v) | 2 (17 v) | 4 |
+| `ov002 0x0206308c` | 56 B | 7 | 7 (139 v) | 7 (149 v) | 10 |
+| `arm9 0x0203b698` | 56 B | 8 | 8 (10 v) | 8 (14 v) | 4 |
+| `arm9 0x0202497c` | 76 B | 8 | 8 (184 v) | 8 (200 v) | 16 |
+| `ov003 0x020d72f8` | 164 B | 8 | 8 (12 v) | 8 (24 v) | 12 |
+
+Nothing improved, because `respell.variants` is idempotent on its own output:
+the re-spelled source differs from the base only along the axes the grid already
+enumerated, so the second round re-derives sources it has just scored (the extra
+compiles are the few combinations the first round's `bases[:4]` cap skipped).
+Two of the six also exhausted the budget in round one, so they never reached a
+promotion at all.
+
+Conclusion: search depth cannot come from re-spelling. It needs a new axis -
+structural mutations (temporaries, split and merged statements, loop forms,
+types) or a promoted *shape* from the generator - and the promotion machinery is
+kept only as the hook to hang one on (`--refine` defaults to 0; the sweep must
+not pay for a fixed point). Negative results with numbers beat a knob that looks
+like progress.

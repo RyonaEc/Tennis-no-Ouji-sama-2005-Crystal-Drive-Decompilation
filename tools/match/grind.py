@@ -47,6 +47,9 @@ Usage:
                   refused (normally finished, since nothing changes by itself)
     --retry-none  re-walk units that had no candidate: a harness or generator fix
                   can give them one, and nothing else ever revisits them
+    --refine      promotions per unit: after the grid is scored, re-spell its
+                  best variant (default 0 - measured, see the codegen log: the
+                  grid is a fixed point, so re-spelling it adds no slots)
     --status      print the journal and heartbeat, then exit
     --dry-run     list the units and their candidate sources, score nothing
     --reset       delete the journal first
@@ -304,62 +307,91 @@ def grind_unit(mod, addr, size, name, opts, journal):
         return "no-candidate", 0, None
 
     tried, best, hit, errors, rejected = 0, None, None, 0, 0
-    for _score, base_label, text in bases:
-        # Materialise the grid before scoring it: `respell.split_unit` reports a
-        # candidate it cannot parse with SystemExit, and a generator raises that
-        # in the middle of the loop, where a 24/7 process must not die.  The
-        # budget bounds the list, so this costs no more memory than the run.
-        try:
-            variants = list(itertools.islice(respell.variants(text, pad=opts["pad"]),
-                                             max(0, opts["budget"] - tried)))
-        except (Exception, SystemExit):
-            errors += 1
-            continue
-        for vlabel, source in variants:
-            if tried >= opts["budget"]:
-                break
-            body = strip_include(source)
+    # The grid is spelled from every base in turn; then the round's best variant
+    # becomes a base itself and the grid is spelled again from there.  respell
+    # varies one axis at a time, so a shape that needs two changes in sequence
+    # (a declaration order *and* a statement order, say) is unreachable without
+    # promoting the intermediate result - which is why the search used to look
+    # shallow.  --refine bounds the promotions, the per-unit budget still bounds
+    # the compiles, and a round that finds nothing better ends the climb.
+    frontier = [(label, text) for _score, label, text in bases]
+    spelled = {text for _label, text in frontier}
+    rounds = 0
+    while frontier and tried < opts["budget"]:
+        rounds += 1
+        before = best[0] if best else None
+        round_best = None                    # (slots, label, source)
+        for base_label, text in frontier:
+            # Materialise the grid before scoring it: `respell.split_unit` reports
+            # a candidate it cannot parse with SystemExit, and a generator raises
+            # that in the middle of the loop, where a 24/7 process must not die.
+            # The budget bounds the list, so this costs no more memory than the run.
             try:
-                ok, n, diffs = fm.diff_summary(mod, addr, size, body)
-            except Exception:
+                variants = list(itertools.islice(respell.variants(text, pad=opts["pad"]),
+                                                 max(0, opts["budget"] - tried)))
+            except (Exception, SystemExit):
                 errors += 1
                 continue
-            tried += 1
-            if not n:
-                continue
-            label = base_label + "+" + vlabel
-            if best is None or len(diffs) < best[0]:
-                best = (len(diffs), label)
-            if ok:
-                out = pathlib.Path("build/cand/grind_%s.c" % name)
-                out.write_text(source)
-                kept = t10.try_unit(name, addr, size, body, mod=mod)
-                committed = commit_unit(mod, name) if (kept and opts["commit"]) else False
-                if kept:
-                    note(journal, dict(t="match", mod=mod, addr=addr, name=name,
-                                       size=size, label=label, kept=True,
-                                       committed=committed,
-                                       candidate=out.as_posix()))
-                    print("[grind] MATCH  %-6s %#010x %5dB %-24s %s%s"
-                          % (mod, addr, size, name, label,
-                             " (committed)" if committed else ""), flush=True)
-                    hit = label
+            for vlabel, source in variants:
+                if tried >= opts["budget"]:
                     break
-                # The bytes matched locally but the digest refused them, so the
-                # difference is something var3 cannot see - a literal-pool word
-                # or a relocation.  That is a miss, never a match: recording it
-                # as one retires the unit for ever on the strength of a
-                # rejected candidate.  Keep the record and keep looking; another
-                # spelling can compile with the relocations retail has.
-                rejected += 1
-                note(journal, dict(t="rejected", mod=mod, addr=addr, size=size,
-                                   name=name, label=label, kept=False,
-                                   candidate=out.as_posix()))
-                print("[grind] bytes  %-6s %#010x %5dB %-24s %s "
-                      "-> rejected by the digest, continuing"
-                      % (mod, addr, size, name, label), flush=True)
+                body = strip_include(source)
+                try:
+                    ok, n, diffs = fm.diff_summary(mod, addr, size, body)
+                except Exception:
+                    errors += 1
+                    continue
+                tried += 1
+                if not n:
+                    continue
+                label = base_label + "+" + vlabel
+                slots = len(diffs)
+                if best is None or slots < best[0]:
+                    best = (slots, label)
+                if round_best is None or slots < round_best[0]:
+                    round_best = (slots, label, source)
+                if ok:
+                    out = pathlib.Path("build/cand/grind_%s.c" % name)
+                    out.write_text(source)
+                    kept = t10.try_unit(name, addr, size, body, mod=mod)
+                    committed = (commit_unit(mod, name)
+                                 if (kept and opts["commit"]) else False)
+                    if kept:
+                        note(journal, dict(t="match", mod=mod, addr=addr,
+                                           name=name, size=size, label=label,
+                                           kept=True, committed=committed,
+                                           candidate=out.as_posix()))
+                        print("[grind] MATCH  %-6s %#010x %5dB %-24s %s%s"
+                              % (mod, addr, size, name, label,
+                                 " (committed)" if committed else ""), flush=True)
+                        hit = label
+                        break
+                    # The bytes matched locally but the digest refused them, so
+                    # the difference is something var3 cannot see: a literal-pool
+                    # word or a relocation.  That is a miss, never a match:
+                    # recording it as one retires the unit for ever on the
+                    # strength of a rejected candidate.  Keep the record and
+                    # keep looking; another spelling can compile with the
+                    # relocations retail has.
+                    rejected += 1
+                    note(journal, dict(t="rejected", mod=mod, addr=addr,
+                                       size=size, name=name, label=label,
+                                       kept=False, candidate=out.as_posix()))
+                    print("[grind] bytes  %-6s %#010x %5dB %-24s %s "
+                          "-> rejected by the digest, continuing"
+                          % (mod, addr, size, name, label), flush=True)
+            if hit or tried >= opts["budget"]:
+                break
         if hit or tried >= opts["budget"]:
             break
+        if not opts.get("refine") or rounds > opts["refine"]:
+            break
+        if round_best is None or (before is not None and round_best[0] >= before):
+            break                    # the round improved nothing: climb is over
+        if round_best[2] in spelled:
+            break                    # this source has already been a base
+        spelled.add(round_best[2])
+        frontier = [("r%d" % rounds, round_best[2])]
 
     if hit:
         status = "matched"
@@ -692,7 +724,7 @@ def main(argv):
                 lo=4, hi=0x200, pad=True, dry=False, reset=False,
                 daemon=False, max_passes=0, sleep=60.0, commit=False,
                 retry_slots=0, retry_rejected=False, retry_none=False,
-                modules=[])
+                refine=0, modules=[])
     for i, a in enumerate(argv):
         if a == "--lane":
             opts["lane"] = argv[i + 1]
@@ -731,6 +763,8 @@ def main(argv):
             opts["retry_rejected"] = True
         elif a == "--retry-none":
             opts["retry_none"] = True
+        elif a == "--refine":
+            opts["refine"] = int(argv[i + 1], 0)
 
     journal = JOURNAL
     journal.parent.mkdir(parents=True, exist_ok=True)
