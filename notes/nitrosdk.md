@@ -167,15 +167,28 @@ the compiler adds `bx lr`), all ten compile byte-exactly:
 | `VBlankIntrWait` | `mov r2,#0; swi 0x05` | 6 B |
 | `Mod` | `swi 0x09; mov r0,r1` | 6 B |
 
-`reg.py` then reports `miss` for every one of them: the object is right, the
-linked ROM is not. They are all at 2-mod-4 addresses (0x020040e6, 0x020042d2,
-...), while every stub already matched (`SoftReset` 0x0200406c, `WaitByLoop`
-0x020041b0, `HuffUnCompReadByCallback` 0x02004214, `Div` 0x02004568) sits at a
-4-aligned address, so section placement is the suspect. A per-unit `align:2` in
-`delinks.txt` is rejected outright ("attribute 'align' should be omitted as it
-is inherited from this file's header"), so if this is the cause the fix has to be
-at the file-header or configure level, not per entry. Bodies are kept in
-`build/cand/svc/` for whoever picks this up.
+`reg.py` then reports `miss` for every one of them, and the reason is now
+measured rather than guessed: **the linker inserts two bytes of padding before
+the unit**. With `Halt` delinked and built, the image reads
+
+```
+built   0x020040e0: ... 8a 5c 53 28 00 00 06 df 70 47 ...
+retail  0x020040e0: ... 8a 5c 53 28 06 df 70 47 ...
+```
+
+so the stub lands at 0x020040e8 instead of 0x020040e6 and everything after it
+shifts. `Halt.o` and `SoftReset.o` both put their 4 bytes in `.text` with
+`sh_addralign = 4`; `SoftReset` starts at 0x0200406c (4-aligned, no padding),
+while all ten of these start at 2-mod-4. The generated script has no `ALIGN`
+before the entry - the padding comes from the object's own section alignment -
+and neither escape hatch exists: dsd rejects a per-unit `align:2` ("inherited
+from this file's header"), and mwccarm has no alignment option (`-help` lists
+none; `.text` is always 4-aligned here).
+
+So these ten (and any other 2-mod-4 function) cannot be placed until either dsd
+learns to honour a 2-aligned unit inside a 32-aligned header, or the build
+carries a per-unit alignment attribute that does not exist today. Bodies are kept
+in `build/cand/svc/` for whoever picks this up - the byte work is done.
 
 ## Which compiler built the prebuilt libraries
 
