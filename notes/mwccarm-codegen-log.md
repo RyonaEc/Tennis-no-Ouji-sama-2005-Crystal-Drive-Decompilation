@@ -5209,3 +5209,20 @@ source `r4` where retail uses `ip`. The local-vs-assigned declarations, `u32` vs
   Retry mode now prefers `fresh.unmatched`'s live size. Those 4 B entries are
   symbol-boundary fragments inside a larger routine, not functions - a candidate
   for one cannot be `ldr r0, [pc, #0x1e4]`.
+
+* **A stack argument is only a stack argument once the pushes are counted.**
+  With `push {r0-r3}` + `push {r4-r7,lr}` + `sub sp,#4`, the homed a0-a3 sit at
+  entry_sp-16..entry_sp-4 and the 5th argument sits at entry_sp+0, so
+  `ldr r2, [sp, #0x28]` there is a4 and `[sp, #0x34]` is a7 - both are frame
+  offsets plus the 40 bytes the prologue pushed, not locals. Reading them
+  against the bare sp offset turns them into slots that never match, and a
+  re-write back (`str r0, [sp, #0x28]`) is an assignment to the parameter.
+  `tools/match/auto.py` now carries sp as a depth with its own kind (`('sp', n)`,
+  never a plain constant, or `add r2, sp, #4` folds to the integer 4) and
+  identifies a frame cell by how far below entry_sp it sits, so it survives the
+  prologue pushes and the epilogue pops. The three stack bail classes
+  (`load from sp` 268, `store above frame` 134, `implausible stack argument` 29)
+  fall to zero and the generator reaches 46 more units - none of them matched in
+  a 400-variant sweep, so this unlocked the class without winning it: most of
+  those units are argument-staging copies that still need `ldm`/`stm` and the
+  live-result conditional runs before their C is the original's shape.

@@ -268,6 +268,24 @@ def _homed_frame(body):
     return pushed - 16
 
 
+def _sp_step(regs, delta):
+    """Move the modelled sp by `delta` bytes below its entry value.
+
+    sp carries its own kind, not a plain constant: `add r2, sp, #4` is an
+    address and must never be folded with an integer.
+    """
+    depth = regs.get('r13', ('unk',))
+    regs['r13'] = (('sp', depth[1] + delta) if depth[0] == 'sp'
+                   else ('unk',))
+
+
+def _frame_cell(regs, off):
+    """Cell id for [sp, #off]: how many bytes below the entry sp it sits, so a
+    cell keeps its identity while the prologue pushes and the epilogue pops."""
+    depth = regs.get('r13', ('unk',))
+    return depth[1] - off if depth[0] == 'sp' else off
+
+
 def _mem(s):
     post = None
     if '],' in s:
@@ -411,6 +429,15 @@ def exec_range(body, i, end, regs, calls, cmps):
 
         i += 1
         if mn in ('stmdb', 'stm', 'push', 'ldmia', 'ldm', 'pop'):
+            # Keep the modelled sp in step with the prologue pushes and the
+            # epilogue pops: everything below assumes regs['r13'] is how far sp
+            # has moved from its entry value.
+            names = _frame_push((mn, cond, ins))
+            ops_s = op.replace(' ', '')
+            if names:
+                _sp_step(regs, 4 * len(names))
+            elif ops_s.startswith('sp!'):
+                _sp_step(regs, -4 * len(_reglist(ops_s)))
             continue
         if mn == 'bx':
             reg = R(toks[0])
@@ -423,7 +450,9 @@ def exec_range(body, i, end, regs, calls, cmps):
                 n = call_n(NAME2ADDR[tgt[1]], regs)
                 a = [regs.get(f'r{k}', ('a', k)) for k in range(4)][:n]
                 if stack:
-                    a = a + [stack.get(0, ('unk',))]
+                    extra = stack.get(_frame_cell(regs, 0))
+                    if extra is not None:
+                        a = a + [extra]
                 calls.append((tgt[1], a, n))
                 stmts.append(('call', len(calls) - 1))
                 return stmts, ('ret', ('call', len(calls) - 1)), i, regs
@@ -451,7 +480,9 @@ def exec_range(body, i, end, regs, calls, cmps):
             n = call_n(target, regs)
             a = [regs.get(f'r{k}', ('a', k)) for k in range(4)][:n]
             if stack:
-                a = a + [stack.get(0, ('unk',))]
+                extra = stack.get(_frame_cell(regs, 0))
+                if extra is not None:
+                    a = a + [extra]
             calls.append((name, a, n))
             stmts.append(('call', len(calls) - 1))
             regs['r0'] = ('call', len(calls) - 1)
@@ -494,25 +525,18 @@ def exec_range(body, i, end, regs, calls, cmps):
             rd, rn, src2 = R(toks[0]), R(toks[1]), R(toks[2])
             left = regs.get(rn, ('unk',))
             right = ('const', _imm(src2)) if src2.startswith('#') else regs.get(R(src2), ('unk',))
-            if left[0] == 'const' and right[0] == 'const':
+            if rd == 'r13' and src2.startswith('#'):
+                # `sub sp, #n` moves the frame n bytes further below its entry
+                _sp_step(regs, _imm(src2) if mn == 'sub' else -_imm(src2))
+            elif left[0] == 'const' and right[0] == 'const':
                 regs[rd] = ('const', left[1] + right[1] if mn == 'add' else left[1] - right[1])
-            elif rd != 'r13' and rn == 'r13' and mn == 'add' and src2.startswith('#'):
-                depth = regs.get('r13', ('unk',))
-                base = depth[1] if depth[0] == 'const' else None
-                if base is not None and _imm(src2) < base:
-                    regs[rd] = ('slotaddr', _imm(src2))
-                else:
-                    regs[rd] = ('arith', '+', left, right)
+            elif rd != 'r13' and rn == 'r13' and src2.startswith('#') and left[0] == 'sp':
+                # &cell, including the outgoing-argument area just above sp
+                step = _imm(src2)
+                cell = left[1] - step if mn == 'add' else left[1] + step
+                regs[rd] = ('slotaddr', cell)
             elif rd == 'r13':
-                # remember how far sp was moved so [sp, #n] can be classified
-                depth = regs.get('r13', ('unk',))
-                step = _imm(src2) if src2.startswith('#') else None
-                if step is not None and depth[0] == 'const':
-                    regs['r13'] = ('const', depth[1] + (step if mn == 'sub' else -step))
-                elif step is not None and depth[0] == 'unk':
-                    regs['r13'] = ('const', step if mn == 'sub' else -step)
-                else:
-                    regs['r13'] = ('unk',)
+                regs['r13'] = ('unk',)
             else:
                 regs[rd] = ('arith', '+' if mn == 'add' else '-', left, right)
             continue
@@ -544,44 +568,45 @@ def exec_range(body, i, end, regs, calls, cmps):
             signed = mn in ('ldrsb', 'ldrsh')
             if rn == 'r13':
                 depth = regs.get('r13', ('unk',))
-                base = depth[1] if depth[0] == 'const' else None
-                inside = base is not None and off < base
+                known = depth[0] == 'sp'
+                cell = _frame_cell(regs, off)
+                # Place [sp, #off] against the entry sp.  A word at or above it
+                # is the caller's outgoing area, which the callee sees as its
+                # 5th and later arguments; the four words just below it hold
+                # r0-r3 when the prologue homes them with `push {r0-r3}`.
+                rel = -cell
+                argk = None
+                if known and width == 'w' and not signed and rel % 4 == 0:
+                    if rel >= 0:
+                        if rel // 4 <= 8:
+                            argk = 4 + rel // 4
+                        elif mn.startswith('str'):
+                            raise Bail('implausible stack argument')
+                    elif _ARGHOME is not None and rel >= -16:
+                        argk = (rel + 16) // 4
                 if mn == 'str':
                     val = regs.get(rt, ('unk',))
-                    if not inside:
-                        rel = off - (base or 0)
-                        if base is not None and width == 'w' and rel % 4 == 0 and rel // 4 <= 8:
-                            stmts.append(('aset', 4 + rel // 4, val))
-                            continue
+                    if argk is not None:
+                        stmts.append(('aset', argk, val))
+                        continue
+                    if known and rel >= 0:
                         raise Bail('store above frame')
-                    stack[off] = val
-                    stmts.append(('sset', off, val))
+                    stack[cell] = val
+                    stmts.append(('sset', cell, val))
                     continue
-                if base is not None and not inside:
-                    # caller-passed argument: 4 + word index past the frame
-                    rel = off - base
-                    if width == 'w' and not signed and rel % 4 == 0:
-                        idx = 4 + rel // 4
-                        if idx > 12:
-                            raise Bail('implausible stack argument')
-                        regs[rt] = ('a', idx)
+                if argk is not None:
+                    regs[rt] = ('a', argk)
+                    continue
+                # Any other sp-relative word is a frame cell.  A load whose
+                # store this model never saw is an unknown value, not a reason
+                # to lose the whole unit.
+                if not known and _ARGHOME is not None:
+                    home = off - _ARGHOME
+                    if home in (0, 4, 8, 12):
+                        regs[rt] = ('a', home // 4)
                         continue
-                    raise Bail('load from sp')
-                # base is None (sp unknown) or inside the frame:
-                # treat as a stack slot; if the store hasn't been seen yet,
-                # the load value is unknown but we don't bail.
-                if off in stack and width == 'w' and not signed:
-                    regs[rt] = ('slot', off)
-                    continue
-                if base is None and _ARGHOME is not None:
-                    rel = off - _ARGHOME
-                    if rel in (0, 4, 8, 12):
-                        regs[rt] = ('a', rel // 4)
-                        continue
-                if base is None:
-                    regs[rt] = ('slot', off)
-                    continue
-                raise Bail('load from sp')
+                regs[rt] = ('slot', cell)
+                continue
             base = regs.get(rn, ('unk',))
             if idx is not None:
                 iv = regs.get(idx, ('unk',))
@@ -710,6 +735,7 @@ def gen(addr, size=None):
     index = {i.address: n for n, (_, _, i) in enumerate(body)}
     regs0 = {f'r{n}': ('a', n) for n in range(4)}
     regs0.update({f'r{n}': ('unk',) for n in range(4, 13)})
+    regs0['r13'] = ('sp', 0)
 
     calls = []
     stmts, _regs = run_block(body, index, 0, len(body), dict(regs0), calls)
@@ -725,6 +751,7 @@ def _cmp_operands(body, k):
     """Evaluate the cmp at body[k] by running the prefix from the entry state."""
     regs = {f'r{n}': ('a', n) for n in range(4)}
     regs.update({f'r{n}': ('unk',) for n in range(4, 13)})
+    regs['r13'] = ('sp', 0)
     calls, cmps = [], []
     exec_range(body, 0, k + 1, regs, calls, cmps)
     if not cmps:
@@ -1354,6 +1381,10 @@ def emit(fn):
     _all = []
     for _st in _walk_stmts(fn['stmts']):
         _stmt_nodes(_st, _all)
+    _all_nodes(fn['ret'], _all)
+    for _cn, _ca, _nar in fn['calls']:
+        for _a in _ca:
+            _all_nodes(_a, _all)
     slots = sorted({st[1] for st in _walk_stmts(fn['stmts']) if st[0] == 'sset'}
                    | {n[1] for n in _all if n[0] in ('slotaddr', 'slot')})
     slot_decl = '    u32 ' + ', '.join(f'sl{s}' for s in slots) + ';' if slots else None
