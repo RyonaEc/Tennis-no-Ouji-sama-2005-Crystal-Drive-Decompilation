@@ -62,6 +62,7 @@ which are single-tree operations. Parallel workers belong in their own
 worktrees, one module each.
 """
 import importlib.util
+import itertools
 import json
 import os
 import pathlib
@@ -253,9 +254,14 @@ def grind_unit(mod, addr, size, name, opts, journal):
 
     tried, best, hit = 0, None, None
     for _score, base_label, text in bases:
+        # Materialise the grid before scoring it: `respell.split_unit` reports a
+        # candidate it cannot parse with SystemExit, and a generator raises that
+        # in the middle of the loop, where a 24/7 process must not die.  The
+        # budget bounds the list, so this costs no more memory than the run.
         try:
-            variants = respell.variants(text, pad=opts["pad"])
-        except Exception:
+            variants = list(itertools.islice(respell.variants(text, pad=opts["pad"]),
+                                             max(0, opts["budget"] - tried)))
+        except (Exception, SystemExit):
             continue
         for vlabel, source in variants:
             if tried >= opts["budget"]:
@@ -472,7 +478,9 @@ def run_pass(opts, journal, number):
         except KeyboardInterrupt:
             reason = "interrupted"
             break
-        except Exception as exc:
+        except (Exception, SystemExit) as exc:
+            # SystemExit included: a bad candidate is a bad unit, not a reason to
+            # end an overnight run.
             print("[grind] %-6s %#010x %-24s error: %s: %s"
                   % (mod, addr, name, type(exc).__name__, exc), flush=True)
             continue
@@ -590,7 +598,20 @@ def main(argv):
     passes = 0
     while True:
         passes += 1
-        visited, counts, _variants, reason = run_pass(opts, journal, passes)
+        try:
+            visited, counts, _variants, reason = run_pass(opts, journal, passes)
+        except KeyboardInterrupt:
+            break
+        except (Exception, SystemExit) as exc:
+            # The pass itself fell over.  In daemon mode that is a log line and a
+            # pause, never the end of the process.
+            print("[grind] pass %d failed: %s: %s"
+                  % (passes, type(exc).__name__, exc), flush=True)
+            if not opts["daemon"]:
+                raise
+            visited = 0
+            time.sleep(max(opts["sleep"], 60.0))
+            continue
         if not opts["daemon"]:
             break
         if opts["max_passes"] and passes >= opts["max_passes"]:
