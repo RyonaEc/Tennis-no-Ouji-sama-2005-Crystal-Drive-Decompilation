@@ -11833,4 +11833,29 @@ arm9 0x02036c18 func_02036c18
 208 digit-count formatter; best shape is 208/208 B with the same registers but mwcc schedules 'add r_, r5, #4' before the loop test where retail schedules it after bge (6 shapes tried incl. pointer-in-loop and for-loop forms)
 
 arm9 0x02036934 func_02036934
-740 itcm origin: 0x02036a60-0x02037050 is byte-identical to the itcm section, so this 740 B unit and its three neighbours are the precondition for the eleven itcm units
+740 itcm origin: 0x02036a60-0x02037050 is byte-identical to the itcm section, so this 740 B unit and its three neighbours are the precondition for the eleven itcm units.
+
+Decoded (2026-11-24): soft-float `ldexp` - `double x` in r0:r1, `int n` in r2,
+returns `x * 2^n`. It classifies the operand, pre-scales subnormals by 2^54
+(`0x4350000000000000`), adds `n` to the exponent, reassembles the high word
+with `0x800fffff`, overflows via `1e300 * copysign(1e300, x)` and underflows via
+two `1e-300` multiplies. The exact constant list and the full body are in
+notes/mwccarm-codegen-log.md (2026-11-24).
+
+Best shape is 740/740 B with the same instruction multiset: the parameter is an
+8-byte `struct { double d; struct { u32 lo, hi; } w; }` passed by value, the
+body works through `w` and the local copy. 123-128 slots differ because retail
+loads the aggregate from its home slot into r5/r4 and keeps working on that home
+at [sp+0x18] (mwcc works on the local at [sp] with lo in r1), and retail lays
+the exp==0 body out of line behind `beq` where mwcc puts it inline behind `bne`.
+Fifteen spellings tried (double vs aggregate parameter, declaration order, dead
+copy, `!= 0` first test, conditional expressions). Parked as a
+register/layout wall.
+
+arm9 0x020267cc func_020267cc
+192 B, six arguments, same outer shape as func_02026738 (which matched). The
+residue is the table store: retail keeps the store address live across the
+`str r4, [r1, r6, lsl #2]!` write-back so the same register becomes the second
+argument of the `func_01ff8484` copy, and its argument homes sit one register
+higher (r6/r5/r4/r8/r7 vs r7/r6/r5/r4/r8). Best candidate 204 B. Tried the
+pointer-local form, the `&dst[a]` call argument and the direct `dst[a]` store.

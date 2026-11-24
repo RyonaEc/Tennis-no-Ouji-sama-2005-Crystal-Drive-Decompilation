@@ -5065,3 +5065,54 @@ A quick sweep of all 25 vendored compilers on the first one settles that this is
 not a build difference: `1.2/sp3` and `1.2/sp4` change the register and the code
 layout (they emit `ldr r1, [pc, #0x20]`), and everything from 2.0 onward emits
 `ldr r0` with a different displacement, but none produces retail's `r2`.
+
+## 2026-11-24 - arm9 interrupt state-save family, and what `func_02036934` is
+
+Five arm9 units of the CPU-state block at `0x02048f84`-`0x02048f90` matched, all
+first-try once the shape was right:
+
+* `func_02026140` (144 B), `func_020261d0` (108 B), `func_0202612c` (20 B):
+  register-save / mode-switch routines. They read `r12` as an implicit input,
+  save banked `sp`/`lr`/`spsr` and toggle `cpsr_fsxc`, so they are `asm void`
+  bodies (the same route as `func_02025698`), not C.
+* `func_0202623c` (144 B), `func_02026738` (148 B), `func_020274f0` (144 B): C.
+  `func_02026738`/`func_0202623c` confirm the `||` rule (§4.1): the shared tail
+  only appears when the guard is written `a == 0 || b`, never as nested ifs.
+
+Assembler facts found while writing those:
+
+* `ldmeq sp!, {lr}` and `ldmiaeq sp!, {lr}` are both rejected. The accepted
+  conditional form puts the condition before the addressing mode:
+  `ldmeqia sp!, {lr}` -> `08bd4000`. Same for `ldmeqia sp!, {r14}`.
+* `ldr rX, =0x9f` pools a plain integer fine; no symbol needed.
+* Taking the address through a local pointer variable
+  (`u8 *base = (u8 *)0x027c3000; *(u32 *)(base + 0xfdc) = v;`) is what keeps a
+  non-relocatable base out of the literal fold. Writing `*(u32 *)0x027c3fdc`
+  directly, or indexing `((u32 *)0x027c3000)[0x3f7]`, both fold into one pool
+  word and lose the `#0xfdc` offset - that single instruction was the only
+  difference in `func_0202623c` between 3 diffs and a match.
+
+`func_02036934` (740 B, itcm origin) is decoded: it is an `ldexp`-style
+`x * 2^n` for a soft-float double in `r0:r1` (arg `n` in `r2`). Constants, in
+order of first use: `0x7ff00000`/`0x000fffff` exponent and mantissa masks,
+`0x4350000000000000` = 2^54, `-50000`, `1e-300` (`0x01a56e1fc2f8f359`),
+`0x7ff`/`0x7fe`, `1e300` (`0x7e37e43c8800759c`), `0x800fffff`, `50000`,
+`2^-54` (`0x3c90000000000000`). It classifies the operand (zero/subnormal,
+normal, inf/NaN), pre-scales subnormals by 2^54, adds `n` to the exponent and
+reassembles the word, overflows through `1e300 * copysign(1e300, x)` and
+underflows through two `1e-300` multiplies so the sign survives.
+
+The best candidate (`DU` aggregate parameter, local copy, body on a union) is
+exactly 740 B with the same instruction multiset, 123-128 differing slots:
+retail keeps `lo`/`hi` in `r5`/`r4` (loaded from the aggregate's home slot) and
+works on that home at `[sp+0x18]`, while mwcc puts the working value in the
+local at `[sp]`, uses `r1` for `lo`, and lays the `exp == 0` body inline where
+retail branches to it out of line. Fifteen spellings (aggregate vs `double`
+parameter, locals before/after, dead copy, `!=`/`==` first test, `? :` vs if)
+all keep that shape; this is the parked one-register/layout class, not a
+missing insight.
+
+Two neighbours stay parked for the same reason: `func_020266c0` (80 B, 16
+slots, retail scratch `r1`/`r2` vs mwcc `r0`/`r1`) and `func_020267cc` (192 B,
+best 204 B; the pre-indexed `str r4, [r1, r6, lsl #2]!` needs the store address
+to stay live as the call's `r1`).

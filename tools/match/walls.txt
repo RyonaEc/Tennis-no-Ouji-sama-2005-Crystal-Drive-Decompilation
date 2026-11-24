@@ -17,7 +17,9 @@ arm9 0x02024a54 144B func_02024a54 22-channel handler table init; retail keeps t
 
 arm9 0x02036c18 208B func_02036c18 208 digit-count formatter; best shape is 208/208 B with the same registers but mwcc schedules 'add r_, r5, #4' before the loop test where retail schedules it after bge (6 shapes tried incl. pointer-in-loop and for-loop forms) L11833
 
-arm9 0x02036934 740B func_02036934 740 itcm origin: 0x02036a60-0x02037050 is byte-identical to the itcm section, so this 740 B unit and its three neighbours are the precondition for the eleven itcm units L11836
+arm9 0x02036934 740B func_02036934 740 itcm origin, decoded as soft-float `ldexp`: best shape is 740/740 B with the same instruction multiset and 123 slots of register/layout residue (`r5`/`r4` vs `r1`/`r5`, working slot `[sp+0x18]` vs `[sp]`); gates the eleven itcm units L11836
+
+arm9 0x020267cc 192B func_020267cc -- DMA table store: best 204/192 B, retail keeps the store address live for `str r4,[r1,r6,lsl #2]!` and passes it as the call's r1 L11839
 
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
