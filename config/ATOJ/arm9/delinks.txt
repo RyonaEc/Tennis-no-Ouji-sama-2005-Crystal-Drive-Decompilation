@@ -4367,3 +4367,7 @@ src/arm9/CpuFastSet.c:
 src/arm9/VBlankIntrWait.c:
     complete
     .text       start:0x020042d2 end:0x020042d8
+
+src/arm9/func_02017954.c:
+    complete
+    .text       start:0x02017954 end:0x02017994

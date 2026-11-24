@@ -78,3 +78,12 @@ residue, and the line its note starts at in `walls-detail.txt`; read one unit
 with `walls.py show <mod> <addr>`, never load the detail file whole),
 `true_fresh.txt` (the unmatched queue), `tried.txt` (`autorun.py`'s memory),
 `jt.txt` (the jump-table scan `jtrun.py` reads).
+
+`grind.py` is the unattended version of the same search: it walks the walls and
+then the live queue, re-spells each unit's closest candidate (a stored
+`build/cand` file, a clone of a matched sibling, or the generator's attempt),
+scores variants through `fastmatch`, and installs a hit only through
+`t10.try_unit`. Every finished unit is appended to
+`build/grind-journal.jsonl`, so a restart after a crash or a kill skips what was
+already exhausted, and the journal keeps each unit's best residue for the hand
+pass that follows. One instance per build tree.

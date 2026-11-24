@@ -96,6 +96,63 @@ def clone_with(src, old_name, new_name, symmap, nummap):
     return out
 
 
+def index_for(mod):
+    """{skeleton: [(name, syms, imms, source)]} over the module's matched units."""
+    A.set_module(mod)
+    srcdir = pathlib.Path('src/%s' % mod)
+    index = {}
+    for q in sorted(srcdir.glob('*.c')):
+        name = q.stem
+        addr = A.NAME2ADDR.get(name)
+        if addr is None:
+            continue
+        size = A.FUNCS[addr][1]
+        try:
+            skel, syms, imms = profile(mod, addr, size)
+        except Exception:
+            continue
+        index.setdefault(skel, []).append(
+            (name, syms, imms, q.read_text(encoding='utf-8', errors='replace')))
+    return index
+
+
+def siblings(mod, addr, size, index):
+    """[(matched_name, cloned source)] for units sharing this skeleton.
+
+    The constants and symbols are mapped by program order and refused when one
+    template value would have to become two, which is what keeps a clone from
+    silently inventing a shape retail does not have.
+    """
+    A.set_module(mod)
+    try:
+        skel, syms, imms = profile(mod, addr, size)
+    except Exception:
+        return []
+    name = A.SYM.get(addr) or 'func_%08x' % addr
+    out = []
+    for mname, msyms, mimms, msrc in index.get(skel, []):
+        if len(syms) != len(msyms) or len(imms) != len(mimms):
+            continue
+        smap, clash = {}, False
+        for old, new in zip(msyms, syms):
+            if smap.get(old, new) != new:
+                clash = True
+                break
+            smap[old] = new
+        if clash and len(set(syms)) > 1:
+            continue
+        nmap, clash = {}, False
+        for old, new in zip(mimms, imms):
+            if nmap.get(old, new) != new:
+                clash = True
+                break
+            nmap[old] = new
+        if clash:
+            continue
+        out.append((mname, clone_with(msrc, mname, name, smap, nmap)))
+    return out
+
+
 def main(argv):
     mod = argv[0] if argv else 'arm9'
     maxsize = int(argv[1], 0) if len(argv) > 1 else 0x80
@@ -109,51 +166,18 @@ def main(argv):
     srcdir = pathlib.Path('src/%s' % mod)
     done = {q.stem for q in srcdir.glob('*.c')}
 
-    # index matched functions by skeleton
-    index = {}
-    for q in sorted(srcdir.glob('*.c')):
-        name = q.stem
-        addr = A.NAME2ADDR.get(name)
-        if addr is None:
-            continue
-        size = A.FUNCS[addr][1]
-        try:
-            skel, syms, imms = profile(mod, addr, size)
-        except Exception:
-            continue
-        index.setdefault(skel, []).append((name, syms, imms, q.read_text()))
+    index = index_for(mod)
 
     cands = []
+    A.set_module(mod)
     for addr, (name, size) in sorted(A.FUNCS.items()):
         if name in done or size > maxsize:
             continue
-        try:
-            skel, syms, imms = profile(mod, addr, size)
-        except Exception:
+        found = siblings(mod, addr, size, index)
+        if not found:
             continue
-        for mname, msyms, mimms, msrc in index.get(skel, []):
-            if len(syms) != len(msyms) or len(imms) != len(mimms):
-                continue
-            smap, clash = {}, False
-            for old, new in zip(msyms, syms):
-                if smap.get(old, new) != new:
-                    clash = True
-                    break
-                smap[old] = new
-            nsz = len(set(syms))
-            if clash and nsz > 1:
-                continue
-            nmap, clash = {}, False
-            for old, new in zip(mimms, imms):
-                if nmap.get(old, new) != new:
-                    clash = True
-                    break
-                nmap[old] = new
-            if clash:
-                continue
-            src = clone_with(msrc, mname, name, smap, nmap)
-            cands.append((name, addr, size, src, mname))
-            break
+        mname, src = found[0]
+        cands.append((name, addr, size, src, mname))
 
     print('%s: %d clone candidates (<=0x%x)' % (mod, len(cands), maxsize))
     hit = 0

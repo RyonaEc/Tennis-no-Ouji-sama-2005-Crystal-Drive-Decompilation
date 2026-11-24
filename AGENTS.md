@@ -109,6 +109,7 @@ Source files must `#include "types.h"` first, or the compiler emits
 | `python tools/match/t10.py --check <mod>...` | self-check delinks/source bookkeeping |
 | `python tools/match/t10.py --repair <mod>` | drop dangling entries, relink orphan sources, drop duplicates |
 | `python tools/match/autorun.py <limit> <maxsize> <mod>...` | try auto-generated candidates (`tools/match/tried.txt` remembers them) |
+| `python tools/match/grind.py [--lane walls\|queue\|all] [--module M]... [--hours H] [--budget N]` | unattended, resumable sweep over the walls and then the live queue; journal in `build/grind-journal.jsonl`, one instance per build tree |
 | `python tools/match/famsurvey.py <mod>...` | list unmatched identical-skeleton groups |
 | `python tools/match/walls.py show <mod> <addr>` | read one parked wall (index line plus its note); `grep` / `list` / `add` for the rest |
 | `python tools/match/progress.py` | regenerate `PROGRESS.md` from objdiff's report |
