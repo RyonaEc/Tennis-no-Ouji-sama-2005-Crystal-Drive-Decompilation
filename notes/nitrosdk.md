@@ -122,8 +122,15 @@ be transcribed literally; only the parameter *types* have to exist here.
 
 Left on the map:
 
-* 3 C units: `MBi_calc_sendblock` (8 B), `G3X_SetFog` (84 B) and `OS_GetLockID`
-  (88 B). `VEC_Normalize` (344 B) needed the whole CP div/sqrt sequence: DIVCNT
+* 3 C units: `G3X_SetFog` (84 B), `OS_GetLockID` (88 B) and an 8-byte stub
+  above `MBi_calc_sendblock`. `G3X_SetFog` is four `volatile` register
+  writes (`DISP3DCNT` 0x04000060, `FOG_OFFSET` 0x0400035c) and its signature
+  is in `nitro/gx/g3x.h`, but retail if-converts the disable path into
+  `ldreq/andeq/strheq/bxeq lr` and falls through to the enable path; the
+  if/else and early-return forms both emit `bne` and 92 B against retail 84 B.
+  `OS_GetLockID` (0x02024b04) scans a lock bitmap at 0x027fffb0 with `clz`,
+  base IDs 0x40/0x60 and a `0x80000000 >> z` clear; its source is not in the
+  shipped library tree, so the `clz` spelling has to be chosen to match mwcc. `VEC_Normalize` (344 B) needed the whole CP div/sqrt sequence: DIVCNT
   0x04000280, DIV_NUMER 0x04000290, DIV_DENOM 0x04000298, DIV_RESULT 0x040002a0,
   SQRTCNT 0x040002b0, SQRT_RESULT 0x040002b4, SQRT_PARAM 0x040002b8, with IME
   0x04000208 masked around the sqrt launch. The one shape detail that mattered:
