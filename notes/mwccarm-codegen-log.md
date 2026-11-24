@@ -5040,3 +5040,28 @@ parameter to `r5` and keeps `n` in `r4`, mwcc does the reverse (`mov r4, r3` /
 `ldrsh r5, [r0, #2]`). Declaration order, `s16` vs `s32`, `register`, an
 `S *` local alias for the parameter and a `void *` parameter were all tried and
 every one emits `mov r4, r3`. Classic two-value allocation tie; parked.
+
+## 2026-11-24 - the ov002 small units were already walls
+
+The 24 unmatched ov002 functions of 120 bytes or less looked like fresh ground
+because the module has no parked entries I had touched; three of them turned out
+to be parked already, and working them from scratch reproduced the same walls:
+
+* `0x02081078` (60 B) - `[*(u8 **)0x02102070 + i + 0x3d]` with an early return.
+  Twelve spellings give a function that is byte-identical except for one
+  register: retail keeps `i` in `r0` and uses `r2` as the scratch, mwcc uses
+  `r1` and clobbers `r0`. Included `u32 idx = i + 0x3d`, struct-field forms,
+  `volatile`, a pointer walk (`p += i; p[0x3d]`), and a two-argument prototype;
+  the `r2` allocation only appears together with the wrong instruction order.
+* `0x0206308c` (56 B) - two calls, then set bit 0 at `0x027c3ff8`. Retail keeps
+  **two** literal-pool words (`0x027c0000` and `0x3ff8`) and does
+  `ldr r0, [r1, r0]!`; mwcc always folds the pair into `add r1, r0, #0x027c0000`
+  and one literal, giving 52 B. Tried `u32 *` and `u8 *` bases, a struct with a
+  0x3ff8 pad, `volatile`, separate `base`/`off` locals and an explicit
+  `p += 0xffe` - every one folds.
+* `0x02068c78` (64 B) - stride-0x158 table walk; best 72 B.
+
+A quick sweep of all 25 vendored compilers on the first one settles that this is
+not a build difference: `1.2/sp3` and `1.2/sp4` change the register and the code
+layout (they emit `ldr r1, [pc, #0x20]`), and everything from 2.0 onward emits
+`ldr r0` with a different displacement, but none produces retail's `r2`.
