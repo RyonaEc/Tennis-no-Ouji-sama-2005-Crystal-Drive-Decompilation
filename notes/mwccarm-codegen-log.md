@@ -5166,3 +5166,16 @@ source `r4` where retail uses `ip`. The local-vs-assigned declarations, `u32` vs
   `ldr r1, =base / ldr r0, =0x3ff8 / ldr r0, [r1, r0]!` shape in ov008
   `func_ov008_0204e51c`, which still resists: with a symbol or literal base mwcc
   folds base+offset into one pool word.
+
+* **`volatile` on the pointee keeps a global's field loads.** ov008
+  `func_ov008_0204cf80` re-reads `p[0x30]` after the call instead of keeping it
+  in a register; declaring `volatile u8 *p = data_ov008_0204f440;` is what
+  produces those loads (the plain `u8 *` cached the byte and lost 4 bytes).
+  Found by `tools/match/respell.py`, which walks declaration order, init versus
+  assignment, compound assignment, `volatile` and dead pads in one run.
+* **A pointer-typed local makes an address CSE-able; an integer base does not.**
+  In ov009 `func_ov009_0204deec` the same `t + 0x1e4c0` is an argument twice.
+  With `u8 *t` mwcc hoists the sum into a callee-saved register and reuses it
+  (148 B, wrong); with `u32 t = (u32)data_ov009_02054f80;` and `t + 0x1e4c0` it
+  re-materialises the pool constant and re-adds per call, which is retail's
+  156 B.

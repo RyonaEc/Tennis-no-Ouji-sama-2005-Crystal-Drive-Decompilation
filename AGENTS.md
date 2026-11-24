@@ -102,6 +102,8 @@ Source files must `#include "types.h"` first, or the compiler emits
 | `python tools/match/udis.py <mod> <addr>...` | disassemble retail functions with sizes |
 | `python tools/match/sdk.py <mod> <addr> <size>` | find a retail function in the prebuilt NitroSDK libraries |
 | `python tools/match/var3.py <mod> <addr> <size> <file.c>` | compile a candidate and diff it against retail |
+| `python tools/match/annotate.py <mod> <addr>...` | disassembly plus pool literals, their symbols, and each callee's name and prototype in one pass |
+| `python tools/match/respell.py <mod> <addr> <size> <file.c> [--install]` | re-spell one candidate over declaration order, init/assign, compound assign, `volatile`, signed counters and dead pads, ranked by differing slots |
 | `python tools/match/reg.py <mod> <name> <addr> <size> <file.c>` | install a candidate, rebuild, keep only on ROM match |
 | `python tools/match/t10.py --check <mod>...` | self-check delinks/source bookkeeping |
 | `python tools/match/t10.py --repair <mod>` | drop dangling entries, relink orphan sources, drop duplicates |

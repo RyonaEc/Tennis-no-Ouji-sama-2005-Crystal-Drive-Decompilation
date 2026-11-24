@@ -194,3 +194,7 @@ src/ov010/func_ov010_0204e7cc.c:
 src/ov010/func_ov010_0204f514.c:
     complete
     .text       start:0x0204f514 end:0x0204f5a0
+
+src/ov010/func_ov010_0204ee94.c:
+    complete
+    .text       start:0x0204ee94 end:0x0204ef6c
