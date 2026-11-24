@@ -216,18 +216,19 @@ def bases_for(mod, addr, size, cap, dry):
             stored.append((path.name, path.read_text(encoding="utf-8", errors="replace")))
         except OSError:
             continue
-    families = [
-        score(mod, addr, size, stored, dry),
-        score(mod, addr, size, clone_candidates(mod, addr, size, cap), dry),
-        score(mod, addr, size, gen_candidate(mod, addr, size), dry),
-    ]
-    scored = []
-    for fam in families:
-        if fam:
-            fam.sort(key=lambda row: row[0])
-            scored.append(fam[0])
-    scored.sort(key=lambda row: row[0])
-    return scored[:cap]
+    picked = list(score(mod, addr, size, stored, dry))
+    picked.sort(key=lambda row: row[0])
+    picked = picked[:cap]
+    # Append the best of the other two families rather than letting the stored
+    # list stand or fall alone: `cap` still bounds the re-spelling cost, and this
+    # cannot lose a candidate the old ordering tried.
+    for extra in (clone_candidates(mod, addr, size, cap), gen_candidate(mod, addr, size)):
+        rows = score(mod, addr, size, extra, dry)
+        if rows:
+            rows.sort(key=lambda row: row[0])
+            picked.append(rows[0])
+    picked.sort(key=lambda row: row[0])
+    return picked
 
 
 def commit_unit(mod, name):
