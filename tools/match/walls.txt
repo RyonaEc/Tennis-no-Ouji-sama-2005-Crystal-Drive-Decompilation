@@ -341,8 +341,6 @@ ov003 0x020820d0 336B func_ov003_020820d0 ` / `0x020c7dc4` (336 B x2) -- closest
 ov003 0x02082220 96B func_ov003_02082220 / 0x020c806c 96B each (famsurvey pair) -- DEGENERATE, no source expre... L5275
 ov003 0x0208ae70 160B func_ov003_0208ae70 160B: 152/160B max. Body recovered: b=*data_ov003_020eb720; if(*(u16*... L289
 ov003 0x020960a4 120B func_ov003_020960a4 120B: all 8 stores reproduce; only the tail counter ip+0x8736 differs... L253
-ov003 0x020b6b60 52B func_ov003_020b6b60 retains dead stores to non-escaping stack locals; mwcc drops them (pl... L145
-ov003 0x020b732c 52B func_ov003_020b732c same as 0x020b6b60 (family twin) L151
 ov003 0x020b85b8 180B func_ov003_020b85b8 / 0x020db6ec 180B -- engine-B init: clear 0x200 u16 slots and L4249
 ov003 0x020bb0b0 120B func_ov003_020bb0b0 -- mode switch: `p = *(u32 *)0x020eb720 + 0xc8dc`; when the argu... L11004
 ov003 0x020c1ab0 128B func_ov003_020c1ab0 128B: 124/128B, ONE instruction short. Working body (frame+pool+arith... L277

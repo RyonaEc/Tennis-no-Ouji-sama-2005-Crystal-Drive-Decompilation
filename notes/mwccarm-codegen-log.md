@@ -5258,5 +5258,19 @@ source `r4` where retail uses `ip`. The local-vs-assigned declarations, `u32` vs
   single source of the 426 `unknown value` bails. Such a unit cannot be
   reproduced by spilling: the call has to be written as the operation whose
   result pairs up (`u64 /`, `%`), or the helper has to be visible to the
-  compiler in the same file. Treat `r1` read straight after a `bl` as a clue
+  compiler in the same file.   Treat `r1` read straight after a `bl` as a clue
   about the callee's signature, not as an allocation puzzle.
+
+* **Declaration order has to agree with statement order, and a zeroing store
+  only survives if the object's address is taken.** The ov003 twins
+  `func_ov003_020b6b60` / `func_ov003_020b732c` (52 B each) fill three 4-byte
+  stack objects with `strh r0` pairs. Written as `u16 a[2]; a[0] = 0; a[1] = 0;`
+  mwcc deletes every store - the object never escapes - and the unit comes out
+  4 B. Written with brace initialisers the stores survive but the address
+  register comes out `r0` and the zero `r2` against retail's `r1`/`r0`. Taking
+  each address explicitly and declaring the three locals in the same order as
+  the statements that use them reproduces retail exactly; the generator's own
+  candidate had the declaration list reversed against its statements and sat two
+  slots off (only the two `add r1, sp, #n` swapped). The wall note had filed
+  this as a colouring tie to park - it was a liveness question first and an
+  ordering question second.

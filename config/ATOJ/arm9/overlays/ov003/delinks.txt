@@ -2008,3 +2008,11 @@ src/ov003/func_ov003_0205264c.c:
 src/ov003/func_ov003_02071f00.c:
     complete
     .text       start:0x02071f00 end:0x02072064
+
+src/ov003/func_ov003_020b732c.c:
+    complete
+    .text       start:0x020b732c end:0x020b7360
+
+src/ov003/func_ov003_020b6b60.c:
+    complete
+    .text       start:0x020b6b60 end:0x020b6b94
