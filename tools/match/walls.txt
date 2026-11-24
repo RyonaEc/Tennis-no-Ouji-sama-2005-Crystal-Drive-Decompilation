@@ -268,7 +268,6 @@ ov002 0x0207b494 112B func_ov002_0207b494 -- two-slot cleanup: for i in 0..1, if
 ov002 0x0207bc98 140B func_ov002_0207bc98 ) -- clears two 3-byte runs and then reclassifies L11064
 ov002 0x0207ff34 116B func_ov002_0207ff34 -- per-index byte counter with a clamp: `b = *(u32 *)0x02102070`... L11114
 ov002 0x02080ca4 68B func_ov002_02080ca4 vs 76B: mwcc allocates the loop counter in lr and then copies it... L3481
-ov002 0x02081078 60B func_ov002_02081078 on b56: identical instructions and length, only the derived point... L3475
 ov002 0x02082034 92B func_ov002_02082034 -- copies four s16s into an 8-byte stride at p + 0x3c6 from a tab... L7267
 ov002 0x02082090 96B func_ov002_02082090 allocation tie: retail keeps base in ip / q in r2 / p in r3 and mater... L193
 ov002 0x02084b28 128B func_ov002_02084b28 -- per-slot mode byte: for i in 0..3, skip when `*(u8 *)(base +... L6775

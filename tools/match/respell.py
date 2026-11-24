@@ -320,6 +320,11 @@ def main(argv):
     mod, addr, size, path = args[0], int(args[1], 0), int(args[2], 0), args[3]
     text = pathlib.Path(path).read_text()
     name = func_name(mod, addr)
+    if pathlib.Path("src", mod, name + ".c").exists():
+        print("note: %s is already matched" % name)
+    note = fm.wall_note(mod, addr)
+    if note:
+        print("note: parked - %s" % note)
 
     scored, tried, failed = [], 0, 0
     for label, src in itertools.islice(variants(text, pad), limit):
