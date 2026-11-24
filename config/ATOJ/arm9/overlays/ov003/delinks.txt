@@ -1992,3 +1992,11 @@ src/ov003/func_ov003_02093d94.c:
 src/ov003/func_ov003_02097840.c:
     complete
     .text       start:0x02097840 end:0x020978f8
+
+src/ov003/func_ov003_02071dfc.c:
+    complete
+    .text       start:0x02071dfc end:0x02071f00
+
+src/ov003/func_ov003_020c0d20.c:
+    complete
+    .text       start:0x020c0d20 end:0x020c0e28
