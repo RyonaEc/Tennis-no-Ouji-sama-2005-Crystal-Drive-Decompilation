@@ -11594,3 +11594,25 @@ written off.
   pointer to r4, while hoisting it into a local (`u8 idx`, declared first or
   last, `u8` or `u32`) makes mwcc CSE the second/third load and the unit
   collapses to 140-144 B.
+- `arm9 0x02026d54` (216 B, BIOS-style LZ77-to-u16 decompressor) -- the body is
+  fully decoded (Ghidra in project ATOJ9 agrees): `len = *(u32 *)src >> 8`,
+  `src += 4`, then per flag byte an 8-bit loop; literal arm `acc |= *src++ << pos;
+  len--; pos ^= 8;` with `*dst++ = acc` when `pos` wraps, back-reference arm
+  `n = (*src >> 4) + 3; back = (src[1] | ((*src & 0xf) << 8)) + 1; src += 2;`
+  then `n` copies of
+  `(*(u16 *)((u8 *)dst - ((back + ((8 - pos) >> 3)) & ~1)) & (0xff << sh)) >> sh`
+  with `sh = ((8 - pos) ^ ((back & 1) << 3)) ^ 8`. A straight transcription
+  compiles, but mwcc needs 16 more bytes and spills to the stack (frame 0xc,
+  `fp` used) where retail runs the whole thing in r2-r8/sb/sl with no frame;
+  block-scoping and flattening the temporaries both spill. Needs the original
+  source's variable structure before it will fit.
+- `ov004 0x020509d8` (280 B, SJIS decimal writer) -- `build/cand/e_509d8.c` is
+  272 B: digit extraction (`buf[n++] = v % 10; v /= 10;`), the 0xb minus sign,
+  the 10/11 sentinels in `buf[0]`, the two-byte table lookup at
+  `data_ov004_020636e8` and the trailing NUL are all right. Retail spends two
+  extra instructions materialising the constants (`mov r6,#0` then
+  `add r5,r6,#1` for the initial `n = 1`, and it keeps `buf[0] = 10` in r4
+  across the `v == 0` test) and its frame is 0x84 where mwcc's is 0x88, i.e.
+  retail has exactly one local array and no spilled temporaries. Tried
+  do-while vs while for the digit loop, `buf[1] = 0; n = 2;` vs `buf[n++] = 0;`,
+  `k`/`p` addressing, and both statement orders for the sentinel store.
