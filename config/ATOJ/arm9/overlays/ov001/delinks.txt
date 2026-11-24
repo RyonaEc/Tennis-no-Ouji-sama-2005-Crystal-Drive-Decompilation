@@ -79,3 +79,7 @@ src/ov001/data_ov001_02050aa8.c:
 src/ov001/func_ov001_0204d38c.c:
     complete
     .text       start:0x0204d38c end:0x0204d434
+
+src/ov001/func_ov001_0204fb84.c:
+    complete
+    .text       start:0x0204fb84 end:0x0204fc1c

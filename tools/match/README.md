@@ -86,4 +86,16 @@ scores variants through `fastmatch`, and installs a hit only through
 `t10.try_unit`. Every finished unit is appended to
 `build/grind-journal.jsonl`, so a restart after a crash or a kill skips what was
 already exhausted, and the journal keeps each unit's best residue for the hand
-pass that follows. One instance per build tree.
+pass that follows.
+
+`--daemon` is the mode that runs without an agent watching: pass after pass with
+a sleep between them, a heartbeat in `build/grind-status.json`, and a graceful
+stop whenever `build/grind.stop` appears (it is removed once honoured, so
+stopping never means killing a process by pattern). `--retry-slots N` spends a
+pass on the journal's near-misses instead of the queue, cheapest residue first,
+because a unit recorded at one or two differing slots is where a deeper sweep
+pays. `--status` prints the heartbeat, the totals and the closest exhausted
+units without starting anything. `--commit` commits each kept unit locally so an
+unattended run's work is in git history rather than only in the working tree; it
+never pushes and never edits `PROGRESS.md` or `README.md` - that release step is
+still the hand pass. One instance per build tree.
