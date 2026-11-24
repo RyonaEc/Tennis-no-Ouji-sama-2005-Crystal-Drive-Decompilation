@@ -21,6 +21,8 @@ arm9 0x02036934 740B func_02036934 740 itcm origin, decoded as soft-float `ldexp
 
 arm9 0x020267cc 192B func_020267cc -- DMA table store: best 204/192 B, retail keeps the store address live for `str r4,[r1,r6,lsl #2]!` and passes it as the call's r1 L11839
 
+ov006 0x0204de34 156B func_ov006_0204de34 160 B vs 156: struct-copy loop and body stream match, but mwcc colours the copy source r4 where retail uses ip, adding a 4-byte frame L11898
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

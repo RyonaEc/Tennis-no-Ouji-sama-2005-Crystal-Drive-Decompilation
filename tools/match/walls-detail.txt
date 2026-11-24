@@ -11893,3 +11893,6 @@ residue is the table store: retail keeps the store address live across the
 argument of the `func_01ff8484` copy, and its argument homes sit one register
 higher (r6/r5/r4/r8/r7 vs r7/r6/r5/r4/r8). Best candidate 204 B. Tried the
 pointer-local form, the `&dst[a]` call argument and the direct `dst[a]` store.
+
+ov006 0x0204de34 func_ov006_0204de34
+160 B vs 156: struct-copy loop and body stream match, but mwcc colours the copy source r4 where retail uses ip, adding a 4-byte frame

@@ -302,3 +302,11 @@ src/ov006/data_ov006_02076024.c:
 src/ov006/func_ov006_0204d0fc.c:
     complete
     .text       start:0x0204d0fc end:0x0204d260
+
+src/ov006/func_ov006_0204ddc0.c:
+    complete
+    .text       start:0x0204ddc0 end:0x0204de34
+
+src/ov006/func_ov006_0204e3b8.c:
+    complete
+    .text       start:0x0204e3b8 end:0x0204e45c

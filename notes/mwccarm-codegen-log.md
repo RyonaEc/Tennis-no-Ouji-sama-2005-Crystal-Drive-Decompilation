@@ -5116,3 +5116,35 @@ Two neighbours stay parked for the same reason: `func_020266c0` (80 B, 16
 slots, retail scratch `r1`/`r2` vs mwcc `r0`/`r1`) and `func_020267cc` (192 B,
 best 204 B; the pre-indexed `str r4, [r1, r6, lsl #2]!` needs the store address
 to stay live as the call's `r1`).
+
+### 2.105 2026-11-24 - four spellings that decide four recurring shapes
+
+Five spellings were measured on 1.2/b56 while matching `func_ov006_0204ddc0`,
+`func_ov006_0204e3b8`, `func_ov008_0204d9dc` and `func_ov006_0204de34`:
+
+* **Compound assignment keeps `mul`.** `p->field *= -1;` on an `s8` member emits
+  `add r2, p, #0xe / ldrsb r1, [r2] / mvn r0, #0 / mul r0, r1, r0 / strb r0, [r2]`,
+  where `p->field = p->field * -1;`, `p->field = -p->field;` and
+  `p->field = p->field * (s8)0xff;` all collapse to a single `rsb` (36 B each vs
+  44 B for the compound form). Retail's negation in `func_ov008_0204d9dc` is the
+  compound form.
+* **An 8-byte struct copy is a byte loop.** `B8 tmp = data_X;` with
+  `typedef struct { u8 b[8]; } B8;` expands to four iterations of
+  `ldrb r1, [ip], #1 / ldrb r0, [ip], #1 / subs r2, r2, #1 / strb r1, [r3], #1 /
+  strb r0, [r3], #1`, which is the opening loop of `func_ov006_0204de34`. A
+  declared `memcpy(buf, src, 8)` is not intrinsified here: it stays a call
+  (140 B against retail's 156 B).
+* **A source-visible memory object spills.** A `volatile u32` local holding the
+  constant `0xc0` gives `str r1, [sp]` ... `ldr r0, [sp]` around the call, the
+  shape retail has in `func_ov006_0204e3b8`; a plain `u32` local is folded to
+  `mov r0, #0xc0` and loses the match. The same spill explains the `strh/ldrh`
+  round trip of the zero argument in ov005 `func_ov005_0204dc7c`.
+* **Re-read the pointer global after the call.** `func(g + 0x11d8)` where `g` is
+  an `extern u8 *` produces retail's three separate `ldr rX, [pc]` loads;
+  caching `g` in a local keeps it in `r5` across the call and adds `push {r5}`.
+
+Residue of the same batch, both parked: `func_ov008_0204d9dc` is 124/124 B with
+an identical instruction stream but colours the struct pointer `ip` where retail
+uses `r4`, and `func_ov006_0204de34` pays a 4-byte frame for colouring the copy
+source `r4` where retail uses `ip`. The local-vs-assigned declarations, `u32` vs
+`s32` temporaries and statement reordering tried on both do not move the colour.
