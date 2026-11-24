@@ -4951,3 +4951,31 @@ in the disassembler, but the second branch word is `0xffffffea`, which is
 `cond = 0xf` and cannot be a real branch; retail's implied target lands inside
 the preceding function. These two look like mis-delimited unit boundaries rather
 than code to reconstruct from the listing, so they are left alone.
+
+## 2026-11-24 - asm void syntax details, and the itcm module
+
+`func_02025698` (68 B) is the ARM interrupt-return trampoline - `msr
+cpsr_c`/`spsr_fsxc`, `ldm r0, {r0-r14}^`, `subs pc, lr, #4` - and it assembles
+straight from the retail listing once two syntax points are known:
+
+* `mrs r1, apsr` is **rejected** by mwccasm in this toolchain; write `mrs r1, cpsr`
+  and the encoding is identical (`0xe10f1000`).
+* `ldmia r0, {r0-r14}^` is accepted as written, and `subs pc, lr, #4` too.
+
+So "hand-written asm we cannot reproduce" is not a fair description of these:
+the listing transcribes one-for-one, and the digest decides.
+
+The `itcm` module has no matched units at all (11 symbols, 1,520 B), and its
+delinks boundaries are **not** function boundaries: `0x01ff8000` starts with
+`sub ip, r0, #0x36`, uses `r4`-`r8` before setting them, and contains several
+`pop {r4, r5, r6, lr}` tails, so the whole 0x01ff8000-0x01ff85f0 span is one
+switch-dispatch routine that dsd has cut into eleven fake units. Matching it
+requires re-delimiting `config/ATOJ/arm9/itcm/{symbols,delinks}.txt` to the real
+entry point first; the eleven current "functions" cannot be written as sources.
+
+The `0x02033e40` / `0x02033e98` / `0x02033ef4` / `0x02033f90` cluster (88/92/76/72 B)
+all funnel into `func_02033fd8` while building a 5-word local block around a
+`sp-4` scratch pair, then returning one or two words of it. That is mwcc's shape
+for a varargs pass-through, and the argument mapping is not recoverable from the
+listing alone (in `0x02033f90` the fourth argument register ends up holding the
+first argument), so the four are parked rather than guessed at.
