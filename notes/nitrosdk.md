@@ -281,3 +281,11 @@ accesses, and `var3` decides. `MI_StopDma` (80 B, libmi `mi_dma.c`) and
 `PMi_CallCallbackAndUnlock` (84 B, libspi ARM9 `pm.c`) matched first try that
 way; the second had a wall note claiming a register tie that the struct-typed
 source resolves by itself.
+
+The near pass is **arm9 only**: ov003 (424 unmatched functions, 573,680 B) and
+ov002 both return zero rows at 92 %, so the overlays are pure game code and the
+SDK work list is the 72 arm9 rows. A third match from it, `PM_GetBackLight`
+(120 B, libspi ARM9 `pm.c`), confirms the shape: retail's `func_0202bfdc(0, &f)`
+is `PMi_ReadRegister(REG_PMIC_CTL_ADDR, &reg)`, and the two out-parameters are
+`PMBackLightSwitch*`, so the 32-bit stores and the `? 1 : 0` spelling both come
+straight from the SDK source.
