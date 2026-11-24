@@ -13,7 +13,7 @@ def load(path, name):
     return mod
 
 
-t10 = load(ROOT / "build" / "t10.py", "t10")
+t10 = load(ROOT / "tools" / "match" / "t10.py", "t10")
 auto = load(ROOT / "tools" / "match" / "auto.py", "auto")
 
 
@@ -62,10 +62,13 @@ def main():
     good &= (not retested) and src.exists() and src.read_bytes() == before
     good &= report('after re-test')
 
-    # 3. a crash inside the build: restore must still happen
-    name = 'func_02017954'
+    # 3. a crash inside the build: restore must still happen.  The body is the
+    # unit's own source so that it passes try_unit's byte-compare prefilter and
+    # the build is actually reached.
+    name = 'func_02026140'
     addr = auto.NAME2ADDR[name]
-    crash_body = auto.emit(auto.gen(addr))
+    crash_body = pathlib.Path('src/arm9', f'{name}.c').read_text(
+        encoding='utf-8').split('\n\n', 1)[1]
     original = t10.configure_build
     t10.configure_build = lambda: (_ for _ in ()).throw(RuntimeError('simulated crash'))
     try:

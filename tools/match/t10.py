@@ -49,8 +49,44 @@ def sha1():
 
 def configure_build():
     _run(["tools/configure.py", "ATOJ"])
-    r = _run(["-m", "ninja"])
+    # `rom` only: the default target also regenerates objdiff.json on every
+    # attempt, which no gate reads.  The digest below is still checked.
+    r = _run(["-m", "ninja", "rom"])
     return r.returncode == 0, (r.stdout + r.stderr)[-400:]
+
+
+_FM = None
+
+
+def _fm():
+    """The shared compiler harness, loaded once and only when needed.
+
+    `fastmatch` loads this module itself, so the import stays lazy.
+    """
+    global _FM
+    if _FM is None:
+        import importlib.util
+        path = pathlib.Path(__file__).resolve().with_name('fastmatch.py')
+        spec = importlib.util.spec_from_file_location('fastmatch_prefilter', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _FM = module
+    return _FM
+
+
+def unit_compiler(rel):
+    """Per-unit mwccarm build from `config/ATOJ/mwcc_versions.txt`, or None."""
+    path = pathlib.Path('config/ATOJ/mwcc_versions.txt')
+    if not path.exists():
+        return None
+    for line in path.read_text(encoding='utf-8').splitlines():
+        line = line.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, _, value = line.partition('=')
+        if key.strip() == rel:
+            return value.strip() or None
+    return None
 
 
 def reconfigure():
@@ -162,16 +198,39 @@ def try_unit(name, addr, size, body, variants=None, mod='arm9'):
     before_src = src.read_bytes() if src.exists() else None
     had_entry = _entry_span(before_text.splitlines(keepends=True), rel) is not None
 
+    # Sound, cheap rejection first.  The byte compare masks the words the
+    # linker fills, so it can accept a body the digest later rejects, but it
+    # cannot reject one that would match: any differing unmasked byte is a
+    # differing byte in the linked ROM too.  A body it rejects therefore never
+    # earns a relink, and the digest below still decides every acceptance.
+    try:
+        fm = _fm()
+        compiler = unit_compiler(rel)
+        keep = [i for i, b in enumerate(bodies)
+                if fm.compare(b, mod, addr, size, compiler)]
+    except Exception:
+        keep = list(range(len(bodies)))
+    for i in range(len(bodies)):
+        if i not in keep:
+            print(f'  pref   {name:22} variant #{i} (bytes differ, no build)')
+    if not keep:
+        print(f'  miss   {name}')
+        return False
+
     def restore():
         dl.write_text(before_text)
         if before_src is None:
             src.unlink(missing_ok=True)
         else:
             src.write_bytes(before_src)
-        reconfigure()
+        # Only a delinks change needs the build graph regenerated; a re-test
+        # writes the same text back and leaves build.ninja valid.
+        if not had_entry:
+            reconfigure()
 
     try:
-        for i, b in enumerate(bodies):
+        for i in keep:
+            b = bodies[i]
             src.write_text('#include "types.h"\n\n' + b)
             if not had_entry:
                 dl.write_text(before_text.rstrip('\n') + '\n\n'
@@ -181,7 +240,7 @@ def try_unit(name, addr, size, body, variants=None, mod='arm9'):
                 print(f'  MATCH  {name:22} variant #{i}')
                 return True
             restore()
-            if not ok and i == 0:
+            if not ok and i == keep[0]:
                 last = log.strip().splitlines()[-1][:120] if log.strip() else '?'
                 print(f'  link/compile issue for {name}: {last}')
         print(f'  miss   {name}')

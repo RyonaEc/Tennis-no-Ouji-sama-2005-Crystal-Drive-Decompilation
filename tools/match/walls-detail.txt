@@ -2346,6 +2346,30 @@ Shape: '#include "types.h"' + blank + '#pragma thumb on' + fn + '{ asm { swi N }
 
   arm9 0x020043a8  6B Mod             asm { swi 0x09; mov r0, r1 }
 
+Why the ten stubs above are still parked, re-checked 2026-11-24 (they are not
+codegen walls, and the shape is right):
+
+* `#pragma thumb on` + `asm { swi N }` *does* byte-match in isolation. `Halt`
+  (4 B) and `Mod` (6 B) both report `MATCH` from `fastmatch diffc`.
+* They still miss at link level because of halfword placement. `Mod` at
+  0x020043a8 links its own six bytes correctly (`09df 081c 7047`), but the
+  following chunk starts at 0x020043ae and everything from there shifts by two
+  bytes: retail has `b9 1d` at 0x020043ae, the rebuild has `00 00`. The thumb
+  object's section is padded to a 4-byte size, so a unit ending on a halfword
+  boundary overwrites the next chunk. Nine of the ten stubs are at addresses
+  that are 2 mod 4 (`0x020040e6`, `0x02004146`, `0x0200426a`, `0x020042d2`,
+  `0x02004336`, `0x0200440e`, `0x02004466`, `0x020044ea`, `0x0200470a`); `Mod`
+  is the only 4-aligned one and fails for the same padding reason.
+* `align:2` cannot be expressed per chunk: dsd rejects it with "attribute
+  'align' should be omitted as it is inherited from this file's header" (the
+  file header declares `.text ... align:32`). Giving the entry an explicit
+  `align:2` reproduces exactly that error.
+* So the unblocker is build-side (a way to place a 2-byte-section chunk at a
+  halfword address, e.g. truncating the object's section end to the delinked
+  size), not a source shape. Until then no spelling of these ten can install.
+  `Mod` is installed in neither state, so the tree is unchanged; the experiment
+  was reverted.
+
 
 
 

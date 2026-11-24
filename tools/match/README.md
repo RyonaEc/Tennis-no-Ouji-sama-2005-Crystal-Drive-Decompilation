@@ -41,6 +41,16 @@ output under `build/` (gitignored).
 | `progress.py` | Regenerate `PROGRESS.md` from the objdiff report |
 | `check_bytes.py`, `compile_scan.py`, `cdiff.py`, `why_miss_c.py`, `diag_unit.py` | Compile-only diagnostics |
 
+`t10.try_unit` byte-compares every candidate (and every variant) against retail
+before it builds, and only the survivors are linked and digested. The compare is
+sound as a *rejection*: it masks the words the linker fills, so it can accept a
+body the digest later rejects, but a body with a differing unmasked byte cannot
+link to retail. That makes a rejected variant cost ~0.16 s instead of a ~9 s
+relink + ROM build, which matters for the sweeps. The digest is still the only
+thing that accepts a unit. `try_unit` builds through `ninja rom` (not the
+`rom`+`objdiff` default), and a re-test whose delinks entry already exists does
+not re-run `configure.py`.
+
 **Sweeps, families and queues**
 
 `autorun.py`, `resweep.py`, `sweep_tiny.py`, `sweep_homed.py` (generated
