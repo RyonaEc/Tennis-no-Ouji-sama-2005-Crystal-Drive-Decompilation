@@ -4423,3 +4423,19 @@ src/arm9/func_02024ca8.c:
 src/arm9/func_02024d38.c:
     complete
     .text       start:0x02024d38 end:0x02024dc8
+
+src/arm9/func_02029980.c:
+    complete
+    .text       start:0x02029980 end:0x02029a00
+
+src/arm9/func_02029aa0.c:
+    complete
+    .text       start:0x02029aa0 end:0x02029b2c
+
+src/arm9/func_0202915c.c:
+    complete
+    .text       start:0x0202915c end:0x020291f4
+
+src/arm9/func_02028888.c:
+    complete
+    .text       start:0x02028888 end:0x02028920

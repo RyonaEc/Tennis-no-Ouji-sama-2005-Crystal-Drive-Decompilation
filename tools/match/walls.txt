@@ -60,9 +60,7 @@ arm9 0x02025e48 172B func_02025e48 -- switch on 0..6 returning constants, with a
 arm9 0x020260b8 116B func_020260b8 -- hand-written dispatcher (`mrs r1, apsr`, `teq`, banked `sp` L10664
 arm9 0x02027080 88B func_02027080 (8-arg bit packing via orr lsl chain), 02032aa8 88B (2 unaligned L10862
 arm9 0x02027ffb ?B - 0, allocating the set bit in the first word (id 0x40+n) or second (0x... L8737
-arm9 0x0202915c 152B func_0202915c scout: **124/152.** `ands r0,r0,#0x100` / `movne r0,#1` / `moveq r0,#... L169
 arm9 0x02029704 100B func_02029704 -- packs up to four characters into a u32, lowercasing A-Z: guards L7913
-arm9 0x02029aa0 140B func_02029aa0 ` (140 B) -- decoded as `start = p[0x28]; n = min(a2 L11666
 arm9 0x0202a3a0 188B func_0202a3a0 -- slot fetch: `base = (a1 == 0) ? 0x0204ac04 : 0x0204ac0c;` the... L10955
 arm9 0x0202c018 120B func_0202c018 -- slot setup: `func_0202c3e0(a0)` guard, `*(u16 *)(data_0204acd... L10675
 arm9 0x0202c430 24B func_0202c430 var3 matches, ROM digest rejects: best is 3 slots, retail keeps the global address in ip where mwcc uses r1 for every spelling tried (plain/volatile global, volatile u32 *p, do/while, with and without a returned value) L127

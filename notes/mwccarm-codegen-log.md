@@ -5466,3 +5466,28 @@ different. Casting the u16 field to match the ID's width also costs an extra
 materialises `mvn r0, #1`, i.e. `~1`. `OS_UNLOCK_ERROR` is not the -1 that the
 set of `OS_LOCK_*` codes suggests, so read the immediate off the disassembly
 instead of assuming the error code.
+
+## 2026-11-24 - the FS structures, and structs passed by value
+
+Four `libfs` units went in first-try off the SDK source once two layout facts were
+settled, both readable straight off the disassembly:
+
+- `FSFile` fields used by this cluster are `stat` at 0xc, `error` at 0x14,
+  `prop.file.bottom` at 0x24, `prop.file.pos` at 0x28, and the
+  `arg.readfile`/`arg.openfilefast` union at 0x2c (dst, len_org, len).
+- `FSDirPos` is **12** bytes, not the 8 the two-halfword shape suggests:
+  `{ u32 w0; u16 own_id; u16 index; u32 pos; }`. `own_id` at +4 is what indexes
+  the FNT (`fnt + own_id * 8`); `index` at +6 and `pos` at +8 are what the
+  "seek to first entry" test compares against zero.
+
+`FSFileID` is 8 bytes and is passed **by value**: retail opens with
+`push {r0, r1, r2, r3}` and then reloads the two halves from the outgoing-argument
+area (`ldr r1, [sp, #0xc]`, `ldr r2, [sp, #0x10]`). Two conclusions follow. The
+spilled-argument prologue is not a varargs artifact, so do not go looking for a
+`...`; and the struct has to be an 8-byte by-value type, because passing the ID as
+two scalars emits a plain `push {r4, lr}` instead.
+
+`FS_NotifyArchiveAsyncEnd` needed the async test written as a normalised value -
+`u32 is_async = (flag & 0x100) ? 1 : 0; if (is_async)` - because retail materialises
+`movne r0, #1 / moveq r0, #0` and then a separate `cmp`. Writing the mask test
+directly in the `if` folds it into `tst`/`beq` and loses those two instructions.
