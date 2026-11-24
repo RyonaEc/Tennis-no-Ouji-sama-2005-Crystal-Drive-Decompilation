@@ -5299,3 +5299,28 @@ per frame cell (`cell = depth_after_push - 4*k`; the first register on `push`
 sits at the highest address) and handing them back on the matching pop turns 42
 of those 279 units into candidates (best residue 25 slots, `arm9 0x0203b50c`).
 The other 237 hit the same message from other unknown sources.
+
+## 2026-11-25 - a numeric address is not a relocation
+
+`objdiff` scores a unit against the delinked retail object, and that object keeps
+its relocations: the pool word is zero in `.text` and a `.rela.text` entry
+carries the address. Writing the same address as a numeric constant in C bakes
+it into `.text` with no relocation, so the linked ROM is still identical
+(`ninja sha1` prints the retail hash) while the object diff is not: the unit's
+fuzzy score stops short of 100% and `objdiff` emits only `complete_*`, never
+`matched_*`. Locally that is invisible - `tools/match/progress.py` falls back to
+`complete_code` - but ByteMatch reads the report literally and showed 137,380 B
+matched against 137,536 B fully linked, 7.46% against 7.47%.
+
+Two units, 156 B in total: `func_02024af8` (an `asm` veneer written as
+`ldr r1, =0x02024c78`) and `func_0202623c` (three stores through
+`*(u32 *)0x02048f8c`-style literals). Naming the symbols - `=func_02024c78`,
+`data_02048f8c`, `data_02048f84`, `(u32)func_020260b8` - gives `.text` that is
+byte-identical to retail plus the same `.rela.text` entries at 0x08 and
+0x80/0x84/0x8c; both units then score 100.0 and the two headline figures agree.
+
+When a unit scores below 100 in the report but `var3` says `MATCH` and the ROM
+digest holds, compare the built object with `build/ATOJ/delinks/src/<mod>/<name>.o`
+(`build/cmp_units.py` does `.text` words and `.rela.text`): use a symbol whenever
+the config has one, and keep the numeric address only where it has none
+(`0x027ffd9c`, `0x027c3000` here are RAM and stay literal).
