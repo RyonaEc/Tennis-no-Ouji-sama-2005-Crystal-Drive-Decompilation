@@ -1,14 +1,27 @@
 # Per-file mwccarm versions.
 #
 # The whole ROM builds byte-exactly with a single compiler, 1.2/b56 (build 56,
-# Runtime Built 2004-09-16), which is what tools/configure.py now defaults to.
-# All 1,536 matched units reproduce the digest `9eec3248...` under it with no
-# per-file overrides, so the 72 `1.2/b56` entries that used to be listed here
-# were an artefact of the old sp2 default and have been removed.
+# Runtime Built 2004-09-16, NITRO V1.0), which is what tools/configure.py
+# defaults to. The game shipped in Japan on 2004-12-30, so b56 is the only
+# vendored build that predates the cartridge: everything from 1.2/sp2 (build 79,
+# Runtime Built 2005-08-11) onwards was released months after the ROM was in
+# shops. Treat any later build as unusable evidence - it cannot have compiled a
+# whole unit, and the 72 sp2 entries that this file used to carry were pure
+# artefacts of the old sp2 default.
 #
-# This file stays as the escape hatch for a unit that genuine evidence shows was
-# built by a different pre-existing build. An entry needs the full ROM digest to
-# still match, and the tag must exist under tools/mwccarm/<tag>/mwccarm.exe.
+# The digest, not the calendar, is the arbiter, and there is exactly one measured
+# exception: src/arm9/func_0201fcc8.c needs 2.0/base. Under b56 the nine-word
+# fixed-point block compiles to 32 bytes of Thumb where retail has 28, and the
+# whole ROM hashes to 2870334109ed2c46ca855170eb4f6369266d0286 instead of the
+# target 9eec3248...; with this entry the digest matches again (re-measured
+# 2026-11-24, so the entry is load-bearing and must stay). A post-release build
+# is therefore a prior against, never a proof against.
+#
+# This file is the escape hatch for a unit like that one. An entry needs the full
+# ROM digest to still match, and the tag must exist under
+# tools/mwccarm/<tag>/mwccarm.exe. Editing this file only takes effect after
+# re-running tools/configure.py ATOJ: build.ninja does not list it as an input,
+# so an edit alone changes nothing.
 #
 # Format: <source path> = <version tag>
 src/arm9/func_0201fcc8.c = 2.0/base

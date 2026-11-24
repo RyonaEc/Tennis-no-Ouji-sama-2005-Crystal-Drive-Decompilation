@@ -4797,3 +4797,24 @@ Direct `b[j*3 + i + off]` spelling reaches 144 B against retail's 140 B with the
 address accumulated; a row-base pointer reaches 176 B. Retail's `add r0, r2, ip`
 per inner iteration is therefore not reachable from either spelling tried. See
 section 3.13 of the playbook.
+
+## 2026-11-24 - the release date is a prior, not proof: one unit really needs `2.0/base`
+
+`func_0201fcc8` (`0x0201fcc8`, 28 B, nine words of a fixed DP layout, `#pragma
+thumb on`) is the only entry left in `config/ATOJ/mwcc_versions.txt`, and it is
+`2.0/base`. The argument "the game shipped 2004-12-30, so only `1.2/b56`
+(2004-09-16) can have built it" fails for this unit, measured directly: with the
+entry commented out, `configure.py` emits
+`mwcc_exe = tools\mwccarm\1.2\b56\mwccarm.exe` for it, the object is 32 bytes of
+Thumb where retail has 28, and the linked ROM hashes to
+`2870334109ed2c46ca855170eb4f6369266d0286` instead of
+`9eec3248d3569eba8abcb3244adcbdf01a5ea424`. Restoring the entry reproduces the
+digest. So the calendar rules out a whole unit built by a later compiler, but the
+digest is the only test that decides, and this one 28-byte function genuinely
+needs a 2006 build.
+
+Two practical consequences. Multi-build probing (`vprobe.py`, `wallprobe.py`) is
+worth its run: this unit is exactly what it finds, and a probe only counts once
+the full digest still matches. And an edit to `mwcc_versions.txt` does nothing
+until `tools/configure.py ATOJ` re-runs, because `build.ninja` does not list it as
+an input.
