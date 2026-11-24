@@ -142,9 +142,10 @@ Before spending iterations on a shape that no build and no spelling produces:
    function without a `src/` file and writes `build/sdkmap-<module>.tsv`. In
    arm9 that is 34 unmatched functions (2,624 B) byte-identical to prebuilt
    NitroSDK 2.0 RC3 libraries; 16 of them are `asm` blocks in the SDK and 16
-   were installed straight from that source; seven more are ordinary C
+   were installed straight from that source; eight more are ordinary C
    (`FSi_ReadFileCommand`, `FSi_WriteFileCommand`, `VEC_CrossProduct`,
-   `CP_SaveContext`, `CP_RestoreContext`, `FX_InvAsync`, `OS_DisableIrqMask`)
+   `CP_SaveContext`, `CP_RestoreContext`, `FX_InvAsync`, `OS_DisableIrqMask`,
+   `VEC_Normalize`)
    that compile exactly from the SDK's own source under b56, with SDK headers
    restated as plain `volatile` register macros and struct offsets.
 2. Read the matching SDK source and write the unit as the SDK's own `asm void`

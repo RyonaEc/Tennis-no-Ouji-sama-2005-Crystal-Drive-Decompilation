@@ -122,9 +122,14 @@ be transcribed literally; only the parameter *types* have to exist here.
 
 Left on the map:
 
-* 4 C units: `MBi_calc_sendblock` (8 B), `G3X_SetFog` (84 B), `OS_GetLockID`
-  (88 B) and `VEC_Normalize` (344 B), the last one needing the CP div/sqrt
-  command sequence mirrored from `cp.h`. Seven more C units were matched this
+* 3 C units: `MBi_calc_sendblock` (8 B), `G3X_SetFog` (84 B) and `OS_GetLockID`
+  (88 B). `VEC_Normalize` (344 B) needed the whole CP div/sqrt sequence: DIVCNT
+  0x04000280, DIV_NUMER 0x04000290, DIV_DENOM 0x04000298, DIV_RESULT 0x040002a0,
+  SQRTCNT 0x040002b0, SQRT_RESULT 0x040002b4, SQRT_PARAM 0x040002b8, with IME
+  0x04000208 masked around the sqrt launch. The one shape detail that mattered:
+  the SDK's `OS_RestoreInterrupts` reads IME back before writing it, so a bare
+  restore is one instruction short and only matches once that read is present.
+  Eight C units were matched this
   way already (`VEC_CrossProduct`, `CP_SaveContext`, `CP_RestoreContext`,
   `FX_InvAsync`, `OS_DisableIrqMask`, `FSi_ReadFileCommand`,
   `FSi_WriteFileCommand`): the recipe is to restate the SDK header as plain C -
