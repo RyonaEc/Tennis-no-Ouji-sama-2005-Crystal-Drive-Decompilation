@@ -11723,3 +11723,57 @@ written off.
   the unit to 316 B instead (mwcc then merges the source reads with the
   stores), and `u16 i` costs a further 8 B.  Residue is allocation and
   addressing form, not the algorithm.
+- `ov003 0x02052384` (372 B, RGB555 -> BGR555 shade).  Sibling of the matched
+  0x02052798/0x0205286c: 17 rows of 16 colours, each channel taken as
+  `src[i] & mask` and offset by the row index `j` when the mode `a0` selects
+  that channel (red for `a0 == 0 || 3 || 5`, green for `a0 == 1 || k1 <= 1`
+  with `k1 = (u16)(a0 - 3)`, blue for `a0 == 2 || k2 <= 1` with
+  `k2 = (u16)(a0 - 4)`), then clamped to 0x1f and packed at shifts 0/5/10.
+  Exact size, right block layout, right branch polarity and right pooled
+  `0xfffd`/`0xfffc` adds, but mwcc keeps the two mode deltas in r8/r7 and the
+  loop temporaries in r4/r5/lr where retail uses r4/lr for the deltas and
+  r6/r5/r7 for the temporaries.  All 24 declaration orders, `k <= 1` vs
+  `k < 2`, `if`/`else` vs `if`/`&&`, `row` via `u16 *` vs `u8 *`, `v` at
+  function scope, braced clamps and `s32` for `a0` were tried; every variant
+  is instruction-identical and differs only in register names.
+- `ov009 0x0204e500` (336 B) and `ov005 0x0205587c` (336 B) are the same source
+  with different constants (`base + 0x356`/`0x5d4` vs `base + 0x438e`/`0x460c`,
+  different global and pool addresses).  Decoded: clear the u16 at
+  `base + 0x356`, set four halfwords at `w + 0x20` by mode (1: 80/80/60/60,
+  7: 80/80/0/c0, else 0/ff/0/c0), then `for (i = 0; i < 2; i++)` copy
+  `w[0x10..0x17]` into `w[i + 2k]` as eight explicit halfword statements, then
+  build two halfwords at 0x04000040/0x04000044 from
+  `w[idx]`, `w[idx+2]`, `w[idx+4]`, `w[idx+6]` as `((v << 8) & 0xff00) | (v & 0xff)`.
+  Exact size with `s16 *` pointers, but mwcc needs no callee-saved registers
+  (it parks the zero constant in ip and the pointer in r1, emitting
+  `stmdb sp!, {lr}`) where retail pushes `{r4, r5, lr}` and threads r4/r5
+  through the copy loop.  All 120 declaration orders of the five locals give
+  the same 71-slot register-only difference, under 1.2/b56 and 1.2/sp2 alike.
+- `ov003 0x02082220` (96 B, twice: 0x02082220 and 0x020c806c).  Three-way
+  select on `a1 < 0x5a` / `< 0xb4` setting `n = 0x3c`, `t = 0x1e`, a
+  `if (t == 0) return 0;` guard and `return (s16)func_0203b0c0(n * a1, t);`.
+  All three branches set the same constants in retail, so the shape is a
+  plain if/else-if/else; the 96 B form keeps a `blt` out of the first branch
+  and if-converts the second test into a `movlt`/`movge` pair.  mwcc folds
+  identical branch bodies before block merging, so every spelling that emits
+  the right order in all three branches collapses to 80 B, while every
+  spelling that survives keeps either the middle pair or the if-converted pair
+  in the wrong `movlt r2`/`movlt r3` order.  Constant spellings, casts,
+  reordered assignments and both declaration orders were tried.
+- `ov003 0x020b6b60` (52 B, twice).  Zeroes three 2x`u16` stack pairs via base
+  pointers (`r1 = sp`, `r2 = sp + 4`) rather than direct `sp`-relative stores.
+  The stores survive only as `volatile` locals (plain locals are dead-store
+  eliminated to a 4-byte unit), and `volatile` removes the base-pointer temps:
+  every shape tried is 40 B with `strh r0, [sp, #n]`.  An inlined
+  `static void clr(volatile u16 *p)` is not inlined (mwcc emits `bl`).
+- `arm9 0x02023df8` and `0x02023e58` (96 B each, identical but for the
+  `0x6600000` vs `0x6400000` bias) look like trivial tail wrappers: load
+  `data_02042370`, and unless it is `0xffffffff` call `func(that, a0, bias + a1, a2)`
+  and otherwise call `func2(a0, bias + a1, a2)`.  They cannot be written in C
+  today: both `bl` targets, 0x02068e0 and 0x02069ec, have no symbol in any
+  module - they are past the end of arm9 (`.text` ends 0x0203b6e8, `.bss` at
+  0x0204c7c0, and no symbol in `config/ATOJ/arm9/symbols.txt` is above
+  0x0204c798) and land inside overlay 3, whose `.text` starts exactly at
+  0x0204c7c0.  So arm9 calls into ov003 at fixed addresses that are not function
+  starts, and an `extern` declaration cannot resolve.  Any attempt fails to
+  compile with a bare `<string not found>` on the call line.
