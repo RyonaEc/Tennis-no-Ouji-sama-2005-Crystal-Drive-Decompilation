@@ -78,14 +78,35 @@ def matched_ranges(mod):
     return out
 
 
+def symbol_sizes(mod):
+    """addr -> size from the `kind:function(arm,size=0x...)` field."""
+    out = {}
+    path = config_path(mod, "symbols.txt")
+    if not path.exists():
+        return out
+    for line in path.read_text(errors="replace").splitlines():
+        m = SYMBOL.match(line)
+        if not m:
+            continue
+        s = re.search(r"size=0x([0-9a-fA-F]+)", m.group(2))
+        if s:
+            out[int(m.group(3), 16)] = int(s.group(1), 16)
+    return out
+
+
 def unmatched(mod):
     spans = matched_ranges(mod)
     funs = functions(mod)
+    # The last function in a module has no following symbol to bound it, so it
+    # used to be reported as 4 bytes and swept against nothing - a 500-byte unit
+    # was scored as a one-instruction stub.  The symbol's own size is the only
+    # remaining evidence for its end.
+    sizes = symbol_sizes(mod)
     rows = []
     for i, (addr, name) in enumerate(funs):
         if any(lo <= addr < hi for lo, hi in spans):
             continue
-        end = funs[i + 1][0] if i + 1 < len(funs) else addr + 4
+        end = funs[i + 1][0] if i + 1 < len(funs) else addr + (sizes.get(addr) or 4)
         size = max(end - addr, 4)
         if any(lo < addr + size and addr < hi for lo, hi in spans):
             # partly covered: the unit boundary disagrees, skip it rather than
