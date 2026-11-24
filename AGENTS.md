@@ -137,12 +137,19 @@ Before spending iterations on a shape that no build and no spelling produces:
 
 1. Run `python tools/match/sdk.py <module> 0xADDR <size>`. It searches every
    object under `build/cand/sdk`; an `exact` hit names the library and member.
+   For a whole module, `python tools/match/sdkmap.py <module>` maps every
+   delinked function and writes `build/sdkmap-<module>.tsv`. In arm9 that finds
+   164 unmatched functions (7,836 B) that are byte-identical to prebuilt
+   NitroSDK 2.0 RC3 libraries.
 2. Read the matching SDK source and write the unit as the SDK's own `asm void`
    block (the way `src/arm9/func_0201fcc8.c` and `func_02025c30.c` are written).
    The asm *is* the original source here - do not rewrite it as equivalent C,
    and do not "generalise" it.
 3. Partial hits are normal for compiled library functions, because retail has
    its relocations applied; they still identify the routine's origin.
+
+The archive inventory, the measured map and the SDK-release evidence are in
+`notes/nitrosdk.md`.
 
 The archives are Nintendo downloads and never enter the repository. Fetch them
 from <https://twlsdk.randommeaninglesscharacters.com/download/NitroSDK/> and

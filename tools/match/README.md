@@ -10,6 +10,7 @@ output under `build/` (gitignored).
 |---|---|
 | `fastmatch.py` | Shared compiler harness: compile one body, diff it against retail |
 | `sdk.py` | Find a retail function's bytes in the prebuilt NitroSDK libraries (`build/cand/sdk`), so an SDK routine is identified instead of parked as a codegen wall |
+| `sdkmap.py` | `sdkmap.py <mod>` maps every delinked function of a module onto the SDK libraries and writes `build/sdkmap-<mod>.tsv` (see `notes/nitrosdk.md`) |
 | `udis.py` | Disassemble retail functions with their sizes |
 | `var3.py` | Compile a candidate and diff it, relocations masked |
 | `probe.py`, `vprobe.py` | Side-by-side listing; `vprobe` runs `1.2/b56` then `1.2/sp2` |
