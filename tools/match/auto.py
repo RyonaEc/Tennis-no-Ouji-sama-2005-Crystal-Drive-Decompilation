@@ -447,15 +447,42 @@ def exec_range(body, i, end, regs, calls, cmps):
 
         i += 1
         if mn in ('stmdb', 'stm', 'push', 'ldmia', 'ldm', 'pop'):
-            # Keep the modelled sp in step with the prologue pushes and the
-            # epilogue pops: everything below assumes regs['r13'] is how far sp
-            # has moved from its entry value.
-            names = _frame_push((mn, cond, ins))
+            # A stack form only moves the modelled sp; a transfer through any
+            # other base copies words, which the C has to show.
             ops_s = op.replace(' ', '')
+            names = _frame_push((mn, cond, ins))
             if names:
                 _sp_step(regs, 4 * len(names))
-            elif ops_s.startswith('sp!'):
+                continue
+            if mn == 'pop':
                 _sp_step(regs, -4 * len(_reglist(ops_s)))
+                continue
+            head, _sep, rest = ops_s.partition(',')
+            if head.startswith('sp!'):
+                # pop: the loads happen before sp moves back up
+                _sp_step(regs, -4 * len(_reglist(rest)))
+                continue
+            rb = R(head.rstrip('!'))
+            if rb == 'r13':
+                regs['r13'] = ('unk',)
+                continue
+            base = regs.get(rb, ('unk',))
+            if base[0] == 'unk':
+                raise Bail('ldm unknown base')
+            rlist = _reglist(rest)
+            if mn.startswith('ldm'):
+                for k, name in enumerate(rlist):
+                    if name == 'pc':
+                        raise Bail('ldm pc')
+                    regs[name] = ('load', base, 4 * k, 'w', False)
+            else:
+                for k, name in enumerate(rlist):
+                    val = regs.get(name, ('unk',))
+                    if val == ('unk',):
+                        raise Bail('unknown value')
+                    stmts.append(('store', base, 4 * k, 'w', False, val))
+            if head.endswith('!'):
+                regs[rb] = ('arith', '+', base, ('const', 4 * len(rlist)))
             continue
         if mn == 'bx':
             reg = R(toks[0])

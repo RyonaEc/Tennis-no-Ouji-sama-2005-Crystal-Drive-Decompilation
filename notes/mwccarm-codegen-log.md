@@ -5237,6 +5237,26 @@ source `r4` where retail uses `ip`. The local-vs-assigned declarations, `u32` vs
   With the frame model, the phis and that cast, 503 of the 2,069 unmatched units
   produce compiling C where 367 did at `3d4f9fb` (140 gained, 0 lost) - and a
   500-variant sweep of all 140 still matched none of them: their best residues
-  are 30-900 words, so reach is not the same as shape. The next levers by size
-  are `unknown value` (428: registers lost through the skipped `ldm`/`stm`),
-  `conditional without compare` (248) and `bl target` (217).
+  are 30-900 words, so reach is not the same as shape.
+
+* **`ldm`/`stm` through a register is a real copy, not prologue bookkeeping.**
+  The generator dropped every register-list transfer that was not a stack
+  push/pop, so a 12-byte struct copy vanished from its C and the unit could not
+  be scored at all. They are now word loads/stores (`ldmia r0, {r1,r2,r3}` is
+  three `*(u32 *)` accesses, `!` advances the base) and only the sp-based forms
+  still just move the modelled frame. Reach barely moved (503 -> 504 emittable,
+  0 lost) because most of those units were already blocked on the next point.
+
+* **A read of `r1` after a `bl` is a second return value, not a surviving
+  register.** 235 unmatched units (227 KB) read `r1`-`r3`/`ip` after a call on a
+  branch-free path. `arm9 func_0203aec4` does `mov r1, r2` / `bl 0x203b2d4` /
+  `movne r0, r1`, and that callee (476 B) is a divide helper that leaves the
+  remainder in `r1` next to the quotient in `r0` - `sdk.py` finds it in none of
+  the 509 SDK objects, so it is game code, not a NitroSDK routine. A C model
+  that assumes `r1`-`r3` are clobbered after a call - which it must for an
+  `extern` prototype - therefore loses those values, and this is the largest
+  single source of the 426 `unknown value` bails. Such a unit cannot be
+  reproduced by spilling: the call has to be written as the operation whose
+  result pairs up (`u64 /`, `%`), or the helper has to be visible to the
+  compiler in the same file. Treat `r1` read straight after a `bl` as a clue
+  about the callee's signature, not as an allocation puzzle.
