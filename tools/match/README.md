@@ -11,6 +11,7 @@ output under `build/` (gitignored).
 | `fastmatch.py` | Shared compiler harness: compile one body, diff it against retail |
 | `sdk.py` | Find a retail function's bytes in the prebuilt NitroSDK libraries (`build/cand/sdk`), so an SDK routine is identified instead of parked as a codegen wall |
 | `sdkmap.py` | `sdkmap.py <mod>` maps every delinked function of a module onto the SDK libraries and writes `build/sdkmap-<mod>.tsv` (see `notes/nitrosdk.md`) |
+| `census.py` | `census.py [--all] [--module M] [--write FILE]` buckets the units the generator cannot express by what their bytes are (zero-fill, data, veneer, stubs, no-return, multi-body, body, body+pool, body+code), with pool words identified from the body's own pc-relative loads; writes a TSV with `--write` |
 | `walls.py` | `show <mod> <addr>`, `grep <text>`, `list --mod <mod>`, `add <mod> <addr> "<reason>"`: the wall log without loading the detail file |
 | `udis.py` | Disassemble retail functions with their sizes |
 | `var3.py` | Compile a candidate and diff it, relocations masked |
