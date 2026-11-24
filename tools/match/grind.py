@@ -202,9 +202,13 @@ def score(mod, addr, size, rows, dry):
 def bases_for(mod, addr, size, cap, dry):
     """The closest candidates for a unit, best first.
 
-    Sources in order of how much they already know: a stored candidate from a
-    previous hand pass, then a clone of a matched sibling with the same
-    skeleton, then the code generator's attempt.
+    Three sources know different things: a stored candidate from a previous hand
+    pass, a clone of a matched sibling with the same skeleton, and the code
+    generator's own reading of the instructions. Take the best of *each* rather
+    than stopping at the first family that scores -- a stored candidate that
+    merely compiles used to shadow the generator completely, which is how
+    arm9 0x0201f26c sat exhausted with a byte-exact generator candidate that the
+    sweep never compiled.
     """
     stored = []
     for path in stored_candidates(mod, addr):
@@ -212,11 +216,16 @@ def bases_for(mod, addr, size, cap, dry):
             stored.append((path.name, path.read_text(encoding="utf-8", errors="replace")))
         except OSError:
             continue
-    scored = score(mod, addr, size, stored, dry)
-    if not scored:
-        scored = score(mod, addr, size, clone_candidates(mod, addr, size, cap), dry)
-    if not scored:
-        scored = score(mod, addr, size, gen_candidate(mod, addr, size), dry)
+    families = [
+        score(mod, addr, size, stored, dry),
+        score(mod, addr, size, clone_candidates(mod, addr, size, cap), dry),
+        score(mod, addr, size, gen_candidate(mod, addr, size), dry),
+    ]
+    scored = []
+    for fam in families:
+        if fam:
+            fam.sort(key=lambda row: row[0])
+            scored.append(fam[0])
     scored.sort(key=lambda row: row[0])
     return scored[:cap]
 

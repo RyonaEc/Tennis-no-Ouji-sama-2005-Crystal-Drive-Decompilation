@@ -60,7 +60,6 @@ arm9 0x0201c0c4 124B func_0201c0c4 -- look the node up in data_020475f0, else in
 arm9 0x0201c17c 96B func_0201c17c (twin 0x0201c2d4) -- hash-bucket walk: `p = func_02017784(data_02... L7955
 arm9 0x0201ce4c 136B func_0201ce4c . Bound-pointer and direct spellings both fold. L577
 arm9 0x0201d7c0 124B func_0201d7c0 -- reset an object: zero +0x84/+0x7c/+0x80, func_02029a5c(&p->f74) L10909
-arm9 0x0201f26c 68B func_0201f26c 68B, 02018318 24B. Bodies decoded in notes 2.23. L8807
 arm9 0x0201fd50 60B func_0201fd50 (60B, retail pools all three bases and interleaves them, mwcc reloads... L6341
 arm9 0x0201ff64 156B func_0201ff64 -- fixed-point cross product with rounding, source recovered exa... L11163
 arm9 0x020202b4 76B func_020202b4 DISPSTAT update: retail loads A then B and returns on the eq path; ev... L3443
