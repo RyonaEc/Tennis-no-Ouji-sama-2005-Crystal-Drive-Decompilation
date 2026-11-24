@@ -141,15 +141,21 @@ def _regidx(i, rid):
 ARITY_CACHE = {}
 
 def arity(addr):
-    if addr in ARITY_CACHE:
-        return ARITY_CACHE[addr]
+    # Keyed by module base as well as address: overlays load at ranges that
+    # overlap arm9's and each other's, so a callee at the same address in
+    # another module is a different function with a different arity. Keying by
+    # address alone made the result depend on which module ran first, which is
+    # why a lane-order change altered which units had candidates at all.
+    key = (BASE, addr)
+    if key in ARITY_CACHE:
+        return ARITY_CACHE[key]
     if addr not in SYM:
-        ARITY_CACHE[addr] = 0
+        ARITY_CACHE[key] = 0
         return 0
     try:
         ins = disasm(addr)
     except Exception:
-        ARITY_CACHE[addr] = 0
+        ARITY_CACHE[key] = 0
         return 0
     written, used = set(), 0
     for i in ins:
@@ -165,7 +171,7 @@ def arity(addr):
             n = _regidx(i, rid)
             if n is not None:
                 written.add(n)
-    ARITY_CACHE[addr] = used
+    ARITY_CACHE[key] = used
     return used
 
 TY = {('w', False): 'u32', ('w', True): 's32', ('h', False): 'u16', ('h', True): 's16',
