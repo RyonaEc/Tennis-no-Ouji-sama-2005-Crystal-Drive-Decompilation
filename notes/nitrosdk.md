@@ -147,6 +147,36 @@ Left on the map:
   runtime stubs, not game functions: write them from that object, and do not
   invent C for them.
 
+## The libsyscall stubs: bytes found, placement still open
+
+The ten unmatched thumb stubs in `libsyscall` are plain BIOS calls and their
+bytes are now known exactly. Written the way the already-matched ones are
+(`src/arm9/SoftReset.c` style - a normal C function with `asm { swi 0xNN }`, so
+the compiler adds `bx lr`), all ten compile byte-exactly:
+
+| unit | code | size |
+|---|---|---|
+| `Halt` | `swi 0x06` | 4 B |
+| `Sqrt` | `swi 0x0d` | 4 B |
+| `LZ77UnCompReadByCallbackWrite16bit` | `swi 0x12` | 4 B |
+| `RLUnCompReadNormalWrite8bit` | `swi 0x14` | 4 B |
+| `IsDebugger` | `swi 0x0f` | 4 B |
+| `CpuSet` | `swi 0x0b` | 4 B |
+| `GetCRC16` | `swi 0x0e` | 4 B |
+| `CpuFastSet` | `swi 0x0c` | 4 B |
+| `VBlankIntrWait` | `mov r2,#0; swi 0x05` | 6 B |
+| `Mod` | `swi 0x09; mov r0,r1` | 6 B |
+
+`reg.py` then reports `miss` for every one of them: the object is right, the
+linked ROM is not. They are all at 2-mod-4 addresses (0x020040e6, 0x020042d2,
+...), while every stub already matched (`SoftReset` 0x0200406c, `WaitByLoop`
+0x020041b0, `HuffUnCompReadByCallback` 0x02004214, `Div` 0x02004568) sits at a
+4-aligned address, so section placement is the suspect. A per-unit `align:2` in
+`delinks.txt` is rejected outright ("attribute 'align' should be omitted as it
+is inherited from this file's header"), so if this is the cause the fix has to be
+at the file-header or configure level, not per entry. Bodies are kept in
+`build/cand/svc/` for whoever picks this up.
+
 ## Which compiler built the prebuilt libraries
 
 The SDK answers it in its own build rules. `build/buildtools/modulerules.cctype.CW`
