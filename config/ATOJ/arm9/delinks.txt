@@ -4407,3 +4407,19 @@ src/arm9/func_0202bea8.c:
 src/arm9/func_02027f74.c:
     complete
     .text       start:0x02027f74 end:0x02027fe8
+
+src/arm9/func_02024a54.c:
+    complete
+    .text       start:0x02024a54 end:0x02024ae4
+
+src/arm9/func_02025d24.c:
+    complete
+    .text       start:0x02025d24 end:0x02025dac
+
+src/arm9/func_02024ca8.c:
+    complete
+    .text       start:0x02024ca8 end:0x02024d28
+
+src/arm9/func_02024d38.c:
+    complete
+    .text       start:0x02024d38 end:0x02024dc8

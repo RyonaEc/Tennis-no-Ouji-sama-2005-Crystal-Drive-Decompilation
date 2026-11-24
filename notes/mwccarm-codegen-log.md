@@ -5437,3 +5437,32 @@ content:
 
 An `asm` unit that trips either one compiles to *zero* bytes and `var3` reports
 `got 0 want N`, which reads like a size mismatch rather than an assembler error.
+
+## 2026-11-24 - round-macro spelling and comparison operand order
+
+`OS_AllocFromArenaLo` (136 B) turned on how the alignment macro is written. The
+SDK macro is `(((u32)(x) + (align) - 1) & ~((align) - 1))`, and mwcc keeps
+`align` live to the end of the function because the second rounding needs it:
+
+    add r0, r0, r5      ; ptr + align
+    sub r0, r0, #1
+    and r4, r2, r0
+
+Writing it as `x + ((align) - 1)` - the arithmetically identical grouping - lets
+mwcc fold the subtraction once and reuse it, which drops a live register and
+produces 112 B against retail's 136 B. So for a rounding helper, the spelling
+with the subtraction outside any parenthesis is the one that matches, and the
+size gap is large enough to be a signal rather than noise.
+
+`OSi_DoUnlockByWord` (144 B) turned on `cmp` operand order alone. Retail does
+`cmp r0, r1` with the ID in r0, which is `if (lockID != lockp->ownerID)`; the
+reversed `if (lockp->ownerID != lockID)` emits `cmp r1, r0` and everything else
+is byte-identical, so `var3` reports the same 144 B with one instruction
+different. Casting the u16 field to match the ID's width also costs an extra
+`lsl/lsr` pair - the SDK compares the zero-extended halfword against the full
+32-bit ID, so leave the cast out and let the promotion happen.
+
+`OSi_DoUnlockByWord` also returns **-2**, not -1, on an owner mismatch: retail
+materialises `mvn r0, #1`, i.e. `~1`. `OS_UNLOCK_ERROR` is not the -1 that the
+set of `OS_LOCK_*` codes suggests, so read the immediate off the disassembly
+instead of assuming the error code.
