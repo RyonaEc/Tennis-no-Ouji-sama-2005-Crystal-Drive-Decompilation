@@ -5004,3 +5004,39 @@ Consequences: matching those four arm9 functions (2,540 B) is the precondition
 for the itcm module, and the itcm side cannot be written as ordinary C at all,
 because the bytes it must reproduce branch to arm9 addresses. Whatever solves it
 will be a build-system alias for a duplicated section, not a source file.
+
+## 2026-11-24 - Ghidra settles the shape of the digit formatter
+
+Headless Ghidra (`M:\ATOJ-tools\proj`, project `ATOJ9`, program `arm9.bin`,
+`build/ghidra/dump_itcm.bat`) decompiled the four itcm-origin units. For
+`func_02036c18` its structure is exactly the one that reproduces the 208-byte
+retail size:
+
+    n    = *(s16 *)(a + 2);
+    f(s);                                  /* func_02036ce8 */
+    if (*(u8 *)  (s + 5) > 9) return;
+    if (n > 0x20) n = 0x20;
+    g(s, n);                               /* func_02037660 */
+    cnt  = *(u8 *)(s + 4);
+    if (cnt < n) {
+        do {
+            *(u8 *)(s + 4) += 1;
+            *(u8 *)(s + cnt + 5) = 0;
+            cnt = *(u8 *)(s + 4);
+        } while (cnt < n);
+    }
+    i = 0;
+    *(s16 *)(s + 2) -= (cnt - 1);
+    if (*(u8 *)(s + 4) != 0) {
+        do { *((u8 *)s + i + 5) += 0x30; i++; } while (i < *(u8 *)(s + 4));
+    }
+
+Caching the pre-increment count in a local and re-reading the field afterwards
+is what makes the loop body match: every variant that indexed with
+`f5[*p - 1]` or incremented before the store came out 216 B.
+
+The only residue left is the callee-saved assignment: retail spills the pointer
+parameter to `r5` and keeps `n` in `r4`, mwcc does the reverse (`mov r4, r3` /
+`ldrsh r5, [r0, #2]`). Declaration order, `s16` vs `s32`, `register`, an
+`S *` local alias for the parameter and a `void *` parameter were all tried and
+every one emits `mov r4, r3`. Classic two-value allocation tie; parked.
