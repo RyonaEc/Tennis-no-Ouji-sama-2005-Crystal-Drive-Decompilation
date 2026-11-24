@@ -4979,3 +4979,28 @@ all funnel into `func_02033fd8` while building a 5-word local block around a
 for a varargs pass-through, and the argument mapping is not recoverable from the
 listing alone (in `0x02033f90` the fourth argument register ends up holding the
 first argument), so the four are parked rather than guessed at.
+
+## 2026-11-24 - what the itcm section actually is
+
+The whole `itcm` .text (0x01ff8000-0x01ff85f0, 1,520 B) is **byte-for-byte the
+same instruction stream as arm9 0x02036a60-0x02037050**: all 380 words compare
+equal. Its eleven "functions" are therefore not functions at all - they are
+slices of four arm9 units that dsd has cut apart:
+
+    func_02036934  0x02036934  740 B   FRESH
+    func_02036c18  0x02036c18  208 B   FRESH
+    func_02036ce8  0x02036ce8  600 B   FRESH
+    func_02036f40  0x02036f40  992 B   FRESH
+
+The copy does not start on a function boundary: 0x02036a60 is 0x12c into
+func_02036934, which is why the first itcm unit begins with `sub ip, r0, #0x36`
+and touches r4-r8 before setting them. There is no prologue anywhere in the
+region and no jump table, and the branch encodings are arm9-absolute - `bl
+#0x1ff84e0` only decodes to an in-ITCM target because those same bytes live at
+0x0203xxxx in arm9 - so the blob is a genuine second copy of the same code,
+linked for the ITCM address rather than re-relocated.
+
+Consequences: matching those four arm9 functions (2,540 B) is the precondition
+for the itcm module, and the itcm side cannot be written as ordinary C at all,
+because the bytes it must reproduce branch to arm9 addresses. Whatever solves it
+will be a build-system alias for a duplicated section, not a source file.
