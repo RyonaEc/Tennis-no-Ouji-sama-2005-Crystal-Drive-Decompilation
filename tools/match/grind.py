@@ -617,6 +617,10 @@ def main(argv):
             continue
         if not opts["daemon"]:
             break
+        if reason == "stop-file":
+            # build/grind.stop means stop, not "finish this pass and carry on"
+            print("[grind] stopped by %s" % STOP.as_posix(), flush=True)
+            break
         if opts["max_passes"] and passes >= opts["max_passes"]:
             break
         if opts["hours"] and time.monotonic() - started >= opts["hours"] * 3600:
@@ -625,9 +629,20 @@ def main(argv):
         # only a new candidate or an edit changes that, so back off.
         pause = opts["sleep"] if visited else max(opts["sleep"], 1800.0)
         print("[grind] sleeping %.0fs before pass %d" % (pause, passes + 1), flush=True)
+        # Poll the stop file while sleeping: an idle daemon waits half an hour
+        # between passes, and a stop that is only noticed a pass later is not
+        # the graceful stop this file promises.
+        remaining = pause
         try:
-            time.sleep(pause)
+            while remaining > 0 and not STOP.exists():
+                chunk = min(15.0, remaining)
+                time.sleep(chunk)
+                remaining -= chunk
         except KeyboardInterrupt:
+            break
+        if STOP.exists():
+            STOP.unlink(missing_ok=True)
+            print("[grind] stopped by %s" % STOP.as_posix(), flush=True)
             break
     return 0
 
