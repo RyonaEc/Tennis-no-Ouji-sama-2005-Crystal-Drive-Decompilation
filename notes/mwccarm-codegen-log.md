@@ -5148,3 +5148,10 @@ an identical instruction stream but colours the struct pointer `ip` where retail
 uses `r4`, and `func_ov006_0204de34` pays a 4-byte frame for colouring the copy
 source `r4` where retail uses `ip`. The local-vs-assigned declarations, `u32` vs
 `s32` temporaries and statement reordering tried on both do not move the colour.
+
+* **A switch does not become a range test.** `switch (x) { case 0x59: case 0x5a:
+  k = 1; break; }` keeps retail's `cmp r0, #0x59 / beq L / cmp r0, #0x5a /
+  bne M / L: mov r2, #1` with the shared body, where `x == 0x59 || x == 0x5a`
+  is strength-reduced to `sub r0, r0, #0x59 / cmp r0, #1 / movls r2, #1` (116 B
+  both sizes, different bytes) and the `if/else if` form if-converts each arm to
+  its own `moveq`. This decided `func_ov005_0204dc7c`.
