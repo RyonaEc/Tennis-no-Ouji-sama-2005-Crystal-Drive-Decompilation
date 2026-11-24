@@ -5320,7 +5320,8 @@ byte-identical to retail plus the same `.rela.text` entries at 0x08 and
 0x80/0x84/0x8c; both units then score 100.0 and the two headline figures agree.
 
 When a unit scores below 100 in the report but `var3` says `MATCH` and the ROM
-digest holds, compare the built object with `build/ATOJ/delinks/src/<mod>/<name>.o`
-(`build/cmp_units.py` does `.text` words and `.rela.text`): use a symbol whenever
-the config has one, and keep the numeric address only where it has none
-(`0x027ffd9c`, `0x027c3000` here are RAM and stay literal).
+digest holds, diff its built object against the delinked one
+(`build/ATOJ/delinks/src/<mod>/<name>.o`): compare the `.text` words and the
+`.rela.text` entries (offset, type, addend). Use a symbol whenever the config
+has one, and keep the numeric address only where it has none (`0x027ffd9c` and
+`0x027c3000` here are RAM, with no symbol, and stay literal).
