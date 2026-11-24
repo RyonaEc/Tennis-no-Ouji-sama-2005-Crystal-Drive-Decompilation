@@ -4243,3 +4243,11 @@ src/arm9/func_02024b5c.c:
 src/arm9/func_020255e8.c:
     complete
     .text       start:0x020255e8 end:0x0202564c
+
+src/arm9/func_02028920.c:
+    complete
+    .text       start:0x02028920 end:0x02028958
+
+src/arm9/func_02028958.c:
+    complete
+    .text       start:0x02028958 end:0x02028990

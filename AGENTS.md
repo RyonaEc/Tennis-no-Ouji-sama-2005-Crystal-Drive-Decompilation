@@ -141,8 +141,10 @@ Before spending iterations on a shape that no build and no spelling produces:
    For a whole module, `python tools/match/sdkmap.py <module>` maps every
    function without a `src/` file and writes `build/sdkmap-<module>.tsv`. In
    arm9 that is 34 unmatched functions (2,624 B) byte-identical to prebuilt
-   NitroSDK 2.0 RC3 libraries; 16 of them are `asm` blocks in the SDK, and 14
-   were installed straight from that source.
+   NitroSDK 2.0 RC3 libraries; 16 of them are `asm` blocks in the SDK and 16
+   were installed straight from that source; two more are ordinary C wrappers
+   (`FSi_ReadFileCommand`, `FSi_WriteFileCommand`) that compile exactly from the
+   SDK's own source under b56.
 2. Read the matching SDK source and write the unit as the SDK's own `asm void`
    block (the way `src/arm9/func_0201fcc8.c` and `func_02025c30.c` are written).
    The asm *is* the original source here - do not rewrite it as equivalent C,

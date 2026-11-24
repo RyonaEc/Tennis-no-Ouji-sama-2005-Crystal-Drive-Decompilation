@@ -122,7 +122,7 @@ be transcribed literally; only the parameter *types* have to exist here.
 
 Left on the map:
 
-* 11 C units: `VEC_Normalize` (344 B), `VEC_CrossProduct` (156 B),
+* 9 C units: `VEC_Normalize` (344 B), `VEC_CrossProduct` (156 B),
   `CP_SaveContext` (116 B), `CP_RestoreContext` (108 B), `OS_GetLockID` (88 B),
   `G3X_SetFog` (84 B), `OS_DisableIrqMask` (72 B), `FX_InvAsync` (60 B),
   `FSi_WriteFileCommand` / `FSi_ReadFileCommand` (56 B each),
@@ -147,10 +147,18 @@ NITRO V0.5 HF1 CC 0049 LD 0061
 `1.2/b56` is therefore exactly NITRO V1.0's compiler - the one Konami's game code
 matches across the whole ROM. SDK 2.0 RC3 postdates V1.0, so Nintendo built its
 prebuilt libraries with a *later* CC build (57 and up; none of those are vendored,
-which is why the missing builds 57-71 never mattered for game code). That is the
-likely reason the library `asm` blocks transcribe perfectly - assembly output does
-not depend on the compiler build - while the library C units need a harness and
-may not reproduce under b56 at all. The number is not hard-coded anywhere: the
+which is why the missing builds 57-71 never mattered for game code). The library
+`asm` blocks transcribe perfectly for a second reason on top of that: assembly
+output does not depend on the compiler build at all.
+
+The later CC does **not** stop the library C units from matching. `func_02028920`
+and `func_02028958` are `FSi_ReadFileCommand` and `FSi_WriteFileCommand` from
+`fs_command.c`, both byte-identical to `libfs.a(fs_command.o)` in ARM9-TS/Rom.
+Written from the SDK source as ordinary C - with the `FSFile`/`FSArchive` layout
+taken from the disassembly (`arc` at 0x08, `prop.file.pos` at 0x28, the arg
+pointer at 0x2c, `len` at 0x34, `read_func` at 0x40 and `write_func` at 0x3c) -
+both compile EXACT under b56. So for these wrappers the codegen is stable across
+the CC builds, and "it is SDK code" is not a reason to skip a unit. The number is not hard-coded anywhere: the
 makefile derives it at build time from the installed compiler's `-V` banner
 (`modulerules.cctype.CW:347`), so no SDK tree records the build Nintendo used.
 
