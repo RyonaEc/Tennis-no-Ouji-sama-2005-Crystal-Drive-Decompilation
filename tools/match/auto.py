@@ -139,6 +139,9 @@ def _regidx(i, rid):
     return None
 
 ARITY_CACHE = {}
+# arity() reads a callee's arity to see which arguments a call passes, so a
+# cycle of calls would recurse forever without this.
+_ARITY_BUSY = set()
 
 def arity(addr):
     # Keyed by module base as well as address: overlays load at ranges that
@@ -159,7 +162,24 @@ def arity(addr):
         return 0
     written, used = set(), 0
     for i in ins:
-        if i.mnemonic == 'bl':
+        if i.mnemonic in ('bl', 'blx'):
+            # A call reads the argument registers it takes before clobbering
+            # them, so `bl g(a0)` with a0 never written in this function is a
+            # use of a0.  Skipping that read made a pass-through wrapper look
+            # like it took no arguments; its callers then emitted fewer
+            # arguments than it takes, and the walker reported the missing ones
+            # as unknown values.
+            if i.mnemonic == 'bl':
+                tgt = _target(i)
+                if tgt in SYM and tgt != addr and tgt not in _ARITY_BUSY:
+                    _ARITY_BUSY.add(addr)
+                    try:
+                        ncallee = arity(tgt)
+                    finally:
+                        _ARITY_BUSY.discard(addr)
+                    for k in range(min(ncallee, 4)):
+                        if k not in written:
+                            used = max(used, k + 1)
             written.update({0, 1, 2, 3})
             continue
         r, w = i.regs_access()

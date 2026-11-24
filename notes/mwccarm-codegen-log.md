@@ -5384,3 +5384,27 @@ output (7% of sampled candidates), because most units either bail before emit or
 produce a shape with a single arm. A structural axis with more reach would have
 to work on the generator's *statements* (temporaries, split assignments, loop
 forms), which is where the remaining walls actually sit.
+
+## 2026-11-25 - the pass-through-argument theory did not explain the unknowns
+
+`arity()` skipped a `bl` entirely, marking r0-r3 written and never looking at
+what the call *reads*. A function that hands its own argument straight to a
+callee (`bl g(a0)`, a0 never written here) therefore looked like it took no
+arguments, and callers of it emitted fewer arguments than it takes. That is a
+real modeling error, so `arity()` now reads the callee's arity at a `bl` and
+counts the argument registers the call actually takes as uses, with a
+recursion guard for call cycles.
+
+It changed nothing measurable. On the `emit: unknown value` class in the queue
+journal: 4 of 60 sampled units now emit, against 1 of 14 before - the same 7 %.
+On six working units (68, 24, 56, 56, 76, 164 B) every slot count and variant
+count is identical, so no shape regressed either.
+
+The remaining unknowns in that class are not under-counted arity. They are call
+sites where retail passes a register the function never set; `func_0202cc90`
+(92 B) is the clean example - `bl #0x020251c0` after a first call clobbered
+r1-r3, and the callee takes only one argument, so the unknown register is dead
+garbage that the original source left behind. There is no source to generate for
+that: any value we invent costs an instruction retail never emitted.
+
+The fix stays because it is correct and free, not because it paid.
