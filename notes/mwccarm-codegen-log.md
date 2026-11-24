@@ -5190,3 +5190,22 @@ source `r4` where retail uses `ip`. The local-vs-assigned declarations, `u32` vs
   Both walls retried this session, ov009 `0x0204f93c` and ov004 `0x0204d980`,
   were already parked in `walls.txt`; read the wall list before writing C for a
   small unit, not after.
+
+* **A clamp that looks like a billion is `999999999`.** arm9 `func_0200fcac`
+  keeps a signed score at `+0x8`, adds its argument to that and to `+0xc`,
+  clamps to +/-1e9 and returns it. Every instruction matched with
+  `1000000000`; only the two trailing pool words differed (`0x3b9aca00` against
+  retail's `0x3b9ac9ff`, and `0xc4653600` against `0xc4653601`), because both
+  constants are materialised as literals. An instruction diff cannot see a wrong
+  *value*, so a residue living in the pool words is a constant to re-derive
+  rather than a colouring tie: dump both words and compare the numbers. The
+  clamp is also what decides signedness - `s32` on the parameter and on the
+  field reads turns `beq`/`strhi`/`strlo` into retail's `ble`/`strgt`/`strlt`.
+
+* **A size recorded in a journal or a wall line goes stale; the delinked range
+  does not.** `grind.py --retry-slots` first scored the near-misses against the
+  size from the record, so ov001 `0x0204fc1c` was tested as 500 B while the
+  delinked unit is 4 B, and its "1 slot" was the residue of the wrong length.
+  Retry mode now prefers `fresh.unmatched`'s live size. Those 4 B entries are
+  symbol-boundary fragments inside a larger routine, not functions - a candidate
+  for one cannot be `ldr r0, [pc, #0x1e4]`.

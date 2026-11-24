@@ -4371,3 +4371,7 @@ src/arm9/VBlankIntrWait.c:
 src/arm9/func_02017954.c:
     complete
     .text       start:0x02017954 end:0x02017994
+
+src/arm9/func_0200fcac.c:
+    complete
+    .text       start:0x0200fcac end:0x0200fd40

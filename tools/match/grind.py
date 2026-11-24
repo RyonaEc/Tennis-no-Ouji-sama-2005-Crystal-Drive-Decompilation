@@ -406,7 +406,10 @@ def near_miss_units(journal, max_slots, modules):
             continue
     out = []
     for slots, mod, addr, name, size in best.values():
-        size = size or sizes.get((mod, addr))
+        # The live delinked range wins: a wall line or an old journal record can
+        # carry a size from before the unit boundaries were fixed, and scoring a
+        # body against the wrong length hides its real residue.
+        size = sizes.get((mod, addr)) or size
         if not size:
             continue
         if pathlib.Path("src", mod, name + ".c").exists():
