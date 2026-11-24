@@ -5222,7 +5222,21 @@ source `r4` where retail uses `ip`. The local-vs-assigned declarations, `u32` vs
   identifies a frame cell by how far below entry_sp it sits, so it survives the
   prologue pushes and the epilogue pops. The three stack bail classes
   (`load from sp` 268, `store above frame` 134, `implausible stack argument` 29)
-  fall to zero and the generator reaches 46 more units - none of them matched in
-  a 400-variant sweep, so this unlocked the class without winning it: most of
-  those units are argument-staging copies that still need `ldm`/`stm` and the
-  live-result conditional runs before their C is the original's shape.
+  fall to zero.
+
+* **A predicated result that outlives its run was a local.** `cmp r0,#0` /
+  `moveq r1,#0xee` / `strb r1,[r4]` is `v = <incoming>; if (r0 == 0) v = 0xee;`,
+  not a bare `if` block: mwcc writes the predicated `mov` into the register that
+  already holds `v`. `tools/match/auto.py` now gives each register written by a
+  conditional run and read afterwards a phi cell, seeded with its incoming value
+  before the `if` and assigned inside it, and lets the readers use the cell.
+  Two things this exposed in the generator's own output: `sl = sl` from
+  re-seeding a cell that already held the value, and `(u8 *)&slX` assigned to a
+  `u32` slot - mwcc reports that as `<string not found>`, which is why so many
+  auto candidates never compiled at all. Addresses now render as `(u32)&slX`.
+  With the frame model, the phis and that cast, 503 of the 2,069 unmatched units
+  produce compiling C where 367 did at `3d4f9fb` (140 gained, 0 lost) - and a
+  500-variant sweep of all 140 still matched none of them: their best residues
+  are 30-900 words, so reach is not the same as shape. The next levers by size
+  are `unknown value` (428: registers lost through the skipped `ldm`/`stm`),
+  `conditional without compare` (248) and `bl target` (217).

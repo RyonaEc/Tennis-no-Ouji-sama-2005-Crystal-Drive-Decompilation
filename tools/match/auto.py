@@ -209,6 +209,9 @@ INV = {'eq': 'ne', 'ne': 'eq', 'lt': 'ge', 'ge': 'lt', 'gt': 'le', 'le': 'gt',
        'hi': 'ls', 'ls': 'hi', 'cs': 'cc', 'cc': 'cs', 'hs': 'lo', 'lo': 'hs'}
 CMPOP = {'hs': '>=', 'lo': '<', 'eq': '==', 'ne': '!=', 'lt': '<', 'le': '<=', 'gt': '>', 'ge': '>=',
          'hi': '>', 'ls': '<=', 'cs': '>=', 'cc': '<'}
+# First cell id used for the results of a conditional run that outlive it.  It
+# sits above any real frame offset, so a phi cell and a stack slot never collide.
+_PHI_CELL = 0x10000
 
 def _lit(ins):
     m = re.search(r'#(-?0x[0-9a-f]+|-?\d+)', ins.op_str.split('[pc')[1])
@@ -411,18 +414,33 @@ def exec_range(body, i, end, regs, calls, cmps):
                         break
                     if defs & w2:
                         break
-            if live_out:
-                raise Bail('cond run has live result')
-
             left, _kind, right = cmps.pop()
             if left == ('unk',) or right == ('unk',):
                 raise Bail('unknown compare operand')
             cond_expr = (left, CMPOP.get(cond, _kind), right)
             sub = [(m2, 'al', i2) for m2, i2 in run]
-            block_stmts, term, _n, _r = exec_range(sub, 0, len(sub), dict(regs), calls, [])
+            block_stmts, term, _n, after = exec_range(sub, 0, len(sub), dict(regs), calls, [])
             if term is not None:
                 raise Bail('cond block terminator')
-            regs.update(_r)
+            if live_out:
+                # A predicated result that is read after the run was a local in
+                # the original source (`v = a; if (c) v = b;`), which mwcc emits
+                # as one predicated write into the register holding `v`.  Give
+                # each such register a cell seeded with its incoming value, and
+                # let the readers after the block use the cell.
+                for reg in sorted(defs):
+                    value = after.get(reg, ('unk',))
+                    if value == ('unk',) or value == regs.get(reg):
+                        continue
+                    cell = _PHI_CELL + int(reg[1:])
+                    prior = regs.get(reg, ('unk',))
+                    if prior != ('unk',) and prior != ('slot', cell):
+                        # seed the cell with the value this run can fall through
+                        # with; a cell already holding it needs no copy
+                        stmts.append(('sset', cell, prior))
+                    block_stmts.append(('sset', cell, value))
+                    after[reg] = ('slot', cell)
+            regs.update(after)
             stmts.append(('if', cond_expr, block_stmts, [], None, None))
             i = j
             continue
@@ -843,7 +861,9 @@ def e(x):
     if t == 'slot':
         return f'sl{x[1]}'
     if t == 'slotaddr':
-        return f'(u8 *)&sl{x[1]}'
+        # an address held in a u32 local: mwcc rejects assigning u8 * to u32,
+        # and every consumer casts it back to a byte pointer anyway
+        return f'(u32)&sl{x[1]}'
     if t == 'call':
         return f't{x[1]}'
     if t == 'tailcall':
