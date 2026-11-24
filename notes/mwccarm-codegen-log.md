@@ -4818,3 +4818,34 @@ worth its run: this unit is exactly what it finds, and a probe only counts once
 the full digest still matches. And an edit to `mwcc_versions.txt` does nothing
 until `tools/configure.py ATOJ` re-runs, because `build.ninja` does not list it as
 an input.
+
+## 2026-11-24 (same day) - the source is not the problem: 1.2 pools that constant
+
+Retail `func_0201fcc8` (Thumb, 28 B) decoded with capstone:
+
+  movs r3, #1 / lsls r3, r3, #0xc / str r3, [r0] / str r3, [r0, #4] ... str r2, [r0, #0x20] / bx lr
+
+Everything after the third instruction already matches both compilers. The 4-byte
+gap is only how 0x1000 is materialised. Measured over every vendored build, same
+source file:
+
+| generation | result |
+|---|---|
+| 1.2/base, 1.2/b56, 1.2/sp2, 1.2/sp2p3, 1.2/sp3, 1.2/sp4 | 32 B: `ldr r3, [pc, #0x18]`, body, `nop`, `.word 0x1000` |
+| 2.0/base, 2.0/sp1, sp1p2, sp1p5, sp1p6, sp1p7, sp2, sp2p2, sp2p3, sp2p4 | 28 B, byte-identical to retail |
+| dsi/1.1, 1.1p1, 1.2, 1.2p1, 1.2p2, 1.3, 1.3p1 | 28 B but a different body (the later lineage moved the stores) |
+
+Then 20 source spellings of the same store were compiled with b56: literal,
+`1 << 12`, `0x10 << 8`, `0x100 << 4`, `0x10000 >> 4`, `(u32)0x1000L`,
+`0x800 * 2`, `0x2000 / 2`, `0x1000 | 0`, `0x1000 & 0xffff`, a shift count held
+in a u8 or u32 variable, `u32 v = 1; v <<= 12;`, a store through a volatile
+pointer, and `p[0] = 1; p[0] <<= 12;`. All of them pool the constant; the two
+compound forms add a load and an extra store. No spelling gets 1.2 to emit
+`movs`/`lsls` for a constant store.
+
+Conclusion: this is a compiler-generation materialisation policy, not a wrong
+source. 1.2 loads any constant that does not fit `movs #imm8` from the pool even
+when one `movs` plus one `lsls` would do; 2.0 gained the shift form. The unit
+keeps its `2.0/base` override, which AGENTS.md permits because the digest still
+matches. If a future reader wants to revisit it, the test is cheap: recompile
+this file with each build and compare the first four bytes.
