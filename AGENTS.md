@@ -76,14 +76,19 @@ objdiff configuration all key off them.
    by size and mnemonic sequence; groups of identical skeleton are the cheapest wins because one
    source shape covers every member.
 2. Disassemble it: `python tools/match/udis.py <module> 0xADDR [0xADDR ...]`.
-3. Write the C in a scratch file (e.g. `build/cand/name.c`) and compare with
+3. Before blaming the compiler, check whether the unit is prebuilt SDK code:
+   `python tools/match/sdk.py <module> 0xADDR <size>` searches the extracted
+   NitroSDK libraries for those bytes. A hit means the unit came from the SDK,
+   often as hand-written asm, and no C spelling will reproduce it. See
+   "Prebuilt SDK code" below.
+4. Write the C in a scratch file (e.g. `build/cand/name.c`) and compare with
    `python tools/match/var3.py <module> 0xADDR <size> build/cand/name.c`.
-4. When `var3` says `MATCH`, install it with
+5. When `var3` says `MATCH`, install it with
    `python tools/match/reg.py <module> <func_name> 0xADDR <size> build/cand/name.c`.
    `reg.py` adds the delinks entry, rebuilds the ROM and only keeps the unit if
    the digest still matches; on a miss it restores the tree.
-5. Re-verify: `python tools/match/t10.py --check <module>` and `ninja sha1`.
-6. Regenerate `PROGRESS.md` (`rm -f build/ATOJ/report.json && python tools/match/progress.py`),
+6. Re-verify: `python tools/match/t10.py --check <module>` and `ninja sha1`.
+7. Regenerate `PROGRESS.md` (`rm -f build/ATOJ/report.json && python tools/match/progress.py`),
    update the counts in `README.md`, and commit source plus
    `config/.../delinks.txt` together.
 
@@ -95,6 +100,7 @@ Source files must `#include "types.h"` first, or the compiler emits
 | Command | Purpose |
 |---|---|
 | `python tools/match/udis.py <mod> <addr>...` | disassemble retail functions with sizes |
+| `python tools/match/sdk.py <mod> <addr> <size>` | find a retail function in the prebuilt NitroSDK libraries |
 | `python tools/match/var3.py <mod> <addr> <size> <file.c>` | compile a candidate and diff it against retail |
 | `python tools/match/reg.py <mod> <name> <addr> <size> <file.c>` | install a candidate, rebuild, keep only on ROM match |
 | `python tools/match/t10.py --check <mod>...` | self-check delinks/source bookkeeping |
@@ -117,6 +123,35 @@ The matching tools live in `tools/match/`, which has its own README:
 delinked objects and the built ROM (`build/ATOJ/`), scratch candidates
 (`build/cand/`), logs and probes - and is gitignored in full.
 `tools/match/true_fresh.txt` is the trusted unmatched queue.
+
+## Prebuilt SDK code
+
+Some units are not game code, and no compiler will ever reproduce them from C:
+NitroSDK links prebuilt libraries, and routines such as `MTX_RotX33_` are
+hand-written asm blocks inside the SDK itself (`build/libraries/fx/src/fx_mtx33.c`
+in the archive). `func_0201fcc8` sat in `walls.txt` for a day as a
+"2.0-generation materialisation" wall for exactly this reason; it is
+`MTX_RotX33_`, and `1.2/b56` assembles it byte for byte.
+
+Before spending iterations on a shape that no build and no spelling produces:
+
+1. Run `python tools/match/sdk.py <module> 0xADDR <size>`. It searches every
+   object under `build/cand/sdk`; an `exact` hit names the library and member.
+2. Read the matching SDK source and write the unit as the SDK's own `asm void`
+   block (the way `src/arm9/func_0201fcc8.c` and `func_02025c30.c` are written).
+   The asm *is* the original source here - do not rewrite it as equivalent C,
+   and do not "generalise" it.
+3. Partial hits are normal for compiled library functions, because retail has
+   its relocations applied; they still identify the routine's origin.
+
+The archives are Nintendo downloads and never enter the repository. Fetch them
+from <https://twlsdk.randommeaninglesscharacters.com/download/NitroSDK/> and
+extract under `build/cand/sdk/<release>/` (gitignored). NitroSDK 1.0
+(2004-04-16) and 2.0 RC3 (2004-12-10) are extracted there now; the fx, os and
+math libraries are the ones this ROM pulls from.
+
+None of this relaxes the definition of done: `reg.py` and the ROM digest still
+decide, and an SDK unit is matched only when `ninja sha1` prints the retail hash.
 
 ## Runtime evidence (melonDS workbench)
 

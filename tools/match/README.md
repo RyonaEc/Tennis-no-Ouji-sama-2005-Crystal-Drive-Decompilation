@@ -9,6 +9,7 @@ output under `build/` (gitignored).
 | Script | Purpose |
 |---|---|
 | `fastmatch.py` | Shared compiler harness: compile one body, diff it against retail |
+| `sdk.py` | Find a retail function's bytes in the prebuilt NitroSDK libraries (`build/cand/sdk`), so an SDK routine is identified instead of parked as a codegen wall |
 | `udis.py` | Disassemble retail functions with their sizes |
 | `var3.py` | Compile a candidate and diff it, relocations masked |
 | `probe.py`, `vprobe.py` | Side-by-side listing; `vprobe` runs `1.2/b56` then `1.2/sp2` |

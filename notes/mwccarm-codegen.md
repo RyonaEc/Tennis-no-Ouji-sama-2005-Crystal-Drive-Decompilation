@@ -130,7 +130,13 @@ register-role wall.
   not close a unit.
 * Probe compilers before rewriting. `python tools/match/vprobe.py <mod> <addr> <size>
   <file.c>` runs `1.2/b56` then `1.2/sp2` and masks relocations. In the small
-  bands every recent hit was b56-only.
+  bands every recent hit was b56-only. Probing is a *classification* step: a
+  second build that happens to reproduce the bytes is a hint about the shape,
+  never a licence to add a `mwcc_versions.txt` entry and call the unit matched.
+* If **no** build and no spelling reproduces the shape, suspect provenance
+  before compiler policy: `python tools/match/sdk.py <mod> <addr> <size>` looks
+  for the bytes in the prebuilt NitroSDK libraries. `func_0201fcc8` was
+  `MTX_RotX33_`, SDK asm, and the "2.0-generation" story was wrong for a day.
 * Work from the live queue, not a stored list: a unit is unmatched only if
   `src/<mod>/<name>.c` is absent. Symbol names come from `symbols.txt`
   (`0x02085ff8` is `func_ov002_0202085ff8`), never from the address alone.
@@ -205,7 +211,8 @@ Volatile used for a stack spill is a match-shape hack, not the original source. 
   literal pool plus a trailing `nop` - 4 bytes longer - and 20 source spellings
   do not move it, because the constant is not the compiler's decision at all.
   `func_0201fcc8` is NitroSDK `MTX_RotX33_`; written as the SDK's own `asm void`
-  block, b56 assembles it byte for byte with no override.
+  block, b56 assembles it byte for byte with no override. Check with
+  `python tools/match/sdk.py <mod> <addr> <size>` before parking one of these.
 * **BIOS SWI stubs**: 4-6 byte wrappers whose object compare can pass while the
   linked ROM does not.
 
