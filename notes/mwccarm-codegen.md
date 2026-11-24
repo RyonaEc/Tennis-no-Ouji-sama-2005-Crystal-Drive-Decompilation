@@ -144,8 +144,11 @@ register-role wall.
   then colours; do not chase the diff count.
 * Reference globals by symbol. An absolute address can compile to identical
   bytes and then fail to link.
-* Park after about two spellings. Record the body and the exact residue in
-  `tools/match/walls.txt`, then move on; a wall is a result, not a failure.
+* Park after about two spellings. Record the body and the exact residue with
+  `python tools/match/walls.py add <mod> <addr> "<reason>"` (the index line goes
+  to `walls.txt`, the note to `walls-detail.txt`), then move on; a wall is a
+  result, not a failure. Read one back with `walls.py show <mod> <addr>` rather
+  than loading either file.
 * Solved families do not need re-deriving: if `src/` already has the unit, its
   bytes are settled. The log's §9-§13 are history, not a to-do list.
 

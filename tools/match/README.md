@@ -11,6 +11,7 @@ output under `build/` (gitignored).
 | `fastmatch.py` | Shared compiler harness: compile one body, diff it against retail |
 | `sdk.py` | Find a retail function's bytes in the prebuilt NitroSDK libraries (`build/cand/sdk`), so an SDK routine is identified instead of parked as a codegen wall |
 | `sdkmap.py` | `sdkmap.py <mod>` maps every delinked function of a module onto the SDK libraries and writes `build/sdkmap-<mod>.tsv` (see `notes/nitrosdk.md`) |
+| `walls.py` | `show <mod> <addr>`, `grep <text>`, `list --mod <mod>`, `add <mod> <addr> "<reason>"`: the wall log without loading the detail file |
 | `udis.py` | Disassemble retail functions with their sizes |
 | `var3.py` | Compile a candidate and diff it, relocations masked |
 | `probe.py`, `vprobe.py` | Side-by-side listing; `vprobe` runs `1.2/b56` then `1.2/sp2` |
@@ -49,6 +50,8 @@ candidates), `sweep.py` (formulation sweep; `--compiler` takes a version tag), `
 `trivgen.py`, `synth.py`, `scan.py`, `census.py`, `jt.py`, `jtgen.py`,
 `jtrun.py`, `dump_emit.py`, `newcand.py`, `ready.py`, `queue.py`.
 
-Tracked rosters: `walls.txt` (parked units and their residue), `true_fresh.txt`
-(the unmatched queue), `tried.txt` (`autorun.py`'s memory), `jt.txt` (the
-jump-table scan `jtrun.py` reads).
+Tracked rosters: `walls.txt` (one line per parked unit: address, size, symbol,
+residue, and the line its note starts at in `walls-detail.txt`; read one unit
+with `walls.py show <mod> <addr>`, never load the detail file whole),
+`true_fresh.txt` (the unmatched queue), `tried.txt` (`autorun.py`'s memory),
+`jt.txt` (the jump-table scan `jtrun.py` reads).

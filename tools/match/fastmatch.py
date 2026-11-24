@@ -19,6 +19,7 @@ import argparse
 import importlib.util
 import json
 import os
+import re
 import struct
 import subprocess
 import sys
@@ -244,10 +245,12 @@ def wall_note(mod, addr):
     path = Path("tools/match/walls.txt")
     if not path.exists():
         return None
-    tag = "%s %#x " % (mod, addr)
+    # walls.txt pads the address to eight digits; older notes did not.
+    tag = re.compile(r"^%s 0x0*%x\s" % (mod, addr))
     for line in path.read_text(encoding="utf-8").splitlines():
-        if line.startswith(tag):
-            return line[len(tag):]
+        m = tag.match(line)
+        if m:
+            return line[m.end():]
     return None
 
 
