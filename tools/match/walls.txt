@@ -13,19 +13,20 @@
 # section numbers refer to notes/mwccarm-codegen-log.md.
 #
 # A unit is parked only while src/<module>/<name>.c is absent. wallprobe.py
-arm9 0x02024a54 144B func_02024a54 22-channel handler table init; retail keeps table base in lr, mwcc picks r5/r4: 144B, 19 slots, optimize_for_size is a no-op L11830
+arm9 0x02024a54 144B func_02024a54 22-channel handler table init; retail keeps table base in lr, mwcc picks r5/r4: 144B, 19 slots, optimize_for_size is a no-op L11863
 
-arm9 0x02036c18 208B func_02036c18 208 digit-count formatter; best shape is 208/208 B with the same registers but mwcc schedules 'add r_, r5, #4' before the loop test where retail schedules it after bge (6 shapes tried incl. pointer-in-loop and for-loop forms) L11833
+arm9 0x02036c18 208B func_02036c18 208 digit-count formatter; best shape is 208/208 B with the same registers but mwcc schedules 'add r_, r5, #4' before the loop test where retail schedules it after bge (6 shapes tried incl. pointer-in-loop and for-loop forms) L11866
 
-arm9 0x02036934 740B func_02036934 740 itcm origin, decoded as soft-float `ldexp`: best shape is 740/740 B with the same instruction multiset and 123 slots of register/layout residue (`r5`/`r4` vs `r1`/`r5`, working slot `[sp+0x18]` vs `[sp]`); gates the eleven itcm units L11836
+arm9 0x02036934 740B func_02036934 740 itcm origin, decoded as soft-float `ldexp`: best shape is 740/740 B with the same instruction multiset and 123 slots of register/layout residue (`r5`/`r4` vs `r1`/`r5`, working slot `[sp+0x18]` vs `[sp]`); gates the eleven itcm units L11869
 
-arm9 0x020267cc 192B func_020267cc -- DMA table store: best 204/192 B, retail keeps the store address live for `str r4,[r1,r6,lsl #2]!` and passes it as the call's r1 L11839
+arm9 0x020267cc 192B func_020267cc -- DMA table store: best 204/192 B, retail keeps the store address live for `str r4,[r1,r6,lsl #2]!` and passes it as the call's r1 L11889
 
-ov006 0x0204de34 156B func_ov006_0204de34 160 B vs 156: struct-copy loop and body stream match, but mwcc colours the copy source r4 where retail uses ip, adding a 4-byte frame L11898
+ov006 0x0204de34 156B func_ov006_0204de34 160 B vs 156: struct-copy loop and body stream match, but mwcc colours the copy source r4 where retail uses ip, adding a 4-byte frame L11897
 
-ov008 0x0204c810 132B func_ov008_0204c810 132/132 B, only the base/i/stride colouring differs (retail r8/r7/r4, b56 r5/r4/r7) L11901
+ov008 0x0204c810 132B func_ov008_0204c810 132/132 B, only the base/i/stride colouring differs (retail r8/r7/r4, b56 r5/r4/r7) L11900
 
-ov008 0x0204e584 136B func_ov008_0204e584 124 B vs 136: retail reads 0x04000208 before each of its two stores (dead ldrh), which no plain store, &=, bitfield or struct write reproduces L11904
+ov008 0x0204e584 136B func_ov008_0204e584 124 B vs 136: retail reads 0x04000208 before each of its two stores (dead ldrh), which no plain store, &=, bitfield or struct write reproduces L11903
+
 
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
@@ -41,101 +42,101 @@ arm9 0x0200440e 4B LZ77UnCompReadByCallbackWrite16bit asm { swi 0x12 } L2317
 arm9 0x02004466 4B CpuSet asm { swi 0x0b } L2323
 arm9 0x020044ea 4B GetCRC16 asm { swi 0x0e } L2329
 arm9 0x0200470a 4B CpuFastSet asm { swi 0x0c } L2335
-arm9 0x020049a0 112B func_020049a0 -- flush routine over the five-word table at data_02004a0c: per L3823
+arm9 0x020049a0 112B func_020049a0 -- flush routine over the five-word table at data_02004a0c: per L3857
 arm9 0x0200f748 208B func_0200f748 ` (208 B) -- closest drafts `build/cand/a_f748.c` (236 B) and L11570
 arm9 0x0200f9a4 260B func_0200f9a4 so it is a scheduler behaviour, not a shape. L793
 arm9 0x0200fcac 148B func_0200fcac scout: **140/148.** `*(u32 *)(d + 0xc) = *(u32 *)(d + 0xc) + a0;` and... L157
-arm9 0x020101f8 80B func_020101f8 -- fill 4 bytes with 0x45 then one with 0x17 at L4399
-arm9 0x020123e0 116B func_020123e0 -- `if (a0 > 0xc) return 0;` (so a0 is signed; `u32` yields `movhi` L10633
-arm9 0x020124e0 68B func_020124e0 bit test: only the mask computation vs ldrb order differs; 4 form... L1207
-arm9 0x02014f68 196B func_02014f68 -- free-slot packer, 192/196: everything matches except ONE inst... L8257
-arm9 0x0201617c 132B func_0201617c -- compacts a 0xc0-byte-element array after removing index idx L10906
-arm9 0x0201780c 116B func_0201780c -- insert counterpart of the 0x0201779c removal just matched (same L10834
-arm9 0x02017880 104B func_02017880 -- list insert: p[0], (u16*)((u8*)p+10) offset, count at (u8*)p+8. L4003
-arm9 0x020178e8 108B func_020178e8 -- singly-linked-list insert: on a non-zero `*(u32 *)node`, link... L7765
+arm9 0x020101f8 80B func_020101f8 -- fill 4 bytes with 0x45 then one with 0x17 at L4433
+arm9 0x020123e0 116B func_020123e0 -- `if (a0 > 0xc) return 0;` (so a0 is signed; `u32` yields `movhi` L10667
+arm9 0x020124e0 68B func_020124e0 bit test: only the mask computation vs ldrb order differs; 4 form... L8897
+arm9 0x02014f68 196B func_02014f68 -- free-slot packer, 192/196: everything matches except ONE inst... L8291
+arm9 0x0201617c 132B func_0201617c -- compacts a 0xc0-byte-element array after removing index idx L10940
+arm9 0x0201780c 116B func_0201780c -- insert counterpart of the 0x0201779c removal just matched (same L10868
+arm9 0x02017880 104B func_02017880 -- list insert: p[0], (u16*)((u8*)p+10) offset, count at (u8*)p+8. L4037
+arm9 0x020178e8 108B func_020178e8 -- singly-linked-list insert: on a non-zero `*(u32 *)node`, link... L7799
 arm9 0x02018330 124B func_02018330 124B) L3871
 arm9 0x02018ee8 148B func_02018ee8 scout: **140/148.** `if (func_020194a8(a0 + 4, 1) == 0) return 0;` th... L175
-arm9 0x0201c0c4 124B func_0201c0c4 -- look the node up in data_020475f0, else in data_020475fc and... L10869
-arm9 0x0201c17c 96B func_0201c17c (twin 0x0201c2d4) -- hash-bucket walk: `p = func_02017784(data_02... L7921
+arm9 0x0201c0c4 124B func_0201c0c4 -- look the node up in data_020475f0, else in data_020475fc and... L10903
+arm9 0x0201c17c 96B func_0201c17c (twin 0x0201c2d4) -- hash-bucket walk: `p = func_02017784(data_02... L7955
 arm9 0x0201ce4c 136B func_0201ce4c . Bound-pointer and direct spellings both fold. L577
-arm9 0x0201d7c0 124B func_0201d7c0 -- reset an object: zero +0x84/+0x7c/+0x80, func_02029a5c(&p->f74) L10875
-arm9 0x0201f26c 68B func_0201f26c 68B, 02018318 24B. Bodies decoded in notes 2.23. L1237
-arm9 0x0201fd50 60B func_0201fd50 (60B, retail pools all three bases and interleaves them, mwcc reloads... L403
-arm9 0x0201ff64 156B func_0201ff64 -- fixed-point cross product with rounding, source recovered exa... L11129
-arm9 0x020202b4 76B func_020202b4 DISPSTAT update: retail loads A then B and returns on the eq path; ev... L3409
-arm9 0x020209c8 124B func_020209c8 -- update the display window and key mask: read the u16 at L10883
-arm9 0x02022554 84B func_02022554 -- NOT a boundary artefact: a four-argument sound-register writer... L4465
-arm9 0x02023df8 96B func_02023df8 / 0x02023e58 96B -- open-handle dispatch on data_02042370 (-1 = unope... L4033
+arm9 0x0201d7c0 124B func_0201d7c0 -- reset an object: zero +0x84/+0x7c/+0x80, func_02029a5c(&p->f74) L10909
+arm9 0x0201f26c 68B func_0201f26c 68B, 02018318 24B. Bodies decoded in notes 2.23. L8807
+arm9 0x0201fd50 60B func_0201fd50 (60B, retail pools all three bases and interleaves them, mwcc reloads... L6341
+arm9 0x0201ff64 156B func_0201ff64 -- fixed-point cross product with rounding, source recovered exa... L11163
+arm9 0x020202b4 76B func_020202b4 DISPSTAT update: retail loads A then B and returns on the eq path; ev... L3443
+arm9 0x020209c8 124B func_020209c8 -- update the display window and key mask: read the u16 at L10917
+arm9 0x02022554 84B func_02022554 -- NOT a boundary artefact: a four-argument sound-register writer... L4499
+arm9 0x02023df8 96B func_02023df8 / 0x02023e58 96B -- open-handle dispatch on data_02042370 (-1 = unope... L4067
 arm9 0x02023e58 96B func_02023e58 -- open-handle dispatch on data_02042370 (-1 = unopened). L4033
 arm9 0x02024674 184B func_02024674 arm9 184B - alignment-padding cascade; 176-180B/184B, 15 diff. L943
-arm9 0x020248c8 72B func_020248c8 -- IME/IE critical-section bit clear, 56/72 with a *byte-identica... L8575
-arm9 0x0202497c 76B func_0202497c on b56: everything reproduces except that mwcc hoists the `data_0... L3463
+arm9 0x020248c8 72B func_020248c8 -- IME/IE critical-section bit clear, 56/72 with a *byte-identica... L8609
+arm9 0x0202497c 76B func_0202497c on b56: everything reproduces except that mwcc hoists the `data_0... L3497
 arm9 0x02024af8 12B func_02024af8 tail call in ip vs retail r1 L97
-arm9 0x02024b04 88B func_02024b04 -- bitmap allocator; NOT writable in C. Body is `clz` on two word... L8731
-arm9 0x02024b5c 48B func_02024b5c arm9 48B - needs pl/mi, mwcc gives hs/lo (u32) or ge/lt (s32). exit/e... L889
-arm9 0x020255e8 100B func_020255e8 -- plain struct init: stores a1 + 4 at p + 0x40, a2 at p + 0x44,... L7531
+arm9 0x02024b04 88B func_02024b04 -- bitmap allocator; NOT writable in C. Body is `clz` on two word... L8765
+arm9 0x02024b5c 48B func_02024b5c arm9 48B - needs pl/mi, mwcc gives hs/lo (u32) or ge/lt (s32). exit/e... L6095
+arm9 0x020255e8 100B func_020255e8 -- plain struct init: stores a1 + 4 at p + 0x40, a2 at p + 0x44,... L7565
 arm9 0x0202564c 76B func_0202564c -- mrs/msr and mrc/mcr p15, and a banked-sp setup L8761
 arm9 0x02025b88 148B func_02025b88 scout: **140/148.** `func_02026350()` / `func_02026364(r)` bracket an... L181
-arm9 0x02025e48 172B func_02025e48 -- switch on 0..6 returning constants, with a case that loads a... L11186
-arm9 0x020260b8 116B func_020260b8 -- hand-written dispatcher (`mrs r1, apsr`, `teq`, banked `sp` L10630
-arm9 0x0202612c 20B func_0202612c veneer: retail 4-byte call frame, mwcc always inserts sub sp,#4 f... L1123
-arm9 0x020266c0 80B func_020266c0 -- DMA channel CR bitfield clear; best 72B. C L8908
-arm9 0x02027080 88B func_02027080 (8-arg bit packing via orr lsl chain), 02032aa8 88B (2 unaligned L1315
-arm9 0x02027f74 116B func_02027f74 -- lock, store a slot in a table, set/clear a bit in 0x027ffc00+... L10841
+arm9 0x02025e48 172B func_02025e48 -- switch on 0..6 returning constants, with a case that loads a... L11220
+arm9 0x020260b8 116B func_020260b8 -- hand-written dispatcher (`mrs r1, apsr`, `teq`, banked `sp` L10664
+arm9 0x0202612c 20B func_0202612c veneer: retail 4-byte call frame, mwcc always inserts sub sp,#4 f... L10515
+arm9 0x020266c0 80B func_020266c0 -- DMA channel CR bitfield clear; best 72B. C L8942
+arm9 0x02027080 88B func_02027080 (8-arg bit packing via orr lsl chain), 02032aa8 88B (2 unaligned L10862
+arm9 0x02027f74 116B func_02027f74 -- lock, store a slot in a table, set/clear a bit in 0x027ffc00+... L10875
 arm9 0x02027ffb ?B - 0, allocating the set bit in the first word (id 0x40+n) or second (0x... L8737
-arm9 0x02028920 56B func_02028920 pair w/ 02028958: retail push{r4,lr}, mwcc stmdb{lr}+sub sp; + ad... L1213
-arm9 0x02028958 56B func_02028958 retail push{r4,lr}, mwcc stmdb{lr}+sub sp; + add lr,r0,#0x28. L1213
+arm9 0x02028920 56B func_02028920 pair w/ 02028958: retail push{r4,lr}, mwcc stmdb{lr}+sub sp; + ad... L3485
+arm9 0x02028958 56B func_02028958 retail push{r4,lr}, mwcc stmdb{lr}+sub sp; + add lr,r0,#0x28. L3491
 arm9 0x0202915c 152B func_0202915c scout: **124/152.** `ands r0,r0,#0x100` / `movne r0,#1` / `moveq r0,#... L169
-arm9 0x02029704 100B func_02029704 -- packs up to four characters into a u32, lowercasing A-Z: guards L7879
+arm9 0x02029704 100B func_02029704 -- packs up to four characters into a u32, lowercasing A-Z: guards L7913
 arm9 0x02029aa0 140B func_02029aa0 ` (140 B) -- decoded as `start = p[0x28]; n = min(a2 L11666
-arm9 0x0202a3a0 188B func_0202a3a0 -- slot fetch: `base = (a1 == 0) ? 0x0204ac04 : 0x0204ac0c;` the... L10921
-arm9 0x0202ad9c 108B func_0202ad9c -- sound-channel MMIO writer. Five address groups: 0x04000290/+4 L3535
-arm9 0x0202ae08 116B func_0202ae08 -- getter twin of 0x0202ad9c: reads the same five sound register... L3625
-arm9 0x0202bda0 120B func_0202bda0 -- `func_0202bfdc(0, &f)` then `*a0 = (f & 8) != 0; *a1 = (f L10618
-arm9 0x0202c018 120B func_0202c018 -- slot setup: `func_0202c3e0(a0)` guard, `*(u16 *)(data_0204acd... L10641
-arm9 0x0202c36c 84B func_0202c36c -- **84/84 and the same instruction sequence**, ONE register pair... L8828
+arm9 0x0202a3a0 188B func_0202a3a0 -- slot fetch: `base = (a1 == 0) ? 0x0204ac04 : 0x0204ac0c;` the... L10955
+arm9 0x0202ad9c 108B func_0202ad9c -- sound-channel MMIO writer. Five address groups: 0x04000290/+4 L3569
+arm9 0x0202ae08 116B func_0202ae08 -- getter twin of 0x0202ad9c: reads the same five sound register... L3659
+arm9 0x0202bda0 120B func_0202bda0 -- `func_0202bfdc(0, &f)` then `*a0 = (f & 8) != 0; *a1 = (f L10652
+arm9 0x0202c018 120B func_0202c018 -- slot setup: `func_0202c3e0(a0)` guard, `*(u16 *)(data_0204acd... L10675
+arm9 0x0202c36c 84B func_0202c36c -- **84/84 and the same instruction sequence**, ONE register pair... L8862
 arm9 0x0202c430 24B func_0202c430 var3 matches, ROM digest rejects: best is 3 slots, retail keeps the global address in ip where mwcc uses r1 for every spelling tried (plain/volatile global, volatile u32 *p, do/while, with and without a returned value) L127
-arm9 0x0202cc90 92B func_0202cc90 -- spin-wait wrapper: `g = data_0204aec0; s = func_02026350(); while L10612
-arm9 0x0202cfa4 84B func_0202cfa4 -- 92B. Main-thread loop: `s = func_02026350(); while (!(*(u32*)(... L8943
-arm9 0x0202cff8 84B func_0202cff8 -- 88 best. C: `if (a0 != 0xb) return; if (a2 == 0) return L8803
+arm9 0x0202cc90 92B func_0202cc90 -- spin-wait wrapper: `g = data_0204aec0; s = func_02026350(); while L10646
+arm9 0x0202cfa4 84B func_0202cfa4 -- 92B. Main-thread loop: `s = func_02026350(); while (!(*(u32*)(... L8977
+arm9 0x0202cff8 84B func_0202cff8 -- 88 best. C: `if (a0 != 0xb) return; if (a2 == 0) return L8837
 arm9 0x0202d300 240B func_0202d300 ) or copy L10862
-arm9 0x0202d9f4 88B func_0202d9f4 -- `func_02026e2c(*(u32 *)(g + 0x24), 0x04100010, *(u32 *)(g + 0x1c) L10623
-arm9 0x0202daec 132B func_0202daec -- shutdown half of the 0x0202d4f0 teardown, reading data_0204aec0 L10899
-arm9 0x0202db70 164B func_0202db70 -- page-chunked copy from a global stream state at 0x0204aec0: [... L11167
-arm9 0x0202f28c 312B func_0202f28c -- match guards (`func_0202e1cc(2, 7, 8)`, `func_02025c5c(p + 0x... L10647
+arm9 0x0202d9f4 88B func_0202d9f4 -- `func_02026e2c(*(u32 *)(g + 0x24), 0x04100010, *(u32 *)(g + 0x1c) L10657
+arm9 0x0202daec 132B func_0202daec -- shutdown half of the 0x0202d4f0 teardown, reading data_0204aec0 L10933
+arm9 0x0202db70 164B func_0202db70 -- page-chunked copy from a global stream state at 0x0204aec0: [... L11201
+arm9 0x0202f28c 312B func_0202f28c -- match guards (`func_0202e1cc(2, 7, 8)`, `func_02025c5c(p + 0x... L10681
 arm9 0x02032aa8 88B func_02032aa8 (2 unaligned L1315
 arm9 0x02032b00 48B func_02032b00 is a fragment). Those are unmatchable until symbols.txt is cleaned up... L397
-arm9 0x02032be8 80B func_02032be8 loop entry: mwcc emits a movs/bxeq early-exit copy where retail branc... L3403
-arm9 0x02032c38 56B func_02032c38 (56B, retail reads bytes via aligned ldrh+mask, mwcc emits ldrb, 40B)... L403
-arm9 0x02032c70 144B func_02032c70 -- 16-bit ring/cursor update: `arr = *(u32 *)(0x027fff60 + 0x1c)... L11081
-arm9 0x02033014 112B func_02033014 -- RMW on DISPCNT plus four register/two u16 register stores. Every L10795
+arm9 0x02032be8 80B func_02032be8 loop entry: mwcc emits a movs/bxeq early-exit copy where retail branc... L3437
+arm9 0x02032c38 56B func_02032c38 (56B, retail reads bytes via aligned ldrh+mask, mwcc emits ldrb, 40B)... L6431
+arm9 0x02032c70 144B func_02032c70 -- 16-bit ring/cursor update: `arr = *(u32 *)(0x027fff60 + 0x1c)... L11115
+arm9 0x02033014 112B func_02033014 -- RMW on DISPCNT plus four register/two u16 register stores. Every L10829
 arm9 0x02033b34 140B func_02033b34 ` (140 B) -- insert-with-shift-up over 16-byte blocks at L11673
 arm9 0x02033bc0 16B func_02033bc0 branch stub: two movs converging on the next unit's first insn L61
-arm9 0x02033bd0 60B func_02033bd0 (twin 0x02033c1c) -- APSR interrupt-mask helper: `ldr r1, [pc]; b... L7501
+arm9 0x02033bd0 60B func_02033bd0 (twin 0x02033c1c) -- APSR interrupt-mask helper: `ldr r1, [pc]; b... L7535
 arm9 0x02033c0c 16B func_02033c0c branch stub: two movs converging on the next unit's first insn L67
-arm9 0x02033c1c 60B func_02033c1c ) -- APSR interrupt-mask helper: `ldr r1, [pc]; bx r1` jump into L7501
+arm9 0x02033c1c 60B func_02033c1c ) -- APSR interrupt-mask helper: `ldr r1, [pc]; bx r1` jump into L8795
 arm9 0x02033c58 48B func_02033c58 starts mid-function; 02032b00 is a fragment). Those are unmatchable u... L397
 arm9 0x02033cb0 8B func_02033cb0 UDF trap stub + bx lr (assert/dead code, no C form) L55
 arm9 0x02033f40 80B func_02033f40 6-arg dispatcher; 5 source shapes tried L133
-arm9 0x020340d8 112B func_020340d8 -- scan three 0x4c-byte records from data_02042690: for each, te... L10891
-arm9 0x020344b4 172B func_020344b4 -- memset. Exact at 172B except the 32-byte-block counter lands... L11183
-arm9 0x02034594 116B func_02034594 -- init a {buf, n, 0} descriptor, hand it to func_0203465c with the L10847
-arm9 0x020366bc 116B func_020366bc -- bounded copy that tests the byte it just stored (retail reloa... L10853
+arm9 0x020340d8 112B func_020340d8 -- scan three 0x4c-byte records from data_02042690: for each, te... L10925
+arm9 0x020344b4 172B func_020344b4 -- memset. Exact at 172B except the 32-byte-block counter lands... L11217
+arm9 0x02034594 116B func_02034594 -- init a {buf, n, 0} descriptor, hand it to func_0203465c with the L10881
+arm9 0x020366bc 116B func_020366bc -- bounded copy that tests the byte it just stored (retail reloa... L10887
 arm9 0x02036730 216B func_02036730 ` (216 B): hand-optimised word `strcpy` (`0x01010101`/`0x80808080`, f... L11317
-arm9 0x0203684c 40B func_0203684c arm9 40B - same wall. push {r0-r3} = 8-byte struct + 2 unused u32 arg... L1003
-arm9 0x02037660 100B func_02037660 -- limits a byte field: `if (a1 <= 0) return; if (a1 >= a0[4]) r... L7999
-arm9 0x020376c4 80B func_020376c4 -- BCD digit increment, 80/80, one instruction out. Correct C: st... L8653
-arm9 0x02037718 112B func_02037718 -- table walk over p[5+idx], length p[4], tail test `(p[idx+4] &... L3787
-arm9 0x02037788 124B func_02037788 -- bit-run scanner over four word parameters copied to the stack L3751
+arm9 0x0203684c 40B func_0203684c arm9 40B - same wall. push {r0-r3} = 8-byte struct + 2 unused u32 arg... L5525
+arm9 0x02037660 100B func_02037660 -- limits a byte field: `if (a1 <= 0) return; if (a1 >= a0[4]) r... L8033
+arm9 0x020376c4 80B func_020376c4 -- BCD digit increment, 80/80, one instruction out. Correct C: st... L8687
+arm9 0x02037718 112B func_02037718 -- table walk over p[5+idx], length p[4], tail test `(p[idx+4] &... L3821
+arm9 0x02037788 124B func_02037788 -- bit-run scanner over four word parameters copied to the stack L3785
 arm9 0x0203aeb8 12B func_0203aeb8 '12B' branches past its own extent; 02033c58 starts mid-function; 020... L397
 arm9 0x0203b2cc 8B func_0203b2cc cmp/bxeq fragment, falls through into the next unit L73
-arm9 0x0203b4b0 52B func_0203b4b0 frameless two-call zeroing: mwcc reserves a 4-byte frame slot retail... L3391
-arm9 0x0203b4e4 40B func_0203b4e4 -- lock-word atomic op: `u32 *p = (u32 *)func_0203b6d0(); old = *p L6463
-arm9 0x0203b50c 76B func_0203b50c -- the packed-field sibling of 0x0203b4e4: repack both arguments as L6499
+arm9 0x0203b4b0 52B func_0203b4b0 frameless two-call zeroing: mwcc reserves a 4-byte frame slot retail... L3425
+arm9 0x0203b4e4 40B func_0203b4e4 -- lock-word atomic op: `u32 *p = (u32 *)func_0203b6d0(); old = *p L6497
+arm9 0x0203b50c 76B func_0203b50c -- the packed-field sibling of 0x0203b4e4: repack both arguments as L6533
 arm9 0x0203b564 20B func_0203b564 svc 0x123456 SDK wrapper (str lr / movs / svc / ldr pc) L79
 arm9 0x0203b578 20B func_0203b578 svc 0x123456 SDK wrapper (str lr / movs / svc / ldr pc) L85
 arm9 0x0203b58c 16B func_0203b58c svc 0x123456 SDK wrapper L91
-arm9 0x0203b698 56B func_0203b698 -- call every non-null entry of a function-pointer table L6529
+arm9 0x0203b698 56B func_0203b698 -- call every non-null entry of a function-pointer table L6563
 arm9 0x0203b6e8 ?B - `.bss` at L11774
 arm9 0x02042228 ?B - calling L10507
 arm9 0x02042354 ?B - /020423dc/02042a24, ov004 020637c8..020647c0 L11242
@@ -184,7 +185,7 @@ arm9 0x027ffe58 ?B - which land on the stack). Writing the guard as `if (*(u32 *
 arm9 0x027fff60 ?B - + 0x1c) + 0x8000` L11081
 arm9 0x027fff72 ?B - into p+2 and writes 0x20 to both 0x09fe2ffe and L10915
 arm9 0x027fffb0 ?B - (no symbol). Retail: cmp a0,#0x60 ; addpl/subpl/submi for the two ran... L325
-ov001 0x0204d8f4 148B func_ov001_0204d8f4 -- VCOUNT vs BG scroll setup. Full body: `v = *(volatile u16 *)0... L5377
+ov001 0x0204d8f4 148B func_ov001_0204d8f4 -- VCOUNT vs BG scroll setup. Full body: `v = *(volatile u16 *)0... L5411
 ov001 0x0204eff8 332B func_ov001_0204eff8 ` (332 B x2). File-load routine: the L11492
 ov001 0x0204ff10 ?B - (2,968 B) is blocked: a delinked arm9 rodata object references L11268
 ov001 0x027c0000 ?B - and 0x3ff8 SEPARATELY L5407
@@ -231,54 +232,54 @@ ov002 0x0203b0c0 ?B - (twice), 02057068 L10448
 ov002 0x0203b4b0 ?B - (52B): two calls to func_0203b6d0/func_0203b6dc returning pointers, 6... L2809
 ov002 0x0203b4e4 ?B - (40B): retail saves the argument block with `push {r0,r1,r2,ip,lr}` a... L2743
 ov002 0x0203b698 ?B - (56B): function-table walker. Retail is do-while with a `cmp p,#0` bo... L2869
-ov002 0x0204c884 148B func_ov002_0204c884 148B: idx=((s32)a1+1)/2; q=(u32*)(B+0x274+a0*0x1c+0x18); *q|=0x400 L2437
+ov002 0x0204c884 148B func_ov002_0204c884 148B: idx=((s32)a1+1)/2; q=(u32*)(B+0x274+a0*0x1c+0x18); *q|=0x400 L2471
 ov002 0x0204f320 172B func_ov002_0204f320 ` / `0x0204f3cc` (172 B, 2x). Full body recovered: read the id L11350
 ov002 0x0204f3cc 172B func_ov002_0204f3cc ` (172 B, 2x). Full body recovered: read the id L11350
 ov002 0x0204f478 148B func_ov002_0204f478 ` / `0x0204f50c` (148 B x2) -- `build/cand/a_f478.c` is 148 B L11587
 ov002 0x0204f50c 148B func_ov002_0204f50c ` (148 B x2) -- `build/cand/a_f478.c` is 148 B L11587
-ov002 0x0204f5a0 132B func_ov002_0204f5a0 -- pushes a 12-byte record into a 0x40-entry table: index byte at L7153
-ov002 0x0204f70c 100B func_ov002_0204f70c -- angle helper: calls func_02020044(a1, a0), wraps a negative r... L7621
+ov002 0x0204f5a0 132B func_ov002_0204f5a0 -- pushes a 12-byte record into a 0x40-entry table: index byte at L7187
+ov002 0x0204f70c 100B func_ov002_0204f70c -- angle helper: calls func_02020044(a1, a0), wraps a negative r... L7655
 ov002 0x0204f98c 104B func_ov002_0204f98c frame regression: mwcc uses lr as the base pointer and emits push/sub... L199
 ov002 0x020532e4 388B func_ov002_020532e4 0204f6ac, 0203b0c0 (twice), 02057068 L10448
 ov002 0x02053468 220B func_ov002_02053468 0205bee4(0x1e, rec), 0204f770, 020532e4, 0204f6ac, 0203b0c0 (twice),... L10448
 ov002 0x02057068 2612B func_ov002_02057068 see-detail L10448
 ov002 0x0205940c 384B func_ov002_0205940c ` (384 B, three flag updates on the battle-entry tables) already L11803
-ov002 0x0205bee4 128B func_ov002_0205bee4 (0x1e, rec), 0204f770, 020532e4, 0204f6ac, 0203b0c0 (twice), 02057068 L10448
-ov002 0x0205fe04 140B func_ov002_0205fe04 (siblings 0x0207bc98, 0x020e9658) -- clears two 3-byte runs and... L11064
+ov002 0x0205bee4 128B func_ov002_0205bee4 (0x1e, rec), 0204f770, 020532e4, 0204f6ac, 0203b0c0 (twice), 02057068 L11183
+ov002 0x0205fe04 140B func_ov002_0205fe04 (siblings 0x0207bc98, 0x020e9658) -- clears two 3-byte runs and... L11098
 ov002 0x020604b4 352B func_ov002_020604b4 ` (352 B) compiles to exactly 352 B with 19 differing slots, all L11790
-ov002 0x020617d0 128B func_ov002_020617d0 -- finds the two indices i in 0..3 where `*(u8 *)(base + 0x94 +... L6817
+ov002 0x020617d0 128B func_ov002_020617d0 -- finds the two indices i in 0..3 where `*(u8 *)(base + 0x94 +... L6851
 ov002 0x0206308c 56B func_ov002_0206308c pre-index writeback after two calls (ldr r0,[r1,r0]!) L187
-ov002 0x020630f4 116B func_ov002_020630f4 116B: dead ldr of func_02005418 and discarded ldrh of 0x04000208 prec... L2389
+ov002 0x020630f4 116B func_ov002_020630f4 116B: dead ldr of func_02005418 and discarded ldrh of 0x04000208 prec... L2423
 ov002 0x02063874 128B func_ov002_02063874 (128B): sibling of 0x020636b4, but retail re-materialises `add r1, r4... L2911
 ov002 0x02063dc0 152B func_ov002_02063dc0 (152B): ov002 switch/membership test. The switch part matches byte-fo... L3115
-ov002 0x02064b04 108B func_ov002_02064b04 -- selects a state predicate from `*(u8 *)(base + 0x1744 + a0 *... L7735
-ov002 0x02065ffc 132B func_ov002_02065ffc -- returns 1 unless bit 0x100000 of `b + 0x24` is set, then 1 ag... L7069
-ov002 0x02066080 112B func_ov002_02066080 -- per-entity limit check: copy the 12-byte table at data_ov002_... L6559
+ov002 0x02064b04 108B func_ov002_02064b04 -- selects a state predicate from `*(u8 *)(base + 0x1744 + a0 *... L7769
+ov002 0x02065ffc 132B func_ov002_02065ffc -- returns 1 unless bit 0x100000 of `b + 0x24` is set, then 1 ag... L7103
+ov002 0x02066080 112B func_ov002_02066080 -- per-entity limit check: copy the 12-byte table at data_ov002_... L6593
 ov002 0x02068c78 64B func_ov002_02068c78 register-shift cascade: retail base in ip, record in r2, target in r1... L205
 ov002 0x02068e2c 276B func_ov002_02068e2c ` (276 B, 9-slice sine-pair writer). Decoded: base + L11630
-ov002 0x02069b3c 100B func_ov002_02069b3c -- sets bit 0x400 in `*(u32 *)(base + 0x1e6c)`, clears the byte... L7675
-ov002 0x0206d600 76B func_ov002_0206d600 -- `*(u32 *)(base + 0x1dd20c) = v; *(u32 *)(...+4) = 0 L10018
-ov002 0x020766c4 216B func_ov002_020766c4 -- record creator, 220/216 best (s16 t[2] + s16 u), 216/216 size... L8377
+ov002 0x02069b3c 100B func_ov002_02069b3c -- sets bit 0x400 in `*(u32 *)(base + 0x1e6c)`, clears the byte... L7709
+ov002 0x0206d600 76B func_ov002_0206d600 -- `*(u32 *)(base + 0x1dd20c) = v; *(u32 *)(...+4) = 0 L10052
+ov002 0x020766c4 216B func_ov002_020766c4 -- record creator, 220/216 best (s16 t[2] + s16 u), 216/216 size... L8411
 ov002 0x020780f8 188B func_ov002_020780f8 (188B, 180/188) L667
-ov002 0x02078208 124B func_ov002_02078208 124B: *p|=1 at B+0x1e6c; p[4]=0; p[5]=a0; p[6]=0 L2407
-ov002 0x020799d4 112B func_ov002_020799d4 -- walks four 0x158-byte entity slots from base+0x2e4 and sets/c... L6613
-ov002 0x0207b41c 120B func_ov002_0207b41c -- entity predicate: `e = base + 0x2e4 + a0 * 0x158` L6727
-ov002 0x0207b494 112B func_ov002_0207b494 -- two-slot cleanup: for i in 0..1, if `*(s32 *)(base + 0x3694 +... L6655
+ov002 0x02078208 124B func_ov002_02078208 124B: *p|=1 at B+0x1e6c; p[4]=0; p[5]=a0; p[6]=0 L2441
+ov002 0x020799d4 112B func_ov002_020799d4 -- walks four 0x158-byte entity slots from base+0x2e4 and sets/c... L6647
+ov002 0x0207b41c 120B func_ov002_0207b41c -- entity predicate: `e = base + 0x2e4 + a0 * 0x158` L6761
+ov002 0x0207b494 112B func_ov002_0207b494 -- two-slot cleanup: for i in 0..1, if `*(s32 *)(base + 0x3694 +... L6689
 ov002 0x0207bc98 140B func_ov002_0207bc98 ) -- clears two 3-byte runs and then reclassifies L11064
-ov002 0x0207ff34 116B func_ov002_0207ff34 -- per-index byte counter with a clamp: `b = *(u32 *)0x02102070`... L11114
-ov002 0x02080ca4 68B func_ov002_02080ca4 vs 76B: mwcc allocates the loop counter in lr and then copies it... L3481
-ov002 0x02082034 92B func_ov002_02082034 -- copies four s16s into an 8-byte stride at p + 0x3c6 from a tab... L7267
+ov002 0x0207ff34 116B func_ov002_0207ff34 -- per-index byte counter with a clamp: `b = *(u32 *)0x02102070`... L11148
+ov002 0x02080ca4 68B func_ov002_02080ca4 vs 76B: mwcc allocates the loop counter in lr and then copies it... L3515
+ov002 0x02082034 92B func_ov002_02082034 -- copies four s16s into an 8-byte stride at p + 0x3c6 from a tab... L7301
 ov002 0x02082090 96B func_ov002_02082090 allocation tie: retail keeps base in ip / q in r2 / p in r3 and mater... L193
-ov002 0x02084b28 128B func_ov002_02084b28 -- per-slot mode byte: for i in 0..3, skip when `*(u8 *)(base +... L6775
+ov002 0x02084b28 128B func_ov002_02084b28 -- per-slot mode byte: for i in 0..3, skip when `*(u8 *)(base +... L6809
 ov002 0x02084e94 220B func_ov002_02084e94 (220B) L619
-ov002 0x02084ff4 164B func_ov002_02084ff4 -- body matches instruction for instruction except the prologue... L11171
-ov002 0x02086f14 104B func_ov002_02086f14 -- clears a byte, calls func_ov002_02086da0, then bumps a counte... L7711
-ov002 0x0208804c 164B func_ov002_0208804c -- 5-byte block swap. Scalar locals collapse to 132B (bytes stay... L11175
+ov002 0x02084ff4 164B func_ov002_02084ff4 -- body matches instruction for instruction except the prologue... L11205
+ov002 0x02086f14 104B func_ov002_02086f14 -- clears a byte, calls func_ov002_02086da0, then bumps a counte... L7745
+ov002 0x0208804c 164B func_ov002_0208804c -- 5-byte block swap. Scalar locals collapse to 132B (bytes stay... L11209
 ov002 0x02088168 336B func_ov002_02088168 ` (336 B, pair-marking pass). Decoded: zero eight bytes at L11699
-ov002 0x020882d4 76B func_ov002_020882d4 index loop; C either hoists the element pointer or burns r7/r8, retai... L3433
-ov002 0x020895c8 116B func_ov002_020895c8 -- clears bit 0x80 of a word at `base + 0x4bc4 + 4`, switches on L6691
-ov002 0x02089f68 204B func_ov002_02089f68 -- two-slot jump-table walk. Table is 14 entries at 0x40: case 0... L11206
-ov002 0x0208a034 128B func_ov002_0208a034 -- two-slot tick: for i in 0..1, decrement `*(u8 *)(base + 0x4bc... L6847
+ov002 0x020882d4 76B func_ov002_020882d4 index loop; C either hoists the element pointer or burns r7/r8, retai... L3467
+ov002 0x020895c8 116B func_ov002_020895c8 -- clears bit 0x80 of a word at `base + 0x4bc4 + 4`, switches on L6725
+ov002 0x02089f68 204B func_ov002_02089f68 -- two-slot jump-table walk. Table is 14 entries at 0x40: case 0... L11240
+ov002 0x0208a034 128B func_ov002_0208a034 -- two-slot tick: for i in 0..1, decrement `*(u8 *)(base + 0x4bc... L6881
 ov002 0x0208f0e8 676B func_ov002_0208f0e8 worth 6,760B. A representative, 0x0208f860, is not a quick win: it op... L11110
 ov002 0x0208f38c 608B func_ov002_0208f38c worth 8,512B, 10x688 from 0x0209ab8c worth 6,880B, 10x676 from L11109
 ov002 0x0208f860 756B func_ov002_0208f860 0209a5f4 0209c728 0209eb18 020a8ba0 L1051
@@ -295,9 +296,9 @@ ov002 0x020b732c ?B - (52B each): identical twins that zero six u16 in a stack b
 ov002 0x020bcfe0 136B func_ov002_020bcfe0 ` / `0x020c2ba8` / `0x020f78c0` (136 B, 3x). Size and every other slot L11340
 ov002 0x020c2ba8 136B func_ov002_020c2ba8 ` / `0x020f78c0` (136 B, 3x). Size and every other slot L11340
 ov002 0x020c583c 168B func_ov002_020c583c ` (168 B, 2x). Two-call spawner with a 4-word L11364
-ov002 0x020e198c 128B func_ov002_020e198c -- frameless HUD init on a pointer argument: `*(u32 *)(o + 0xb8)... L7027
+ov002 0x020e198c 128B func_ov002_020e198c -- frameless HUD init on a pointer argument: `*(u32 *)(o + 0xb8)... L7061
 ov002 0x020e9658 140B func_ov002_020e9658 ) -- clears two 3-byte runs and then reclassifies L11064
-ov002 0x020f2970 84B func_ov002_020f2970 (84B, best 84/84 with 9 diffs) L847
+ov002 0x020f2970 84B func_ov002_020f2970 (84B, best 84/84 with 9 diffs) L6305
 ov002 0x020f6258 252B func_ov002_020f6258 ` (252 B, 2x). Body recovered in full: flag test on L11357
 ov002 0x020f78c0 136B func_ov002_020f78c0 ` (136 B, 3x). Size and every other slot L11340
 ov002 0x020fc68c ?B - see-detail L9184
@@ -333,22 +334,22 @@ ov003 0x02050f2c 16B func_ov003_02050f2c degenerate: `cmp/ moveq r0,#0 / movne r
 ov003 0x02052160 140B func_ov003_02052160 140B: 104/140B. Shape is settled: 4 args, a3 packs two halves — lo=(u... L283
 ov003 0x02052384 372B func_ov003_02052384 ` (372 B, RGB555 -> BGR555 shade). Sibling of the matched L11726
 ov003 0x020524f8 340B func_ov003_020524f8 ` (340 B, 16-pixel BGR555 halving loop) is 340 B with only 39 L11780
-ov003 0x0205299c 76B func_ov003_0205299c ov003 -- two-pool RMW: needs ldr r1,=data_027c0000 ; ldr r0,=0x3f... L295
+ov003 0x0205299c 76B func_ov003_0205299c ov003 -- two-pool RMW: needs ldr r1,=data_027c0000 ; ldr r0,=0x3f... L9038
 ov003 0x020538b0 320B func_ov003_020538b0 ` (320 B, two 4-way field classifier chains). Decoded: for L11687
 ov003 0x02054190 336B func_ov003_02054190 ` (336 B, 2x8 halfword transpose + packed register write). L11710
-ov003 0x02066a54 180B func_ov003_02066a54 / 0x020b85b8 / 0x020db6ec 180B -- engine-B init: clear 0x200 u16 slot... L4249
+ov003 0x02066a54 180B func_ov003_02066a54 / 0x020b85b8 / 0x020db6ec 180B -- engine-B init: clear 0x200 u16 slot... L4283
 ov003 0x020820d0 336B func_ov003_020820d0 ` / `0x020c7dc4` (336 B x2) -- closest draft L11521
-ov003 0x02082220 96B func_ov003_02082220 / 0x020c806c 96B each (famsurvey pair) -- DEGENERATE, no source expre... L5275
+ov003 0x02082220 96B func_ov003_02082220 / 0x020c806c 96B each (famsurvey pair) -- DEGENERATE, no source expre... L5309
 ov003 0x0208ae70 160B func_ov003_0208ae70 160B: 152/160B max. Body recovered: b=*data_ov003_020eb720; if(*(u16*... L289
 ov003 0x020960a4 120B func_ov003_020960a4 120B: all 8 stores reproduce; only the tail counter ip+0x8736 differs... L253
 ov003 0x020b85b8 180B func_ov003_020b85b8 / 0x020db6ec 180B -- engine-B init: clear 0x200 u16 slots and L4249
-ov003 0x020bb0b0 120B func_ov003_020bb0b0 -- mode switch: `p = *(u32 *)0x020eb720 + 0xc8dc`; when the argu... L11004
+ov003 0x020bb0b0 120B func_ov003_020bb0b0 -- mode switch: `p = *(u32 *)0x020eb720 + 0xc8dc`; when the argu... L11038
 ov003 0x020c1ab0 128B func_ov003_020c1ab0 128B: 124/128B, ONE instruction short. Working body (frame+pool+arith... L277
 ov003 0x020c7ac0 376B func_ov003_020c7ac0 ` (376 B, battle-entry init; the sibling of the ov005 L11811
 ov003 0x020c7dc4 344B func_ov003_020c7dc4 ` (336 B x2) -- closest draft L11521
 ov003 0x020c806c 96B func_ov003_020c806c each (famsurvey pair) -- DEGENERATE, no source expresses it. L5275
-ov003 0x020d72f8 164B func_ov003_020d72f8 / 0x020d9f2c 164B each (famsurvey pair, 328B total) -- module reset r... L5089
-ov003 0x020d77b4 204B func_ov003_020d77b4 -- 196/204. Call func_02021b14(0x04001050, 0xe, 0x24, s[0x3f], s... L8473
+ov003 0x020d72f8 164B func_ov003_020d72f8 / 0x020d9f2c 164B each (famsurvey pair, 328B total) -- module reset r... L5123
+ov003 0x020d77b4 204B func_ov003_020d77b4 -- 196/204. Call func_02021b14(0x04001050, 0xe, 0x24, s[0x3f], s... L8507
 ov003 0x020d8604 ?B - ` (164 B x2) -- closest draft L11531
 ov003 0x020d9f2c 164B func_ov003_020d9f2c each (famsurvey pair, 328B total) -- module reset routine. L5089
 ov003 0x020db6ec 180B func_ov003_020db6ec -- engine-B init: clear 0x200 u16 slots and L4249
@@ -356,14 +357,14 @@ ov003 0x020eb720 ?B - ]` -> `[that]` -> function pointer, called if L9028
 ov003 0x027c0000 ?B - ldr r0,[pc]=0x3ff8; ldr r0,[r1,r0]!; orr r0,r0,#1; str r0,[r1]`. L9010
 ov003 0x027c3ff8 ?B - and emits L9016
 ov004 0x0204cbfc 76B func_ov004_0204cbfc -- 8-slot table scan; retail is frameless with ip as the index (a... L391
-ov004 0x0204d8ec 128B func_ov004_0204d8ec -- binary search over the same overlay's table: `if (key > L5797
-ov004 0x0204d980 60B func_ov004_0204d980 -- range classifier (1 for 0x81..0x9f or 0xe0..0xef). Retail uses... L385
-ov004 0x0204e1a0 164B func_ov004_0204e1a0 -- found-record setter. Retail keeps two induction variables (`r... L11180
-ov004 0x0204e8a4 64B func_ov004_0204e8a4 -- 64/64 bytes, residue is ONE encoding: retail add r0,r0,r2 wher... L379
-ov004 0x0204fb74 124B func_ov004_0204fb74 -- AABB overlap test: `h = ((*(u16 *)(a0+2) & 0x3f) << 2) << 12` L5857
-ov004 0x02050068 100B func_ov004_02050068 -- same instance-table walk as the matched 0x02050154, but it ca... L5737
+ov004 0x0204d8ec 128B func_ov004_0204d8ec -- binary search over the same overlay's table: `if (key > L5831
+ov004 0x0204d980 60B func_ov004_0204d980 -- range classifier (1 for 0x81..0x9f or 0xe0..0xef). Retail uses... L3533
+ov004 0x0204e1a0 164B func_ov004_0204e1a0 -- found-record setter. Retail keeps two induction variables (`r... L11214
+ov004 0x0204e8a4 64B func_ov004_0204e8a4 -- 64/64 bytes, residue is ONE encoding: retail add r0,r0,r2 wher... L3539
+ov004 0x0204fb74 124B func_ov004_0204fb74 -- AABB overlap test: `h = ((*(u16 *)(a0+2) & 0x3f) << 2) << 12` L5891
+ov004 0x02050068 100B func_ov004_02050068 -- same instance-table walk as the matched 0x02050154, but it ca... L5771
 ov004 0x020509d8 280B func_ov004_020509d8 ` (280 B, SJIS decimal writer) -- `build/cand/e_509d8.c` is L11609
-ov004 0x02052808 148B func_ov004_02052808 -- writes a 4-bit nibble into 6-byte records: `if (a1 == 0) retu... L5923
+ov004 0x02052808 148B func_ov004_02052808 -- writes a 4-bit nibble into 6-byte records: `if (a1 == 0) retu... L5957
 ov004 0x020579c0 372B func_ov004_020579c0 ` / `0x02057dcc` (372 B x2, famsurvey group). Scene setup: two L11460
 ov004 0x02057dcc 372B func_ov004_02057dcc ` (372 B x2, famsurvey group). Scene setup: two L11460
 ov004 0x020637c8 ?B - ..020647c0 L11242
@@ -371,8 +372,8 @@ ov004 0x020647c0 ?B - see-detail L11242
 ov004 0x020690a8 ?B - `. The ternary form L10971
 ov004 0x027c0000 ?B - + 0x3ff8 |= 1; 0x20534cc: if(!*(u32*)p)return; p[0x30]=a1;p[0x32]=a2;... L1819
 ov004 0x027c3ff8 ?B - |= 1` written as a base 0x027c0000 plus an offset L10960
-ov005 0x0204f340 140B func_ov005_0204f340 -- varargs-shaped coordinate update taking x/y and an s16 pair f... L7231
-ov005 0x0204f8a0 224B func_ov005_0204f8a0 / ov009 0x0204eb14 224B -- same hardware state writer in two ove... L8311
+ov005 0x0204f340 140B func_ov005_0204f340 -- varargs-shaped coordinate update taking x/y and an s16 pair f... L7265
+ov005 0x0204f8a0 224B func_ov005_0204f8a0 / ov009 0x0204eb14 224B -- same hardware state writer in two ove... L8345
 ov005 0x0205587c 336B func_ov005_0205587c ` (336 B) are the same source L11739
 ov005 0x0205ac30 96B func_ov005_0205ac30 (three copies) -- range test on a1 (< 0x5a L7849
 ov005 0x020614a4 220B func_ov005_020614a4 4x220 family lr/ip tie: 220/220 instruction-exact; retail keeps 0 in... L217
@@ -394,7 +395,7 @@ ov006 0x0203b58c ?B - svc #0x123456 wrapper (r0=0x18) L9652
 ov006 0x02040505 ?B - was retested and still fails, so L11216
 ov006 0x0204d61c 332B func_ov006_0204d61c ` / `ov001 0x0204eff8` (332 B x2). File-load routine: the L11492
 ov006 0x0204db14 ?B - in .text, where a literal pool L11236
-ov006 0x0204df9c 12B func_ov006_0204df9c -- not a matchable function: the whole body is `add sp, sp, #4 L7249
+ov006 0x0204df9c 12B func_ov006_0204df9c -- not a matchable function: the whole body is `add sp, sp, #4 L7283
 ov006 0x0205025c ?B - span 169, 0x02050305 span 253, 0x02050505 span 343, ...). runs() now... L11231
 ov006 0x02050305 ?B - span 253, 0x02050505 span 343, ...). runs() now carves the aligned L11231
 ov006 0x02050505 ?B - span 343, ...). runs() now carves the aligned L11231
@@ -413,24 +414,24 @@ ov008 0x020208b0 ?B - / 0202093c 140B+140B arm9 (famsurvey group) -- under 1.2/b
 ov008 0x0202093c ?B - 140B+140B arm9 (famsurvey group) -- under 1.2/b56 the two best candid... L469
 ov008 0x020255e8 ?B - -- 100/100 5 diff: retail updates the parameters destructively (... L439
 ov008 0x02029704 ?B - -- 108-112/100: retail keeps the accumulator in lr (callee-free)... L445
-ov008 0x0204cc94 140B func_ov008_0204cc94 -- slot allocator: reads `slot = *(u32 *)(p + 0xc10 + idx * 4)`... L5515
-ov008 0x0204cd20 140B func_ov008_0204cd20 -- 12-byte record push, same family as ov002 0x0204f5a0: index b... L7189
-ov008 0x0204cf80 136B func_ov008_0204cf80 below: retail's `add` for a byte RMW carries the branch predicate. L5617
-ov008 0x0204d9dc 124B func_ov008_0204d9dc -- direction/percentage update: `if (flags == 0 || flags == 0x40... L5569
-ov008 0x0204e51c 56B func_ov008_0204e51c ) -- retail `ldr r1,[pc]`=0x027c0000, `ldr r0,[pc]`=0x3ff8, `ldr r0,[... L3361
+ov008 0x0204cc94 140B func_ov008_0204cc94 -- slot allocator: reads `slot = *(u32 *)(p + 0xc10 + idx * 4)`... L5549
+ov008 0x0204cd20 140B func_ov008_0204cd20 -- 12-byte record push, same family as ov002 0x0204f5a0: index b... L7223
+ov008 0x0204cf80 136B func_ov008_0204cf80 below: retail's `add` for a byte RMW carries the branch predicate. L5657
+ov008 0x0204d9dc 124B func_ov008_0204d9dc -- direction/percentage update: `if (flags == 0 || flags == 0x40... L5603
+ov008 0x0204e51c 56B func_ov008_0204e51c ) -- retail `ldr r1,[pc]`=0x027c0000, `ldr r0,[pc]`=0x3ff8, `ldr r0,[... L11055
 ov008 0x0204f27c ?B - rodata, 0204f414 44B data) are byte exact and were kept. L11243
 ov008 0x0204f414 ?B - data) are byte exact and were kept. L11243
 ov008 0x027c0000 ?B - `ldr r0,[pc]`=0x3ff8, `ldr r0,[r1,r0]!`, orr #1, str. Five spellings... L3361
 ov008 0x027c3ff8 ?B - literal -- here 68B L11023
 ov009 0x0201cb84 ?B - arm9 -- 92/96: bit-1 test solved ((s32)(v << 30) >> 31 reproduces... L415
 ov009 0x02030828 ?B - arm9 -- 108/96: retail shares one func_02030808 tail between the... L421
-ov009 0x0204db84 140B func_ov009_0204db84 -- packed coordinate update family: x = (x & 0xff00) + (a2 & 0xf... L409
+ov009 0x0204db84 140B func_ov009_0204db84 -- packed coordinate update family: x = (x & 0xff00) + (a2 & 0xf... L5717
 ov009 0x0204dc0c ?B - ). `v` is a 4-byte struct passed L5695
 ov009 0x0204e500 336B func_ov009_0204e500 ` (336 B) and `ov005 0x0205587c` (336 B) are the same source L11739
 ov009 0x0204eb14 224B func_ov009_0204eb14 -- same hardware state writer in two overlays, fully L8311
 ov009 0x0204f93c 212B func_ov009_0204f93c ` / `0x02051080` (212 B x2, famsurvey group). Overlay display L11446
 ov009 0x02051080 212B func_ov009_02051080 ` (212 B x2, famsurvey group). Overlay display L11446
-ov010 0x020514c8 172B func_ov010_020514c8 -- two GX-command pushes on a ring buffer: `g = *(u8 **)data_ov0... L6115
+ov010 0x020514c8 172B func_ov010_020514c8 -- two GX-command pushes on a ring buffer: `g = *(u8 **)data_ov0... L6149
 
 # 102 resolved: these now have a source file
 arm9 0x020048e8 20B func_020048e8 retail predicated stmlt/ldmlt loop; mwcc rotates L109
@@ -438,66 +439,66 @@ arm9 0x02005418 32B func_02005418 32B: retail splits 0x027c3ff8 into base 0x027c
 arm9 0x020065b0 144B func_020065b0 data_2042a68->data_02042a68 L1099
 arm9 0x02008178 96B func_02008178 96B: whole body reproduces; retail reloads the limit from the pool (`... L259
 arm9 0x0200f638 148B func_0200f638 data_203cb6x->data_0203cb6x; 020262cc func_02048c8->func_020248c8 L1105
-arm9 0x0200fbc0 64B func_0200fbc0 -- `((u16 *)*(u32 *)(*(u8 **)(data_02042a68 + 0x10) + 0x154))[1]... L6343
-arm9 0x0200fc18 64B func_0200fc18 -- same as 0x0200fbc0 with the u32 field at +0x10 and cap 0x80bbb... L6385
+arm9 0x0200fbc0 64B func_0200fbc0 -- `((u16 *)*(u32 *)(*(u8 **)(data_02042a68 + 0x10) + 0x154))[1]... L6377
+arm9 0x0200fc18 64B func_0200fc18 -- same as 0x0200fbc0 with the u32 field at +0x10 and cap 0x80bbb... L6419
 arm9 0x020146e0 160B func_020146e0 func_02062d84->func_ov002_02062d84 (arm9->overlay call). See notes 2.19. L1111
 arm9 0x02015040 40B func_02015040 40B, 02015068 36B, 02015524 52B (bodies in notes 2.23/2.24). L1279
 arm9 0x02015068 36B func_02015068 36B, 02015524 52B (bodies in notes 2.23/2.24). L1279
 arm9 0x02015524 52B func_02015524 (52B, add r2,r1,#0xc materialisation, 48B), 02032c38 (56B, retail rea... L403
 arm9 0x0201779c 112B func_0201779c . L3619
-arm9 0x020181b0 88B func_020181b0 -- list push onto a bump allocator: `List *l = &c->list` (c+0x24) L4663
+arm9 0x020181b0 88B func_020181b0 -- list push onto a bump allocator: `List *l = &c->list` (c+0x24) L4697
 arm9 0x02018318 24B func_02018318 arm9 24B - MATERIALISATION WALL. only diff: want str r1,[r2] got str... L973
 arm9 0x020187b0 72B func_020187b0 72B, 02018818 72B, 0201f26c 68B, 02018318 24B. Bodies decoded in note... L1237
 arm9 0x02018818 72B func_02018818 72B, 0201f26c 68B, 02018318 24B. Bodies decoded in notes 2.23. L1237
-arm9 0x0201aaa0 108B func_0201aaa0 -- DMA-ish setup around data_020475c4. Body (frameless, 23 insns) L3583
-arm9 0x0201c2d4 96B func_0201c2d4 ) -- hash-bucket walk: `p = func_02017784(data_020475fc, 0)` L7921
+arm9 0x0201aaa0 108B func_0201aaa0 -- DMA-ish setup around data_020475c4. Body (frameless, 23 insns) L3617
+arm9 0x0201c2d4 96B func_0201c2d4 ) -- hash-bucket walk: `p = func_02017784(data_020475fc, 0)` L10593
 arm9 0x0201c4b0 92B func_0201c4b0 ` with an extra L10785
-arm9 0x0201cae0 116B func_0201cae0 -- loop over `a0->count` entries, each indexing an 8-byte table L10597
+arm9 0x0201cae0 116B func_0201cae0 -- loop over `a0->count` entries, each indexing an 8-byte table L10631
 arm9 0x0201cb84 96B func_0201cb84 family): retail is a word-copy loop written as L7951
 arm9 0x0201f21c 80B func_0201f21c `, matched under 1.2/b56); this unit is a leaf and b56 does not L8641
-arm9 0x0201f3d0 104B func_0201f3d0 -- bit-2 gate then re-init. Retail tests with lsl/asr on the fla... L4183
+arm9 0x0201f3d0 104B func_0201f3d0 -- bit-2 gate then re-init. Retail tests with lsl/asr on the fla... L4217
 arm9 0x0201f980 28B func_0201f980 arm9 28B - same wall. want addne r1,r0,#0x108 / ldrne r0,[r1] ... got... L991
 arm9 0x0201fc3c 60B func_0201fc3c levers: signed compare for ldrge; assign `lo` AFTER the early-ret... L1201
 arm9 0x0201fcc8 28B func_0201fcc8 , 0x0201fd00: NitroSDK asm, not a 2.0 build L11821
-arm9 0x0201fce4 28B func_0201fce4 (28B) and 0x0201fd00 (24B): 2.0-built, register roles only L9700
+arm9 0x0201fce4 28B func_0201fce4 (28B) and 0x0201fd00 (24B): 2.0-built, register roles only L9734
 arm9 0x0201fd00 24B func_0201fd00 (24B): 2.0-built, register roles only L9700
 arm9 0x0201fd8c 60B func_0201fd8c pair). My spelling is 60/60 bytes with identical order; the only L6319
-arm9 0x020208b0 140B func_020208b0 pair with 0x0202093c: body is exact at 136B, but retail carries... L3439
-arm9 0x0202093c 140B func_0202093c body is exact at 136B, but retail carries `sub sp,#4`/`add sp,#4` wit... L3439
+arm9 0x020208b0 140B func_020208b0 pair with 0x0202093c: body is exact at 136B, but retail carries... L3473
+arm9 0x0202093c 140B func_0202093c body is exact at 136B, but retail carries `sub sp,#4`/`add sp,#4` wit... L3479
 arm9 0x02021ec4 88B func_02021ec4 88B, 02027080 88B (8-arg bit packing via orr lsl chain), 02032aa8 88B... L1315
 arm9 0x02022368 148B func_02022368 scout: **520/148** (plain stores) and **588/148** (struct assignment)... L163
-arm9 0x020235a0 112B func_020235a0 -- mode setter: stores `func_02020830()` into data_02048c98, ret... L7813
-arm9 0x0202474c 36B func_0202474c is the same shape with stm r1 (no writeback). L307
+arm9 0x020235a0 112B func_020235a0 -- mode setter: stores `func_02020830()` into data_02048c98, ret... L7847
+arm9 0x0202474c 36B func_0202474c is the same shape with stm r1 (no writeback). L5471
 arm9 0x02024c78 32B func_02024c78 is a real L8233
-arm9 0x02025550 104B func_02025550 -- sorted linked-list insert. Semantically identical C (while-lo... L4225
-arm9 0x020255b8 48B func_020255b8 -- `for (i = 0; i < 0x10; i++) if (t[i + 5] == 0) return i; retur... L10457
+arm9 0x02025550 104B func_02025550 -- sorted linked-list insert. Semantically identical C (while-lo... L4259
+arm9 0x020255b8 48B func_020255b8 -- `for (i = 0; i < 0x10; i++) if (t[i + 5] == 0) return i; retur... L10491
 arm9 0x020262cc 112B func_020262cc func_02048c8->func_020248c8 L1105
 arm9 0x02026350 20B func_02026350 pair is understood. L10479
 arm9 0x020263c0 12B func_020263c0 empty loop deleted at -O4,p L103
 arm9 0x020269ec 24B func_020269ec retail predicated stmlt/ldmlt loop; mwcc rotates L115
-arm9 0x02026a04 76B func_02026a04 -- word fill: `end = dst + len`, `mid = dst + ((len >> 5) << 3)`, an L10952
-arm9 0x02026a50 56B func_02026a50 -- almost certainly hand-written: 8-word `ldm/stm` block loop the... L6439
+arm9 0x02026a04 76B func_02026a04 -- word fill: `end = dst + len`, `mid = dst + ((len >> 5) << 3)`, an L10986
+arm9 0x02026a50 56B func_02026a50 -- almost certainly hand-written: 8-word `ldm/stm` block loop the... L6473
 arm9 0x02026a88 28B func_02026a88 three 12-byte struct copies; mwcc always frames (mov lr/ip), retail u... L139
-arm9 0x02026aa4 36B func_02026aa4 arm9 36B - 4x same. mwcc merges into counted loop or framed memcpy. L1039
-arm9 0x02026ac8 44B func_02026ac8 / 44B -- same 12-byte block copies with both pointers advancing L5473
-arm9 0x02026af4 148B func_02026af4 (twin 0x02026cc0) -- this is mwcc's inlined byte-fill (memset) e... L11121
+arm9 0x02026aa4 36B func_02026aa4 arm9 36B - 4x same. mwcc merges into counted loop or framed memcpy. L5507
+arm9 0x02026ac8 44B func_02026ac8 / 44B -- same 12-byte block copies with both pointers advancing L8735
+arm9 0x02026af4 148B func_02026af4 (twin 0x02026cc0) -- this is mwcc's inlined byte-fill (memset) e... L11155
 arm9 0x02026cc0 148B func_02026cc0 ) -- this is mwcc's inlined byte-fill (memset) expansion, not L11121
 arm9 0x02026d54 216B func_02026d54 ` (216 B, BIOS-style LZ77-to-u16 decompressor) -- the body is L11597
 arm9 0x020289f4 68B func_020289f4 additionally: mwcc tail-calls the final func_02028af4, retail use... L1249
-arm9 0x0202963c 80B func_0202963c -- linked-list find by key: `key = func_02029704(); func_02026350() L10471
+arm9 0x0202963c 80B func_0202963c -- linked-list find by key: `key = func_02029704(); func_02026350() L10505
 arm9 0x02029768 84B func_02029768 data_0204abe8->abec; 020065b0 data_2042a68->data_02042a68 L1099
-arm9 0x02029cc4 60B func_02029cc4 guard: retail keeps the address in r1 and the value in r2, C keeps th... L3415
-arm9 0x02029f54 76B func_02029f54 76B: retail packs `{func_02029fa0, p, 1}` into three stack words with... L3469
+arm9 0x02029cc4 60B func_02029cc4 guard: retail keeps the address in r1 and the value in r2, C keeps th... L3449
+arm9 0x02029f54 76B func_02029f54 76B: retail packs `{func_02029fa0, p, 1}` into three stack words with... L3503
 arm9 0x02029fb0 84B func_02029fb0 84B. L1297
-arm9 0x0202d158 212B func_0202d158 / 0x0202d22c 212B each -- context arm/launch pair on data_0204aec0. Six L4699
+arm9 0x0202d158 212B func_0202d158 / 0x0202d22c 212B each -- context arm/launch pair on data_0204aec0. Six L4733
 arm9 0x0202d22c 212B func_0202d22c each -- context arm/launch pair on data_0204aec0. Six L4699
 arm9 0x0202d4f0 116B func_0202d4f0 teardown, reading data_0204aec0 L10899
 arm9 0x0202e274 92B func_0202e274 var3 matches, ROM digest rejects (do not re-report) L121
 arm9 0x020341f4 56B func_020341f4 (56B, add ip,r0,#0x28 materialisation, 52B), 0201fd50 (60B, retail po... L403
 arm9 0x02034608 84B func_02034608 body exact; retail p->r5/n->r4, mwcc p->r4/n->r5. 5 formulations,... L1309
-arm9 0x02036650 60B func_02036650 strchr: retail peels the first char with r0=s+1; every spelling gives... L3397
+arm9 0x02036650 60B func_02036650 strchr: retail peels the first char with r0=s+1; every spelling gives... L3431
 ov002 0x0204c7e8 32B func_ov002_0204c7e8 (32B): { u16 *q=(u16*)p; u32 *r=(u32*)p; q[3]=0; q[2]=a1; r+=6; r[0]=... L2245
-ov002 0x0204d488 80B func_ov002_0204d488 (80B, 64/80) L529
+ov002 0x0204d488 80B func_ov002_0204d488 (80B, 64/80) L6215
 ov002 0x0204f6ac 96B func_ov002_0204f6ac 0203b0c0 (twice), 02057068 L10448
 ov002 0x0204f770 84B func_ov002_0204f770 020532e4, 0204f6ac, 0203b0c0 (twice), 02057068 L10448
 ov002 0x02052608 72B func_ov002_02052608 72B: same class - retail keeps p+0xb8 in r2 (`add r2, r0, #0xb8`) acr... L271
@@ -510,14 +511,14 @@ ov002 0x020633e0 84B func_ov002_020633e0 (84B, 76/84) L565
 ov002 0x02063434 88B func_ov002_02063434 (88B): { p=B+0x1744+a0*0x38; if (func_ov002_02062dbc(8)==0) *(u32*)(p... L2263
 ov002 0x020636b4 108B func_ov002_020636b4 but retail re-materialises `add r1, r4, #0x24` at every L2911
 ov002 0x02063820 84B func_ov002_02063820 / 02063c5c (84B, best 84/84 with 5 diffs) L757
-ov002 0x020638f4 88B func_ov002_020638f4 88B: copies 3 words from data_ov002_020fdc30 via ldm/stm to stack, in... L2377
-ov002 0x02063bb8 164B func_ov002_02063bb8 164B: v=func_02034148(*(u32*)(B+a0*0x158+0x2ec)) L2461
+ov002 0x020638f4 88B func_ov002_020638f4 88B: copies 3 words from data_ov002_020fdc30 via ldm/stm to stack, in... L2411
+ov002 0x02063bb8 164B func_ov002_02063bb8 164B: v=func_02034148(*(u32*)(B+a0*0x158+0x2ec)) L2495
 ov002 0x02063c5c 84B func_ov002_02063c5c (84B, best 84/84 with 5 diffs) L757
 ov002 0x0207808c 36B func_ov002_0207808c (36B): { u32 *p=(u32*)B; u32 v; p+=0x79b; v=p[0]; p[0]=v & ~6; } L2215
 ov002 0x020781b4 36B func_ov002_020781b4 (36B): { u32 *p=(u32*)B; u32 v; p+=0x79b; v=p[0]; p[0]=v & ~1; } L2221
 ov002 0x0207be2c 72B func_ov002_0207be2c tail tie: retail builds q=b+a in r0 and keeps the zero in r1; mwcc sw... L211
-ov002 0x0207ccd4 80B func_ov002_0207ccd4 -- bounds test with optional mirroring; six arguments, the last t... L4597
-ov002 0x020e4450 84B func_ov002_020e4450 (84B, best 84/84 with 1 diff) L805
+ov002 0x0207ccd4 80B func_ov002_0207ccd4 -- bounds test with optional mirroring; six arguments, the last t... L4631
+ov002 0x020e4450 84B func_ov002_020e4450 (84B, best 84/84 with 1 diff) L6257
 ov003 0x02052798 212B func_ov003_02052798 /0x0205286c: 17 rows of 16 colours, each channel taken as L11727
 ov003 0x0205286c 208B func_ov003_0205286c 17 rows of 16 colours, each channel taken as L11727
 ov003 0x02066e84 196B func_ov003_02066e84 family (196B x4: 02066e84 020b8904 020b8e54 020dbad4) L709
@@ -525,7 +526,7 @@ ov003 0x020b6c88 76B func_ov003_020b6c88 flag guard + 3 predicated u16 stores, r
 ov003 0x020b8904 196B func_ov003_020b8904 020b8e54 020dbad4) L709
 ov003 0x020b8e54 196B func_ov003_020b8e54 020dbad4) L709
 ov003 0x020dbad4 196B func_ov003_020dbad4 ) L709
-ov004 0x0204cbdc 32B func_ov004_0204cbdc -- same two-pool RMW as ov003 0205299c (DTCM flag at data_027c000... L373
+ov004 0x0204cbdc 32B func_ov004_0204cbdc -- same two-pool RMW as ov003 0205299c (DTCM flag at data_027c000... L10442
 ov004 0x02050154 104B func_ov004_02050154 but it calls the L5737
 ov004 0x020534cc 40B func_ov004_020534cc (40B): { if (!*(u32*)p) return; *(u16*)(p+0x30)=a1; *(u16*)(p+0x32)=a2 L2251
 ov004 0x02061f58 108B func_ov004_02061f58 + ov005 02056908 were arm9-spelled overlay symbols L1345
@@ -533,5 +534,5 @@ ov004 0x0206256c 68B func_ov004_0206256c (68B, `p[a0/8] & (1 << (a0%8))` behind 
 ov005 0x0204f2e0 96B func_ov005_0204f2e0 / ov009 0204db84 140B -- packed coordinate update family: x = (x... L409
 ov005 0x02056908 156B func_ov005_02056908 were arm9-spelled overlay symbols L1345
 ov008 0x0204c7c0 80B func_ov008_0204c7c0 -- 64-76/80: retail materialises b+0x20030 for the increment bran... L433
-ov008 0x0204ce20 68B func_ov008_0204ce20 -- 64/68: retail decrements via pre-indexed write-back `ldrbne r1... L427
+ov008 0x0204ce20 68B func_ov008_0204ce20 -- 64/68: retail decrements via pre-indexed write-back `ldrbne r1... L3545
 ov008 0x0204d970 108B func_ov008_0204d970 (108B, was 99.81%) L3925
