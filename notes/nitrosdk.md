@@ -103,18 +103,25 @@ and both tools only report provenance.
 
 ## Status and what is left
 
-Installed from this map so far: the three `MTX_RotX33_`-family units, then 14
-SDK asm units (1,296 B) - `MIi_CpuClear32`, `MIi_CpuCopy32`, `MIi_CpuClearFast`,
-`MIi_CpuCopyFast`, `MI_Copy36B/48B/64B`, `MI_CpuFill8`, `MI_CpuCopy8`,
-`MI_UncompressLZ8`, `MI_UncompressLZ16`, `GXi_NopClearFifo128_`,
-`GX_SendFifo48B`, `OS_SpinWait`.
+Installed from this map so far: the three `MTX_RotX33_`-family units, then all
+16 SDK asm units (1,444 B) - `MIi_CpuClear32`, `MIi_CpuCopy32`,
+`MIi_CpuClearFast`, `MIi_CpuCopyFast`, `MI_Copy36B/48B/64B`, `MI_CpuFill8`,
+`MI_CpuCopy8`, `MI_UncompressLZ8`, `MI_UncompressLZ16`,
+`GXi_NopClearFifo128_`, `GX_SendFifo48B`, `OS_SpinWait`, `OS_ReleaseLockID`
+and `OS_InitContext`.
+
+The last two failed at first with an empty object, which looked like a missing
+compiler feature but was an unknown type: the SDK declares
+`register OSContext* context`, and `types.h` has no `OSContext`, so mwcc errored
+out. Declaring the parameters as `u32 *` and restating the `context.h` /
+`armArch.h` offsets fixed it, and both then assembled byte-exactly. Useful facts
+about mwccasm in `asm void`, all confirmed on b56: `ldr rX, =MACRO` and
+`ldr rX, =Symbol` emit a pool word (relocated for a symbol), `//` comments are
+kept, and `#ifdef/#else/#endif` inside the body is honoured, so an SDK body can
+be transcribed literally; only the parameter *types* have to exist here.
 
 Left on the map:
 
-* `OS_ReleaseLockID` (0x02024b5c, 48 B) and `OS_InitContext` (0x020255e8, 100 B):
-  SDK asm, but the transcribed block did not compile to retail bytes in one
-  pass; check the source's `#include <nitro/code32.h>` context and any macro it
-  uses.
 * 11 C units: `VEC_Normalize` (344 B), `VEC_CrossProduct` (156 B),
   `CP_SaveContext` (116 B), `CP_RestoreContext` (108 B), `OS_GetLockID` (88 B),
   `G3X_SetFog` (84 B), `OS_DisableIrqMask` (72 B), `FX_InvAsync` (60 B),
@@ -123,6 +130,54 @@ Left on the map:
 * 7 Metrowerks syscall stubs in `libsyscall/_svc_mw.o` (4-6 B). They are compiler
   runtime stubs, not game functions: write them from that object, and do not
   invent C for them.
+
+## Which compiler built the prebuilt libraries
+
+The SDK answers it in its own build rules. `build/buildtools/modulerules.cctype.CW`
+carries the per-release compiler and linker builds:
+
+```
+IRC/V0.2 HF1  CC 0038  LD 0050      NITRO V0.6    CC 0050  LD 0062
+NITRO V0.3    CC 0038  LD 0056      NITRO V0.6.1  CC 0050  LD 0063
+NITRO V0.4.1  CC 0043  LD 0057      NITRO V0.7    CC 0050  LD 0063
+NITRO V0.5    CC 0046  LD 0058      NITRO V1.0    CC 0056  LD 0067
+NITRO V0.5 HF1 CC 0049 LD 0061
+```
+
+`1.2/b56` is therefore exactly NITRO V1.0's compiler - the one Konami's game code
+matches across the whole ROM. SDK 2.0 RC3 postdates V1.0, so Nintendo built its
+prebuilt libraries with a *later* CC build (57 and up; none of those are vendored,
+which is why the missing builds 57-71 never mattered for game code). That is the
+likely reason the library `asm` blocks transcribe perfectly - assembly output does
+not depend on the compiler build - while the library C units need a harness and
+may not reproduce under b56 at all. The number is not hard-coded anywhere: the
+makefile derives it at build time from the installed compiler's `-V` banner
+(`modulerules.cctype.CW:347`), so no SDK tree records the build Nintendo used.
+
+## What the reference projects do (advice, not yet used here)
+
+* **KH Days** (`sdk/` harness): compiles pret/pokediamond's NitroSDK C with its
+  own compiler and byte-matches against the ROM, 520 of 700 files, and reports
+  matched C, library assembly and SDK identifications as *separate rows*. That
+  is the reporting split to copy for our 34 library units. Its headers are a
+  sparse clone of `arm9/lib` plus stubs: `code32.h`/`code16.h` are just
+  `#pragma thumb off`/`on`, `function_target.h` is empty, and `nitro/types.h`
+  needs `ALIGN(n)` and `ENUMS_ALWAYS_INT_*`.
+* **pokediamond** flags, as a hint rather than Nintendo's own SDK Makefile
+  flags: `-O4,p -sym on -gccext,on -proc arm946e -gccinc -ipa file -fp soft
+  -lang c99 -inline on,noauto`, with the configuration baked into its headers
+  rather than `-D`. Defines to try for the Rom build: `SDK_ARM9`, `SDK_TS`,
+  `SDK_FINALROM`, `SDK_CODE_ARM`. `#pragma optimize_for_size on` is legitimate
+  source, used by pokediamond's `OS_interrupt.c`.
+* **MSL headers**: `sm64ds-decomp`'s `tools/recover_cw2004.py` splits an
+  InstallShield CodeWarrior payload, and `unshield` (with both `data1.cab` and
+  `data1.hdr`) is the usual route. That is the missing piece for the 11 C units
+  here.
+* **Permuter**: tangOS reports that `sm64ds-decomp` wires `decomp-permuter` to
+  the compiler; no ready-made mwccarm + objdiff scorer was named.
+* **SDK release**: a per-release `SDK_CW_BUILD_NUMBER_CC` exists in Nintendo's
+  build rules, so it is worth grepping any SDK tree for it before guessing a
+  compiler build.
 
 ## What would help next
 
