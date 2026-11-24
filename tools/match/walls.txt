@@ -11574,3 +11574,13 @@ written off.
   retail keeps `n` in `r4` and the entry pointer in `r5` under
   `push {r4, r5, lr}`, and retail's loop pre-test loads `f8` through the
   `data_0203cb74` literal plus the index register instead of `[r5, #8]`.
+- `ov009 0x0204f93c` / `0x02051080` (212 B x2) -- closest draft
+  `build/cand/v13_f93c.c` is 208 B. Everything else lines up (frame 0x64, the
+  three u16 zeroes at sp+6/sp+8/sp+4 through `q = &hdr[1]`, `u32 buf[0xc]` so the
+  0x30-byte fill lands at sp+0xc, `Tri` copies at sp+0x3c/0x48/0x54,
+  `func_02022994(&s1, &s3, &s2, 1, 0)` with the 5th argument at [sp]). Retail
+  additionally keeps s2's address in r4 across the three zero stores and the
+  call (`add r4, sp, #0x48` .. `mov r2, r4`); mwcc sinks the constant zero
+  stores below s3's copy, addresses them sp-relative and only materialises
+  `add r2, sp, #0x48` at the call. Tried: `z = &s2` with `z->` stores, volatile
+  variants, statement reordering -- all 204-208 B.
