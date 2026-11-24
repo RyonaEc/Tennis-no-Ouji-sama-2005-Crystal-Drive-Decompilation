@@ -5,29 +5,24 @@
 # defaults to. The game shipped in Japan on 2004-12-30, so b56 is the only
 # vendored build that predates the cartridge: everything from 1.2/sp2 (build 79,
 # Runtime Built 2005-08-11) onwards was released months after the ROM was in
-# shops. Treat any later build as unusable evidence - it cannot have compiled a
-# whole unit, and the 72 sp2 entries that this file used to carry were pure
-# artefacts of the old sp2 default.
+# shops, and a post-release build is a prior against a unit, never evidence for
+# one. There is no entry left in this file.
 #
-# The digest, not the calendar, decides what builds, and there is exactly one
-# entry left - but it is NOT evidence that retail used this compiler. 2.0/base is
-# 3.0 build 114, Runtime Built 2006-03-30, a year after the cartridge shipped.
-# src/arm9/func_0201fcc8.c stores 0x1000 as `movs r3, #1` + `lsls r3, r3, #0xc`,
-# a form no 2.0-line build emits: b56, base (build 72), sp2 (79), sp2p3 (82),
-# sp3 (84) and sp4 (87) all load that constant from a literal pool and append a
-# nop, 4 bytes longer, and 20 source spellings do not move them. Every 3.0-line
-# and dsi build reproduces the 28 bytes exactly. So the entry is a stand-in that
-# reproduces the bytes of a producer we do not have - the whole ROM hashes to the
-# target with it - not a claim about which toolchain retail used. The leading
-# explanations are a pre-b56 NITRO build (V0.5/V0.6 are CC 46/50, none vendored)
-# or a hand-written assembly library object; it is an open question, recorded in
+# The one entry it used to carry was src/arm9/func_0201fcc8.c = 2.0/base, for a
+# nine-word Thumb block that 3.0 build 114 reproduced from C and every 1.2 build
+# did not: b56 loaded the 0x1000 it stores from a literal pool and appended a
+# nop, 4 bytes longer, and 20 source spellings did not move it. That was the
+# wrong question. The block is NitroSDK's hand-written `MTX_RotX33_` asm in
+# fx_mtx33.c, assembled by mwasmarm and shipped inside the SDK, so no C compiler
+# was ever asked to produce it. Written as an `asm void` block in that file's
+# own instruction sequence, 1.2/b56 assembles it byte for byte and the digest
+# matches with no override at all. The finding is recorded in
 # notes/mwccarm-codegen-log.md.
 #
-# This file is the escape hatch for a unit like that one. An entry needs the full
-# ROM digest to still match, and the tag must exist under
-# tools/mwccarm/<tag>/mwccarm.exe. Editing this file only takes effect after
-# re-running tools/configure.py ATOJ: build.ninja does not list it as an input,
-# so an edit alone changes nothing.
+# This file remains the escape hatch for a unit that genuinely has evidence of a
+# different origin. An entry needs the full ROM digest to still match, and the
+# tag must exist under tools/mwccarm/<tag>/mwccarm.exe. Editing this file only
+# takes effect after re-running tools/configure.py ATOJ: build.ninja does not
+# list it as an input, so an edit alone changes nothing.
 #
 # Format: <source path> = <version tag>
-src/arm9/func_0201fcc8.c = 2.0/base

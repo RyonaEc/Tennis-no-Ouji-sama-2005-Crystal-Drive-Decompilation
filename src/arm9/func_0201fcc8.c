@@ -2,23 +2,26 @@
 
 #pragma thumb on
 
-/* Nine fixed words of a display/DP block. The body is what retail has, byte for
-   byte, except how 0x1000 reaches r3: retail forms it with `movs r3, #1` and
-   `lsls r3, r3, #0xc`, and every 1.2 build (b56, base, sp2, sp2p3, sp3, sp4)
-   instead loads it from a literal pool plus a trailing nop, which is 4 bytes
-   longer. That is a 1.2-vs-2.0 materialisation policy, not a source shape: 20
-   spellings of this statement were tried under b56 and all of them pooled. This
-   unit therefore names 2.0/base in config/ATOJ/mwcc_versions.txt and the whole
-   ROM digest still matches - see notes/mwccarm-codegen-log.md. */
-void func_0201fcc8(u32 *p, u32 a, u32 b)
+/* NitroSDK MTX_RotX33_ (fx_mtx33.c): a 3x3 rotation about the x-axis, written
+   as a hand-written thumb asm block in the SDK itself and assembled by
+   mwasmarm, which is why no mwccarm build produces this shape from C - the
+   `movs r3, #1` / `lsls r3, r3, #0xc` materialisation is the SDK's own code, not
+   a compiler policy. Body below is retail byte for byte; 1.2/b56 assembles it
+   without any per-file compiler override. See notes/mwccarm-codegen-log.md. */
+asm void func_0201fcc8(register u32 *p, register u32 sinVal, register u32 cosVal)
 {
-    p[0] = 0x1000;
-    p[1] = 0;
-    p[2] = 0;
-    p[3] = 0;
-    p[4] = b;
-    p[5] = a;
-    p[6] = 0;
-    p[7] = -a;
-    p[8] = b;
+    mov r3, #1
+    lsl r3, r3, #12
+    str r3, [r0, #0]
+    mov r3, #0
+    str r3, [r0, #4]
+    str r3, [r0, #8]
+    str r3, [r0, #12]
+    str r2, [r0, #16]
+    str r1, [r0, #20]
+    str r3, [r0, #24]
+    neg r1, r1
+    str r1, [r0, #28]
+    str r2, [r0, #32]
+    bx lr
 }

@@ -4849,3 +4849,46 @@ when one `movs` plus one `lsls` would do; 2.0 gained the shift form. The unit
 keeps its `2.0/base` override, which AGENTS.md permits because the digest still
 matches. If a future reader wants to revisit it, the test is cheap: recompile
 this file with each build and compare the first four bytes.
+
+## 2026-11-24 (later) - solved: not a compiler at all, it is NitroSDK asm
+
+The Nitro SDK archive (twlsdk.randommeaninglesscharacters.com) settles this. The
+9-word Thumb block is NitroSDK `MTX_RotX33_`, and in the SDK itself it is a
+hand-written asm block in `build/libraries/fx/src/fx_mtx33.c`, wrapped in
+`#include <nitro/code16.h>`:
+
+    asm void MTX_RotX33_(register MtxFx33 * pDst, register fx32 sinVal, register fx32 cosVal)
+    {
+        mov r3, #1
+        lsl r3, r3, #12
+        str r3, [r0, #0]
+        mov r3, #0
+        str r3, [r0, #4]
+        ... neg r1, r1 / str r1, [r0, #28] / str r2, [r0, #32] / bx lr
+    }
+
+Assembled by `mwasmarm` and shipped prebuilt, which is why no mwccarm build
+produces this shape from C: the `movs`/`lsls` materialisation is the SDK's own
+instruction sequence, and the constant never reaches a compiler. Written as the
+same `asm void` block, `1.2/b56` assembles it byte for byte (28 B, verified), so
+`src/arm9/func_0201fcc8.c` no longer has any override and
+`config/ATOJ/mwcc_versions.txt` is empty again. The lesson for the playbook: a
+constant-materialisation difference that no build and no source spelling explains
+is a cue to check whether the unit is a prebuilt library routine, not a cue to
+change compilers.
+
+Two neighbours fell out of the same file. `MTX_RotY33_` at 0x0201fce4 (28 B) and
+`MTX_RotZ33_` at 0x0201fd00 (24 B) had been logged as "twins" blocked on
+register roles under the 2.0 theory; written from the SDK source as asm blocks
+both assemble exactly under b56 and are now installed. That is +2 functions,
++52 B, and the first evidence that this region of arm9 is linked NitroSDK
+library code rather than game code.
+
+Proof from the prebuilt libraries, not just the source. In NitroSDK the fx
+library ships as `lib/ARM9-TEG/Rom/libfx.thumb.a`, member `fx_mtx33.o`. The
+retail 28 bytes at arm9 0x0201fcc8 appear verbatim at 0x35a0 of that member, and
+the `MTX_RotY33_` body at 0x35d0, so retail linked prebuilt NitroSDK code rather
+than any Konami-built object. The identical bytes are also in NitroSDK 1.0
+(2004-04-16) `libfx.thumb.a`, so this function does not discriminate between SDK
+releases; pinning the exact release needs a routine that changed between them,
+which is a separate sweep.

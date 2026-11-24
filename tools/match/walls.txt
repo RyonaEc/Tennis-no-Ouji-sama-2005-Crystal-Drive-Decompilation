@@ -11817,3 +11817,11 @@ written off.
   which no declaration order reproduces - all six permutations of `p1`/`p2`/`p3`
   stay at 380 B (76-89 diffs).  Transcribing with inline offsets instead of
   pointer variables spills to the stack (380 B, 94 diffs).
+
+=== RESOLVED arm9 0x0201fcc8, 0x0201fce4, 0x0201fd00: NitroSDK asm, not a 2.0 build ===
+
+All three are hand-written asm blocks in NitroSDK `fx_mtx33.c`
+(`MTX_RotX33_`/`MTX_RotY33_`/`MTX_RotZ33_`), assembled by mwasmarm, so no C
+shape reproduces them. Installed as `asm void` blocks and assembled by 1.2/b56
+byte for byte; the 2.0/base override was retired. See
+notes/mwccarm-codegen-log.md, 2026-11-24.

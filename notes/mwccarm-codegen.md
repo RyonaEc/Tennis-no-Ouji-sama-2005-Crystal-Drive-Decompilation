@@ -199,11 +199,13 @@ Volatile used for a stack spill is a match-shape hack, not the original source. 
   not produced by any C shape tried; struct assignment adds a frame.
 * **Odd frame padding**: a phantom 4-byte slot with no call and no stack access.
 * **Predicated byte-copy loops** (`stmlt`/`ldmlt` with rotation).
-* **Single-bit constants above 255**: a retail `movs rX, #1` / `lsls rX, rX, #n`
-  pair storing e.g. `0x1000` is a 2.0-generation signature. Every 1.2 build
-  (base, b56, sp2, sp2p3, sp3, sp4) materialises that store from a literal pool
-  plus a trailing `nop` - 4 bytes longer - and 20 source spellings do not move
-  it. `func_0201fcc8` names `2.0/base` for exactly this reason.
+* **SDK asm blocks**: a retail `movs rX, #1` / `lsls rX, rX, #n` pair storing
+  e.g. `0x1000` is hand-written thumb asm from a prebuilt library, not C. Every
+  1.2 build (base, b56, sp2, sp2p3, sp3, sp4) materialises that store from a
+  literal pool plus a trailing `nop` - 4 bytes longer - and 20 source spellings
+  do not move it, because the constant is not the compiler's decision at all.
+  `func_0201fcc8` is NitroSDK `MTX_RotX33_`; written as the SDK's own `asm void`
+  block, b56 assembles it byte for byte with no override.
 * **BIOS SWI stubs**: 4-6 byte wrappers whose object compare can pass while the
   linked ROM does not.
 

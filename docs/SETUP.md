@@ -85,22 +85,18 @@ changing it is a deliberate experiment and not a normal setup step.
 
 Retail's game code was produced by a single mwccarm build: `1.2/b56` (build 56,
 `Runtime Built: Sep 16 2004`, NITRO V1.0) rebuilds the whole ROM to the digest
-for every unit but one, and that is `configure.py`'s default. The game shipped
-on 2004-12-30, so b56 (2004-09-16) is the only vendored build that predates the
+for every unit, and that is `configure.py`'s default. The game shipped on
+2004-12-30, so b56 (2004-09-16) is the only vendored build that predates the
 cartridge and every later build postdates the finished ROM; a post-release build
-is a prior against, never a proof against. The one exception is
-`src/arm9/func_0201fcc8.c`, which needs `2.0/base`: under b56 that nine-word
-block is 32 bytes of Thumb where retail has 28 and the digest breaks. `2.0/base`
-is 3.0 build 114 from 2006, so it is a stand-in for a producer we do not have,
-not evidence of the retail toolchain. The digest
-decides, so the override list
-exists for a unit with evidence of a different origin; entries name an existing
-build (one `<source path> = <version>` per line) and the digest still has to
-match. Keep a build available if you add an entry for it:
+is a prior against, never a proof against. The override list is therefore empty,
+and it exists for a unit with evidence of a different origin; entries name an
+existing build (one `<source path> = <version>` per line) and the digest still
+has to match. The entry this file used to carry, `func_0201fcc8 = 2.0/base`, was
+retired: the unit is NitroSDK's hand-written `MTX_RotX33_` asm, which b56
+assembles byte for byte. Keep a build available if you add an entry for it:
 
 ```
 tools/mwccarm/1.2/b56/mwccarm.exe
-tools/mwccarm/2.0/base/mwccarm.exe
 ```
 
 A version missing from the tree is a configure error, not a silent fallback. This
