@@ -1451,10 +1451,10 @@ def emit(fn):
             _arg_nodes = []
             _all_nodes(_a, _arg_nodes)
             _use_slots(_arg_nodes)
-    slot_decl = '    u32 ' + ', '.join(f'sl{s}' for s in slots) + ';' if slots else None
-
-    if slot_decl:
-        body.insert(0, slot_decl)
+    # One declaration per line: `respell.py` reorders a declaration block as
+    # written, and a comma list is a single line it can only reorder as a unit.
+    if slots:
+        body[0:0] = [f'    u32 sl{s};' for s in slots]
     if ret_used:
         body.append(f'    return {e(fn["ret"])};')
     src = f'{rtype} {name}({args})\n{{\n' + ('\n'.join(body) if body else '') + '\n}\n'
