@@ -1425,15 +1425,32 @@ def emit(fn):
             decls.append(f'    {ty2} ' + ', '.join(names2) + ';')
     if decls:
         body[0:0] = decls
-    _all = []
+    # Declare the slots in the order the statements first use them: mwcc colours
+    # by declaration order, so a list that disagrees with the statement order
+    # swaps address registers (ov003 0x020b732c was two slots out for that alone).
+    slots, _seen_slots = [], set()
+
+    def _use_slots(nodes):
+        for _n in nodes:
+            if _n[0] in ('slotaddr', 'slot') and _n[1] not in _seen_slots:
+                _seen_slots.add(_n[1])
+                slots.append(_n[1])
+
     for _st in _walk_stmts(fn['stmts']):
-        _stmt_nodes(_st, _all)
-    _all_nodes(fn['ret'], _all)
+        _nodes = []
+        _stmt_nodes(_st, _nodes)
+        _use_slots(_nodes)
+        if _st[0] == 'sset' and _st[1] not in _seen_slots:
+            _seen_slots.add(_st[1])
+            slots.append(_st[1])
+    _ret_nodes = []
+    _all_nodes(fn['ret'], _ret_nodes)
+    _use_slots(_ret_nodes)
     for _cn, _ca, _nar in fn['calls']:
         for _a in _ca:
-            _all_nodes(_a, _all)
-    slots = sorted({st[1] for st in _walk_stmts(fn['stmts']) if st[0] == 'sset'}
-                   | {n[1] for n in _all if n[0] in ('slotaddr', 'slot')})
+            _arg_nodes = []
+            _all_nodes(_a, _arg_nodes)
+            _use_slots(_arg_nodes)
     slot_decl = '    u32 ' + ', '.join(f'sl{s}' for s in slots) + ';' if slots else None
 
     if slot_decl:

@@ -5273,4 +5273,6 @@ source `r4` where retail uses `ip`. The local-vs-assigned declarations, `u32` vs
   candidate had the declaration list reversed against its statements and sat two
   slots off (only the two `add r1, sp, #n` swapped). The wall note had filed
   this as a colouring tie to park - it was a liveness question first and an
-  ordering question second.
+  ordering question second. The generator now emits its slot declarations in
+  first-use order for exactly this reason, and its candidate for these twins is
+  byte-exact (0 differing slots) with no hand edit.
