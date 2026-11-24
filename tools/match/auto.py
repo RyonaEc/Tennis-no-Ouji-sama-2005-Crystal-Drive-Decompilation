@@ -1409,7 +1409,13 @@ def emit(fn):
         cn, ca, _nar = fn['calls'][idx]
         args_s = ', '.join(arg_e(a) for a in ca)
         protos_s = '\n'.join(protos)
-        src = (f'{rtype} {name}({args})\n{{\n    return {cn}({args_s});\n}}\n')
+        # A tail call can take the address of a caller-provided frame cell
+        # (`(u32)&sl12`), which no statement walked here declares. Undeclared,
+        # mwcc aborts and the unit scores as "no candidate".
+        decls_s = ''.join('    u32 sl%d;\n' % n for n in
+                          sorted({int(_m) for _m in re.findall(r'\bsl(\d+)\b', args_s)}))
+        src = (f'{rtype} {name}({args})\n{{\n{decls_s}'
+               f'    return {cn}({args_s});\n}}\n')
         pre = (protos_s + '\n\n') if protos_s else ''
         return pre + src
 
@@ -1458,6 +1464,17 @@ def emit(fn):
     if ret_used:
         body.append(f'    return {e(fn["ret"])};')
     src = f'{rtype} {name}({args})\n{{\n' + ('\n'.join(body) if body else '') + '\n}\n'
+    # A slot the body addresses but never assigns (a caller-provided frame cell)
+    # is missed by the collection above, which records only slots it sees
+    # assigned or taken by address in the statements it walks, and `e()` can
+    # inline a call whose argument mentions one. Undeclared, mwcc aborts and the
+    # unit scores as "no candidate" rather than as the near miss it is, so
+    # declare whatever the finished text mentions and rebuild.
+    _miss = [n for n in sorted({int(_m) for _m in re.findall(r'\bsl(\d+)\b', src)})
+             if n not in slots]
+    if _miss:
+        body[0:0] = [f'    u32 sl{n};' for n in _miss]
+        src = f'{rtype} {name}({args})\n{{\n' + ('\n'.join(body) if body else '') + '\n}\n'
     head = '\n'.join(protos)
     if struct_decl:
         head = (head + '\n\n' if head else '') + struct_decl
