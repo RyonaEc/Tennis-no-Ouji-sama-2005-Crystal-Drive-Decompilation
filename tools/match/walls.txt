@@ -15,6 +15,10 @@
 # A unit is parked only while src/<module>/<name>.c is absent. wallprobe.py
 arm9 0x02024a54 144B func_02024a54 22-channel handler table init; retail keeps table base in lr, mwcc picks r5/r4: 144B, 19 slots, optimize_for_size is a no-op L11830
 
+arm9 0x02036c18 208B func_02036c18 208 digit-count formatter; best shape is 208/208 B with the same registers but mwcc schedules 'add r_, r5, #4' before the loop test where retail schedules it after bge (6 shapes tried incl. pointer-in-loop and for-loop forms) L11833
+
+arm9 0x02036934 740B func_02036934 740 itcm origin: 0x02036a60-0x02037050 is byte-identical to the itcm section, so this 740 B unit and its three neighbours are the precondition for the eleven itcm units L11836
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
