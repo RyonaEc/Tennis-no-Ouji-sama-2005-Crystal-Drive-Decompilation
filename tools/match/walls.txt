@@ -94,7 +94,7 @@ arm9 0x0202ae08 116B func_0202ae08 -- getter twin of 0x0202ad9c: reads the same 
 arm9 0x0202bda0 120B func_0202bda0 -- `func_0202bfdc(0, &f)` then `*a0 = (f & 8) != 0; *a1 = (f L10618
 arm9 0x0202c018 120B func_0202c018 -- slot setup: `func_0202c3e0(a0)` guard, `*(u16 *)(data_0204acd... L10641
 arm9 0x0202c36c 84B func_0202c36c -- **84/84 and the same instruction sequence**, ONE register pair... L8828
-arm9 0x0202c430 24B func_0202c430 var3 matches, ROM digest rejects (volatile spin) L127
+arm9 0x0202c430 24B func_0202c430 var3 matches, ROM digest rejects: best is 3 slots, retail keeps the global address in ip where mwcc uses r1 for every spelling tried (plain/volatile global, volatile u32 *p, do/while, with and without a returned value) L127
 arm9 0x0202cc90 92B func_0202cc90 -- spin-wait wrapper: `g = data_0204aec0; s = func_02026350(); while L10612
 arm9 0x0202cfa4 84B func_0202cfa4 -- 92B. Main-thread loop: `s = func_02026350(); while (!(*(u32*)(... L8943
 arm9 0x0202cff8 84B func_0202cff8 -- 88 best. C: `if (a0 != 0xb) return; if (a2 == 0) return L8803
