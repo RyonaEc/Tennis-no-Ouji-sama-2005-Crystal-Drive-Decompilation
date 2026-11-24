@@ -5155,3 +5155,14 @@ source `r4` where retail uses `ip`. The local-vs-assigned declarations, `u32` vs
   is strength-reduced to `sub r0, r0, #0x59 / cmp r0, #1 / movls r2, #1` (116 B
   both sizes, different bytes) and the `if/else if` form if-converts each arm to
   its own `moveq`. This decided `func_ov005_0204dc7c`.
+
+* **A pointer value is not an addressing mode.** `*(u16 *)(p + 0x36e)` is folded
+  into `add rX, p, #0x300` plus the `[rX, #0x6e]` immediate, because mwcc splits
+  the offset into a form the addressing mode can carry. Assigning the address to
+  a pointer first - `c = (u16 *)(p + 0x36e); *c = *c + 1;` - makes the sum a
+  value, so 1.2/b56 emits the pool constant `0x36e` and `add r2, p, r1`, which is
+  what retail has. Both spellings are 8 bytes apart and compile to different
+  bytes; this decided `func_ov009_020517f0`. The same distinction explains the
+  `ldr r1, =base / ldr r0, =0x3ff8 / ldr r0, [r1, r0]!` shape in ov008
+  `func_ov008_0204e51c`, which still resists: with a symbol or literal base mwcc
+  folds base+offset into one pool word.

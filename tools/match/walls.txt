@@ -23,6 +23,10 @@ arm9 0x020267cc 192B func_020267cc -- DMA table store: best 204/192 B, retail ke
 
 ov006 0x0204de34 156B func_ov006_0204de34 160 B vs 156: struct-copy loop and body stream match, but mwcc colours the copy source r4 where retail uses ip, adding a 4-byte frame L11898
 
+ov008 0x0204c810 132B func_ov008_0204c810 132/132 B, only the base/i/stride colouring differs (retail r8/r7/r4, b56 r5/r4/r7) L11901
+
+ov008 0x0204e584 136B func_ov008_0204e584 124 B vs 136: retail reads 0x04000208 before each of its two stores (dead ldrh), which no plain store, &=, bitfield or struct write reproduces L11904
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

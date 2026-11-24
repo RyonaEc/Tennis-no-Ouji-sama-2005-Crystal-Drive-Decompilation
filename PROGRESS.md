@@ -13,11 +13,11 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 | Metric | Matched | Total | Progress |
 |---|---:|---:|---|
-| Code | 136,164 B | 1,841,700 B | 7.39% `██░░░░░░░░░░░░░░░░░░░░░░` |
-| Functions | 1,716 | 3,806 | 45.09% `███████████░░░░░░░░░░░░░` |
-| Fuzzy match | 7.39% | n/a | `██░░░░░░░░░░░░░░░░░░░░░░` |
+| Code | 136,432 B | 1,841,700 B | 7.41% `██░░░░░░░░░░░░░░░░░░░░░░` |
+| Functions | 1,718 | 3,806 | 45.14% `███████████░░░░░░░░░░░░░` |
+| Fuzzy match | 7.41% | n/a | `██░░░░░░░░░░░░░░░░░░░░░░` |
 | Data | 630,724 B | 801,936 B | 78.65% `███████████████████░░░░░` |
-| Complete units | 4,005 | 4,673 | 85.71% `█████████████████████░░░` |
+| Complete units | 4,007 | 4,676 | 85.69% `█████████████████████░░░` |
 
 ## By module
 
@@ -30,12 +30,12 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 | OV005 | 6.24% (8,920 / 142,964 B) | 59 / 166 (35.5%) | 6.24% | 87.59% (323,324 / 369,132 B) | 315 / 356 |
 | OV006 | 9.39% (688 / 7,324 B) | 4 / 16 (25.0%) | 9.39% | 80.25% (136,836 / 170,504 B) | 101 / 112 |
 | OV008 | 16.71% (1,828 / 10,940 B) | 28 / 55 (50.9%) | 16.71% | 93.33% (448 / 480 B) | 48 / 65 |
-| OV009 | 14.46% (3,584 / 24,788 B) | 28 / 61 (45.9%) | 14.46% | 99.68% (9,940 / 9,972 B) | 65 / 79 |
+| OV009 | 14.97% (3,712 / 24,788 B) | 29 / 61 (47.5%) | 14.97% | 99.68% (9,940 / 9,972 B) | 66 / 81 |
 | OV001 | 3.51% (488 / 13,904 B) | 4 / 21 (19.0%) | 3.51% | 61.79% (4,864 / 7,872 B) | 24 / 32 |
-| OV010 | 3.67% (924 / 25,144 B) | 8 / 33 (24.2%) | 3.67% | 99.92% (47,864 / 47,904 B) | 60 / 67 |
+| OV010 | 4.23% (1,064 / 25,144 B) | 9 / 33 (27.3%) | 4.23% | 99.92% (47,864 / 47,904 B) | 61 / 68 |
 
 ## Against the whole ROM
 
-1,716 of 3,806 functions (45.09%) and 136,164 of 1,841,700 code bytes (7.39%) are matching C; the rest are still delinked assembly.
+1,718 of 3,806 functions (45.14%) and 136,432 of 1,841,700 code bytes (7.41%) are matching C; the rest are still delinked assembly.
 
 630,724 bytes of `.data` are matching C definitions; the rest of the data sections are still raw bytes in the delinked image.
