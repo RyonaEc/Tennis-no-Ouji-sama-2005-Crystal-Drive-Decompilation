@@ -127,6 +127,41 @@ def owner(index, off):
     return None, None, None, None
 
 
+def near_hit(code, releases, threshold=0.85, max_cands=400):
+    """Best same-size SDK body by equal-byte ratio, for units the exact pass missed.
+
+    A compiled SDK function in retail has its relocations applied, so its pool
+    words and pc-relative displacements differ from the archive member while the
+    instructions do not. An exact search finds none of those; probing six bytes
+    from the middle of the body and scoring the surrounding window does. The
+    ratio counts bytes, so it is evidence about provenance, never a match.
+    """
+    if len(code) < 16:
+        return None
+    best = None
+    mid = len(code) // 2
+    probe = code[mid:mid + 6]
+    for label, (blob, index) in releases.items():
+        start = 0
+        for _ in range(max_cands):
+            pos = blob.find(probe, start)
+            if pos == -1:
+                break
+            start = pos + 1
+            base = pos - mid
+            if base < 0 or base + len(code) > len(blob):
+                continue
+            window = blob[base:base + len(code)]
+            equal = sum(1 for a, b in zip(code, window) if a == b)
+            ratio = equal / float(len(code))
+            if ratio < threshold or (best and ratio <= best[0]):
+                continue
+            lib, member, payload, off = owner(index, base)
+            sym, symsize = symbol_at(payload, off) if payload else (None, 0)
+            best = (ratio, lib, member, sym, symsize, label)
+    return best
+
+
 def unmatched_functions(module, cfg):
     """Functions with no src/<module>/<name>.c, which is this project's rule."""
     srcdir = os.path.join("src", module)
@@ -147,6 +182,8 @@ def main(argv=None):
     ap.add_argument("--root", action="append", help="SDK tree (default build/cand/sdk)")
     ap.add_argument("--out", help="TSV path (default build/sdkmap-<module>.tsv)")
     ap.add_argument("--top", type=int, default=15)
+    ap.add_argument("--near", type=float, default=0.0, metavar="PCT",
+                    help="also report bodies agreeing on at least this fraction of bytes")
     args = ap.parse_args(argv)
 
     roots = args.root or ["build/cand/sdk"]
@@ -176,6 +213,30 @@ def main(argv=None):
                 sym, symsize = symbol_at(payload, off)
         if hit:
             rows.append((addr, size, name, kind, lib, member, sym, symsize, sorted(hit)))
+
+    neat = []
+    if args.near:
+        exact_addrs = {r[0] for r in rows}
+        for addr, size, name, kind in funcs:
+            if addr in exact_addrs:
+                continue
+            got = near_hit(fm.retail(args.module, addr, size), releases, args.near)
+            if got:
+                neat.append((addr, size, name, kind) + got)
+        print("near SDK hits (>= %.0f%%): %d functions, %d bytes" % (
+            args.near * 100, len(neat), sum(r[1] for r in neat)))
+        for r in sorted(neat, key=lambda r: -r[4])[:args.top]:
+            print("  0x%08x %4dB %-28s %.0f%% %s(%s) sdk_size=%d" % (
+                r[0], r[1], r[2], r[4] * 100, (r[5] or "?").replace(".a", ""),
+                r[7] or "?", r[8]))
+        if neat:
+            out_near = "build/sdkmap-%s-near.tsv" % args.module
+            with open(out_near, "w", encoding="utf-8") as f:
+                f.write("addr\tsize\tname\tratio\tlib\tmember\tsdk_symbol\tsdk_size\trelease\n")
+                for r in sorted(neat, key=lambda r: -r[4]):
+                    f.write("0x%08x\t%d\t%s\t%.3f\t%s\t%s\t%s\t%d\t%s\n" % (
+                        r[0], r[1], r[2], r[4], r[5] or "?", r[6] or "?", r[7] or "?", r[8], r[9]))
+            print("wrote", out_near)
 
     print("exact SDK hits: %d functions, %d bytes" % (len(rows), sum(r[1] for r in rows)))
     if rows:

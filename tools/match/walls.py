@@ -16,6 +16,7 @@ number the new index entry cites. Walled units are still only parked: the
 project rule is that a unit counts as matched when `ninja sha1` says `OK`.
 """
 
+import glob
 import io
 import os
 import re
@@ -155,6 +156,24 @@ def add(argv):
                 sym, size = m.group(1), int(m.group(2), 16)
                 break
         break
+
+    if size == 0:
+        # 112 of the index's lines once named `arm9` for an address that only
+        # exists in an overlay, because nothing checked the module here: the
+        # entry then pointed at no symbol, so the sweep could not resolve it and
+        # `fresh.py` did not treat the unit as parked.  Name the module that
+        # actually owns the address instead of parking a line nobody can read.
+        owners = []
+        for path in sorted(glob.glob(os.path.join(ROOT, "config/ATOJ/arm9/**/symbols.txt"),
+                                     recursive=True)):
+            owner = os.path.basename(os.path.dirname(path))
+            text = io.open(path, encoding="utf-8").read()
+            if re.search(r"addr:0x%08x\b" % addr, text) and owner != mod:
+                owners.append(owner)
+        if owners:
+            print("no symbol in %s at 0x%08x; it lives in %s - use that module"
+                  % (mod, addr, "/".join(sorted(set(owners)))))
+            return 2
 
     with io.open(DETAIL, "a", encoding="utf-8", newline="\r\n") as f:
         f.write("\n%s 0x%08x %s\n%s\n" % (mod, addr, sym, reason))

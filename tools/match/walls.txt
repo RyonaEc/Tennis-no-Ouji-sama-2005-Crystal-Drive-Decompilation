@@ -59,7 +59,6 @@ arm9 0x0202564c 76B func_0202564c -- mrs/msr and mrc/mcr p15, and a banked-sp se
 arm9 0x02025b88 148B func_02025b88 scout: **140/148.** `func_02026350()` / `func_02026364(r)` bracket an... L181
 arm9 0x02025e48 172B func_02025e48 -- switch on 0..6 returning constants, with a case that loads a... L11220
 arm9 0x020260b8 116B func_020260b8 -- hand-written dispatcher (`mrs r1, apsr`, `teq`, banked `sp` L10664
-arm9 0x020266c0 80B func_020266c0 -- DMA channel CR bitfield clear; best 72B. C L8942
 arm9 0x02027080 88B func_02027080 (8-arg bit packing via orr lsl chain), 02032aa8 88B (2 unaligned L10862
 arm9 0x02027f74 116B func_02027f74 -- lock, store a slot in a table, set/clear a bit in 0x027ffc00+... L10875
 arm9 0x02027ffb ?B - 0, allocating the set bit in the first word (id 0x40+n) or second (0x... L8737
@@ -69,7 +68,6 @@ arm9 0x02029aa0 140B func_02029aa0 ` (140 B) -- decoded as `start = p[0x28]; n =
 arm9 0x0202a3a0 188B func_0202a3a0 -- slot fetch: `base = (a1 == 0) ? 0x0204ac04 : 0x0204ac0c;` the... L10955
 arm9 0x0202bda0 120B func_0202bda0 -- `func_0202bfdc(0, &f)` then `*a0 = (f & 8) != 0; *a1 = (f L10652
 arm9 0x0202c018 120B func_0202c018 -- slot setup: `func_0202c3e0(a0)` guard, `*(u16 *)(data_0204acd... L10675
-arm9 0x0202c36c 84B func_0202c36c -- **84/84 and the same instruction sequence**, ONE register pair... L8862
 arm9 0x0202c430 24B func_0202c430 var3 matches, ROM digest rejects: best is 3 slots, retail keeps the global address in ip where mwcc uses r1 for every spelling tried (plain/volatile global, volatile u32 *p, do/while, with and without a returned value) L127
 arm9 0x0202cc90 92B func_0202cc90 -- spin-wait wrapper: `g = data_0204aec0; s = func_02026350(); while L10646
 arm9 0x0202cfa4 84B func_0202cfa4 -- 92B. Main-thread loop: `s = func_02026350(); while (!(*(u32*)(... L8977
@@ -128,25 +126,25 @@ arm9 0x0204ac14 ?B - two 8-byte structs by value read from 0x027ffe50 and L10925
 arm9 0x0204aec0 ?B - [0x18] = position, [0x1c] = source cursor, [0x20] = bytes left. If (p... L11167
 arm9 0x0204c798 ?B - ) and land inside overlay 3, whose `.text` starts exactly at L11776
 arm9 0x0204c7c0 ?B - and no symbol in `config/ATOJ/arm9/symbols.txt` is above L11775
-arm9 0x0204d488 ?B - . L607
+ov002 0x0204d488 ?B - . L607
 arm9 0x0204ded0 ?B - ov006 204B - bisection tree reproduces exactly; 200B/204B, 29 diff. L913
-arm9 0x0204f440 ?B - `, so the object held a literal where retail holds a relocation L3937
+ov008 0x0204f440 ?B - `, so the object held a literal where retail holds a relocation L3937
 arm9 0x02050104 ?B - and friends there, so none of those names can disappear. L11269
-arm9 0x02052160 ?B - . L313
-arm9 0x0205299c ?B - and the 0x027c0000 family) the typed-struct lever from playbook 3.14... L11102
+ov003 0x02052160 ?B - . L313
+ov003 0x0205299c ?B - and the 0x027c0000 family) the typed-struct lever from playbook 3.14... L11102
 arm9 0x0205a670 ?B - initialiser) transcribes to 380 B with 76-86 differing slots. The L11812
-arm9 0x0205fe04 ?B - ) the reason no spelling reaches retail's shape: mwcc always fuses L11077
-arm9 0x02066a54 ?B - ` / `0x020b85b8` / `0x020db6ec` (180 B, 3x). The whole body reproduces L11299
-arm9 0x02066e84 ?B - ov003 196B - 4-member family (784B). 164/196, 34 diff. see notes 2.16 L1069
-arm9 0x0207ff34 ?B - ) permuting the six body statements (720 orders) never reaches a matc... L11145
+ov002 0x0205fe04 ?B - ) the reason no spelling reaches retail's shape: mwcc always fuses L11077
+ov003 0x02066a54 ?B - ` / `0x020b85b8` / `0x020db6ec` (180 B, 3x). The whole body reproduces L11299
+ov003 0x02066e84 ?B - ov003 196B - 4-member family (784B). 164/196, 34 diff. see notes 2.16 L1069
+ov002 0x0207ff34 ?B - ) permuting the six body statements (720 orders) never reaches a matc... L11145
 arm9 0x0207ffb0 ?B - `. Retail tests the threshold with L10680
-arm9 0x0208ae70 ?B - / 02052160. L313
-arm9 0x0208f860 ?B - ov002 756B - 13-member family (9828B total: 0208f860 0209a5f4 0209c72... L1051
-arm9 0x020ad2b0 ?B - +7). Confirmed 185/186 identical across members. See notes 2.16 for f... L1057
-arm9 0x020b85b8 ?B - ` / `0x020db6ec` (180 B, 3x). The whole body reproduces L11299
-arm9 0x020c1ab0 ?B - / 0208ae70 / 02052160. L313
-arm9 0x020db6ec ?B - ` (180 B, 3x). The whole body reproduces L11299
-arm9 0x027c0000 ?B - + offset 0x3ff8 (`ldr r0,[r1,r0]!` writeback then `str [r1]`), mwcc p... L265
+ov003 0x0208ae70 ?B - / 02052160. L313
+ov002 0x0208f860 ?B - ov002 756B - 13-member family (9828B total: 0208f860 0209a5f4 0209c72... L1051
+ov002 0x020ad2b0 ?B - +7). Confirmed 185/186 identical across members. See notes 2.16 for f... L1057
+ov003 0x020b85b8 ?B - ` / `0x020db6ec` (180 B, 3x). The whole body reproduces L11299
+ov003 0x020c1ab0 ?B - / 0208ae70 / 02052160. L313
+ov003 0x020db6ec ?B - ` (180 B, 3x). The whole body reproduces L11299
+dtcm 0x027c0000 ?B - + offset 0x3ff8 (`ldr r0,[r1,r0]!` writeback then `str [r1]`), mwcc p... L265
 arm9 0x027c3ff8 ?B - into base 0x027c0000 + offset 0x3ff8 (`ldr r0,[r1,r0]!` writeback the... L265
 arm9 0x027ffc00 ?B - +0x388 L10841
 arm9 0x027ffc38 ?B - 8: retail loads the array base into r1 AFTER the first L1723
@@ -158,50 +156,50 @@ arm9 0x027fffb0 ?B - (no symbol). Retail: cmp a0,#0x60 ; addpl/subpl/submi for t
 ov001 0x0204d8f4 148B func_ov001_0204d8f4 -- VCOUNT vs BG scroll setup. Full body: `v = *(volatile u16 *)0... L5411
 ov001 0x0204eff8 332B func_ov001_0204eff8 ` (332 B x2). File-load routine: the L11492
 ov001 0x0204ff10 ?B - (2,968 B) is blocked: a delinked arm9 rodata object references L11268
-ov001 0x027c0000 ?B - and 0x3ff8 SEPARATELY L5407
+dtcm 0x027c0000 ?B - and 0x3ff8 SEPARATELY L5407
 ov001 0x027c3ff8 ?B - (136-140B). Four spellings tried: `(u32 *)(sym + 0x3ff8)` L5419
-ov002 0x02005418 ?B - arm9 (twins ov004 0204cbdc, ov002 0206308c, ov008 0204e51c) -- re... L3361
-ov002 0x0200fbc0 ?B - / 0200fc18 (64B each, 60/64) L589
-ov002 0x0200fc18 ?B - (64B each, 60/64) L589
-ov002 0x020124e0 ?B - (68B): `p = func_0200faa8(); if (!p) return 0; return p[a0/8] & (1 <<... L3277
-ov002 0x020135cc ?B - arm9 -- body recovered (byte store, halfword store, halfword from... L3385
-ov002 0x02015040 ?B - arm9 -- same as 02015068 with `mvn r0,r2,lsl r0` / and; same regi... L3373
-ov002 0x02015068 ?B - arm9 -- retail ldr global in r1, mov #1 in r2, orr r0,r1,r2,lsl r... L3367
-ov002 0x02015fe8 ?B - (72B): sets bit 15 of the u16 at data_02042b40, then func_02025c94(p,... L3319
-ov002 0x02017954 ?B - (64B): ring buffer push (`off = *(u16*)(a0+0xa)`, two zeros at a1+off... L3331
-ov002 0x020181b0 ?B - (88B): exact size, pure r4/r5 swap - retail materialises q then `ldr... L2659
-ov002 0x02018330 ?B - (124B) / 0x020183ac (128B): arena allocator pair (bump-down / bump-up... L2935
-ov002 0x020183ac ?B - (128B): arena allocator pair (bump-down / bump-up). Body shape and L2935
-ov002 0x0201842c ?B - (80B): exact size with return-a0 and volatile-q spellings, but retail... L2641
-ov002 0x0201f26c ?B - (68B): lazy counter at +0x118, `if (field == 0 && func_0201cde8() ==... L3301
-ov002 0x0201f6c0 ?B - (172B): slot/cache lookup. Exact size and instruction count reached w... L2965
-ov002 0x0201fc1c ?B - (32B): retail loads both fields before cmp and does addlt/ldrlt/strlt... L2671
-ov002 0x0201fd50 ?B - (60B): five stores to 0x04000280/290/294/298/29c. Retail pools three... L2839
-ov002 0x020208b0 ?B - / 0x0202093c (140B each, famsurvey pair): identical skeleton, differ... L3007
-ov002 0x0202093c ?B - (140B each, famsurvey pair): identical skeleton, differ only in const... L3007
-ov002 0x02023df8 ?B - / 0x02023e58 (96B each, famsurvey pair): two-way dispatch on `*(u32 *... L3049
-ov002 0x02023e58 ?B - (96B each, famsurvey pair): two-way dispatch on `*(u32 *)data_02042370` L3049
-ov002 0x0202474c ?B - (36B): the ldm/stm copy family. Retail is L2683
-ov002 0x020248c8 ?B - arm9 -- DISPSTAT save/clear/restore around `IE &= ~mask` (0x04000... L3493
-ov002 0x02024b5c ?B - (48B): `*p |= 0x80000000 >> a0` after a two-way `p++/a0 -= 0x60|0x40`... L2713
-ov002 0x0202612c ?B - arm9 -- two-call wrapper, retail `stmdb sp!,{lr} / bl / bl / ldm... L3355
-ov002 0x020263c0 ?B - arm9 -- retail `subs r0,r0,#4 / bhs / bx lr`; while, do-while, `w... L3349
-ov002 0x02026a88 ?B - (28B) / 0x02026aa4 (36B) / 0x0202474c (36B): the ldm/stm copy family.... L2683
-ov002 0x02026aa4 ?B - (36B) / 0x0202474c (36B): the ldm/stm copy family. Retail is L2683
-ov002 0x02028920 ?B - / 0x02028958 (56B each): siblings; retail keeps the base in r0 and th... L2821
-ov002 0x02028958 ?B - (56B each): siblings; retail keeps the base in r0 and the field pair in L2821
-ov002 0x02029cc4 ?B - (60B): once-guard on data_0204abf8 (`if (*p) return; *p = 1; func_020... L3265
-ov002 0x0202d158 ?B - / 0x0202d22c (212B each, famsurvey pair): 6-argument state setter on... L3139
-ov002 0x0202d22c ?B - (212B each, famsurvey pair): 6-argument state setter on data_0204aec0. L3139
-ov002 0x0202de8c ?B - (28B): ldrh/test/clear at 0x027fff96, every spelling differs in all 2... L2707
-ov002 0x02032b00 ?B - (48B): struct-by-value, returns `byte at +7 & 0x80`. Retail copies th... L2791
-ov002 0x02032c38 ?B - (56B): strlen-like loop. Retail tests first, then `n++; p++;` then re... L2857
-ov002 0x02034148 ?B - (0x??48 literal) L10447
-ov002 0x0203684c ?B - (40B): struct-by-value in r0/r1, retail copies it to the stack and cl... L2761
-ov002 0x0203b0c0 ?B - (twice), 02057068 L10448
-ov002 0x0203b4b0 ?B - (52B): two calls to func_0203b6d0/func_0203b6dc returning pointers, 6... L2809
-ov002 0x0203b4e4 ?B - (40B): retail saves the argument block with `push {r0,r1,r2,ip,lr}` a... L2743
-ov002 0x0203b698 ?B - (56B): function-table walker. Retail is do-while with a `cmp p,#0` bo... L2869
+arm9 0x02005418 ?B - arm9 (twins ov004 0204cbdc, ov002 0206308c, ov008 0204e51c) -- re... L3361
+arm9 0x0200fbc0 ?B - / 0200fc18 (64B each, 60/64) L589
+arm9 0x0200fc18 ?B - (64B each, 60/64) L589
+arm9 0x020124e0 ?B - (68B): `p = func_0200faa8(); if (!p) return 0; return p[a0/8] & (1 <<... L3277
+arm9 0x020135cc ?B - arm9 -- body recovered (byte store, halfword store, halfword from... L3385
+arm9 0x02015040 ?B - arm9 -- same as 02015068 with `mvn r0,r2,lsl r0` / and; same regi... L3373
+arm9 0x02015068 ?B - arm9 -- retail ldr global in r1, mov #1 in r2, orr r0,r1,r2,lsl r... L3367
+arm9 0x02015fe8 ?B - (72B): sets bit 15 of the u16 at data_02042b40, then func_02025c94(p,... L3319
+arm9 0x02017954 ?B - (64B): ring buffer push (`off = *(u16*)(a0+0xa)`, two zeros at a1+off... L3331
+arm9 0x020181b0 ?B - (88B): exact size, pure r4/r5 swap - retail materialises q then `ldr... L2659
+arm9 0x02018330 ?B - (124B) / 0x020183ac (128B): arena allocator pair (bump-down / bump-up... L2935
+arm9 0x020183ac ?B - (128B): arena allocator pair (bump-down / bump-up). Body shape and L2935
+arm9 0x0201842c ?B - (80B): exact size with return-a0 and volatile-q spellings, but retail... L2641
+arm9 0x0201f26c ?B - (68B): lazy counter at +0x118, `if (field == 0 && func_0201cde8() ==... L3301
+arm9 0x0201f6c0 ?B - (172B): slot/cache lookup. Exact size and instruction count reached w... L2965
+arm9 0x0201fc1c ?B - (32B): retail loads both fields before cmp and does addlt/ldrlt/strlt... L2671
+arm9 0x0201fd50 ?B - (60B): five stores to 0x04000280/290/294/298/29c. Retail pools three... L2839
+arm9 0x020208b0 ?B - / 0x0202093c (140B each, famsurvey pair): identical skeleton, differ... L3007
+arm9 0x0202093c ?B - (140B each, famsurvey pair): identical skeleton, differ only in const... L3007
+arm9 0x02023df8 ?B - / 0x02023e58 (96B each, famsurvey pair): two-way dispatch on `*(u32 *... L3049
+arm9 0x02023e58 ?B - (96B each, famsurvey pair): two-way dispatch on `*(u32 *)data_02042370` L3049
+arm9 0x0202474c ?B - (36B): the ldm/stm copy family. Retail is L2683
+arm9 0x020248c8 ?B - arm9 -- DISPSTAT save/clear/restore around `IE &= ~mask` (0x04000... L3493
+arm9 0x02024b5c ?B - (48B): `*p |= 0x80000000 >> a0` after a two-way `p++/a0 -= 0x60|0x40`... L2713
+arm9 0x0202612c ?B - arm9 -- two-call wrapper, retail `stmdb sp!,{lr} / bl / bl / ldm... L3355
+arm9 0x020263c0 ?B - arm9 -- retail `subs r0,r0,#4 / bhs / bx lr`; while, do-while, `w... L3349
+arm9 0x02026a88 ?B - (28B) / 0x02026aa4 (36B) / 0x0202474c (36B): the ldm/stm copy family.... L2683
+arm9 0x02026aa4 ?B - (36B) / 0x0202474c (36B): the ldm/stm copy family. Retail is L2683
+arm9 0x02028920 ?B - / 0x02028958 (56B each): siblings; retail keeps the base in r0 and th... L2821
+arm9 0x02028958 ?B - (56B each): siblings; retail keeps the base in r0 and the field pair in L2821
+arm9 0x02029cc4 ?B - (60B): once-guard on data_0204abf8 (`if (*p) return; *p = 1; func_020... L3265
+arm9 0x0202d158 ?B - / 0x0202d22c (212B each, famsurvey pair): 6-argument state setter on... L3139
+arm9 0x0202d22c ?B - (212B each, famsurvey pair): 6-argument state setter on data_0204aec0. L3139
+arm9 0x0202de8c ?B - (28B): ldrh/test/clear at 0x027fff96, every spelling differs in all 2... L2707
+arm9 0x02032b00 ?B - (48B): struct-by-value, returns `byte at +7 & 0x80`. Retail copies th... L2791
+arm9 0x02032c38 ?B - (56B): strlen-like loop. Retail tests first, then `n++; p++;` then re... L2857
+arm9 0x02034148 ?B - (0x??48 literal) L10447
+arm9 0x0203684c ?B - (40B): struct-by-value in r0/r1, retail copies it to the stack and cl... L2761
+arm9 0x0203b0c0 ?B - (twice), 02057068 L10448
+arm9 0x0203b4b0 ?B - (52B): two calls to func_0203b6d0/func_0203b6dc returning pointers, 6... L2809
+arm9 0x0203b4e4 ?B - (40B): retail saves the argument block with `push {r0,r1,r2,ip,lr}` a... L2743
+arm9 0x0203b698 ?B - (56B): function-table walker. Retail is do-while with a `cmp p,#0` bo... L2869
 ov002 0x0204c884 148B func_ov002_0204c884 148B: idx=((s32)a1+1)/2; q=(u32*)(B+0x274+a0*0x1c+0x18); *q|=0x400 L2471
 ov002 0x0204f320 172B func_ov002_0204f320 ` / `0x0204f3cc` (172 B, 2x). Full body recovered: read the id L11350
 ov002 0x0204f3cc 172B func_ov002_0204f3cc ` (172 B, 2x). Full body recovered: read the id L11350
@@ -261,8 +259,8 @@ ov002 0x0209eb18 756B func_ov002_0209eb18 020a8ba0 L1051
 ov002 0x020a5d48 168B func_ov002_020a5d48 ` / `0x020c583c` (168 B, 2x). Two-call spawner with a 4-word L11364
 ov002 0x020a8ba0 756B func_ov002_020a8ba0 see-detail L1051
 ov002 0x020ad2b0 756B func_ov002_020ad2b0 see-detail L10443
-ov002 0x020b6b60 ?B - / 0x020b732c (52B each): identical twins that zero six u16 in a stack... L2887
-ov002 0x020b732c ?B - (52B each): identical twins that zero six u16 in a stack buffer. Retail L2887
+ov003 0x020b6b60 ?B - / 0x020b732c (52B each): identical twins that zero six u16 in a stack... L2887
+ov003 0x020b732c ?B - (52B each): identical twins that zero six u16 in a stack buffer. Retail L2887
 ov002 0x020bcfe0 136B func_ov002_020bcfe0 ` / `0x020c2ba8` / `0x020f78c0` (136 B, 3x). Size and every other slot L11340
 ov002 0x020c2ba8 136B func_ov002_020c2ba8 ` / `0x020f78c0` (136 B, 3x). Size and every other slot L11340
 ov002 0x020c583c 168B func_ov002_020c583c ` (168 B, 2x). Two-call spawner with a 4-word L11364
@@ -274,32 +272,32 @@ ov002 0x020f78c0 136B func_ov002_020f78c0 ` (136 B, 3x). Size and every other sl
 ov002 0x020fc68c ?B - see-detail L9184
 ov002 0x020fdc94 ?B - ), while ov008 2/2 (0204f27c 32B rodata, 0204f414 44B data) are byte... L11243
 ov002 0x02102070 ?B - `, then L10988
-ov002 0x027c0000 ?B - + 0x3ff8, uses ldr r0,[r1,r0]!; mwcc folds the sum. L2365
+dtcm 0x027c0000 ?B - + 0x3ff8, uses ldr r0,[r1,r0]!; mwcc folds the sum. L2365
 ov002 0x027c3ff8 ?B - ` L11401
 ov002 0x027fff96 ?B - every spelling differs in all 28 bytes. L2707
-ov003 0x020135cc ?B - arm9 -- 48/48 bytes, 7 slots: retail keeps p in r2 AND q=p+2 in r... L337
-ov003 0x02015040 ?B - / 02015068 36B arm9 -- materialised halfword address: retail does... L301
-ov003 0x02015068 ?B - arm9 -- materialised halfword address: retail does add r2,r1,#0x1... L301
-ov003 0x0201fc1c ?B - arm9 -- materialised RMW address (6th instance of this wall): ret... L313
-ov003 0x020208b0 ?B - . L5269
-ov003 0x0202474c ?B - arm9 -- 48-byte block copy: retail is four ldm r0!,{r2,r3,ip} / s... L307
-ov003 0x02024b5c ?B - arm9 -- flag-set RMW at raw address 0x027fffb0 (no symbol). Retai... L325
-ov003 0x020255b8 ?B - arm9 -- 16-entry scan loop. Retail recomputes add r1,r2,r0,lsl #2... L331
-ov003 0x02026a50 ?B - arm9 -- 32-byte block copy + word tail: retail if-converts the bo... L355
-ov003 0x02026aa4 ?B - / 0202474c 36B arm9 -- 48-byte block copy: retail is four ldm r0!... L307
-ov003 0x02027a14 ?B - arm9 -- pre-indexed byte RMW: retail ldrb r0,[r1,#8]! then strb r... L319
-ov003 0x02032b00 ?B - is an unaligned byte-extract from a 16B push-local, likely the ta... L361
-ov003 0x02033bd0 ?B - ` / `b 0x02033c1c` pairs with no test between L11682
-ov003 0x02033c1c ?B - ` pairs with no test between L11682
-ov003 0x02033c58 ?B - entry is mov r0,#1 ; b forward into a shared CP15 tail, dead mov... L361
-ov003 0x0203684c ?B - arm9 -- struct-return with field RMW: retail push {r0,r1,r2,r3} (... L343
-ov003 0x0203aeb8 ?B - ends in a branch past its own extent; 02033c58 48B entry is mov r... L361
-ov003 0x0203b4e4 ?B - arm9 -- clr/xor RMW: retail saves args with push {r0,r1,r2,ip,lr}... L349
-ov003 0x0203b564 ?B - / L11663
-ov003 0x0203b578 ?B - want a saved `lr` and `pop {pc}`, which mwcc does not add for an L11664
-ov003 0x0203cb6c ?B - `out[++*out] = i + f6` for `i < f8`, then the optional `fa`/`fc` L11572
-ov003 0x02042a68 ?B - +0x30 (bit 1 blocks, bit 0 must be L10975
-ov003 0x0204cbdc ?B - and L11020
+arm9 0x020135cc ?B - arm9 -- 48/48 bytes, 7 slots: retail keeps p in r2 AND q=p+2 in r... L337
+arm9 0x02015040 ?B - / 02015068 36B arm9 -- materialised halfword address: retail does... L301
+arm9 0x02015068 ?B - arm9 -- materialised halfword address: retail does add r2,r1,#0x1... L301
+arm9 0x0201fc1c ?B - arm9 -- materialised RMW address (6th instance of this wall): ret... L313
+arm9 0x020208b0 ?B - . L5269
+arm9 0x0202474c ?B - arm9 -- 48-byte block copy: retail is four ldm r0!,{r2,r3,ip} / s... L307
+arm9 0x02024b5c ?B - arm9 -- flag-set RMW at raw address 0x027fffb0 (no symbol). Retai... L325
+arm9 0x020255b8 ?B - arm9 -- 16-entry scan loop. Retail recomputes add r1,r2,r0,lsl #2... L331
+arm9 0x02026a50 ?B - arm9 -- 32-byte block copy + word tail: retail if-converts the bo... L355
+arm9 0x02026aa4 ?B - / 0202474c 36B arm9 -- 48-byte block copy: retail is four ldm r0!... L307
+arm9 0x02027a14 ?B - arm9 -- pre-indexed byte RMW: retail ldrb r0,[r1,#8]! then strb r... L319
+arm9 0x02032b00 ?B - is an unaligned byte-extract from a 16B push-local, likely the ta... L361
+arm9 0x02033bd0 ?B - ` / `b 0x02033c1c` pairs with no test between L11682
+arm9 0x02033c1c ?B - ` pairs with no test between L11682
+arm9 0x02033c58 ?B - entry is mov r0,#1 ; b forward into a shared CP15 tail, dead mov... L361
+arm9 0x0203684c ?B - arm9 -- struct-return with field RMW: retail push {r0,r1,r2,r3} (... L343
+arm9 0x0203aeb8 ?B - ends in a branch past its own extent; 02033c58 48B entry is mov r... L361
+arm9 0x0203b4e4 ?B - arm9 -- clr/xor RMW: retail saves args with push {r0,r1,r2,ip,lr}... L349
+arm9 0x0203b564 ?B - / L11663
+arm9 0x0203b578 ?B - want a saved `lr` and `pop {pc}`, which mwcc does not add for an L11664
+arm9 0x0203cb6c ?B - `out[++*out] = i + f6` for `i < f8`, then the optional `fa`/`fc` L11572
+arm9 0x02042a68 ?B - +0x30 (bit 1 blocks, bit 0 must be L10975
+ov004 0x0204cbdc ?B - and L11020
 ov003 0x02050f2c 16B func_ov003_02050f2c degenerate: `cmp/ moveq r0,#0 / movne r0,#0` returns 0 on both paths;... L241
 ov003 0x02052160 140B func_ov003_02052160 140B: 104/140B. Shape is settled: 4 args, a3 packs two halves — lo=(u... L283
 ov003 0x02052384 372B func_ov003_02052384 ` (372 B, RGB555 -> BGR555 shade). Sibling of the matched L11726
@@ -324,7 +322,7 @@ ov003 0x020d8604 ?B - ` (164 B x2) -- closest draft L11531
 ov003 0x020d9f2c 164B func_ov003_020d9f2c each (famsurvey pair, 328B total) -- module reset routine. L5089
 ov003 0x020db6ec 180B func_ov003_020db6ec -- engine-B init: clear 0x200 u16 slots and L4249
 ov003 0x020eb720 ?B - ]` -> `[that]` -> function pointer, called if L9028
-ov003 0x027c0000 ?B - ldr r0,[pc]=0x3ff8; ldr r0,[r1,r0]!; orr r0,r0,#1; str r0,[r1]`. L9010
+dtcm 0x027c0000 ?B - ldr r0,[pc]=0x3ff8; ldr r0,[r1,r0]!; orr r0,r0,#1; str r0,[r1]`. L9010
 ov003 0x027c3ff8 ?B - and emits L9016
 ov004 0x0204cbfc 76B func_ov004_0204cbfc -- 8-slot table scan; retail is frameless with ip as the index (a... L391
 ov004 0x0204d8ec 128B func_ov004_0204d8ec -- binary search over the same overlay's table: `if (key > L5831
@@ -340,7 +338,7 @@ ov004 0x02057dcc 372B func_ov004_02057dcc ` (372 B x2, famsurvey group). Scene s
 ov004 0x020637c8 ?B - ..020647c0 L11242
 ov004 0x020647c0 ?B - see-detail L11242
 ov004 0x020690a8 ?B - `. The ternary form L10971
-ov004 0x027c0000 ?B - + 0x3ff8 |= 1; 0x20534cc: if(!*(u32*)p)return; p[0x30]=a1;p[0x32]=a2;... L1819
+dtcm 0x027c0000 ?B - + 0x3ff8 |= 1; 0x20534cc: if(!*(u32*)p)return; p[0x30]=a1;p[0x32]=a2;... L1819
 ov004 0x027c3ff8 ?B - |= 1` written as a base 0x027c0000 plus an offset L10960
 ov005 0x0204f340 140B func_ov005_0204f340 -- varargs-shaped coordinate update taking x/y and an s16 pair f... L7265
 ov005 0x0204f8a0 224B func_ov005_0204f8a0 / ov009 0x0204eb14 224B -- same hardware state writer in two ove... L8345
@@ -350,49 +348,49 @@ ov005 0x020614a4 220B func_ov005_020614a4 4x220 family lr/ip tie: 220/220 instru
 ov005 0x020656d8 220B func_ov005_020656d8 same 4x220 body as 0x020614a4, same lr/ip tie L223
 ov005 0x020695bc 220B func_ov005_020695bc same 4x220 body as 0x020614a4, same lr/ip tie L229
 ov005 0x0206bfc0 220B func_ov005_0206bfc0 same 4x220 body as 0x020614a4, same lr/ip tie L235
-ov006 0x020040e6 ?B - ..0x020045xx 4-6B Thumb SWI stubs at 2-mod-4 (alignment section above) L9586
-ov006 0x02024af8 ?B - ldr r1,[pc]; bx r1 veneer L9610
-ov006 0x0202612c ?B - two-call wrapper; mwcc pads 4 bytes for AAPCS stack alignment, re... L9634
-ov006 0x020263c0 ?B - subs/bhs flag-chained delay loop; C emits cmp+subs or sub without... L9616
-ov006 0x02033bc0 ?B - /0x02033c0c 16B mov r0,#0 / mov r0,#1 thunks that branch into the nex... L9658
-ov006 0x02033c0c ?B - mov r0,#0 / mov r0,#1 thunks that branch into the next symbol L9658
-ov006 0x02033cb0 ?B - udf #0xffff trap; not expressible in C L9592
-ov006 0x0203aeb8 ?B - same fragment class L9604
-ov006 0x0203b2cc ?B - cmp/bxeq then falls into the next symbol (non-returning fragment) L9598
-ov006 0x0203b564 ?B - svc #0x123456 wrapper (r0=3) L9640
-ov006 0x0203b578 ?B - svc #0x123456 wrapper (r0=7, r1=0) L9646
-ov006 0x0203b58c ?B - svc #0x123456 wrapper (r0=0x18) L9652
-ov006 0x02040505 ?B - was retested and still fails, so L11216
+arm9 0x020040e6 ?B - ..0x020045xx 4-6B Thumb SWI stubs at 2-mod-4 (alignment section above) L9586
+arm9 0x02024af8 ?B - ldr r1,[pc]; bx r1 veneer L9610
+arm9 0x0202612c ?B - two-call wrapper; mwcc pads 4 bytes for AAPCS stack alignment, re... L9634
+arm9 0x020263c0 ?B - subs/bhs flag-chained delay loop; C emits cmp+subs or sub without... L9616
+arm9 0x02033bc0 ?B - /0x02033c0c 16B mov r0,#0 / mov r0,#1 thunks that branch into the nex... L9658
+arm9 0x02033c0c ?B - mov r0,#0 / mov r0,#1 thunks that branch into the next symbol L9658
+arm9 0x02033cb0 ?B - udf #0xffff trap; not expressible in C L9592
+arm9 0x0203aeb8 ?B - same fragment class L9604
+arm9 0x0203b2cc ?B - cmp/bxeq then falls into the next symbol (non-returning fragment) L9598
+arm9 0x0203b564 ?B - svc #0x123456 wrapper (r0=3) L9640
+arm9 0x0203b578 ?B - svc #0x123456 wrapper (r0=7, r1=0) L9646
+arm9 0x0203b58c ?B - svc #0x123456 wrapper (r0=0x18) L9652
+arm9 0x02040505 ?B - was retested and still fails, so L11216
 ov006 0x0204d61c 332B func_ov006_0204d61c ` / `ov001 0x0204eff8` (332 B x2). File-load routine: the L11492
 ov006 0x0204db14 ?B - in .text, where a literal pool L11236
 ov006 0x0205025c ?B - span 169, 0x02050305 span 253, 0x02050505 span 343, ...). runs() now... L11231
 ov006 0x02050305 ?B - span 253, 0x02050505 span 343, ...). runs() now carves the aligned L11231
 ov006 0x02050505 ?B - span 343, ...). runs() now carves the aligned L11231
-ov006 0x02050f2c ?B - cmp/moveq/movne both returning 0; folds to `bx lr` in every C for... L9670
+ov003 0x02050f2c ?B - cmp/moveq/movne both returning 0; folds to `bx lr` in every C for... L9670
 ov006 0x02062024 ?B - (3908B, parts 321/32/3555): mwcc word aligns each array, so the third... L11250
 ov006 0x02076024 ?B - 7168B, 2 parts -> 8fcd8eec vs L11221
 ov006 0x02076028 ?B - instead of retail's 0x02076024, so the linker rebases around the odd... L11237
 ov006 0x0207623b ?B - ). Built overlay vs L11225
 ov006 0x0207c024 ?B - contains data_ov006_0207623b at 0x0207623b). Built overlay vs L11225
-ov008 0x0200f6cc ?B - -- 100/100 21 diff: needs the two pool bases 0x203cb6c/0x203cb6e... L451
-ov008 0x0200f9a4 ?B - arm9 -- 260/260 with 35 diff: body fully reconstructed (zero 0x4... L457
-ov008 0x0201779c ?B - arm9 -- 104/112 (22 diff): free-counterpart of 02017954, body co... L517
-ov008 0x02017954 ?B - arm9 -- **1.2/b56 gets the frame and lands on 64/64**; the only r... L493
-ov008 0x0201ce4c ?B - arm9 -- 132/136 (11 diff): object initialiser fully reconstructe... L463
-ov008 0x020208b0 ?B - / 0202093c 140B+140B arm9 (famsurvey group) -- under 1.2/b56 the two... L469
-ov008 0x0202093c ?B - 140B+140B arm9 (famsurvey group) -- under 1.2/b56 the two best candid... L469
-ov008 0x020255e8 ?B - -- 100/100 5 diff: retail updates the parameters destructively (... L439
-ov008 0x02029704 ?B - -- 108-112/100: retail keeps the accumulator in lr (callee-free)... L445
+arm9 0x0200f6cc ?B - -- 100/100 21 diff: needs the two pool bases 0x203cb6c/0x203cb6e... L451
+arm9 0x0200f9a4 ?B - arm9 -- 260/260 with 35 diff: body fully reconstructed (zero 0x4... L457
+arm9 0x0201779c ?B - arm9 -- 104/112 (22 diff): free-counterpart of 02017954, body co... L517
+arm9 0x02017954 ?B - arm9 -- **1.2/b56 gets the frame and lands on 64/64**; the only r... L493
+arm9 0x0201ce4c ?B - arm9 -- 132/136 (11 diff): object initialiser fully reconstructe... L463
+arm9 0x020208b0 ?B - / 0202093c 140B+140B arm9 (famsurvey group) -- under 1.2/b56 the two... L469
+arm9 0x0202093c ?B - 140B+140B arm9 (famsurvey group) -- under 1.2/b56 the two best candid... L469
+arm9 0x020255e8 ?B - -- 100/100 5 diff: retail updates the parameters destructively (... L439
+arm9 0x02029704 ?B - -- 108-112/100: retail keeps the accumulator in lr (callee-free)... L445
 ov008 0x0204cc94 140B func_ov008_0204cc94 -- slot allocator: reads `slot = *(u32 *)(p + 0xc10 + idx * 4)`... L5549
 ov008 0x0204cd20 140B func_ov008_0204cd20 -- 12-byte record push, same family as ov002 0x0204f5a0: index b... L7223
 ov008 0x0204d9dc 124B func_ov008_0204d9dc -- direction/percentage update: `if (flags == 0 || flags == 0x40... L5603
 ov008 0x0204e51c 56B func_ov008_0204e51c ) -- retail `ldr r1,[pc]`=0x027c0000, `ldr r0,[pc]`=0x3ff8, `ldr r0,[... L11055
 ov008 0x0204f27c ?B - rodata, 0204f414 44B data) are byte exact and were kept. L11243
 ov008 0x0204f414 ?B - data) are byte exact and were kept. L11243
-ov008 0x027c0000 ?B - `ldr r0,[pc]`=0x3ff8, `ldr r0,[r1,r0]!`, orr #1, str. Five spellings... L3361
+dtcm 0x027c0000 ?B - `ldr r0,[pc]`=0x3ff8, `ldr r0,[r1,r0]!`, orr #1, str. Five spellings... L3361
 ov008 0x027c3ff8 ?B - literal -- here 68B L11023
-ov009 0x0201cb84 ?B - arm9 -- 92/96: bit-1 test solved ((s32)(v << 30) >> 31 reproduces... L415
-ov009 0x02030828 ?B - arm9 -- 108/96: retail shares one func_02030808 tail between the... L421
+arm9 0x0201cb84 ?B - arm9 -- 92/96: bit-1 test solved ((s32)(v << 30) >> 31 reproduces... L415
+arm9 0x02030828 ?B - arm9 -- 108/96: retail shares one func_02030808 tail between the... L421
 ov009 0x0204db84 140B func_ov009_0204db84 -- packed coordinate update family: x = (x & 0xff00) + (a2 & 0xf... L5717
 ov009 0x0204dc0c ?B - ). `v` is a 4-byte struct passed L5695
 ov009 0x0204e500 336B func_ov009_0204e500 ` (336 B) and `ov005 0x0205587c` (336 B) are the same source L11739

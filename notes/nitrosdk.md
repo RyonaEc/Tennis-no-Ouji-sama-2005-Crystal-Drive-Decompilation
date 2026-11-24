@@ -256,3 +256,28 @@ makefile derives it at build time from the installed compiler's `-V` banner
 * Partial hits (leading bytes agree, then diverge) are the compiled-C half of
   the same story: they identify routines that a SDK-source port can plausibly
   match.
+
+## Near hits: the compiled half of the SDK map
+
+`sdkmap.py` only reports *exact* byte matches, and for compiled (not asm)
+library functions those do not exist: retail has its relocations applied, so its
+constant-pool words and pc-relative displacements differ from the archive member
+while every instruction is the same. `--near PCT` scores same-size archive
+bodies by equal-byte ratio and names the function they came from, which turns
+that difference into a work list instead of a dead end.
+
+    python tools/match/sdkmap.py arm9 --near 0.90
+
+arm9: 72 functions, 20,944 bytes at >= 90 % (`build/sdkmap-arm9-near.tsv`).
+The top rows are the proof: `0x02028888` = `FSi_SeekDirCommand` at 99 %,
+`0x0202bea8` = `PM_SetBackLightAsync` at 99 %, `0x02023df8`/`0x02023e58` =
+`GXS_LoadOBJ`/`GX_LoadOBJ` at 92 % - the last pair is the "2x96 B family" that
+sat in `walls.txt` as a register-allocation tie, and it is not a family at all,
+it is two adjacent SDK entry points.
+
+Matching them does not need a decompiler: read the function in
+`build/libraries/<lib>/src/`, restate the hardware registers as `volatile`
+accesses, and `var3` decides. `MI_StopDma` (80 B, libmi `mi_dma.c`) and
+`PMi_CallCallbackAndUnlock` (84 B, libspi ARM9 `pm.c`) matched first try that
+way; the second had a wall note claiming a register tie that the struct-typed
+source resolves by itself.
