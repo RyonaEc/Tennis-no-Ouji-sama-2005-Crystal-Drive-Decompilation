@@ -4933,3 +4933,21 @@ Two related observations while sweeping the queue:
   ordinary C, so these are more likely asm blocks than C - and `bl` to a C symbol
   inside an `asm void` body does not assemble, so transcribing them needs the
   calls expressed differently.
+
+## 2026-11-24 - the "frame-less asm" seam is three thunks, not a class
+
+Sweeping the rebuilt arm9 queue for units that open `stmdb sp!, {lr}` and then
+*do not* realign with `sub sp, sp, #4` found **exactly zero** remaining
+candidates: every other call-making unit realigns normally and is ordinary C, so
+there is no asm-block family to mine. The three that match that shape were
+`0x0202612c`, `0x0203b4b0` and `0x0203b4e4`, all now matched by writing the
+`stmdb`/`ldmia` bodies directly (112 B total). Two details that took a try each:
+`ldm` inside an `asm void` body is rejected and must be written `ldmia`, while
+`bl <extern C symbol>` assembles fine.
+
+The neighbouring `0x02033bc0` / `0x02033c0c` pair is *not* a pair of tail-call
+stubs as its disassembly suggests. Both are `mov r0, #N; b func_02033bd0`-shaped
+in the disassembler, but the second branch word is `0xffffffea`, which is
+`cond = 0xf` and cannot be a real branch; retail's implied target lands inside
+the preceding function. These two look like mis-delimited unit boundaries rather
+than code to reconstruct from the listing, so they are left alone.
