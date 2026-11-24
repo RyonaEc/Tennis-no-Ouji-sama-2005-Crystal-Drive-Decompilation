@@ -96,6 +96,12 @@ def prototype(name):
 def annotate(mod, addr, want_sig=True):
     fm.auto.set_module(mod)
     name, size = fm.auto.FUNCS.get(addr, ("?", 0))
+    if not size:
+        # Not a function start: borrow the span up to the next known body so a
+        # stale address still shows something instead of an empty listing.
+        later = sorted(a for a in fm.auto.FUNCS if a > addr)
+        size = (later[0] - addr) if later else 0x40
+        name = "(no symbol at this address; next body at 0x%08x)" % (addr + size)
     print("=== %s 0x%08x %s  %dB" % (mod, addr, name, size))
     for ins in fm.parse_ins(addr, size):
         line = "  %08x  %-8s %s" % (ins.address, ins.mnemonic, ins.op_str)
