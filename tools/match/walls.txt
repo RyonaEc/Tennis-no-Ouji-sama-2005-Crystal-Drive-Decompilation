@@ -11627,3 +11627,39 @@ written off.
   `ldr r6,[r1]` / `add r5,sp,#0` pair. 16 of 70 instructions still differ;
   declaration order of `i`/`k`, `for` vs `while`, and `k` addressing do not
   move it. Pure allocation/scheduling tie at equal size.
+- `ov002 0x02068e2c` (276 B, 9-slice sine-pair writer).  Decoded: base +
+  0x1e6c + 0x600 + i*8, four `(k * tab) + 0x800) >> 12` halfword stores per
+  step, `tab = data_0203d908` with element indices `2*x` and `2*x+1`, and three
+  counters incremented by 0x8000/0x100/0x200.  `k0 = 0x100 + b/8`,
+  `k1 = 0x200 + c/8`, and the table index comes from `a/8` truncated to 16 bits
+  then shifted right 4 (`lsl #13; lsr #16; asr #4`).  Every candidate that
+  reproduces the arithmetic lands at 244-252 B: mwcc zeroes 8 registers where
+  retail zeroes 4 and spills the base to the stack instead of keeping it in
+  r5 with the counters in lr/ip/r3.  Residue is allocation, not expression.
+- `arm9 0x0202612c` (20 B, two back-to-back calls) -- `void f(void) {
+  func_02026140(); func_020261d0(); }` compiles to 28 B because mwcc pads the
+  frame (`sub sp, sp, #4`) for the call alignment; retail has none.  Not fixed
+  by dropping prototypes or returning a value.
+- `arm9 0x020263c0` (12 B) -- retail is `subs r0, r0, #4; bhs self; bx lr`,
+  i.e. a fused bottom-tested loop.  `while (n >= 4) n -= 4;` gives the test at
+  the top, `do { } while` gives an unfolded `sub` plus a separate `cmp`, and a
+  void return lets mwcc delete the loop entirely.
+- `arm9 0x020048e8` (20 B) -- word fill `add ip, r1, r2; cmp r1, ip;
+  stmlt r1!, {r0}; blt`.  The bound is an unscaled `p + n`, so `n` counts bytes
+  while the store advances 4, and the compare is signed.  Casting the end
+  pointer and comparing as `s32` both still emit `lsl #2`/`blo`.
+- `arm9 0x02026aa4` / `0x02026ac8` (36 B / 44 B) -- straight copies built from
+  `ldm r0!, {r2,r3,ip}` / `stm r1!, {r2,r3,ip}` pairs (four pairs, then a final
+  four-register pair for the 64-byte one).  A `u32` loop gives a 28 B byte loop,
+  a plain struct assignment gives 52/60 B with 4-register ldm/stm and a frame,
+  and unrolling by hand gives 84 B.  mwcc will not pick the three-register
+  transfer without a source reason that is not a struct copy.
+- `arm9 0x02024b5c` (48 B) -- `p = (u32 *)0x027fffb0; if (bit >= 0x60) { p++;
+  bit -= 0x60; } else bit -= 0x40; *p |= 0x80000000u >> bit;` gives 44 B: retail
+  predicates the select (`addpl`/`subpl`/`submi`) and keeps `ldr` after the
+  shifts, mwcc uses `addhs`/`subhs`/`sublo` and hoists the load.
+- `arm9 0x0203b58c` (16 B) -- `asm { mov r1, #0; mov r0, #0x18;
+  swi 0x123456 }` matches every instruction except the return: retail ends
+  `mov pc, lr`, mwcc emits `bx lr` (same size).  Its siblings 0x0203b564 /
+  0x0203b578 want a saved `lr` and `pop {pc}`, which mwcc does not add for an
+  asm-only body either.
