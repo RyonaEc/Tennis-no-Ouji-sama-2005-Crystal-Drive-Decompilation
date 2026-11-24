@@ -323,6 +323,12 @@ def exec_range(body, i, end, regs, calls, cmps):
     """Execute body[i:end] symbolically.  Returns (stmts, term, next_i, regs)
     where term is None, ('ret', expr), ('jump', addr) or ('cbranch', cc, addr)."""
     stmts, stack = [], {}
+    # Values a `push`/`stm` left in the frame, so a matching `pop`/`ldm` gives
+    # the registers back their contents instead of leaving them unknown. Retail
+    # uses the save-around-a-call idiom (`push {r0, r1, r2, ip, lr}` / `bl` /
+    # `mov r3, r0` / `pop {r0, r1, r2, ip, lr}`) and without this every value
+    # read after the call is unknown, which is the largest bail class.
+    saved = {}
     pending_sf = None
     while i < end:
         mn, cond, ins = body[i]
@@ -452,15 +458,37 @@ def exec_range(body, i, end, regs, calls, cmps):
             ops_s = op.replace(' ', '')
             names = _frame_push((mn, cond, ins))
             if names:
+                # A push writes downward: after the step, sp's cell is the
+                # lowest address, and the first register listed on `push` sits
+                # at the highest address of the block.
                 _sp_step(regs, 4 * len(names))
+                depth = _frame_cell(regs, 0)
+                for k, name in enumerate(names):
+                    val = regs.get(name, ('unk',))
+                    if val != ('unk',):
+                        saved[depth - 4 * k] = val
                 continue
             if mn == 'pop':
-                _sp_step(regs, -4 * len(_reglist(ops_s)))
+                rlist = _reglist(ops_s)
+                cell0 = _frame_cell(regs, 0)
+                for k, name in enumerate(rlist):
+                    val = saved.get(cell0 - 4 * k)
+                    if val is not None:
+                        regs[name] = val
+                _sp_step(regs, -4 * len(rlist))
                 continue
             head, _sep, rest = ops_s.partition(',')
             if head.startswith('sp!'):
                 # pop: the loads happen before sp moves back up
-                _sp_step(regs, -4 * len(_reglist(rest)))
+                rlist = _reglist(rest)
+                cell0 = _frame_cell(regs, 0)
+                for k, name in enumerate(rlist):
+                    if name == 'pc':
+                        continue
+                    val = saved.get(cell0 - 4 * k)
+                    if val is not None:
+                        regs[name] = val
+                _sp_step(regs, -4 * len(rlist))
                 continue
             rb = R(head.rstrip('!'))
             if rb == 'r13':

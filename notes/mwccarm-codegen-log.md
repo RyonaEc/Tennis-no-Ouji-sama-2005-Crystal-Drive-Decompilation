@@ -5276,3 +5276,26 @@ source `r4` where retail uses `ip`. The local-vs-assigned declarations, `u32` vs
   ordering question second. The generator now emits its slot declarations in
   first-use order for exactly this reason, and its candidate for these twins is
   byte-exact (0 differing slots) with no hand edit.
+
+## 2026-11-25 - push/pop around a call is a value save, not a frame step
+
+`grind.py` now records *why* a unit yielded no candidate, which splits the
+1,729 no-candidate units into named classes instead of one bucket. The largest
+was `emit: unknown value` (279 units, 247 KB) -- gen walked the unit fine, then
+`emit` refused because an expression contained `('unk',)`.
+
+The cause is the save-around-a-call idiom, which retail uses constantly:
+
+    push {r0, r1, r2, ip, lr}
+    bl   func_0203b6d0
+    mov  r3, r0
+    pop  {r0, r1, r2, ip, lr}
+    ldr  r2, [r3]
+
+`_frame_push` only moved the modelled sp for the push and the pop, so every
+register restored by the pop kept whatever value it had before the call -- and
+for the ones the call clobbered, that was `('unk',)`. Tracking the pushed values
+per frame cell (`cell = depth_after_push - 4*k`; the first register on `push`
+sits at the highest address) and handing them back on the matching pop turns 42
+of those 279 units into candidates (best residue 25 slots, `arm9 0x0203b50c`).
+The other 237 hit the same message from other unknown sources.

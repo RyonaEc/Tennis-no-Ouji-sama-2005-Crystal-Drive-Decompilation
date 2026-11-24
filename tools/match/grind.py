@@ -181,6 +181,42 @@ def gen_candidate(mod, addr, size):
         return []
 
 
+def bail_reason(mod, addr, size):
+    """Why the generator produced nothing usable for a unit.
+
+    `no-candidate` covers three different situations -- the instruction walk
+    bailed, the emitter failed, or the emitted source does not compile -- and
+    they want different fixes. Record which one it was so the journal is a
+    worklist and not a wall.
+    """
+    auto = fm.auto
+    try:
+        auto.set_module(mod)
+        fn = auto.gen(addr, size)
+    except (Exception, SystemExit) as exc:
+        return str(exc) or type(exc).__name__
+    try:
+        text = auto.emit(fn)
+    except (Exception, SystemExit) as exc:
+        return "emit: %s" % (str(exc) or type(exc).__name__)
+    if fm.compile_text(text, "bail"):
+        return "compiles but scored nothing"
+    stub = pathlib.Path("build/_bail_%d" % os.getpid())
+    stub_c = stub.with_suffix(".c")
+    try:
+        stub_c.write_text('#include "types.h"\n\n' + strip_include(text), encoding="utf-8")
+        err = subprocess.run(["./tools/sjiswrap.exe", fm.MWCC_EXE, *fm.MWCC_FLAGS,
+                              "-c", str(stub_c), "-o", str(stub.with_suffix(".o"))],
+                             capture_output=True, text=True).stderr
+    except Exception:
+        return "source does not compile"
+    finally:
+        stub_c.unlink(missing_ok=True)
+        stub.with_suffix(".o").unlink(missing_ok=True)
+    msg = [ln.strip() for ln in err.splitlines() if "error" in ln.lower()]
+    return "compile: %s" % (msg[0] if msg else (err.strip().splitlines() or ["no message"])[0])
+
+
 def score(mod, addr, size, rows, dry):
     """Keep the candidates that compile, with their differing-slot count."""
     scored = []
@@ -256,9 +292,10 @@ def grind_unit(mod, addr, size, name, opts, journal):
               flush=True)
         return "dry", 0, None
     if not bases:
+        why = bail_reason(mod, addr, size)
         note(journal, dict(t="unit", mod=mod, addr=addr, name=name, size=size,
-                           status="no-candidate", variants=0, best=None))
-        print("[grind] %-6s %#010x %5dB %-24s no candidate" % (mod, addr, size, name),
+                           status="no-candidate", variants=0, best=None, why=why))
+        print("[grind] %-6s %#010x %5dB %-24s no candidate (%s)" % (mod, addr, size, name, why),
               flush=True)
         return "no-candidate", 0, None
 
