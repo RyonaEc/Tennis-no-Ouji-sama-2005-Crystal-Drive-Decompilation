@@ -212,7 +212,9 @@ Volatile used for a stack spill is a match-shape hack, not the original source. 
   do not move it, because the constant is not the compiler's decision at all.
   `func_0201fcc8` is NitroSDK `MTX_RotX33_`; written as the SDK's own `asm void`
   block, b56 assembles it byte for byte with no override. Check with
-  `python tools/match/sdk.py <mod> <addr> <size>` before parking one of these.
+  `python tools/match/sdk.py <mod> <addr> <size>` before parking one of these,
+  and `sdkmap.py` for a whole module: 34 unmatched arm9 functions are SDK
+  library code, not game code (`notes/nitrosdk.md`).
 * **BIOS SWI stubs**: 4-6 byte wrappers whose object compare can pass while the
   linked ROM does not.
 

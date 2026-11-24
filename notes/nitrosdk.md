@@ -42,49 +42,36 @@ Readme-NitroSDK-*.txt, SrcTreeMap.txt        release notes and source map
 
 `Rom` is the release configuration a cartridge would link; `Debug`/`Release`
 carry assertions and are not what the retail image contains. `.thumb.a` holds
-the thumb build of the same sources. `libfx`, `libgx`, `libos`, `libmi`,
-`libfs`, `libcard`, `libspi`, `libwm`, `libcp` and `libsyscall` are the ones this
-ROM pulls from.
-
-The sources are the useful part: they are what the original developers wrote and
-Nintendo compiled, including hand-written `asm` blocks (`fx_mtx33.c`) that no C
-spelling can reproduce.
+the thumb build of the same sources.
 
 ## Measured: how much of arm9 is SDK code
 
-`tools/match/sdkmap.py arm9` (searching `lib/ARM9-TEG/Rom` of both releases):
+`tools/match/sdkmap.py arm9` maps every function with no `src/arm9/<name>.c`
+against the `lib/ARM9-TEG/Rom` libraries of both releases:
 
 | | |
 |---|---|
-| unmatched arm9 functions | 1,365 (223,060 B) |
-| byte-identical to a prebuilt SDK object | **164 (7,836 B)** |
-| of those, 64 B or larger | 40 |
-| present in both releases | 100 |
-| present only in NitroSDK 2.0 RC3 | 49 (3,792 B) |
-| present only in NitroSDK 1.0 | 15 (64 B: 4- and 6-byte stubs) |
+| unmatched arm9 functions | 421 (164,224 B) |
+| **byte-identical to a prebuilt SDK object** | **34 (2,624 B)** |
+| ... of which the SDK defines as `asm` | 16 (1,444 B) |
+| ... of which the SDK defines as C | 11 |
+| ... Metrowerks syscall stubs (`libsyscall/_svc_mw.o`) | 7 |
+| present only in NitroSDK 2.0 RC3 | 15 (1,764 B) |
+| present only in NitroSDK 1.0 | 7 (32 B: 4- and 6-byte stubs) |
 
-By library: libos 42, libgx 42, libmi 16, libsyscall 15, libfx 10, libfs 8,
-libcard 8, libext 7, libspi 4, libwm 3, libcp 2, libctrdg 2, and one each in
-librtc, libpxi, libmb, libe3s, libdgt.
+By library: libmi 11, libsyscall 7, libos 5, libfx 3, libgx 3, libfs 2, libcp 2,
+libmb 1. Only one row has a size different from its SDK symbol, so these are
+1:1 library functions, not fragments of merged units.
 
-Two conclusions:
+**The cartridge linked the NitroSDK 2.0 line.** 15 functions exist only in
+2.0 RC3 and match retail exactly; the 7 "1.0-only" hits total 32 bytes of
+4-6 byte stubs, which are identical by accident, not version evidence.
 
-1. **The cartridge linked the NitroSDK 2.0 line.** 49 functions exist only in
-   2.0 RC3 and match retail exactly; the 15 "1.0-only" hits total 64 bytes of
-   4-6 byte stubs, which are identical-by-accident padding, not a version
-   signal. A release that changed 3,792 bytes of library code and matches all of
-   them is the release that was linked.
-2. **These 164 units are not game code**, and treating them as mwccarm codegen
-   problems is wasted effort.
-
-Caveat on the map: retail's function boundaries are this project's, not
-Nintendo's. In many rows the retail unit is larger than the SDK symbol it starts
-at (`0x0201fe0c` 344 B starting at `VEC_Fx16Distance`, whose SDK size is 192 B),
-because the linker placed several SDK functions contiguously and the retail
-symbol analysis merged them or the neighbours follow without alignment. So a row
-means "this unit starts at SDK symbol X and continues into SDK code", and the
-real unit may need to be split, or written as the SDK source plus whatever game
-code follows.
+**Correction.** An earlier version of this note reported 164 functions and
+7,836 B. That sweep treated every function inside a bare `.text` block as
+unmatched, which included units this project has already matched
+(`func_0201fcc8` among them). The project's own rule - unmatched means
+`src/<module>/<name>.c` is absent - gives 34.
 
 ## Using it
 
@@ -101,27 +88,49 @@ its relocations applied while the archive object still carries placeholders.
 
 Then work from the SDK source:
 
-* an `asm` block in the SDK (`fx_mtx33.c`, `os_spinlock.c`, ...) is the original
-  source of that unit: write it as `asm void` in `src/` and let `1.2/b56`
-  assemble it, as `func_0201fcc8` does;
-* a C function in the SDK is worth porting with its SDK types and then diffing
-  with `var3.py`; if the bytes are not exact, the compiler that built the
-  library differs from b56 and the unit stays parked. Do not install a
-  stand-in override for a library unit: the reason it differs is provenance,
-  which is a note, not a compiler tag.
+* an `asm` block in the SDK is the original source of that unit: write it as
+  `asm void` in `src/`, keeping the SDK's parameter list so the registers land in
+  `r0..`, and let `1.2/b56` assemble it. Regenerating the candidate is scripted
+  in `build/cand/gen_asm_sdk.py` (scratch), and 14 of the 16 asm units were
+  installed this way;
+* a C function in the SDK needs the SDK headers and Metrowerks' MSL
+  (`stdio.h`, `stdarg.h`, ...), which ship in `CodeWarrior_DS-1_2.zip`, not in
+  the SDK. That harness is not built yet: stub headers get part way and then
+  fail inside `printf.h`. Until it exists, the 11 C units stay parked.
 
-None of this changes the definition of done. `reg.py` and `ninja sha1` still
-decide, and both tools only report provenance.
+None of this changes the definition of done: `reg.py` and `ninja sha1` decide,
+and both tools only report provenance.
+
+## Status and what is left
+
+Installed from this map so far: the three `MTX_RotX33_`-family units, then 14
+SDK asm units (1,296 B) - `MIi_CpuClear32`, `MIi_CpuCopy32`, `MIi_CpuClearFast`,
+`MIi_CpuCopyFast`, `MI_Copy36B/48B/64B`, `MI_CpuFill8`, `MI_CpuCopy8`,
+`MI_UncompressLZ8`, `MI_UncompressLZ16`, `GXi_NopClearFifo128_`,
+`GX_SendFifo48B`, `OS_SpinWait`.
+
+Left on the map:
+
+* `OS_ReleaseLockID` (0x02024b5c, 48 B) and `OS_InitContext` (0x020255e8, 100 B):
+  SDK asm, but the transcribed block did not compile to retail bytes in one
+  pass; check the source's `#include <nitro/code32.h>` context and any macro it
+  uses.
+* 11 C units: `VEC_Normalize` (344 B), `VEC_CrossProduct` (156 B),
+  `CP_SaveContext` (116 B), `CP_RestoreContext` (108 B), `OS_GetLockID` (88 B),
+  `G3X_SetFog` (84 B), `OS_DisableIrqMask` (72 B), `FX_InvAsync` (60 B),
+  `FSi_WriteFileCommand` / `FSi_ReadFileCommand` (56 B each),
+  `MBi_calc_sendblock` (8 B). These need the MSL/SDK header harness first.
+* 7 Metrowerks syscall stubs in `libsyscall/_svc_mw.o` (4-6 B). They are compiler
+  runtime stubs, not game functions: write them from that object, and do not
+  invent C for them.
 
 ## What would help next
 
-* Work the 40 hits of 64 B or more: each needs its SDK source read (and
-  sometimes a split), which is ordinary decompilation of documented code rather
-  than guessing at compiler policy.
+* Finish the two asm stragglers, then build the SDK-header compile harness
+  (CodeWarrior MSL + `include/nitro`) so the 11 C units can be ported and
+  diffed; that is the reusable part.
 * Run `sdkmap.py` on the overlays: if the game links library code there too, the
   same map applies, and those modules have smaller units on average.
-* The 304 partial hits (>= 12 leading bytes) are the compiled-C half of the same
-  story: they identify routines that a SDK-source port can plausibly match.
-* Pinning the exact SDK release (2.0 RC3 vs a later 2.0 patch) needs a function
-  that changed between those releases; the 49 2.0-only hits already bound it to
-  the 2.0 line, and no later archive predates the cartridge.
+* Partial hits (leading bytes agree, then diverge) are the compiled-C half of
+  the same story: they identify routines that a SDK-source port can plausibly
+  match.

@@ -36,10 +36,10 @@ tennis_ATOJ.nds: OK
 
 | | Matching C | Total | Share |
 |---|---:|---:|---:|
-| Functions | 1,666 | 3,806 | 43.77% |
-| Code | 132,376 B | 1,841,700 B | 7.19% |
+| Functions | 1,680 | 3,806 | 44.14% |
+| Code | 133,672 B | 1,841,700 B | 7.26% |
 | Data | 630,724 B | 801,936 B | 78.65% |
-| Units | 3,955 | 4,619 | 85.62% |
+| Units | 3,969 | 4,629 | 85.74% |
 
 The badges above use objdiff's stricter pair, `matched_functions` and `matched_code`, which
 now agree with the complete counts exactly: every one of the 3,953 units scores 100%, so a

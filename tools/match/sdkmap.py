@@ -57,34 +57,35 @@ def elf_funcs(blob):
     shoff, = struct.unpack_from("<I", blob, 0x20)
     shentsize, shnum, _shstrndx = struct.unpack_from("<HHH", blob, 0x2e)
     secs = [struct.unpack_from("<IIIIIIIIII", blob, shoff + i * shentsize) for i in range(shnum)]
-    execs = [(s[4], s[5], s[3]) for s in secs if s[2] & 4 and s[1] != 8]
+    # (section index, file offset, size) of every executable section. Metrowerks
+    # objects put each function in its own section with sh_addr 0, so a symbol's
+    # st_value is 0 and only st_shndx identifies which function owns an offset.
+    execs = [(i, s[4], s[5]) for i, s in enumerate(secs) if s[2] & 4 and s[1] != 8]
     symtab = next((s for s in secs if s[1] == 2), None)
     funcs = []
     if symtab:
         strbase = secs[symtab[6]][4]
         base, size, ent = symtab[4], symtab[5], symtab[9] or 16
         for o in range(base, base + size, ent):
-            nameoff, value, sz, info, _other, _shndx = struct.unpack_from("<IIIBBH", blob, o)
+            nameoff, value, sz, info, _other, shndx = struct.unpack_from("<IIIBBH", blob, o)
             if (info & 0xf) != 2:
                 continue
             end = blob.index(b"\0", strbase + nameoff)
-            funcs.append((blob[strbase + nameoff:end].decode("latin-1"), value, sz))
+            funcs.append((blob[strbase + nameoff:end].decode("latin-1"), value, sz, shndx))
     return funcs, execs
 
 
 def symbol_at(blob, off):
-    """(name, size) of the SDK symbol starting at this object offset, if any."""
+    """(name, size) of the SDK function whose code contains this object offset."""
     funcs, execs = elf_funcs(blob)
-    for sh_off, sh_size, sh_addr in execs:
+    for shndx, sh_off, sh_size in execs:
         if sh_off <= off < sh_off + sh_size:
-            vaddr = sh_addr + (off - sh_off)
-            cands = [(n, v, s) for n, v, s in funcs
-                     if not n.startswith("$") and (v == vaddr or (s and v <= vaddr < v + s))]
-            if not cands:
-                return None, 0
-            exact = [c for c in cands if c[1] == vaddr]
-            pick = exact[0] if exact else min(cands, key=lambda c: c[2])
-            return pick[0], pick[2]
+            cands = [(n, s) for n, v, s, ndx in funcs
+                     if ndx == shndx and not n.startswith("$")]
+            if cands:
+                # one function per section: the only FUNC symbol is the owner
+                return cands[0][0], cands[0][1]
+            return None, 0
     return None, 0
 
 
@@ -126,30 +127,17 @@ def owner(index, off):
     return None, None, None, None
 
 
-def unmatched_functions(cfg):
-    ranges = []
-    cur_src = False
-    for line in open(os.path.join(cfg, "delinks.txt"), encoding="utf-8"):
-        s = line.strip()
-        if re.match(r"^\S.*:$", s):
-            cur_src = s.startswith("src/")
-            continue
-        m = re.match(r"^\.text\s+start:(0x[0-9a-f]+)\s+end:(0x[0-9a-f]+)", s)
-        if m and not cur_src:
-            a, b = int(m.group(1), 16), int(m.group(2), 16)
-            if b > a:
-                ranges.append((a, b))
-
-    def inside(addr):
-        return any(a <= addr < b for a, b in ranges)
-
+def unmatched_functions(module, cfg):
+    """Functions with no src/<module>/<name>.c, which is this project's rule."""
+    srcdir = os.path.join("src", module)
     out = []
     for line in open(os.path.join(cfg, "symbols.txt"), encoding="utf-8"):
         m = re.match(r"^(\w+) kind:function\((\w+),size=(0x[0-9a-f]+)\) addr:(0x[0-9a-f]+)", line.strip())
-        if m:
-            size, addr = int(m.group(3), 16), int(m.group(4), 16)
-            if size and inside(addr):
-                out.append((addr, size, m.group(1), m.group(2)))
+        if not m:
+            continue
+        name, kind, size, addr = m.group(1), m.group(2), int(m.group(3), 16), int(m.group(4), 16)
+        if size and not os.path.exists(os.path.join(srcdir, name + ".c")):
+            out.append((addr, size, name, kind))
     return out
 
 
@@ -169,7 +157,7 @@ def main(argv=None):
 
     import fastmatch as fm
 
-    funcs = unmatched_functions(module_config(args.module))
+    funcs = unmatched_functions(args.module, module_config(args.module))
     releases = load_releases(roots)
     print("%s: %d unmatched functions, %d bytes" % (args.module, len(funcs), sum(f[1] for f in funcs)))
     print("searched %d library sets (%s)" % (len(releases), ", ".join(sorted(releases))))

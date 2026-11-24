@@ -4179,3 +4179,59 @@ src/arm9/func_0201fce4.c:
 src/arm9/func_0201fd00.c:
     complete
     .text       start:0x0201fd00 end:0x0201fd18
+
+src/arm9/func_020048e8.c:
+    complete
+    .text       start:0x020048e8 end:0x020048fc
+
+src/arm9/func_02022368.c:
+    complete
+    .text       start:0x02022368 end:0x020223fc
+
+src/arm9/func_0202474c.c:
+    complete
+    .text       start:0x0202474c end:0x02024770
+
+src/arm9/func_020263c0.c:
+    complete
+    .text       start:0x020263c0 end:0x020263cc
+
+src/arm9/func_020269ec.c:
+    complete
+    .text       start:0x020269ec end:0x02026a04
+
+src/arm9/func_02026a04.c:
+    complete
+    .text       start:0x02026a04 end:0x02026a50
+
+src/arm9/func_02026a50.c:
+    complete
+    .text       start:0x02026a50 end:0x02026a88
+
+src/arm9/func_02026a88.c:
+    complete
+    .text       start:0x02026a88 end:0x02026aa4
+
+src/arm9/func_02026aa4.c:
+    complete
+    .text       start:0x02026aa4 end:0x02026ac8
+
+src/arm9/func_02026ac8.c:
+    complete
+    .text       start:0x02026ac8 end:0x02026af4
+
+src/arm9/func_02026af4.c:
+    complete
+    .text       start:0x02026af4 end:0x02026b88
+
+src/arm9/func_02026b88.c:
+    complete
+    .text       start:0x02026b88 end:0x02026cb8
+
+src/arm9/func_02026cc0.c:
+    complete
+    .text       start:0x02026cc0 end:0x02026d54
+
+src/arm9/func_02026d54.c:
+    complete
+    .text       start:0x02026d54 end:0x02026e2c
