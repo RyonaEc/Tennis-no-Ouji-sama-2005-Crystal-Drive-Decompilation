@@ -51,6 +51,14 @@ thing that accepts a unit. `try_unit` builds through `ninja rom` (not the
 `rom`+`objdiff` default), and a re-test whose delinks entry already exists does
 not re-run `configure.py`.
 
+Functions that start at a halfword address (4n+2) used to be unlinkable: mwcc
+and dsd both declare `sh_addralign` 4 for code, and the linker script's
+`ALIGNALL(4)` pads the chunk up to the next word, shifting everything after it
+by two bytes. `tools/align_code.py` runs in `build.ninja` between the objects
+and the link, dropping executable sections to alignment 2 and the `.arm9`
+`ALIGNALL` with them, so the delinked sizes decide the layout the way retail
+does. The ten `swi` stubs are matched that way.
+
 **Sweeps, families and queues**
 
 `autorun.py`, `resweep.py`, `sweep_tiny.py`, `sweep_homed.py` (generated

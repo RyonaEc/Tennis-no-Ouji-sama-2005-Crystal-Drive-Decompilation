@@ -422,10 +422,24 @@ def add_mwld_and_rom_builds(n: ninja_syntax.Writer, project: Project, args) -> N
     objects = [entry["object_to_link"] for entry in project.files()]
     elf = project.arm9_o()
 
+    align_stamp = rel(project.game_build / "code_aligned.stamp")
+    if objects:
+        n.comment("Relax code alignment so halfword-aligned chunks can be placed")
+        n.build(
+            inputs=[*objects, project.arm9_lcf_file()],
+            rule="align_code",
+            outputs=align_stamp,
+            variables={
+                "build_dir": rel(project.game_build),
+                "lcf_file": project.arm9_lcf_file(),
+            },
+        )
+        n.newline()
+
     if objects:
         n.comment("Link the ARM9 program")
         n.build(
-            inputs=[*objects, project.arm9_lcf_file(), project.arm9_objects_file()],
+            inputs=[*objects, align_stamp, project.arm9_lcf_file(), project.arm9_objects_file()],
             implicit=args.mwld,
             rule="mwld",
             outputs=elf,
@@ -592,6 +606,14 @@ def write_rules(n: ninja_syntax.Writer, args) -> None:
         name="lcf",
         command=f"{args.dsd_path} {DSD_BASE_FLAGS} lcf --config-path $config_path",
         description="Generate the linker script",
+    )
+    n.newline()
+
+    n.rule(
+        name="align_code",
+        command=(f"{sys.executable} {rel(TOOLS_DIR / 'align_code.py')} "
+                 "--stamp $out --lcf $lcf_file $build_dir/delinks $build_dir/src"),
+        description="Relax code-section alignment",
     )
     n.newline()
 

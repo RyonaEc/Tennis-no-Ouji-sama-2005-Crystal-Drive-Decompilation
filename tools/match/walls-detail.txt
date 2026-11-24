@@ -2346,8 +2346,10 @@ Shape: '#include "types.h"' + blank + '#pragma thumb on' + fn + '{ asm { swi N }
 
   arm9 0x020043a8  6B Mod             asm { swi 0x09; mov r0, r1 }
 
-Why the ten stubs above are still parked, re-checked 2026-11-24 (they are not
-codegen walls, and the shape is right):
+RESOLVED 2026-11-24: all ten of these are matched. They were never codegen
+walls; they were blocked by section placement, which `tools/align_code.py` now
+fixes in the build (see below). The note is kept because the same mechanism
+covers any future function whose start is 4n+2.
 
 * `#pragma thumb on` + `asm { swi N }` *does* byte-match in isolation. `Halt`
   (4 B) and `Mod` (6 B) both report `MATCH` from `fastmatch diffc`.
@@ -2361,14 +2363,22 @@ codegen walls, and the shape is right):
   `0x02004336`, `0x0200440e`, `0x02004466`, `0x020044ea`, `0x0200470a`); `Mod`
   is the only 4-aligned one and fails for the same padding reason.
 * `align:2` cannot be expressed per chunk: dsd rejects it with "attribute
-  'align' should be omitted as it is inherited from this file's header" (the
-  file header declares `.text ... align:32`). Giving the entry an explicit
-  `align:2` reproduces exactly that error.
-* So the unblocker is build-side (a way to place a 2-byte-section chunk at a
-  halfword address, e.g. truncating the object's section end to the delinked
-  size), not a source shape. Until then no spelling of these ten can install.
-  `Mod` is installed in neither state, so the tree is unchanged; the experiment
-  was reverted.
+  'align' should be omitted as it is inherited from this file's header", and
+  relaxing that header (`.text ... align:32` -> `align:2`) changes nothing
+  because the attribute is not inherited by the gap objects.
+* The unblocker was build-side, as suspected, and it needs two halves because
+  mwld's generated script says `ALIGNALL(4)` inside `.arm9`:
+  1. `tools/align_code.py` sets every executable progbits section of every
+     linked object from `sh_addralign` 4 to 2, and
+  2. the same step rewrites that one `ALIGNALL(4);` in the generated
+     `arm9.lcf` to `ALIGNALL(2);` (the data sections keep their 4).
+  `configure.py` runs it between the last object and the link, so the delinked
+  sizes - which already equal retail's - become the whole layout. With both in
+  place `Mod` links `09df 081c 7047` at 0x020043a8 followed by retail's `b91d`
+  at 0x020043ae, and the arm9 code region has zero differing halfwords.
+* Sources: `swi N` alone is a 4-byte stub (`svc` + `bx lr`); `mov r2, #0;
+  swi 0x05` is VBlankIntrWait (`00 22 05 df 70 47`). Note the spelling: `mov`,
+  not `movs`, or the encoding differs.
 
 
 

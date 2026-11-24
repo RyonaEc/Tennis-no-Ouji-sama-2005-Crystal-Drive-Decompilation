@@ -4327,3 +4327,43 @@ src/arm9/func_02026738.c:
 src/arm9/func_020274f0.c:
     complete
     .text       start:0x020274f0 end:0x02027580
+
+src/arm9/Mod.c:
+    complete
+    .text       start:0x020043a8 end:0x020043ae
+
+src/arm9/Halt.c:
+    complete
+    .text       start:0x020040e6 end:0x020040ea
+
+src/arm9/Sqrt.c:
+    complete
+    .text       start:0x02004146 end:0x0200414a
+
+src/arm9/RLUnCompReadNormalWrite8bit.c:
+    complete
+    .text       start:0x0200426a end:0x0200426e
+
+src/arm9/IsDebugger.c:
+    complete
+    .text       start:0x02004336 end:0x0200433a
+
+src/arm9/LZ77UnCompReadByCallbackWrite16bit.c:
+    complete
+    .text       start:0x0200440e end:0x02004412
+
+src/arm9/CpuSet.c:
+    complete
+    .text       start:0x02004466 end:0x0200446a
+
+src/arm9/GetCRC16.c:
+    complete
+    .text       start:0x020044ea end:0x020044ee
+
+src/arm9/CpuFastSet.c:
+    complete
+    .text       start:0x0200470a end:0x0200470e
+
+src/arm9/VBlankIntrWait.c:
+    complete
+    .text       start:0x020042d2 end:0x020042d8
