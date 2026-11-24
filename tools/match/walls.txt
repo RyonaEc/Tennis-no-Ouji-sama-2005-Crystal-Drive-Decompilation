@@ -11707,3 +11707,19 @@ written off.
   header struct fixes the fold but adds an induction `mov`/`add`; `u32 perm[4]`
   instead of `u32 perm[2][2]` costs 12 bytes.  Best candidate
   `build/cand/d_88168.c`, 21 differing register slots out of 84.
+- `ov003 0x02054190` (336 B, 2x8 halfword transpose + packed register write).
+  Decoded: `h = base + 0x8700; h->idx = 0;` then a three-way select on `a0`
+  writing four halfwords at `base + 0x89bc` (0x80/0x80/0x60/0x60 for 1,
+  0x80/0x80/0/0xc0 for 7, 0/0xff/0/0xc0 otherwise); then
+  `for (i = 0; i < 2; i++) tbl[k][i] = src[k]` for k = 0..7 (an `s16[8][2]`
+  transpose, and the k loop is fully unrolled in retail); then read
+  `f = tbl + idx` and store `(f[0] << 8 | f[1] & 0xff)` style packs to the
+  halfwords at 0x04000040 and 0x04000044 (`f[0]`, `f[2]`, `f[4]`, `f[6]`).
+  Writing the eight `tbl[k][i] = src[k]` statements explicitly reproduces the
+  unrolled body (the nested `k` loop is not unrolled), giving 344 B against
+  336: the four pack operands are addressed as `idx`, `idx + 2`, `idx + 4`,
+  `idx + 6` scaled separately, where retail computes `flat + idx` once and
+  uses `#4`/`#8`/`#0xc` immediates.  Introducing that pointer variable drops
+  the unit to 316 B instead (mwcc then merges the source reads with the
+  stores), and `u16 i` costs a further 8 B.  Residue is allocation and
+  addressing form, not the algorithm.
