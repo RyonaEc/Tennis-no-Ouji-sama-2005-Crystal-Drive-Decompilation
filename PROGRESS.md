@@ -13,17 +13,17 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 | Metric | Matched | Total | Progress |
 |---|---:|---:|---|
-| Code | 132,016 B | 1,841,700 B | 7.17% `██░░░░░░░░░░░░░░░░░░░░░░` |
-| Functions | 1,663 | 3,806 | 43.69% `██████████░░░░░░░░░░░░░░` |
-| Fuzzy match | 7.17% | n/a | `██░░░░░░░░░░░░░░░░░░░░░░` |
+| Code | 132,324 B | 1,841,700 B | 7.18% `██░░░░░░░░░░░░░░░░░░░░░░` |
+| Functions | 1,664 | 3,806 | 43.72% `██████████░░░░░░░░░░░░░░` |
+| Fuzzy match | 7.18% | n/a | `██░░░░░░░░░░░░░░░░░░░░░░` |
 | Data | 630,724 B | 801,936 B | 78.65% `███████████████████░░░░░` |
-| Complete units | 3,952 | 4,616 | 85.62% `█████████████████████░░░` |
+| Complete units | 3,953 | 4,618 | 85.60% `█████████████████████░░░` |
 
 ## By module
 
 | Module | Code | Functions | Fuzzy | Data | Complete units |
 |---|---:|---:|---:|---:|---:|
-| ARM9 main | 26.03% (58,476 / 224,616 B) | 941 / 1,377 (68.3%) | 26.03% | 13.20% (9,224 / 69,856 B) | 1,072 / 1,282 |
+| ARM9 main | 26.17% (58,784 / 224,616 B) | 942 / 1,377 (68.4%) | 26.17% | 13.20% (9,224 / 69,856 B) | 1,073 / 1,284 |
 | OV002 | 5.49% (39,300 / 715,724 B) | 410 / 1,360 (30.1%) | 5.49% | 61.19% (20,904 / 34,164 B) | 966 / 1,188 |
 | OV003 | 2.20% (12,928 / 586,712 B) | 121 / 547 (22.1%) | 2.20% | 82.87% (53,572 / 64,648 B) | 628 / 711 |
 | OV004 | 5.89% (5,276 / 89,584 B) | 63 / 170 (37.1%) | 5.89% | 86.66% (23,748 / 27,404 B) | 676 / 729 |
@@ -36,6 +36,6 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 ## Against the whole ROM
 
-1,663 of 3,806 functions (43.69%) and 132,016 of 1,841,700 code bytes (7.17%) are matching C; the rest are still delinked assembly.
+1,664 of 3,806 functions (43.72%) and 132,324 of 1,841,700 code bytes (7.18%) are matching C; the rest are still delinked assembly.
 
 630,724 bytes of `.data` are matching C definitions; the rest of the data sections are still raw bytes in the delinked image.

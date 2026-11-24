@@ -11777,3 +11777,26 @@ written off.
   0x0204c7c0.  So arm9 calls into ov003 at fixed addresses that are not function
   starts, and an `extern` declaration cannot resolve.  Any attempt fails to
   compile with a bare `<string not found>` on the call line.
+- `ov003 0x020524f8` (340 B, 16-pixel BGR555 halving loop) is 340 B with only 39
+  differing slots, and every one is the r4/r5 role swap: `col` lands in r5 and
+  `k` in r4 from the second channel on, where retail keeps `col` in r4 and `k`
+  in r5 (the first channel is byte-exact).  The shape that reproduces the rest is
+  `col = (u16)((src[i] & 0x3e0) >> 5); n = col; n >>= 1; for (k = 0; k < n; k++)
+  { if (col != 0) col--; } if (col > 0x1f) col = 0x1f; dst[i] += col << 5;` -
+  note `n = col; n >>= 1;` is required for `lsr` instead of `asr`.  All 24
+  declaration orders of `i`/`col`/`n`/`k` give 39 diffs, per-channel variables
+  (`col1`..`k3`) are worse (348 B, 62-76 diffs), and `u16 t = src[i]` /
+  `col = src[i]` pre-load forms do not move it either.
+- `ov002 0x020604b4` (352 B) compiles to exactly 352 B with 19 differing slots, all
+  of them the r4/r5/lr roles inside the two plain "store 4"/"store 3" loops: retail
+  keeps `e` (entry pointer) in `lr`, `pp` in `r5` and `i` in `r4`, while mwcc gives
+  `e` r5, `pp` r4 and `i` lr.  The three-channel dispatch itself is matched, and so
+  is the first loop (`bne` to the cold `store 3` block, `poplo` for the unsigned
+  `mode < 2` test, `addne ip, r1, r5` for `base[i + 0x14a]`).  What reproduces it:
+  `u32 mode = base[0x100]; p = base + 0x1824; if (mode < 2) return; idx = mode - 2;
+  t = (u32 *)(p + idx * 4); sel = (*(u32 *)(p + 0xb8) & 2) ? 1 : 0;` then
+  `if (t[0xe8/4] == 0) { ...main...; return; } else-the-tail-loop`, with `pp`
+  declared last, `((u32)e[2] >> 1)` for the `lsr`, and `b = base + i` before the
+  two byte stores.  Tried and no better: block-scoped `e`/`pp`, per-loop `i2`,
+  index-based entry addressing (`e = base + 0x2e4 + i * 0x158`, 360-364 B),
+  `while`/pre-initialised `for`, and six declaration orders (19-32 diffs).
