@@ -4251,3 +4251,23 @@ src/arm9/func_02028920.c:
 src/arm9/func_02028958.c:
     complete
     .text       start:0x02028958 end:0x02028990
+
+src/arm9/func_0201ff64.c:
+    complete
+    .text       start:0x0201ff64 end:0x02020000
+
+src/arm9/func_0202ae08.c:
+    complete
+    .text       start:0x0202ae08 end:0x0202ae7c
+
+src/arm9/func_0202ad9c.c:
+    complete
+    .text       start:0x0202ad9c end:0x0202ae08
+
+src/arm9/func_0201fd50.c:
+    complete
+    .text       start:0x0201fd50 end:0x0201fd8c
+
+src/arm9/func_020248c8.c:
+    complete
+    .text       start:0x020248c8 end:0x02024910

@@ -122,11 +122,15 @@ be transcribed literally; only the parameter *types* have to exist here.
 
 Left on the map:
 
-* 9 C units: `VEC_Normalize` (344 B), `VEC_CrossProduct` (156 B),
-  `CP_SaveContext` (116 B), `CP_RestoreContext` (108 B), `OS_GetLockID` (88 B),
-  `G3X_SetFog` (84 B), `OS_DisableIrqMask` (72 B), `FX_InvAsync` (60 B),
-  `FSi_WriteFileCommand` / `FSi_ReadFileCommand` (56 B each),
-  `MBi_calc_sendblock` (8 B). These need the MSL/SDK header harness first.
+* 4 C units: `MBi_calc_sendblock` (8 B), `G3X_SetFog` (84 B), `OS_GetLockID`
+  (88 B) and `VEC_Normalize` (344 B), the last one needing the CP div/sqrt
+  command sequence mirrored from `cp.h`. Seven more C units were matched this
+  way already (`VEC_CrossProduct`, `CP_SaveContext`, `CP_RestoreContext`,
+  `FX_InvAsync`, `OS_DisableIrqMask`, `FSi_ReadFileCommand`,
+  `FSi_WriteFileCommand`): the recipe is to restate the SDK header as plain C -
+  `volatile` casts for the hardware registers, a struct with the offsets read
+  off the disassembly - and compile the SDK body unchanged.
+
 * 7 Metrowerks syscall stubs in `libsyscall/_svc_mw.o` (4-6 B). They are compiler
   runtime stubs, not game functions: write them from that object, and do not
   invent C for them.
