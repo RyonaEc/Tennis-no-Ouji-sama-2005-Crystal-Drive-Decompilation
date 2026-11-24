@@ -11684,3 +11684,26 @@ written off.
   `ldr r1, =self+8; bx r1` before the real body (`mrs apsr` / mask a bit /
   `msr cpsr_fc` / return the previous state), so the 60-byte symbols at
   0x02033bd0 and 0x02033c1c are two-entry-point locals, not standalone units.
+- `ov003 0x020538b0` (320 B, two 4-way field classifier chains).  Decoded: for
+  `a0 == 0` test `p[0x200+0x9c]`, `+0xa2`, `+0x9e`, `+0xa0` in that order; for
+  `a0 != 0` the same set in the order 0x9c, 0x9e, 0xa0, 0xa2.  Each test is
+  `if (v != 0 && v - 1 == p[0x200+0x6c]) return 1;` and the field is reloaded
+  per test.  Every formulation lands at exactly 320 B with the right block
+  layout and predication, but mwcc homes the loaded base pointer in r0 and the
+  `p + 0x200` temporary in r1 where retail uses r2 and r0 (retail's `a0` stays
+  in r0 across the dereference, so the load goes to r2).  Declaration order,
+  `u16` vs `u32` for `v`, `&&` vs nested `if`, `switch (a0)`, a real
+  `q = p + 0x200` variable, a two-argument signature and `const` pointers were
+  all tried.  Pure allocation tie: 48 of 80 instructions differ, only by
+  register name.
+- `ov002 0x02088168` (336 B, pair-marking pass).  Decoded: zero eight bytes at
+  `base+0x4bbc`, then `for (i = 0; i < 4; i++) p[i] = 0;`; bail unless
+  `base[0x8c] == 1`; `perm[base[0x94 + i]] = i`; then for `i` in 0..1 take
+  `a = perm[2i]`, `b = perm[2i+1]`, write `p[a + 4] = b`, `p[b + 4] = a`, and
+  mark the pair 1/1 when both `base[0x98 + x]` are 1, else 2/3 per element.
+  Exact size reached, but retail folds `base[0x94 + i]` as `add base, i` then
+  `ldrb [that, #0x94]` and keeps `p + a` / `p + b` in r2/r1, while mwcc folds
+  `add i, #0x94` and rotates the pair pointers to r3/r2.  Casting through a
+  header struct fixes the fold but adds an induction `mov`/`add`; `u32 perm[4]`
+  instead of `u32 perm[2][2]` costs 12 bytes.  Best candidate
+  `build/cand/d_88168.c`, 21 differing register slots out of 84.
