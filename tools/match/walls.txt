@@ -11616,3 +11616,14 @@ written off.
   retail has exactly one local array and no spilled temporaries. Tried
   do-while vs while for the digit loop, `buf[1] = 0; n = 2;` vs `buf[n++] = 0;`,
   `k`/`p` addressing, and both statement orders for the sentinel store.
+- `ov004 0x020509d8` again (280 B) -- `s8 *tbl`, `buf[n++] = 10;` for the
+  sentinel (that swap of the two register assignments is what retail's
+  `mov r6,#0; add r5,r6,#1; mov r4,#0xa; str r4,[sp]` wants) and
+  `s8 *q = (s8 *)data_ov004_020636e8 + buf[i] * 2;` inside the write loop
+  (so mwcc hoists the table load after the count guard and emits `ldrsb`)
+  get the candidate to 280 B with every instruction before `0xb0` identical.
+  The residue is the write loop only: retail keeps `i` in ip (scratch) and
+  tbl/buf/digit/k in r6/r5/r4/r7, mwcc has `i` in r6 and reorders the
+  `ldr r6,[r1]` / `add r5,sp,#0` pair. 16 of 70 instructions still differ;
+  declaration order of `i`/`k`, `for` vs `while`, and `k` addressing do not
+  move it. Pure allocation/scheduling tie at equal size.
