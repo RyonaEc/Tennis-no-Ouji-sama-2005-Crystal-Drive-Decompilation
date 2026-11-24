@@ -4892,3 +4892,14 @@ than any Konami-built object. The identical bytes are also in NitroSDK 1.0
 (2004-04-16) `libfx.thumb.a`, so this function does not discriminate between SDK
 releases; pinning the exact release needs a routine that changed between them,
 which is a separate sweep.
+
+## 2026-11-24 - pragma optimize_for_size is not a lever for the allocation ties
+
+Tested on arm9 0x02024a54 (144 B, 22-channel handler-table initialiser, the
+lr-as-table-base tie). Four source shapes: plain if/else (140 B), nested if
+(140 B), fused condition (148 B) and two separate `if (e)` tests (144 B - the
+size retail has, 19 slot diffs). Adding `#pragma optimize_for_size on` or `off`
+to the best shape changes nothing at all: same 144 bytes, same 19 slots,
+byte-identical output. So the pragma is not the missing lever for this class;
+the residue is still register role (retail's table base in `lr`, mwcc's in
+`r5`/`r4`). Parked with the body in build/cand/f02024a54.c.

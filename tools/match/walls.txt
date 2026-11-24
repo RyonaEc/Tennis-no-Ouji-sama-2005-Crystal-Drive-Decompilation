@@ -13,6 +13,8 @@
 # section numbers refer to notes/mwccarm-codegen-log.md.
 #
 # A unit is parked only while src/<module>/<name>.c is absent. wallprobe.py
+arm9 0x02024a54 144B func_02024a54 22-channel handler table init; retail keeps table base in lr, mwcc picks r5/r4: 144B, 19 slots, optimize_for_size is a no-op L11830
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

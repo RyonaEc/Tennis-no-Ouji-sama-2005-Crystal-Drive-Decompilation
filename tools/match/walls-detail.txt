@@ -11825,3 +11825,6 @@ All three are hand-written asm blocks in NitroSDK `fx_mtx33.c`
 shape reproduces them. Installed as `asm void` blocks and assembled by 1.2/b56
 byte for byte; the 2.0/base override was retired. See
 notes/mwccarm-codegen-log.md, 2026-11-24.
+
+arm9 0x02024a54 func_02024a54
+22-channel handler table init; retail keeps table base in lr, mwcc picks r5/r4: 144B, 19 slots, optimize_for_size is a no-op
