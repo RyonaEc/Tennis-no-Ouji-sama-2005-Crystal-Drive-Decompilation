@@ -4903,3 +4903,33 @@ to the best shape changes nothing at all: same 144 bytes, same 19 slots,
 byte-identical output. So the pragma is not the missing lever for this class;
 the residue is still register role (retail's table base in `lr`, mwcc's in
 `r5`/`r4`). Parked with the body in build/cand/f02024a54.c.
+
+## 2026-11-24 - the one-register residue is not a compiler-version signal
+
+`arm9 0x0202c430` (spin on `*(volatile u32 *)0x0204ad00 == 1`) differs from
+retail in exactly one register: retail loads the address into `ip`, every
+spelling mwcc gets produces `r1`, and the pool value, loop body and comparison
+are identical. To rule out a build difference the same source was compiled by
+**all 25 vendored compilers** (`1.2/{base,sp2,sp2p3,sp3,sp4,b56}`,
+`2.0/{base,sp1,sp1p2,sp1p5,sp1p6,sp1p7,sp2,sp2p2,sp2p3,sp2p4}`,
+`dsi/{1.1,1.1p1,1.2,1.2p1,1.2p2,1.3,1.3p1,1.6sp1,1.6sp2}`): every one emits the
+same 24 bytes, `ldr r1`. So this class of residue is not "retail used a later
+CodeWarrior" - it is something about how the original source reached the
+allocator, and a compiler sweep will not close it.
+
+Two related observations while sweeping the queue:
+
+* `sdk.py` puts 0x0202c430 at 21/24 bytes of `libspi.a(mic.o)` / `librtc.a(external.o)`,
+  so it may be a library routine rather than game code; `func_02026ac8` beside it
+  turned out to be a second copy of `MI_Copy64B` (already matched elsewhere), which
+  is why `tools/match/true_fresh.txt` still lists it.
+* `true_fresh.txt` is stale in general: three of its arm9 entries were already
+  matched. A queue rebuilt from `symbols.txt` minus `src/arm9/<name>.c` finds **393**
+  arm9 functions without a source file (383 above 6 bytes), and only the ten
+  2-mod-4 thumb stubs in that list are blocked by the alignment issue.
+* Several of the small remaining units (`0x0202612c`, `0x0203b4b0`) start with a
+  bare `stmdb sp!, {lr}` and never align the stack to 8, where our C compiles
+  `push {r4, lr}` plus `sub sp, sp, #4`. That is the AAPCS frame mwcc emits for
+  ordinary C, so these are more likely asm blocks than C - and `bl` to a C symbol
+  inside an `asm void` body does not assemble, so transcribing them needs the
+  calls expressed differently.
