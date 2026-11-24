@@ -90,7 +90,9 @@ on 2004-12-30, so b56 (2004-09-16) is the only vendored build that predates the
 cartridge and every later build postdates the finished ROM; a post-release build
 is a prior against, never a proof against. The one exception is
 `src/arm9/func_0201fcc8.c`, which needs `2.0/base`: under b56 that nine-word
-block is 32 bytes of Thumb where retail has 28 and the digest breaks. The digest
+block is 32 bytes of Thumb where retail has 28 and the digest breaks. `2.0/base`
+is 3.0 build 114 from 2006, so it is a stand-in for a producer we do not have,
+not evidence of the retail toolchain. The digest
 decides, so the override list
 exists for a unit with evidence of a different origin; entries name an existing
 build (one `<source path> = <version>` per line) and the digest still has to

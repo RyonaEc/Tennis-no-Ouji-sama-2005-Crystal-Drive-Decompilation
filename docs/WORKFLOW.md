@@ -77,7 +77,9 @@ Retail's game code came from one CodeWarrior build, `1.2/b56` (build 56,
 `Runtime Built: Sep 16 2004`): it rebuilds the whole ROM to the digest but for
 one per-file override, and it is `DEFAULT_MWCC_VERSION` in `tools/configure.py`.
 `src/arm9/func_0201fcc8.c` is that override and it needs `2.0/base`; the digest
-proves it, because under b56 the unit is 32 bytes where retail has 28. The game
+proves the bytes, not the compiler: `2.0/base` is 3.0 build 114 from 2006, so it
+stands in for a producer we do not have. Under b56 that unit is 32 bytes where
+retail has 28. The game
 shipped 2004-12-30, so every vendored build later than b56 postdates the
 cartridge and cannot have compiled a whole unit.
 Later service packs such as `1.2/sp2` are still on disk, but they are not the

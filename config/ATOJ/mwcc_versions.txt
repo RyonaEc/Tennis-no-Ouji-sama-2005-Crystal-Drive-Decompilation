@@ -9,13 +9,19 @@
 # whole unit, and the 72 sp2 entries that this file used to carry were pure
 # artefacts of the old sp2 default.
 #
-# The digest, not the calendar, is the arbiter, and there is exactly one measured
-# exception: src/arm9/func_0201fcc8.c needs 2.0/base. Under b56 the nine-word
-# fixed-point block compiles to 32 bytes of Thumb where retail has 28, and the
-# whole ROM hashes to 2870334109ed2c46ca855170eb4f6369266d0286 instead of the
-# target 9eec3248...; with this entry the digest matches again (re-measured
-# 2026-11-24, so the entry is load-bearing and must stay). A post-release build
-# is therefore a prior against, never a proof against.
+# The digest, not the calendar, decides what builds, and there is exactly one
+# entry left - but it is NOT evidence that retail used this compiler. 2.0/base is
+# 3.0 build 114, Runtime Built 2006-03-30, a year after the cartridge shipped.
+# src/arm9/func_0201fcc8.c stores 0x1000 as `movs r3, #1` + `lsls r3, r3, #0xc`,
+# a form no 2.0-line build emits: b56, base (build 72), sp2 (79), sp2p3 (82),
+# sp3 (84) and sp4 (87) all load that constant from a literal pool and append a
+# nop, 4 bytes longer, and 20 source spellings do not move them. Every 3.0-line
+# and dsi build reproduces the 28 bytes exactly. So the entry is a stand-in that
+# reproduces the bytes of a producer we do not have - the whole ROM hashes to the
+# target with it - not a claim about which toolchain retail used. The leading
+# explanations are a pre-b56 NITRO build (V0.5/V0.6 are CC 46/50, none vendored)
+# or a hand-written assembly library object; it is an open question, recorded in
+# notes/mwccarm-codegen-log.md.
 #
 # This file is the escape hatch for a unit like that one. An entry needs the full
 # ROM digest to still match, and the tag must exist under
