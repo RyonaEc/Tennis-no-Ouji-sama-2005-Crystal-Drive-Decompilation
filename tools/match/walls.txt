@@ -51,12 +51,10 @@ arm9 0x0201ce4c 136B func_0201ce4c . Bound-pointer and direct spellings both fol
 arm9 0x0201d7c0 124B func_0201d7c0 -- reset an object: zero +0x84/+0x7c/+0x80, func_02029a5c(&p->f74) L10909
 arm9 0x020202b4 76B func_020202b4 DISPSTAT update: retail loads A then B and returns on the eq path; ev... L3443
 arm9 0x020209c8 124B func_020209c8 -- update the display window and key mask: read the u16 at L10917
-arm9 0x02022554 84B func_02022554 -- NOT a boundary artefact: a four-argument sound-register writer... L4499
 arm9 0x02023df8 96B func_02023df8 / 0x02023e58 96B -- open-handle dispatch on data_02042370 (-1 = unope... L4067
 arm9 0x02023e58 96B func_02023e58 -- open-handle dispatch on data_02042370 (-1 = unopened). L4033
 arm9 0x02024674 184B func_02024674 arm9 184B - alignment-padding cascade; 176-180B/184B, 15 diff. L943
 arm9 0x0202497c 76B func_0202497c on b56: everything reproduces except that mwcc hoists the `data_0... L3497
-arm9 0x02024b04 88B func_02024b04 -- bitmap allocator; NOT writable in C. Body is `clz` on two word... L8765
 arm9 0x0202564c 76B func_0202564c -- mrs/msr and mrc/mcr p15, and a banked-sp setup L8761
 arm9 0x02025b88 148B func_02025b88 scout: **140/148.** `func_02026350()` / `func_02026364(r)` bracket an... L181
 arm9 0x02025e48 172B func_02025e48 -- switch on 0..6 returning constants, with a case that loads a... L11220
@@ -367,7 +365,6 @@ ov006 0x0203b58c ?B - svc #0x123456 wrapper (r0=0x18) L9652
 ov006 0x02040505 ?B - was retested and still fails, so L11216
 ov006 0x0204d61c 332B func_ov006_0204d61c ` / `ov001 0x0204eff8` (332 B x2). File-load routine: the L11492
 ov006 0x0204db14 ?B - in .text, where a literal pool L11236
-ov006 0x0204df9c 12B func_ov006_0204df9c -- not a matchable function: the whole body is `add sp, sp, #4 L7283
 ov006 0x0205025c ?B - span 169, 0x02050305 span 253, 0x02050505 span 343, ...). runs() now... L11231
 ov006 0x02050305 ?B - span 253, 0x02050505 span 343, ...). runs() now carves the aligned L11231
 ov006 0x02050505 ?B - span 343, ...). runs() now carves the aligned L11231

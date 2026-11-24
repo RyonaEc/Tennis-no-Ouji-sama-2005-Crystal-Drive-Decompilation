@@ -5408,3 +5408,32 @@ garbage that the original source left behind. There is no source to generate for
 that: any value we invent costs an instruction retail never emitted.
 
 The fix stays because it is correct and free, not because it paid.
+
+## 2026-11-25 - three SDK units, and two asm spellings mwcc refuses
+
+`sdkmap` left only four unmatched functions byte-identical to a prebuilt NitroSDK
+library; three are now matched, each written from the SDK's own source:
+
+- `arm9 func_02022554` = `G3X_SetFog` (84 B, libgx g3x.c). Ordinary C with the
+  asserts compiled out: `reg_G3X_FOG_OFFSET` at `0x0400035c`, `reg_G3X_DISP3DCNT`
+  at `0x04000060`, mask `0x3f40` cleared then `(slope << 8) | (mode << 6) | 0x80`
+  or'd, else `&= (u16)~0x3080`. The `(u16)` cast on the mask matters: it makes the
+  pool word `0x0000cf7f` instead of `0xffffcf7f`.
+- `arm9 func_02024b04` = `OS_GetLockID` (88 B, libos os_spinLock.c), an `asm`
+  block in the SDK; transcribed verbatim, `clz` on the two words of
+  `0x027fffb0`, returning `0x40 + n` / `0x60 + n` / `-3`.
+- `ov006 func_ov006_0204df9c` = `CARDi_OnFifoRecv` (12 B, libcard card_common.c),
+  the three-instruction thread-exit stub.
+
+Two spellings the vendored assembler rejects, both of which look like ordinary
+ARM syntax and both of which fail as a bare `<string not found>` with no line
+content:
+
+- `lsr r1, r1, r2` - the shift mnemonics are not opcodes in mwcc's asm dialect.
+  Write `mov r1, r1, lsr r2`; the encoding is identical.
+- `pop {lr}` - no `pop`/`push` aliases either. Write `ldmia sp!, {lr}` /
+  `stmdb sp!, {...}`. (`ldmfd` also assembles, but `ldmia` is what the SDK
+  source itself uses.)
+
+An `asm` unit that trips either one compiles to *zero* bytes and `var3` reports
+`got 0 want N`, which reads like a size mismatch rather than an assembler error.
