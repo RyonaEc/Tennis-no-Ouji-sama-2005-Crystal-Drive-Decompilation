@@ -11663,3 +11663,24 @@ written off.
   `mov pc, lr`, mwcc emits `bx lr` (same size).  Its siblings 0x0203b564 /
   0x0203b578 want a saved `lr` and `pop {pc}`, which mwcc does not add for an
   asm-only body either.
+- `arm9 0x02029aa0` (140 B) -- decoded as `start = p[0x28]; n = min(a2,
+  p[0x24] - start); p[0x2c] = a1; if (n < 0) n = 0; p[0x30] = a2;
+  p[0x34] = n; if (a3 == 0) p[0xc] |= 4; func_020291f4(p, 0);` then the
+  a3 == 0 branch re-reads `p[0x28]` minus the saved start, or -1.  Every form
+  compiles to exactly 140 B; retail homes `start` in r4, `a3` in r5 and `n` in
+  r6, mwcc insists on `start` in r5 with `n` in r4.  Declaration order,
+  inline vs named `len`, and splitting the initialisers all keep the swap.
+- `arm9 0x02033b34` (140 B) -- insert-with-shift-up over 16-byte blocks at
+  base+0x10: `if (idx > *base) error(...); if (*base != idx) for (i = *base - 1;
+  i >= idx; i--) blk[i + 1] = blk[i]; (*base)++;`.  Note `*base` is read three
+  times in retail, so no `n` variable.  Candidate reaches 140 B with the right
+  block copy (`ldm/stm` of four words) but homes the index in r6 and top-tests
+  the loop, where retail homes it in lr and bottom-tests it, which also drops
+  the extra push.  `for` / `while` / `do`-`while` / pre-checked `if` / pointer
+  walk all land on the r6 top-tested shape.
+- `arm9 0x02033bc0` and `0x02033c0c` (16 B each) are not C functions: each is
+  two `mov r0, #imm; b 0x02033bd0` / `b 0x02033c1c` pairs with no test between
+  them, i.e. switch-case thunks.  Their targets start with the same veneer
+  `ldr r1, =self+8; bx r1` before the real body (`mrs apsr` / mask a bit /
+  `msr cpsr_fc` / return the previous state), so the 60-byte symbols at
+  0x02033bd0 and 0x02033c1c are two-entry-point locals, not standalone units.
