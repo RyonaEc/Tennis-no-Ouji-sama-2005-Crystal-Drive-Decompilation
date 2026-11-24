@@ -66,7 +66,12 @@ candidates), `sweep.py` (formulation sweep; `--compiler` takes a version tag), `
 `twins.py`, `twin.py`, `crosstwin.py`, `near.py` (clone a matched sibling),
 `famsurvey.py`, `band.py`, `fam.py`, `family_asm.py`, `family_fill.py`,
 `trivgen.py`, `synth.py`, `scan.py`, `census.py`, `jt.py`, `jtgen.py`,
-`jtrun.py`, `dump_emit.py`, `newcand.py`, `ready.py`, `queue.py`.
+`jtrun.py`, `dump_emit.py`, `newcand.py`, `ready.py`, `queue.py`, `fresh.py`
+(the live unmatched queue: `symbols.txt` minus source-backed `delinks.txt`
+ranges, and the only thing that should regenerate `true_fresh.txt`),
+`annotate.py` (a body's instructions, pool literals, symbols and callee
+prototypes in one pass) and `respell.py` (one candidate re-spelled over the
+choices that decide register colouring, ranked by differing slots).
 
 Tracked rosters: `walls.txt` (one line per parked unit: address, size, symbol,
 residue, and the line its note starts at in `walls-detail.txt`; read one unit

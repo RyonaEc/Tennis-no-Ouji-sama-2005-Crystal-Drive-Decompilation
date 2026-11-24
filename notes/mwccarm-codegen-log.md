@@ -5179,3 +5179,14 @@ source `r4` where retail uses `ip`. The local-vs-assigned declarations, `u32` vs
   (148 B, wrong); with `u32 t = (u32)data_ov009_02054f80;` and `t + 0x1e4c0` it
   re-materialises the pool constant and re-adds per call, which is retail's
   156 B.
+
+* **The candidate queue lied, again.** `tools/match/true_fresh.txt` still listed
+  ov004 `func_ov004_0204cbdc`, which has had a source since long before this
+  session; six candidate spellings were written for an already-matched unit
+  before `grep src/` caught it. `tools/match/fresh.py` now derives the queue from
+  the tree each run - every `func_` symbol in `symbols.txt` that no
+  source-backed `.text` range in `delinks.txt` covers - and `--write`
+  regenerated the snapshot (2,263 entries, 190 of them stale, down to 2,073).
+  Both walls retried this session, ov009 `0x0204f93c` and ov004 `0x0204d980`,
+  were already parked in `walls.txt`; read the wall list before writing C for a
+  small unit, not after.

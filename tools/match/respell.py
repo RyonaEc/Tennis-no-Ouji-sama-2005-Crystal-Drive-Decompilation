@@ -172,6 +172,38 @@ def fold_assign(text):
     return out, changed
 
 
+def statements(rest):
+    """Split the body into statement groups that can be reordered.
+
+    A group is one simple statement, or a block headed by `if`/`for`/`while`
+    with its braces and any `else` arm.  Reordering groups changes the order
+    registers are first used in, which is what decides colouring when two
+    locals fight over the same callee-saved register.
+    """
+    groups, cur, depth = [], [], 0
+    lines = [line for line in rest]
+    for i, line in enumerate(lines):
+        if not line.strip():
+            if cur and depth == 0:
+                groups.append(cur)
+                cur = []
+            continue
+        cur.append(line)
+        depth += line.count("{") - line.count("}")
+        stripped = line.strip()
+        closes = depth == 0 and (stripped.endswith(";") or stripped.endswith("}"))
+        if closes:
+            later = next((x for x in lines[i + 1:] if x.strip()), "")
+            if later.lstrip().startswith("else"):
+                closes = False
+        if closes:
+            groups.append(cur)
+            cur = []
+    if cur:
+        groups.append(cur)
+    return groups
+
+
 TOGGLE_VOLATILE = re.compile(r"^\s*volatile\s+")
 
 
@@ -214,6 +246,21 @@ def variants(text, pad=False):
     for n, perm in enumerate(reorder(decls)):
         if perm != decls:
             bases.append(("order%d" % n, perm))
+
+    stmts = statements(rest)
+    if 1 < len(stmts) <= 5:
+        identity = list(range(len(stmts)))
+        for n, perm in enumerate(itertools.permutations(identity)):
+            if list(perm) == identity:
+                continue
+            flat = []
+            for i in perm:
+                flat.extend(stmts[i])
+                flat.append("")
+            for base_label, d in bases[:4]:
+                got = emit("%s+stmt%d" % (base_label, n), d, flat)
+                if got:
+                    yield got
 
     for base_label, d in bases:
         for extra, label in ((0, ""), (1, "+pad")):
