@@ -9,6 +9,7 @@ the index cites. Use this instead of loading the detail file:
     python tools/match/walls.py grep predicated          # search the index
     python tools/match/walls.py list --mod ov003         # live walls of a module
     python tools/match/walls.py add arm9 0x02012345 "reason"
+    python tools/match/walls.py prune [--write]           # drop lines whose unit is matched
 
 `add` keeps the format and appends the note to the detail file with the line
 number the new index entry cites. Walled units are still only parked: the
@@ -177,12 +178,43 @@ def add(argv):
     return 0
 
 
+def prune(argv):
+    """Drop index lines whose unit now has a source behind it.
+
+    A wall line is a promise that the unit is still unmatched, and analyses
+    built on the list ("the 12 asm-only walls", "195 of 338 walls are
+    uncategorised") are only as good as it.  The detail file is left alone, so
+    the line numbers the surviving entries cite keep pointing at their notes.
+    """
+    write = "--write" in argv
+    rows = io.open(INDEX, encoding="utf-8").read().splitlines()
+    keep, dropped = [], []
+    for row in rows:
+        m = re.match(r"^(\w+) 0x([0-9a-f]{8}) \S+ (\S+)", row)
+        if m and os.path.exists(os.path.join(ROOT, "src", m.group(1),
+                                             m.group(3) + ".c")):
+            dropped.append("%s 0x%s %s" % (m.group(1), m.group(2), m.group(3)))
+            continue
+        keep.append(row)
+    if write:
+        with io.open(INDEX, "w", encoding="utf-8", newline="\r\n") as f:
+            f.write("\n".join(keep) + "\n")
+    print("%d line(s) point at a unit that already has a source%s"
+          % (len(dropped), "" if write else " (dry run; --write drops them)"))
+    for row in dropped[:10]:
+        print("   " + row)
+    if len(dropped) > 10:
+        print("   ... and %d more" % (len(dropped) - 10))
+    return 0
+
+
 def main(argv):
     if not argv:
         print(__doc__)
         return 0
     cmd, rest = argv[0], argv[1:]
-    return {"show": show, "grep": grep, "list": listing, "add": add}.get(cmd, lambda a: (print(__doc__), 2)[1])(rest)
+    return {"show": show, "grep": grep, "list": listing, "add": add,
+            "prune": prune}.get(cmd, lambda a: (print(__doc__), 2)[1])(rest)
 
 
 if __name__ == "__main__":
