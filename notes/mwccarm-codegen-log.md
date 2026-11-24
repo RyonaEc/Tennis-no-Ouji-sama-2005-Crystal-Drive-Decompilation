@@ -5354,3 +5354,33 @@ types) or a promoted *shape* from the generator - and the promotion machinery is
 kept only as the hook to hang one on (`--refine` defaults to 0; the sweep must
 not pay for a fixed point). Negative results with numbers beat a knob that looks
 like progress.
+
+## 2026-11-25 - swapping a branch's arms is a real axis, but a narrow one
+
+`respell` cannot reach a branch whose arms are the other way round, and mwcc
+chooses the layout, so that is an instruction-order axis rather than a spelling
+one. `tools/match/ifmut.py` rewrites `if (c) { A } else { B }` into
+`if (!c) { B } else { A }` for the conditions it can invert exactly (a single
+comparison, or an already-negated or parenthesised condition; `&&`/`||` are left
+alone rather than guessed at). `grind --refine` mutates the unit's best source
+that way and spells the grid again from the result, so the two axes compose.
+
+Measured on the three units in the 24-300 B band whose generated shape actually
+contains an `else` (only 3 of 41 sampled candidates do):
+
+| unit | size | journal slots | refine 0 | refine 2 |
+|---|---|---|---|---|
+| `ov002 0x02064b04` | 108 B | 27 | 27 (6 v) | **26 (17 v)** |
+| `ov002 0x0204c884` | 148 B | 11 | 11 (120 v) | 11 (120 v) |
+| `ov002 0x020895c8` | 116 B | 27 | 27 (120 v) | 27 (120 v) |
+
+One unit improved by one slot; the other two were budget-bound in round one and
+never reached a mutation. That is why `--refine` defaults to 2 rather than 0:
+round one is byte-for-byte the `--refine 0` work, so the mutation rounds only
+ever spend leftover budget, and a unit whose grid fills the budget is untouched.
+
+The narrowness is the finding. Branches with an else are rare in the generator's
+output (7% of sampled candidates), because most units either bail before emit or
+produce a shape with a single arm. A structural axis with more reach would have
+to work on the generator's *statements* (temporaries, split assignments, loop
+forms), which is where the remaining walls actually sit.

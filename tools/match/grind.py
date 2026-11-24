@@ -47,9 +47,10 @@ Usage:
                   refused (normally finished, since nothing changes by itself)
     --retry-none  re-walk units that had no candidate: a harness or generator fix
                   can give them one, and nothing else ever revisits them
-    --refine      promotions per unit: after the grid is scored, re-spell its
-                  best variant (default 0 - measured, see the codegen log: the
-                  grid is a fixed point, so re-spelling it adds no slots)
+    --refine      rounds after the first that mutate the best source and re-spell
+                  it (default 2).  Round one is byte-for-byte the work of
+                  --refine 0, so the extra rounds only spend leftover budget; the
+                  mutation that pays is swapping a branch's arms (ifmut.py)
     --status      print the journal and heartbeat, then exit
     --dry-run     list the units and their candidate sources, score nothing
     --reset       delete the journal first
@@ -91,6 +92,7 @@ t10 = load("tools/match/t10.py", "t10")
 respell = load("tools/match/respell.py", "respell")
 fresh = load("tools/match/fresh.py", "fresh")
 clone = load("tools/match/clone.py", "clone")
+ifmut = load("tools/match/ifmut.py", "ifmut")
 
 JOURNAL = pathlib.Path("build/grind-journal.jsonl")
 STATUS = pathlib.Path("build/grind-status.json")
@@ -388,10 +390,21 @@ def grind_unit(mod, addr, size, name, opts, journal):
             break
         if round_best is None or (before is not None and round_best[0] >= before):
             break                    # the round improved nothing: climb is over
-        if round_best[2] in spelled:
+        best_src = round_best[2]
+        # A branch with its arms swapped is a different instruction order, which
+        # re-spelling can never reach; mutating the best source and then spelling
+        # the grid again composes the two axes.
+        mutations = [(label, src) for label, src in ifmut.forms(best_src)
+                     if src not in spelled]
+        if mutations:
+            spelled.update(src for _label, src in mutations)
+            frontier = [("r%d+%s" % (rounds, label), src)
+                        for label, src in mutations]
+            continue
+        if best_src in spelled:
             break                    # this source has already been a base
-        spelled.add(round_best[2])
-        frontier = [("r%d" % rounds, round_best[2])]
+        spelled.add(best_src)
+        frontier = [("r%d" % rounds, best_src)]
 
     if hit:
         status = "matched"
@@ -724,7 +737,7 @@ def main(argv):
                 lo=4, hi=0x200, pad=True, dry=False, reset=False,
                 daemon=False, max_passes=0, sleep=60.0, commit=False,
                 retry_slots=0, retry_rejected=False, retry_none=False,
-                refine=0, modules=[])
+                refine=2, modules=[])
     for i, a in enumerate(argv):
         if a == "--lane":
             opts["lane"] = argv[i + 1]
