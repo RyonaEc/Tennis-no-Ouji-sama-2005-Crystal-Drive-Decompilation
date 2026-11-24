@@ -1,5 +1,7 @@
 #include "types.h"
 
+extern void func_02005418(void);
+
 extern u8 data_ov009_02052adc[];
 extern u8 data_ov009_02054f80[];
 extern u8 data_ov009_02054f84[];
@@ -29,7 +31,7 @@ void func_ov009_0204ebf4(void)
 
     old = *(volatile u16 *)0x04000208;
     *(volatile u16 *)0x04000208 = 0;
-    func_02024a54(1, (void *)0x02005418);
+    func_02024a54(1, (void *)func_02005418);
     cur = *(volatile u16 *)0x04000208;
     *(volatile u16 *)0x04000208 = 1;
     func_02021af0((volatile u32 *)0x04000050, 0x3f, ~0xf);

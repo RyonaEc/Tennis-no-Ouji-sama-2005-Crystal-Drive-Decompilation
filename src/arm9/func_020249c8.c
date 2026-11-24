@@ -1,11 +1,12 @@
 #include "types.h"
 
 extern u8 data_02048ccc[];
+extern u32 data_02042384;
 
 u32 func_020249c8(u32 x)
 {
     s32 i;
-    u32 *p = (u32 *)0x02042384;
+    u32 *p = &data_02042384;
 
     for (i = 0; i < 0x16; i++) {
         if (x & 1) {

@@ -1,5 +1,7 @@
 #include "types.h"
 
+extern u8 data_ov002_02102070[];
+
 typedef unsigned char u8;
 typedef signed int s32;
 
@@ -19,7 +21,7 @@ typedef struct {
 
 void func_ov002_02080b70(void)
 {
-    u8 *base = *(u8 **)0x02102070;
+    u8 *base = *(u8 **)data_ov002_02102070;
     int n[2] = {0, 0};
     s32 v[2][2] = {{0, 0}, {0, 0}};
     Out *o = (Out *)(base + 0x3654);

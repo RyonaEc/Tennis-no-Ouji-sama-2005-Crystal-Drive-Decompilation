@@ -73,3 +73,23 @@ The README uses two:
 registered, every badge renders as `ByteMatch: project not found`.
 
 If the reports do not appear, the Manage page shows the last ingest error.
+
+## matched_code vs complete_code
+
+The site's headline percentage is objdiff's `matched_code_percent`, which credits
+a unit only when every instruction matches, literal-pool words included. A pool
+word that holds an address must therefore be emitted as a **symbol reference**,
+not a numeric literal:
+
+```c
+u32 *p = (u32 *)0x02042384;   /* .word 0x02042384     -> DIFF_ARG_MISMATCH */
+extern u32 data_02042384;
+u32 *p = &data_02042384;      /* .word data_02042384  -> matches           */
+```
+
+Both forms link to the same bytes, so `ninja sha1` is green either way, but the
+literal form drops the whole unit from `matched_code` and `matched_functions` in
+the uploaded report. The same holds for function addresses
+(`(void *)func_02005418`, not `(void *)0x02005418`) and for pointers read out of
+a global (`*(u8 **)data_ov002_02102070`). `objdiff-cli diff -p . -u <unit>`
+names the offending slot as `DIFF_ARG_MISMATCH`.

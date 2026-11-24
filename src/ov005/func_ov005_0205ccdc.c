@@ -1,6 +1,7 @@
 #include "types.h"
 
 extern u8 data_ov005_020c9740[];
+extern u8 data_ov005_020790a0[];
 extern u8 data_ov005_020c9744[];
 extern void func_02021280(s32);
 extern void func_020240b4(u8 *, u32, u32);
@@ -38,8 +39,8 @@ s32 func_ov005_0205ccdc(s32 mode)
         func_020240b4(src + 0x204c0, 0x1e0, 0x20);
         func_02025c94(src + 0x204e0, 0x260);
         func_020239d8(src + 0x204e0, 0x40, 0x260);
-        func_02025c94((u8 *)0x020790a0, 0x20);
-        func_020269d0((u8 *)0x020790a0, 0x6010000, 0x40);
+        func_02025c94((u8 *)data_ov005_020790a0, 0x20);
+        func_020269d0((u8 *)data_ov005_020790a0, 0x6010000, 0x40);
         stbl = (u16 *)(src + 0x20740);
         for (i = 0; i < 0x20; i++) {
             for (j = 0; j < 0x20; j++) {
