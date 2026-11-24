@@ -11584,3 +11584,13 @@ written off.
   stores below s3's copy, addresses them sp-relative and only materialises
   `add r2, sp, #0x48` at the call. Tried: `z = &s2` with `z->` stores, volatile
   variants, statement reordering -- all 204-208 B.
+- `ov002 0x0204f478` / `0x0204f50c` (148 B x2) -- `build/cand/a_f478.c` is 148 B
+  with an identical instruction sequence: it is a pure register-assignment tie.
+  Retail runs the state pointer in r5, the slot count in r6 and the reloaded
+  byte index in r4; mwcc gives those three r4/r5/r6 respectively, i.e. a
+  3-cycle, and every instruction that touches them encodes differently. The
+  byte at base+0x36d8 is loaded three times in retail (0x18, 0x2c, 0x64);
+  writing the expression inline at each use keeps all three loads but pins the
+  pointer to r4, while hoisting it into a local (`u8 idx`, declared first or
+  last, `u8` or `u32`) makes mwcc CSE the second/third load and the unit
+  collapses to 140-144 B.
