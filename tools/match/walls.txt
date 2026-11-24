@@ -11567,3 +11567,10 @@ written off.
   where mwcc folds the immediate into two `add rX, r4, #0x6600000`. Tried the
   inverted condition (fixes the layout), `u32 off = 0x6600000`, `u8 *off`,
   unsigned and pointer-cast spellings of the offset: all 92 B.
+- `arm9 0x0200f748` (208 B) -- closest drafts `build/cand/a_f748.c` (236 B) and
+  `build/cand/b_f748.c` (220 B) reproduce the table walk (0x14-byte entries at
+  0x0203cb6c, `out[++*out] = i + f6` for `i < f8`, then the optional `fa`/`fc`
+  appends) but mwcc gives the function a bare `stmdb sp!/sub sp,#4` frame where
+  retail keeps `n` in `r4` and the entry pointer in `r5` under
+  `push {r4, r5, lr}`, and retail's loop pre-test loads `f8` through the
+  `data_0203cb74` literal plus the index register instead of `[r5, #8]`.
