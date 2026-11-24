@@ -43,6 +43,10 @@ Usage:
     --commit      commit each kept unit locally (never pushes, never edits docs)
     --retry-slots re-sweep only the journal's near-misses (<= N slots, exhausted),
                   cheapest residue first - where a deeper budget pays most
+    --retry-rejected also re-offer units whose bytes matched but whose digest was
+                  refused (normally finished, since nothing changes by itself)
+    --retry-none  re-walk units that had no candidate: a harness or generator fix
+                  can give them one, and nothing else ever revisits them
     --status      print the journal and heartbeat, then exit
     --dry-run     list the units and their candidate sources, score nothing
     --reset       delete the journal first
@@ -299,7 +303,7 @@ def grind_unit(mod, addr, size, name, opts, journal):
               flush=True)
         return "no-candidate", 0, None
 
-    tried, best, hit = 0, None, None
+    tried, best, hit, errors, rejected = 0, None, None, 0, 0
     for _score, base_label, text in bases:
         # Materialise the grid before scoring it: `respell.split_unit` reports a
         # candidate it cannot parse with SystemExit, and a generator raises that
@@ -309,6 +313,7 @@ def grind_unit(mod, addr, size, name, opts, journal):
             variants = list(itertools.islice(respell.variants(text, pad=opts["pad"]),
                                              max(0, opts["budget"] - tried)))
         except (Exception, SystemExit):
+            errors += 1
             continue
         for vlabel, source in variants:
             if tried >= opts["budget"]:
@@ -317,6 +322,7 @@ def grind_unit(mod, addr, size, name, opts, journal):
             try:
                 ok, n, diffs = fm.diff_summary(mod, addr, size, body)
             except Exception:
+                errors += 1
                 continue
             tried += 1
             if not n:
@@ -329,31 +335,51 @@ def grind_unit(mod, addr, size, name, opts, journal):
                 out.write_text(source)
                 kept = t10.try_unit(name, addr, size, body, mod=mod)
                 committed = commit_unit(mod, name) if (kept and opts["commit"]) else False
-                note(journal, dict(t="match", mod=mod, addr=addr, name=name, size=size,
-                                   label=label, kept=bool(kept), committed=committed,
-                                   candidate=out.as_posix()))
                 if kept:
+                    note(journal, dict(t="match", mod=mod, addr=addr, name=name,
+                                       size=size, label=label, kept=True,
+                                       committed=committed,
+                                       candidate=out.as_posix()))
                     print("[grind] MATCH  %-6s %#010x %5dB %-24s %s%s"
                           % (mod, addr, size, name, label,
                              " (committed)" if committed else ""), flush=True)
-                else:
-                    print("[grind] bytes  %-6s %#010x %5dB %-24s %s "
-                          "-> rejected by the digest, continuing"
-                          % (mod, addr, size, name, label), flush=True)
-                hit = label
-                break
+                    hit = label
+                    break
+                # The bytes matched locally but the digest refused them, so the
+                # difference is something var3 cannot see - a literal-pool word
+                # or a relocation.  That is a miss, never a match: recording it
+                # as one retires the unit for ever on the strength of a
+                # rejected candidate.  Keep the record and keep looking; another
+                # spelling can compile with the relocations retail has.
+                rejected += 1
+                note(journal, dict(t="rejected", mod=mod, addr=addr, size=size,
+                                   name=name, label=label, kept=False,
+                                   candidate=out.as_posix()))
+                print("[grind] bytes  %-6s %#010x %5dB %-24s %s "
+                      "-> rejected by the digest, continuing"
+                      % (mod, addr, size, name, label), flush=True)
         if hit or tried >= opts["budget"]:
             break
 
-    status = "matched" if hit else "exhausted"
+    if hit:
+        status = "matched"
+    elif rejected:
+        status = "rejected"
+    elif bases and not tried and errors:
+        # Nothing compiled at all, so the harness failed rather than the unit.
+        status = "error"
+    else:
+        status = "exhausted"
     note(journal, dict(t="unit", mod=mod, addr=addr, name=name, size=size,
                        status=status, variants=tried,
                        best=(best[1] if best else None),
                        slots=(best[0] if best else None)))
     if not hit:
         where = "%d slots %s" % best if best else "no compiling variant"
-        print("[grind] %-6s %#010x %5dB %-24s %d variants, best %s"
-              % (mod, addr, size, name, tried, where), flush=True)
+        print("[grind] %-6s %#010x %5dB %-24s %d variants, best %s%s"
+              % (mod, addr, size, name, tried, where,
+                 " (%d rejected by the digest)" % rejected if rejected else ""),
+              flush=True)
     return status, tried, best
 
 
@@ -373,8 +399,15 @@ def heartbeat(**fields):
         pass
 
 
-def done_units(journal):
-    """Units a previous run finished, matched or exhausted."""
+def done_units(journal, include_rejected=True, include_none=True):
+    """Units a previous run finished.
+
+    `error` records are not finished: the unit never got a candidate compiled,
+    which means the harness failed, and skipping it would turn one broken
+    toolchain into a permanently empty queue.  `rejected` records (bytes matched
+    locally, digest refused) are finished by default but can be re-offered with
+    `--retry-rejected`, because a fix to the harness can make them match.
+    """
     if not journal.exists():
         return set()
     out = set()
@@ -383,9 +416,53 @@ def done_units(journal):
             record = json.loads(line)
         except ValueError:
             continue
-        if record.get("t") in ("unit", "match"):
-            out.add((record.get("mod"), record.get("addr")))
+        if record.get("t") not in ("unit", "match"):
+            continue
+        status = record.get("status")
+        if status == "error":
+            continue
+        if status == "rejected" and not include_rejected:
+            continue
+        if status == "no-candidate" and not include_none:
+            continue
+        out.add((record.get("mod"), record.get("addr")))
     return out
+
+
+class PreflightFailed(Exception):
+    """The harness cannot compile a unit that is known to match."""
+
+
+def preflight():
+    """Compile one known-matching unit before a pass trusts anything it logs.
+
+    Every candidate goes through `fm.diff_summary`, which raises when the
+    toolchain or one of its wrappers is missing or misconfigured.  Those
+    exceptions are counted per unit, but a pass in that state would still
+    journal every unit it reached as `no-candidate` and skip them for ever, so
+    the pass must refuse to run at all.  One small matched unit is enough: it
+    exercises the same compiler, assembler and scratch path.
+    """
+    auto = fm.auto
+    detail = "no matched unit small enough to compile"
+    for path in sorted(pathlib.Path("src").glob("*/*.c")):
+        m = re.match(r"func_(?:ov\d{3}_)?([0-9a-f]{8})\.c$", path.name)
+        if not m:
+            continue
+        mod, addr = path.parent.name, int(m.group(1), 16)
+        try:
+            auto.set_module(mod)
+            size = auto.FUNCS.get(addr, (None, 0))[1]
+            if not size or size > 0x40:
+                continue
+            body = strip_include(path.read_text(encoding="utf-8", errors="replace"))
+            ok, _n, _diffs = fm.diff_summary(mod, addr, size, body)
+        except (Exception, SystemExit) as exc:
+            detail = "%s %#x raised %s: %s" % (mod, addr, type(exc).__name__, exc)
+            continue
+        if ok:
+            return "%s %#x" % (mod, addr)
+    raise PreflightFailed(detail)
 
 
 def wall_units(modules):
@@ -494,7 +571,12 @@ def run_pass(opts, journal, number):
     """One walk of the lane.  Returns (visited, counts, variants, reason)."""
     # In retry mode the units are by definition already in the journal, so the
     # completed set must not filter them out again.
-    finished = set() if (opts["dry"] or opts["lane"] == "retry") else done_units(journal)
+    if not opts["dry"]:
+        preflight()
+    finished = (set() if (opts["dry"] or opts["lane"] == "retry")
+                else done_units(journal,
+                                include_rejected=not opts.get("retry_rejected"),
+                                include_none=not opts.get("retry_none")))
     todo = todo_units(opts, finished)
     print("[grind] pass=%d lane=%s units=%d already-done=%d budget=%d/unit pad=%s%s"
           % (number, opts["lane"], len(todo), len(finished), opts["budget"],
@@ -539,6 +621,14 @@ def run_pass(opts, journal, number):
         if not opts["dry"]:
             heartbeat(pass_=number, units=visited, matched=counts["matched"],
                       variants=variants, unit="%s %#x" % (mod, addr))
+
+    # A pass that turned every unit into a no-candidate may have done it because
+    # `bases_for` swallows the compiler's exceptions rather than because the
+    # units are hopeless.  Re-run the preflight in that case, so a toolchain
+    # that broke mid-pass stops the run instead of retiring the whole queue.
+    if (not opts["dry"] and visited >= 20
+            and counts["no-candidate"] == visited and not counts["matched"]):
+        preflight()
 
     elapsed = time.monotonic() - started
     print("[grind] stop reason=%s units=%d matched=%d exhausted=%d "
@@ -601,7 +691,8 @@ def main(argv):
     opts = dict(lane="walls", hours=0.0, limit=0, budget=600, bases=3,
                 lo=4, hi=0x200, pad=True, dry=False, reset=False,
                 daemon=False, max_passes=0, sleep=60.0, commit=False,
-                retry_slots=0, modules=[])
+                retry_slots=0, retry_rejected=False, retry_none=False,
+                modules=[])
     for i, a in enumerate(argv):
         if a == "--lane":
             opts["lane"] = argv[i + 1]
@@ -636,6 +727,10 @@ def main(argv):
         elif a == "--retry-slots":
             opts["retry_slots"] = int(argv[i + 1], 0)
             opts["lane"] = "retry"
+        elif a == "--retry-rejected":
+            opts["retry_rejected"] = True
+        elif a == "--retry-none":
+            opts["retry_none"] = True
 
     journal = JOURNAL
     journal.parent.mkdir(parents=True, exist_ok=True)
@@ -651,6 +746,13 @@ def main(argv):
         try:
             visited, counts, _variants, reason = run_pass(opts, journal, passes)
         except KeyboardInterrupt:
+            break
+        except PreflightFailed as exc:
+            # Without a working compiler every unit would be journalled as
+            # no-candidate and skipped for ever, so stop instead of running.
+            print("[grind] preflight failed: %s - stopping before journaling "
+                  "units as done" % exc, flush=True)
+            heartbeat(state="preflight-failed", detail=str(exc))
             break
         except (Exception, SystemExit) as exc:
             # The pass itself fell over.  In daemon mode that is a log line and a

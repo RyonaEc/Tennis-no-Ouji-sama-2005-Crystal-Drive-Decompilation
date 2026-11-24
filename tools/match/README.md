@@ -89,6 +89,19 @@ scores variants through `fastmatch`, and installs a hit only through
 already exhausted, and the journal keeps each unit's best residue for the hand
 pass that follows.
 
+Three journal rules keep that bookkeeping honest. A candidate whose bytes match
+but whose digest is refused is recorded as `rejected`, never as `matched` - it
+is a miss in a way `var3` cannot see (a literal-pool word or a relocation), so
+retiring the unit on it would lose the one class worth a second look;
+`--retry-rejected` re-offers them. A unit where nothing compiled at all is
+recorded as `error` and stays in the queue, because that is the harness failing,
+not the unit. And before a pass starts, `preflight()` compiles a small unit that
+is known to match: if the toolchain or one of its wrappers is missing, the pass
+refuses to run instead of journaling every unit it touches as `no-candidate` -
+which would retire the whole queue in one broken night. `--retry-none` likewise
+re-walks previously empty units, since a fix to the generator gives them a
+candidate and nothing else ever revisits them.
+
 `--daemon` is the mode that runs without an agent watching: pass after pass with
 a sleep between them, a heartbeat in `build/grind-status.json`, and a graceful
 stop whenever `build/grind.stop` appears (it is removed once honoured, so
