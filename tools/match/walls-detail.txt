@@ -12157,3 +12157,6 @@ threshold test used by 0207fc50: th = 020fd074[type][i] (the table is a 2D u8[][
 
 ov008 0x0204de18 func_ov008_0204de18
 counter/scroll helper: bump g[9] while < 0x20 (read via g[9], store through a &g[9] pointer - retail materialises r3=r4+9 and does load/add/store through it, and the later reload still comes from [r4,#9]), v = (s32)(g[9] << 4)/32, v = a0 == 0 ? 0x10 - v : v, then either 0xd8/g[9]-of-v into sprites from 0204ed50/0204ed3c or 0x850 plus (0x10-v)|(v<<8), returning g[9] == 0x20. Exact 168B but 164 when the pointer is folded; the only gap is the one hoisted add r3,r4,#9.
+
+ov005 0x0205519c func_ov005_0205519c
+camera/matrix setup: zero + 0x30-byte buffer through 020269b8 (the zero must be volatile so it keeps a stack slot at sp+4 and the buffer is u32[12] so it lands at sp+8), DISPCNT bits 0x3000->8, REG 0x04000448=1, then pos = data_020c965c, target = {0,0,0}, up = data_020c9668, 02022994(&pos, &up, &target, 1, 0), 0x040004c8=0x80000, 0x040004cc=0x7fff, 0205507c(0). b56 gives 204B against 208: retail materialises &target in r4 and stores the triple through it after a separate mov lr,#0, b56 folds the three stores to sp-relative using the zero it already has in r4.
