@@ -5845,3 +5845,13 @@ flag store is `strh` at +0 and the buffer load is `ldr` at +4), the sync and
 sleep-end flags are 32-bit words at 0x0204aca4/0x0204aca8, and `PMi_Work.work`
 sits at +0xc of 0x0204acb8. The command field is `(u16)((data & 0x7f00) >> 8)`
 and the result is `(u16)(data & 0xff)`.
+
+`TP_RequestSetStabilityAsync` (0x0202b248, 212 B) is exact in size and in every
+non-scheduling slot, but mwcc batches two adjacent u16 read-modify-writes on the
+same object: retail keeps each RMW contiguous
+(`ldrh r2,[r1,#0x36]; orr r2,r2,#8; strh`, then `ldrh r2,[r1,#0x34]; bic; strh`)
+while every spelling I tried loads both halves first, then applies and stores
+(`ldrh r3,[#0x34]; ldrh r2,[#0x36]; bic r3; orr r2; strh; strh`). Reversing the
+two statements, adding `(u16)` casts, marking the state volatile (which adds 4
+bytes) and 252 respell variants all leave the batched form, so treat two
+independent RMWs on the same base as a scheduler tie rather than a source bug.
