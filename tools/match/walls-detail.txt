@@ -11980,3 +11980,9 @@ arm9 0x0203a2e0 func_0203a2e0
 
 arm9 0x02032ecc func_02032ecc
 108B: builds a five-word descriptor on the stack (0/-1/0/func_02032db4) and calls func_02030b1c with the first vararg and a va pointer. Entry is push {r0,r1,r2,r3}, i.e. mwcc's variadic prologue, so the unit needs a real varargs source and the exact descriptor offsets
+
+ov004 0x0205a7b4 func_ov004_0205a7b4
+104B: 104/104 on the first spelling, only the zero constant's home differs - retail keeps 0 in r0 and the loaded fields in r1, mwcc the other way round (stable across u32-index, struct-field and named-zero variants). Reset + conditional release of the fixed 0x13a8 block.
+
+ov002 0x02059000 func_ov002_02059000
+112B: 108B best. Per-slot countdown at p = base + 0x2e4 + idx*0x158, decrement [p+0x12e], then call func_ov002_0206e140() when *p == 0xd. Retail keeps the block in r3 and the 0x12e offset in r1 (add r2,r3,r1); the two-pointer spelling puts the offset in r2 and lands 4 B short
