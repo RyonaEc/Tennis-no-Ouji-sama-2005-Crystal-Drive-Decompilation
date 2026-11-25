@@ -6128,3 +6128,16 @@ it makes mwcc fold the offset into both loads (`ldrh r4, [r0, #0x36]`,
 forms are 200 bytes, so the size check passes and the diff is placement only;
 keeping the base in a local, incrementing the parameter and reordering the flag
 test all leave the fold in place.
+
+## 2026-11-25 - a buffer count must be signed
+
+`func_0202a768` (340 B) is a status-packet builder: append a `0x80` tag to the
+byte buffer at `+0x20`, pad to a boundary, then dump two words big-endian into
+`+0x58`. The first spelling matched on size (340 = 340) with every instruction
+in place but with `bls`/`bhs`/`blo` where retail has `ble`/`bge`/`blt`. The
+length field `+0x1c` is compared against `0x37`, `0x40` and `0x38`, all positive,
+so the sign never matters at runtime - but declaring it `u32` gives unsigned
+branches. `s32 f1c;` turns the same source into a byte-exact match. Any length or
+index field compared against a positive literal with the signed condition codes
+in retail has to be declared signed, even when every writer stores a non-negative
+value.
