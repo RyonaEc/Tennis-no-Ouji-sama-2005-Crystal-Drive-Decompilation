@@ -12064,3 +12064,6 @@ ov002 0x020c82d4 func_ov002_020c82d4
 
 ov002 0x020bb3a0 func_ov002_020bb3a0
 148 Best 144B (build/cand/best_ov002_020bb3a0.c), two residues. (1) Same mla prologue exchange as 0x020c82d4: retail 'mul r2,r0,r1' with the base in r1, mwcc 'mul r1,r0,r1' with the base in r2. (2) The 0xa0 store: retail emits lsr #1, lsl #1, sub #1, lsl #16 (four ops); mwcc folds (v>>1)<<1 to 'bic r1,r0,#1' and also folds an explicit (u32)v/2*2 form the same way, so the unit comes out 4B short at 144. Everything else - the 0x90/0x94/0x9c copies of the +4/+8 slots, the 0x8c=0x18 stamp and the 0204d22c(v, e[1], 0xf) call - matches.
+
+ov002 0x020d5328 func_ov002_020d5328
+156 Best 148B (build/cand/best_ov002_020d5328.c). Same body as 0x020bb3a0 plus a 32-bit zero store at e+0xa8. Three residues: the mla prologue exchange ('mul r2,r0,r1' with the base in r1 in retail vs 'mul r1,r0,r1' with the base in r2), the lsr #1 / lsl #1 pair that mwcc folds to 'bic', and retail hoisting 'add r1, r4, #0xa8' before the d8 test so the store goes through r1 instead of an immediate offset. Tried the 0xa8 store first in the block with the rest of the 0x020bb3a0 shape; it costs 8B (148 vs 156).
