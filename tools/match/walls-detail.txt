@@ -12040,3 +12040,6 @@ ov002 0x020c0c70 func_ov002_020c0c70
 
 ov002 0x020f4490 func_ov002_020f4490
 128 128/128 with the entry body: test bit 0x10 of d8, zero h66, write 0x20 to h8e and e[0x80] to h8c, call 0204d22c(e[2], e[1], 0x37), set d1 = 5 and re-enter 020788a8(e). Residue is one register: retail's 'mov r1,#0x158 / mul r2,r0,r1' leaves the product in r2 and the module base in r1; mwcc does 'mul r1,r0,r1' and keeps base in r2. The rest of the function matches, including ret in r4 (declare the result flag after the entry pointer). Same class as 0x020c0c70, which is this same prologue with a different tail.
+
+ov002 0x0207fe0c func_ov002_0207fe0c
+132 Best 136B (write the first call's mask as '(u32)a0 & 0xff' so mwcc keeps it in a register): that version has retail's frame exactly - push {r4,r5,lr} + sub sp,#4, the predicated 'addeq sp,#4 / popeq / bxeq lr' early exits, and the recomputed 'and r0,..,#0xff' - and differs only by one exchange: retail keeps a0 in r5 and v in r4, mwcc the other way round. The plain spelling compiles to 124B with push {r4,r5,r6,lr} and no frame because mwcc hoists the mask into its own register across the calls. Tried s32/u8 v, (u8)a0 in one and both call sites, and an explicit 'id = a0' copy declared before v (120B, r6 again).
