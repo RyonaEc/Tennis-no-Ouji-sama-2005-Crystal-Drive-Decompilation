@@ -11941,3 +11941,6 @@ register-allocation tie: byte count (148) and all immediate offsets reproduce, b
 
 arm9 0x020247f0 func_020247f0
 register-allocation tie: 152 B against 160, body and pool words correct (three stride-0xc tables at data_02048ccc/cd0/cd4, bit index from data_02042374, IE read-modify-write at 0x027c3ff8), but retail keeps handler/bit/mask in r1/r3/r5 with each base in its own register while every spelling swaps two of them. respell.py best is 25 differing slots over 400 variants.
+
+arm9 0x02032d00 func_02032d00
+180B best: table-update ternary leaves 20 slots; retail shares one epilogue and stores through it, mwcc duplicates the epilogue on both exits and predicates the byte merge

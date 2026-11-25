@@ -5989,3 +5989,19 @@ blocker:
 Net: the data percentages cannot reach 100% through source edits alone - the
 delinks coverage has to expose the individual data symbols first. Nothing was
 changed for these units; the tree is unchanged and the digest still matches.
+
+## 2026-11-25 - func_02020f48: the switch layout follows the case order
+
+The retail body of `func_02020f48` tests the mode in ascending order
+(0, 0x20, 0x40) but lays the three bodies out as 0x20, 0x40, 0, with the
+`mode == 0` block falling into the shared tail. That is a `switch` whose cases
+are written 0x20, 0x40, 0 - not an `if`/`else if` chain, which lays the blocks
+out in test order, and not a switch written in ascending order, which puts the
+`case 0` body first.
+
+The mask word is where the colouring turns: `mvn ip, r0` (not `r3`) only
+happens when the `f0` store comes before the `f10` store in the source, with
+both halves read into locals first and the low value listed second inside the
+`|`. Reading them in the other order, or storing `f10` first, moves the mask
+into `r3` and the two loads into `ip`/`r2` - same size, four slots off, and the
+digest rejects it.
