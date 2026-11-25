@@ -322,7 +322,6 @@ ov002 0x02063dc0 152B func_ov002_02063dc0 (152B): ov002 switch/membership test. 
 ov002 0x02065ffc 132B func_ov002_02065ffc -- returns 1 unless bit 0x100000 of `b + 0x24` is set, then 1 ag... L7103
 ov002 0x02068c78 64B func_ov002_02068c78 register-shift cascade: retail base in ip, record in r2, target in r1... L205
 ov002 0x02068e2c 276B func_ov002_02068e2c ` (276 B, 9-slice sine-pair writer). Decoded: base + L11630
-ov002 0x0206d600 76B func_ov002_0206d600 -- `*(u32 *)(base + 0x1dd20c) = v; *(u32 *)(...+4) = 0 L10052
 ov002 0x020766c4 216B func_ov002_020766c4 -- record creator, 220/216 best (s16 t[2] + s16 u), 216/216 size... L8411
 ov002 0x020780f8 188B func_ov002_020780f8 (188B, 180/188) L667
 ov002 0x02078208 124B func_ov002_02078208 124B: *p|=1 at B+0x1e6c; p[4]=0; p[5]=a0; p[6]=0 L2441
