@@ -147,6 +147,10 @@ ov002 0x020b7e20 200B func_ov002_020b7e20 200 Best 200B, exact size. All local; 
 
 ov002 0x020d629c 240B func_ov002_020d629c 240 Best 240B, exact size. Needs 'p = *(s32*)(e+4); d = t.w[0] - p; *(u32*)(e+0x90) = p;' so the e+4 word is loaded once and reused (a direct re-read costs an extra ldr and lands at 244B). Residue is only the register pick: mwcc puts e in r6 and v in r5, retail has e in r5 and v in r6 (base r4, f ip, ret r7 agree). Tried v/f declaration order and hoisting p's declaration. L12086
 
+ov002 0x02099d50 232B func_ov002_02099d50 232 Best 232B, exact size. S3 copy of base+0x1824+0x24 into a stack temp, 0x8c = the 0xac halfword minus 4, lateral +/-0x120000 by the e+2 byte, kind 0x2f, state 4, then 020788a8(e). Residue is base/e swapped: retail base r5, e r4, v r5, f lr; mwcc base r4, e r5. Tried f before v, f after the S3 temp, and the plain order. L12089
+
+ov002 0x020dd680 208B func_ov002_020dd680 208 Best 212B, one instruction over. Retail keeps the zero constant in r0 from entry (mov r0,#0 before the base load) and shares it between the early return and the e+0x66/e+0xac/e+0x9c stores; mwcc materialises it twice (moveq r0,#0 plus mov r1,#0) and also folds the movlo for +0x80000 away. s32 ret = 0 with return ret / stores of ret reduces it to 212B but still double-materialises. Tried a plain '= 0' form and the ret form. L12092
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
