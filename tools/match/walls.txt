@@ -145,6 +145,8 @@ ov002 0x020f466c 188B func_ov002_020f466c 188 Best 188B, exact size, body matche
 
 ov002 0x020b7e20 200B func_ov002_020b7e20 200 Best 200B, exact size. All local; residue is base/e swapped (retail base r5, e r4, v reuses r5, f in lr; mwcc base r4, e r5). The zero must be shared between the early return and the e+0x66 store, which is what s32 ret=0 plus '*(u16*)(e+0x66) = ret;' achieves (a plain '= 0' costs an extra mov and lands at 204B). Tried moving the S3 copy local and the base+0x1824 pointer around the 0x2e6 read. L12083
 
+ov002 0x020d629c 240B func_ov002_020d629c 240 Best 240B, exact size. Needs 'p = *(s32*)(e+4); d = t.w[0] - p; *(u32*)(e+0x90) = p;' so the e+4 word is loaded once and reused (a direct re-read costs an extra ldr and lands at 244B). Residue is only the register pick: mwcc puts e in r6 and v in r5, retail has e in r5 and v in r6 (base r4, f ip, ret r7 agree). Tried v/f declaration order and hoisting p's declaration. L12086
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
