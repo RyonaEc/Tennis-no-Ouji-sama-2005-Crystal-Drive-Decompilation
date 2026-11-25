@@ -5794,3 +5794,10 @@ base literal into a fresh register first (`ldr r1, =0x02048d3c; str r5, [r1, #8]
 which is what you get when that store goes through the global by name
 (`data_02048d3c.currentThread = nextThread`, i.e. an inlined
 `OS_SetCurrentThread`) instead of through the local pointer.
+
+`WmDataSharingReceiveCallback_Parent` (0x0202f8c4, 324 B) shows the same
+bitfield-clear idiom as the WM port callbacks: `bitmap &= (u16)~aidBit` makes
+mwcc rebuild the 16-bit truncation at each site (`lsl/lsr` plus an `and` with a
+shifted operand) and costs 8 bytes; dropping the cast and writing
+`bitmap &= ~aidBit` hoists a single `mvn r1, r5, lsr #16` that both statements
+reuse, which is exactly retail's shape.
