@@ -12184,3 +12184,6 @@ sprite/anim-node spawner: base = data_ov002_02102070[0], then t6c/t68/t64/t60 = 
 
 ov003 0x020c2144 func_ov003_020c2144
 pad-state switch on a1: ip = data_ov003_020eb720[0], st = ip+0xb8dc, v = u16[st+0x3e]; a1==8 writes 0x10/0x14 alternating at ip+0x8800 (+8..+0x10), st[0x2e]=0xa, ip[0xb60c]=0xc, return 0; a1==9 calls 020101f8(v) and 02005958(1,0), return 0; otherwise return 1. Best candidate 164B vs 160 (build/cand/ov3_c2144_c.c): b56 predicates the 'return 1' as addne/movne/ldmne/bxne where retail branches to a separate epilogue, and the two return-0 paths do not share retail's single epilogue. respell 30 variants, best 34 slots.
+
+ov002 0x02082c78 func_ov002_02082c78
+opponent-state push: base = data_ov002_02102070[0], node = *(u32*)(base+0x134), p = base+0x36ac, r4 = u8 0, r5 = 0; if (node) { r4 = *(u8*)(node+2) >> 1; r5 = r4; if (bit) r5 = (r4 == 0); } then 02082e2c(*(u32*)(p+0xc), r5), 02082e2c(*(u32*)(p+0x10), r5 == 0), 02083060(0, r4). The gate is a 3-instruction extract on the byte at base+0x10c: lsr r2,r1,#31; rsb r1,r2,r1,lsl #31; add r1,r2,r1,ror #31, then cmp r1,#1 - algebraically x & 1, but writing '& 1' gives and/cmp (2 instructions, 148B). Residue: the spelling that makes mwcc emit that rotate-based 1-bit extract; try a signed 1-bit bitfield read.
