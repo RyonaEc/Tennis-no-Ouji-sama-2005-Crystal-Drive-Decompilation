@@ -123,6 +123,8 @@ ov002 0x02081a90 128B func_ov002_02081a90 128 Same class as 0x02081a10: an 8-arg
 
 ov002 0x0208322c 120B func_ov002_0208322c 120 Correct size (120B) and the whole call sequence is right - four pointer loads from base+0x4000+0xf60..0xf6c, one u16 load at t1+0x88, two table hops, then func_ov002_0208381c(t2+i1*4, t3+i2*0x14, a0, a1, 0, 0x6400000, 0, 0). Residue is register allocation: retail keeps the four pointers in r1/r5/r7 plus a scratch ip and hoists 'mov ip,#0x14' and 'mov r3,r1'; mwcc coalesces the pointers into reused r2/ip/r3 and hoists the 0 and 0x6400000 literals first, so the prologue and every load offset differ. Tried load order t1,t0,i0,t2,t3, an early a0/a1 copy, and a 0x6400000U literal. L12050
 
+ov002 0x02057ebc 140B func_ov002_02057ebc 140 Best 152B. The whole body is right - clamp cur (s16 at 0x66) against max (u16 at 0x8c), then twice: store lo + func_0203b0c0((hi - lo) * cur, max) into the 32-bit slots at +4 and +8 reading 0x90/0x9c and 0x94/0xa0, then bump cur if it is still below max via a s16 pointer. Residue is the value lifetime across the two calls: retail loads 0x90 into r6 and keeps it live over the bl, and has max already in r1 for both calls; mwcc re-loads 0x90 and 0x94 after each call and inserts 'mov r1, r6'. Hoisting 0x90/0x9c and 0x94/0xa0 into locals before the calls gave the same 152B but lost the prologue match (more callee-saved regs). L12053
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
