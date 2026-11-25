@@ -12004,3 +12004,9 @@ arm9 0x0201975c func_0201975c
 
 ov002 0x020613d8 func_ov002_020613d8
 196B: entity update; e = B + 0x2e4 + a0*0x158; v = e[2]; if (B[0x100] <= 1) return; if (B[0x100]-2 != (u8)(v>>1)) return; then three flag-gated saturating byte bumps at B+0x22e/0x232/0x236 with masks 0x1000/0x4000/0x80000 read from e+0x4c. FRAME-FREE 196/196 with the whole body inline and no named locals (build/cand/best_ov002_020613d8.c) - any named u32 local reintroduces the stmdb/sub-sp frame and lands at 232, named u8 locals cost 236. Only residue: the first block's schedule. Retail loads v, then n, then lsr, then cmp/bxls; mwcc in the frame-free form loads n first and folds the shift after the early return. Same instruction set either way.
+
+ov002 0x02082f38 func_ov002_02082f38
+120 120/120 on the struct-element spelling (E = {u16 v; u16 pad;} so the index scales by 4 and ldrh reads the halfword at stride 4). Only the scaled-index register differs: retail does lsl r4, r5, #2 then ldrh lr, [r0, r4], mwcc does lsl lr, r5, #2 then ldrh lr, [r0, lr]. Named halfword, named entry pointer, u16->u32 widening of v, and a named byte offset all leave it; the call and the four stack words already match.
+
+ov002 0x02062dbc func_ov002_02062dbc
+124 124/124; the whole diff is register naming for the state pointer - retail keeps it in r2 (ldr r2,[pc]; ldr r2,[r2]; ldr lr,[r2,#8]; add ip,r2,#0xc) and mwcc keeps it in lr with the 0x3039 pool constant in r2 (ldr lr,[r2]; ldr r2,[pc]; ldr r3,[lr,#8]). Parked after u8*/u32*-typed state, declare-then-assign, direct g[0xc] indexing and pointer-local spellings. Note the u64-return usage: (u8)(func_0203b2cc(v, a0) >> 32) is what produces 'and r0, r1, #0xff' after the call.

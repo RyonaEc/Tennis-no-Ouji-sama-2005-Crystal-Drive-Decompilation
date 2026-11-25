@@ -95,6 +95,10 @@ arm9 0x0201975c 128B func_0201975c 128B: fills a 16-byte {0x1000,0,0,0x1000} blo
 
 ov002 0x020613d8 196B func_ov002_020613d8 196B: entity update; e = B + 0x2e4 + a0*0x158; v = e[2]; if (B[0x100] <= 1) return; if (B[0x100]-2 != (u8)(v>>1)) return; then three flag-gated saturating byte bumps at B+0x22e/0x232/0x236 with masks 0x1000/0x4000/0x80000 read from e+0x4c. FRAME-FREE 196/196 with the whole body inline and no named locals (build/cand/best_ov002_020613d8.c) - any named u32 local reintroduces the stmdb/sub-sp frame and lands at 232, named u8 locals cost 236. Only residue: the first block's schedule. Retail loads v, then n, then lsr, then cmp/bxls; mwcc in the frame-free form loads n first and folds the shift after the early return. Same instruction set either way. L12005
 
+ov002 0x02082f38 120B func_ov002_02082f38 120 120/120 on the struct-element spelling (E = {u16 v; u16 pad;} so the index scales by 4 and ldrh reads the halfword at stride 4). Only the scaled-index register differs: retail does lsl r4, r5, #2 then ldrh lr, [r0, r4], mwcc does lsl lr, r5, #2 then ldrh lr, [r0, lr]. Named halfword, named entry pointer, u16->u32 widening of v, and a named byte offset all leave it; the call and the four stack words already match. L12008
+
+ov002 0x02062dbc 124B func_ov002_02062dbc 124 124/124; the whole diff is register naming for the state pointer - retail keeps it in r2 (ldr r2,[pc]; ldr r2,[r2]; ldr lr,[r2,#8]; add ip,r2,#0xc) and mwcc keeps it in lr with the 0x3039 pool constant in r2 (ldr lr,[r2]; ldr r2,[pc]; ldr r3,[lr,#8]). Parked after u8*/u32*-typed state, declare-then-assign, direct g[0xc] indexing and pointer-local spellings. Note the u64-return usage: (u8)(func_0203b2cc(v, a0) >> 32) is what produces 'and r0, r1, #0xff' after the call. L12011
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
@@ -154,7 +158,6 @@ arm9 0x020344b4 172B func_020344b4 -- memset. Exact at 172B except the 32-byte-b
 arm9 0x02034594 116B func_02034594 -- init a {buf, n, 0} descriptor, hand it to func_0203465c with the L10881
 arm9 0x020366bc 116B func_020366bc -- bounded copy that tests the byte it just stored (retail reloa... L10887
 arm9 0x02036730 216B func_02036730 ` (216 B): hand-optimised word `strcpy` (`0x01010101`/`0x80808080`, f... L11317
-arm9 0x0203684c 40B func_0203684c arm9 40B - same wall. push {r0-r3} = 8-byte struct + 2 unused u32 arg... L5525
 arm9 0x02037660 100B func_02037660 -- limits a byte field: `if (a1 <= 0) return; if (a1 >= a0[4]) r... L8033
 arm9 0x020376c4 80B func_020376c4 -- BCD digit increment, 80/80, one instruction out. Correct C: st... L8687
 arm9 0x02037718 112B func_02037718 -- table walk over p[5+idx], length p[4], tail test `(p[idx+4] &... L3821
@@ -264,7 +267,6 @@ ov002 0x0204f3cc 172B func_ov002_0204f3cc ` (172 B, 2x). Full body recovered: re
 ov002 0x0204f478 148B func_ov002_0204f478 ` / `0x0204f50c` (148 B x2) -- `build/cand/a_f478.c` is 148 B L11587
 ov002 0x0204f50c 148B func_ov002_0204f50c ` (148 B x2) -- `build/cand/a_f478.c` is 148 B L11587
 ov002 0x0204f5a0 132B func_ov002_0204f5a0 -- pushes a 12-byte record into a 0x40-entry table: index byte at L7187
-ov002 0x0204f70c 100B func_ov002_0204f70c -- angle helper: calls func_02020044(a1, a0), wraps a negative r... L7655
 ov002 0x0204f98c 104B func_ov002_0204f98c frame regression: mwcc uses lr as the base pointer and emits push/sub... L199
 ov002 0x020532e4 388B func_ov002_020532e4 0204f6ac, 0203b0c0 (twice), 02057068 L10448
 ov002 0x02053468 220B func_ov002_02053468 0205bee4(0x1e, rec), 0204f770, 020532e4, 0204f6ac, 0203b0c0 (twice),... L10448
@@ -274,28 +276,23 @@ ov002 0x0205bee4 128B func_ov002_0205bee4 (0x1e, rec), 0204f770, 020532e4, 0204f
 ov002 0x0205fe04 140B func_ov002_0205fe04 (siblings 0x0207bc98, 0x020e9658) -- clears two 3-byte runs and... L11098
 ov002 0x020604b4 352B func_ov002_020604b4 ` (352 B) compiles to exactly 352 B with 19 differing slots, all L11790
 ov002 0x020617d0 128B func_ov002_020617d0 -- finds the two indices i in 0..3 where `*(u8 *)(base + 0x94 +... L6851
-ov002 0x0206308c 56B func_ov002_0206308c pre-index writeback after two calls (ldr r0,[r1,r0]!) L187
 ov002 0x020630f4 116B func_ov002_020630f4 116B: dead ldr of func_02005418 and discarded ldrh of 0x04000208 prec... L2423
 ov002 0x02063874 128B func_ov002_02063874 (128B): sibling of 0x020636b4, but retail re-materialises `add r1, r4... L2911
 ov002 0x02063dc0 152B func_ov002_02063dc0 (152B): ov002 switch/membership test. The switch part matches byte-fo... L3115
 ov002 0x02064b04 108B func_ov002_02064b04 -- selects a state predicate from `*(u8 *)(base + 0x1744 + a0 *... L7769
 ov002 0x02065ffc 132B func_ov002_02065ffc -- returns 1 unless bit 0x100000 of `b + 0x24` is set, then 1 ag... L7103
-ov002 0x02066080 112B func_ov002_02066080 -- per-entity limit check: copy the 12-byte table at data_ov002_... L6593
 ov002 0x02068c78 64B func_ov002_02068c78 register-shift cascade: retail base in ip, record in r2, target in r1... L205
 ov002 0x02068e2c 276B func_ov002_02068e2c ` (276 B, 9-slice sine-pair writer). Decoded: base + L11630
-ov002 0x02069b3c 100B func_ov002_02069b3c -- sets bit 0x400 in `*(u32 *)(base + 0x1e6c)`, clears the byte... L7709
 ov002 0x0206d600 76B func_ov002_0206d600 -- `*(u32 *)(base + 0x1dd20c) = v; *(u32 *)(...+4) = 0 L10052
 ov002 0x020766c4 216B func_ov002_020766c4 -- record creator, 220/216 best (s16 t[2] + s16 u), 216/216 size... L8411
 ov002 0x020780f8 188B func_ov002_020780f8 (188B, 180/188) L667
 ov002 0x02078208 124B func_ov002_02078208 124B: *p|=1 at B+0x1e6c; p[4]=0; p[5]=a0; p[6]=0 L2441
-ov002 0x020799d4 112B func_ov002_020799d4 -- walks four 0x158-byte entity slots from base+0x2e4 and sets/c... L6647
 ov002 0x0207b41c 120B func_ov002_0207b41c -- entity predicate: `e = base + 0x2e4 + a0 * 0x158` L6761
 ov002 0x0207b494 112B func_ov002_0207b494 -- two-slot cleanup: for i in 0..1, if `*(s32 *)(base + 0x3694 +... L6689
 ov002 0x0207bc98 140B func_ov002_0207bc98 ) -- clears two 3-byte runs and then reclassifies L11064
 ov002 0x0207ff34 116B func_ov002_0207ff34 -- per-index byte counter with a clamp: `b = *(u32 *)0x02102070`... L11148
 ov002 0x02080ca4 68B func_ov002_02080ca4 vs 76B: mwcc allocates the loop counter in lr and then copies it... L3515
 ov002 0x02082034 92B func_ov002_02082034 -- copies four s16s into an 8-byte stride at p + 0x3c6 from a tab... L7301
-ov002 0x02082090 96B func_ov002_02082090 allocation tie: retail keeps base in ip / q in r2 / p in r3 and mater... L193
 ov002 0x02084b28 128B func_ov002_02084b28 -- per-slot mode byte: for i in 0..3, skip when `*(u8 *)(base +... L6809
 ov002 0x02084e94 220B func_ov002_02084e94 (220B) L619
 ov002 0x02084ff4 164B func_ov002_02084ff4 -- body matches instruction for instruction except the prologue... L11205
@@ -360,7 +357,6 @@ ov003 0x02050f2c 16B func_ov003_02050f2c degenerate: `cmp/ moveq r0,#0 / movne r
 ov003 0x02052160 140B func_ov003_02052160 140B: 104/140B. Shape is settled: 4 args, a3 packs two halves — lo=(u... L283
 ov003 0x02052384 372B func_ov003_02052384 ` (372 B, RGB555 -> BGR555 shade). Sibling of the matched L11726
 ov003 0x020524f8 340B func_ov003_020524f8 ` (340 B, 16-pixel BGR555 halving loop) is 340 B with only 39 L11780
-ov003 0x0205299c 76B func_ov003_0205299c ov003 -- two-pool RMW: needs ldr r1,=data_027c0000 ; ldr r0,=0x3f... L9038
 ov003 0x020538b0 320B func_ov003_020538b0 ` (320 B, two 4-way field classifier chains). Decoded: for L11687
 ov003 0x02054190 336B func_ov003_02054190 ` (336 B, 2x8 halfword transpose + packed register write). L11710
 ov003 0x02066a54 180B func_ov003_02066a54 / 0x020b85b8 / 0x020db6ec 180B -- engine-B init: clear 0x200 u16 slot... L4283
@@ -442,7 +438,6 @@ arm9 0x02029704 ?B - -- 108-112/100: retail keeps the accumulator in lr (callee-
 ov008 0x0204cc94 140B func_ov008_0204cc94 -- slot allocator: reads `slot = *(u32 *)(p + 0xc10 + idx * 4)`... L5549
 ov008 0x0204cd20 140B func_ov008_0204cd20 -- 12-byte record push, same family as ov002 0x0204f5a0: index b... L7223
 ov008 0x0204d9dc 124B func_ov008_0204d9dc -- direction/percentage update: `if (flags == 0 || flags == 0x40... L5603
-ov008 0x0204e51c 56B func_ov008_0204e51c ) -- retail `ldr r1,[pc]`=0x027c0000, `ldr r0,[pc]`=0x3ff8, `ldr r0,[... L11055
 ov008 0x0204f27c ?B - rodata, 0204f414 44B data) are byte exact and were kept. L11243
 ov008 0x0204f414 ?B - data) are byte exact and were kept. L11243
 dtcm 0x027c0000 ?B - `ldr r0,[pc]`=0x3ff8, `ldr r0,[r1,r0]!`, orr #1, str. Five spellings... L3361

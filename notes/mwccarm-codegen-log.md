@@ -6350,3 +6350,32 @@ the struct afterwards:
 matches exactly. The initialised-declaration form (`T3 t = *(...);` first) is
 what put the copy in `lr`. A register swap with identical instruction count is
 worth one reordering pass before it is called an allocation tie.
+
+## 2026-11-25 - 0x027c0000 + offset needs the symbol, not the number
+
+Three parked units turned out to be the same instruction sequence and the same
+mistake: the interrupt-enable register at `0x027c3ff8`, written as a
+read-modify-write. Retail is always
+
+    ldr r1, [pc, #..]        ; 0x027c0000
+    ldr r0, [pc, #..]        ; 0x00003ff8
+    ldr r0, [r1, r0]!        ; pre-indexed writeback
+    orr r0, r0, #1
+    str r0, [r1]
+
+Writing the address as one integer (`*(volatile u32 *)0x027c3ff8 |= 1`) gives
+one pool word and a folded 48-52 byte form; writing a base pointer plus a
+constant offset gives `add r1, r0, #0x27c0000` or `add r1, r1, #0x3ff8`, never
+the two-literal writeback. What produces retail exactly is the project's own
+established spelling, the base as a declared symbol:
+
+    extern u8 data_027c0000;
+    ...
+    *(u32 *)((u8 *)&data_027c0000 + 0x3ff8) |= 1;
+
+With that, `func_ov002_0206308c` (56 B), `func_ov003_0205299c` (76 B) and
+`func_ov008_0204e51c` (56 B) all match, the last one losing only the `volatile`
+qualifier that the other two spellings needed. `src/arm9/func_02005418.c` and
+`src/ov004/func_ov004_0204cbdc.c` already used this shape; the lesson is to
+reach for the symbol spelling first for every `0x027c0000` family unit instead
+of deriving the address in C.
