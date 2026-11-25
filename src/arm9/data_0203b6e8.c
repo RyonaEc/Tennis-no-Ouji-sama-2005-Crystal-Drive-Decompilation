@@ -135,6 +135,33 @@ extern u8 func_0203b5dc[];
 extern u8 func_0203b640[];
 extern u8 func_0203b698[];
 
+extern u8 func_02030b1c[];
+extern u8 func_02031e80[];
+extern u8 func_02031fa8[];
+extern u8 func_02032438[];
+extern u8 func_02032710[];
+extern u8 func_02032be8[];
+extern u8 func_02032d00[];
+extern u8 func_02032db4[];
+extern u8 func_02032ecc[];
+extern u8 func_02032f38[];
+extern u8 func_02032f90[];
+extern u8 func_02033014[];
+extern u8 func_02033084[];
+extern u8 func_020330b4[];
+extern u8 func_020330d4[];
+extern u8 func_0203318c[];
+extern u8 func_02033520[];
+extern u8 func_02033a5c[];
+extern u8 func_02033a84[];
+extern u8 func_02033ab8[];
+extern u8 func_02033b34[];
+extern u8 func_0203b558[];
+extern u8 func_0203b5a4[];
+extern u8 func_0203b5dc[];
+extern u8 func_0203b640[];
+extern u8 func_0203b698[];
+
 const u32 data_0203b6e8[80] = {
 0x0009ff00, 0x00000000, (u32)&func_02030b1c, 0x00001364, (u32)&data_0203b6e8, (u32)&func_02031e80,
 0x00000129, 0x00607f20, (u32)&func_02031fa8, 0x00000491, 0x00b0ff20, (u32)&func_02032438,
