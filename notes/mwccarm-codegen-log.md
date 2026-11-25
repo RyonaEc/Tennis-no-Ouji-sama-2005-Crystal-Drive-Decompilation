@@ -6184,3 +6184,23 @@ is the `else` arm and the unlock path is the fall-through. Writing `if (flag ==
 into the tail call and matches. When retail's conditional at the top jumps
 forward over a whole block, that block is the else arm, no matter which one
 reads better.
+
+## 2026-11-25 - double arithmetic and the helper nobody defines
+
+`func_02036874` (192 B) is fdlibm's `frexp`, and it produced the project's cleanest
+example of why `var3` is not the gate. Writing the subnormal fixup as
+`x = x * 18014398509481984.0;` compiles to `bl _dmul` - and `_dmul` is not in
+`symbols.txt` at all. The relocation bytes are masked in the object diff, so
+`var3` reported `MATCH`, while `reg.py` linked the ROM and rejected the unit
+(digest moved). Retail calls `func_02037f0c`, a 0x2dc-byte soft-float multiply
+in arm9. Declaring `extern double func_02037f0c(double a, double b);` and calling
+it explicitly gives the identical instruction stream *and* the right relocation,
+and the unit installs.
+
+Two shapes make the rest of it work. The file is written with fdlibm's
+address-taking macros - `#define HI(d) (*(1 + (s32 *)&(d)))`, `#define LO(d)
+(*(s32 *)&(d))` - which is what forces the `push {r0, r1, r2, r3}` argument spill
+and the `[sp, #8]` / `[sp, #0xc]` homes for the double; a union-based HI/LO that
+never takes the parameter's address gives a 180-byte function with the arguments
+still in registers. When retail's double parameter is read back from the stack,
+the source took its address.
