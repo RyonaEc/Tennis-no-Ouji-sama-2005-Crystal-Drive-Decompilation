@@ -12124,3 +12124,9 @@ see 02033f90: same struct-shuffle shape, 0x24 frame, result at sp+0x18.
 
 arm9 0x0202a45c func_0202a45c
 opa wrapper: with a null 0x20 source it probes 02029980 and takes blk+0x20, else p+0x20, then calls 02033520(flag, o+4, v, o+8). Exact 136B; 4 slots remain: retail loads o+8 before o+4 and emits moveq before movne (ldr r3,[r5,#8] / cmp / moveq r0,#0 / ldr r1,[r5,#4] / movne), b56 orders both the other way. Tried !=0, ==0?0:1, if/else assignment, and a separate f local.
+
+arm9 0x02019234 func_02019234
+table-driven opa packer: src=020195dc(a0,a1), n=(u16)(a2-a1+1), off=(u16)(a1*8), fn=data_02042340[a0], guarded do/while calling fn(src,off,6) 8 bytes at a time. Exact 148B with the whole instruction sequence in retail order; only a three-way register rotation remains (retail n=r7/fn=r5/src=r8, b56 n=r5/fn=r8/src=r7). Tried for-loop (pre-test duplicated), do/while, all statement orders, all declaration orders, and fn after the zero guard.
+
+arm9 0x02034348 func_02034348
+run-length decoder into dst: null dst/src guard, then per code *src (zero writes dst[out]=0 and stops) calls 020343dc into a 4-byte stack word, bounds-checks out+n<=limit, copies via 020366bc and adds n, continuing while out<=limit. b56 gives 140B/144B (5 regs) because it recomputes add r0,sp / add r1,sp instead of retail's cached r6 = sp+0, and therefore needs no sb; retail's 7-register frame with src in sb is the whole 8-byte gap. Tried u32/u8[4] tmp, a cached u32* pt, and three declaration orders.
