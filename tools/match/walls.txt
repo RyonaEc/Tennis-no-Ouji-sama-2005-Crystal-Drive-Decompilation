@@ -89,6 +89,8 @@ arm9 0x02017010 192B func_02017010 192B: 192/192 on the second spelling (request
 
 arm9 0x02017cf4 196B func_02017cf4 196B: sibling of func_02017db8 (allocate from the end of a block: align_down(start + blk - size, align)). Best 204B with an extra callee-saved register - retail fits everything in r4-r8/sb plus ip/lr (lr holds the running best size), so the candidate needs two fewer live values before it can line up. L11996
 
+arm9 0x02037320 196B func_02037320 196B: 196/196 on the second spelling (BCD digit loader with a signed count - the u32 count gives bhs where retail has bge). Remaining difference is the leading-zero skip: retail reads s[1] and then advances (ldrb r2,[r1,#1] / add r1,r1,#1), so the source peeked at the next character instead of incrementing first; the increment-first do/while lands 4 instructions apart in that block. L11999
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
