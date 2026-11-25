@@ -588,3 +588,15 @@ Axes, not matches - every one still needs a compiled byte-diff and `ninja sha1`.
   then 6, so the switch has to be written `case 8: case 9: … case 7: … case 6:`
   to land them in that order. Two adjacent cases with byte-identical bodies still
   need separate case groups (merging them costs the second copy).
+* **Split the index, do not add it: `p[a2]` after `p = &tbl[k]`.** For a
+  two-part index into a data table (`tbl[9*a1 + a2]`), b56 is free to compute
+  `9*a1 + a2` and use the symbol as the addressing base, or to accumulate
+  `symbol + 9*a1` and use `a2` as the index register. Retail did the latter
+  (`func_ov002_0207fcf0`). Writing `u8 *p = &data_X[a1 * 9]; t = p[a2];` forces
+  the second form; the flat `data_X[a1 * 9 + a2]` gives the first (20 diffs,
+  same size).
+* **Unsigned parameters widen the branch conditions.** The same switch over
+  `a1` emits `bhi`/`blo` with `u32 a1` and `bgt`/`blt` with `s32 a1`, and the
+  final `return a0 >= t;` emits `movhs/movlo` versus retail's `movge/movlt`.
+  Declaring the parameters `s32` when retail uses signed conditions fixed the
+  last 12 diffs of `func_ov002_0207fcf0` in one edit.
