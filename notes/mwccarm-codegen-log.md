@@ -5819,3 +5819,12 @@ scheduling diff in an otherwise identical 808-byte body. Declaring the parameter
 as `void (*cb)(void)` and passing the function by name fixes it. 192 respell
 variants could not, so treat a signed-integer cast on a function-pointer argument
 as the suspect when only the preheader order differs.
+
+`WM_StepDataSharing` (0x0202fb2c, 1020 B) matched first try, which is worth
+recording as the receipt for the two rules above: keeping the to-port callback
+typed as `void (*cb)(void)` (not an `s32` cast), and keeping `MI_CpuCopy16`
+arguments in `(src, dst, count)` order with `sizeof(WMDataSet)` for the dataset
+copy. Its parent/child branches both do `dsInfo->currentSeqNum =
+dsInfo->seqNum[dsInfo->readIndex]` before advancing `readIndex`, and the child's
+transmit buffer is `((u8*)&dsInfo->ds[sendIndex]) + 32`, thirty-two bytes into
+the dataset, which is why that offset must not be folded into the struct.
