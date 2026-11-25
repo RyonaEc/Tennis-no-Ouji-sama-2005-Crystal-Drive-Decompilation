@@ -482,7 +482,7 @@ ov003 0x020c1ab0 128B func_ov003_020c1ab0 128B: 124/128B, ONE instruction short.
 ov003 0x020c7ac0 376B func_ov003_020c7ac0 ` (376 B, battle-entry init; the sibling of the ov005 L11811
 ov003 0x020c7dc4 344B func_ov003_020c7dc4 ` (336 B x2) -- closest draft L11521
 ov003 0x020c806c 96B func_ov003_020c806c each (famsurvey pair) -- DEGENERATE, no source expresses it. L5275
-ov003 0x020d72f8 164B func_ov003_020d72f8 / 0x020d9f2c 164B each (famsurvey pair, 328B total) -- module reset r... L5123
+ov003 0x020d72f8 164B screen-clear / DMA-ctrl init: if (a0 == 0) { 020209c8(8); 020208b0(0x100); *(u32*)0x04001000 = (*(u32*)0x04001000 & 0xffcfffef) | 0x00100010; for (i = 0; i < 0x200; i++) { ip = base + i*2; *(u16*)(ip + 0x8de8) = 0; if (i % 4 == 0) *(u32*)(ip + 0x8de8) = 0x200; } } return 0;  (u16 i; u32 ip; base = data_ov003_020eb720[0]). build/cand/ov3_d72f8_m.c is exactly 164B at 18 diffs. The divisor is 4, not 2: `x % 4` emits rsb r1,r2,x,lsl #30 + adds r0,r2,r1,ror #30 (a lsl/ror pair of 32-2n tests the value mod 2^n), so far my %2 gave the #31 variant. Only residue left is the ip/lr assignment (retail: ip = the address, lr = the zero constant; b56 swaps them) - unbrakeable across six spellings. ov003 020d9f2c is a byte-identical twin of this function, so the same candidate/match applies to both.
 ov003 0x020d77b4 204B func_ov003_020d77b4 -- 196/204. Call func_02021b14(0x04001050, 0xe, 0x24, s[0x3f], s... L8507
 ov003 0x020d8604 ?B - ` (164 B x2) -- closest draft L11531
 ov003 0x020d9f2c 164B func_ov003_020d9f2c each (famsurvey pair, 328B total) -- module reset routine. L5089
