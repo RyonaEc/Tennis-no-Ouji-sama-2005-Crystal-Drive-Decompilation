@@ -99,9 +99,7 @@ arm9 0x02032c70 144B func_02032c70 -- 16-bit ring/cursor update: `arr = *(u32 *)
 arm9 0x02033014 112B func_02033014 -- RMW on DISPCNT plus four register/two u16 register stores. Every L10829
 arm9 0x02033b34 140B func_02033b34 ` (140 B) -- insert-with-shift-up over 16-byte blocks at L11673
 arm9 0x02033bc0 16B func_02033bc0 branch stub: two movs converging on the next unit's first insn L61
-arm9 0x02033bd0 60B func_02033bd0 (twin 0x02033c1c) -- APSR interrupt-mask helper: `ldr r1, [pc]; b... L7535
 arm9 0x02033c0c 16B func_02033c0c branch stub: two movs converging on the next unit's first insn L67
-arm9 0x02033c1c 60B func_02033c1c ) -- APSR interrupt-mask helper: `ldr r1, [pc]; bx r1` jump into L8795
 arm9 0x02033c58 48B func_02033c58 starts mid-function; 02032b00 is a fragment). Those are unmatchable u... L397
 arm9 0x02033cb0 8B func_02033cb0 UDF trap stub + bx lr (assert/dead code, no C form) L55
 arm9 0x02033f40 80B func_02033f40 6-arg dispatcher; 5 source shapes tried L133

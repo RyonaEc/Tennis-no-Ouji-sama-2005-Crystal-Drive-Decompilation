@@ -5855,3 +5855,14 @@ while every spelling I tried loads both halves first, then applies and stores
 two statements, adding `(u16)` casts, marking the state volatile (which adds 4
 bytes) and 252 respell variants all leave the batched form, so treat two
 independent RMWs on the same base as a scheduler tie rather than a source bug.
+
+The interrupt-mask twins `func_02033bd0`/`func_02033c1c` (60 B each, main)
+are hand-written asm and match once the mwcc *assembler* dialect is honoured:
+inside an `asm` block `mrs r3, apsr` is rejected (`<string not found>`) and
+must be written `mrs r3, cpsr` (identical encoding, 0xe10f3000), `.word` is
+rejected and a literal pool entry has to be written as `dcd 0x02033bd8`, and a
+`ldr r1, =L_local` reference to a label defined in the same block also fails -
+the entry was therefore written as `ldr r1, [pc, #0x30]` with an explicit `dcd`
+last, which reproduces retail's `ldr/bx` self-jump followed by the pool word.
+The bodies set/clear CPSR bit 0x40 (FIQ) and 0x80 (IRQ) from the argument and
+return the previous state as 1/0.
