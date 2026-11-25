@@ -211,6 +211,27 @@ def render(totals, per, hash_ok, digest):
     return '\n'.join(lines)
 
 
+def imperfect():
+    """Report units objdiff does not score 100%.
+
+    Every complete unit is supposed to match byte for byte, and ByteMatch
+    publishes `matched_*` as it stands: a unit that links correctly but scores
+    99.9% silently lowers the published matched total below the fully-linked
+    one (that is how `src/arm9/func_02004a14` showed 8.87% against 8.88%).  The
+    aggregate fallback in `collect()` hides it, so it is checked per unit here.
+    Returns the offending units as (name, fuzzy percent, matched, complete).
+    """
+    bad = []
+    for u in json.loads(REPORT.read_text())['units']:
+        m = u['measures']
+        fuzzy = float(m.get('fuzzy_match_percent', 100.0))
+        if fuzzy >= 100.0:
+            continue
+        bad.append((u['name'], fuzzy, m.get('matched_code'),
+                    m.get('complete_code')))
+    return bad
+
+
 def main():
     if '--no-report' not in sys.argv:
         refresh_report()
@@ -229,6 +250,21 @@ def main():
     OUT.write_text(render(totals, per, hash_ok, digest), newline='\n')
     print(f'{OUT}: {totals["funcs"]}/{totals["funcs_total"]} functions, '
           f'{totals["code"]}/{totals["code_total"]} bytes')
+    bad = imperfect()
+    if bad:
+        print()
+        print(f'{len(bad)} unit(s) are complete but do not score 100%: the '
+              'published matched totals will sit below fully linked until they '
+              'do.')
+        for name, fuzzy, matched, complete in bad:
+            print(f'  {fuzzy:8.3f}%  {name}  '
+                  f'matched={matched if matched is not None else "-"} '
+                  f'complete={complete if complete is not None else "-"}')
+        print('Diagnose one with `python tools/match/objcheck.py --unit '
+              '<module> <name>`: a relocated word spelled as a number shows up '
+              'as a missing relocation.')
+        return 1
+    return 0
 
 
 if __name__ == '__main__':

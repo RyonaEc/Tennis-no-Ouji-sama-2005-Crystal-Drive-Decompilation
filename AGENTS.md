@@ -117,7 +117,8 @@ Source files must `#include "types.h"` first, or the compiler emits
 | `python tools/match/famsurvey.py <mod>...` | list unmatched identical-skeleton groups |
 | `python tools/match/literal_load.py [mod]` | census matched units whose source spells a pooled load's target as a number rather than a symbol name (invisible to every byte gate); advisory |
 | `python tools/match/walls.py show <mod> <addr>` | read one parked wall (index line plus its note); `grep` / `list` / `add` for the rest |
-| `python tools/match/progress.py` | regenerate `PROGRESS.md` from objdiff's report |
+| `python tools/match/progress.py` | regenerate `PROGRESS.md` from objdiff's report; exits non-zero if any unit scores below 100% |
+| `python tools/match/objcheck.py --unit <mod> <name>` | compare a unit's object with retail's, relocation by relocation: names the pooled word whose symbol was spelled as a number |
 | `python tools/match/names.py --dry-run` | report the scripted rename pass from `notes/naming/annotations.tsv` (names are recorded, not applied: see `docs/NAMING.md`) |
 | `ninja report` / `ninja sha1` / `ninja check` | objdiff numbers, ROM digest, per-module check |
 | melonDS decomp workbench (installed outside this repo) | runtime evidence: did the unit run, who calls it through a pointer, what arguments, who writes a field, which ROM file a buffer came from; setup and limits in `notes/workbench.md` |
@@ -267,6 +268,7 @@ empty names so a file never ends up with two conflicting `extern`s.
 ## Bookkeeping and release
 
 - `PROGRESS.md` is generated; never hand-edit it.
+- **Every complete unit must score 100% in objdiff.** A source that spells a relocated address as a plain number (`ldr r0, =0x027c0000` instead of `=data_027c0000`) links to the right bytes, passes `ninja sha1` and passes `var3` (both mask relocations), yet objdiff scores it 99.9% and ByteMatch publishes `matched_*` below `complete_*` — that cost 232 bytes and one function once. `progress.py` now fails and names such units; `objcheck.py --unit` explains one.
 - `README.md` carries the headline counts (`1,144 functions`, `66,668 bytes`,
   `matched_functions`, `matched_code`, percentages). Update them when the totals
   change, nowhere else, and keep them identical to `PROGRESS.md`.
