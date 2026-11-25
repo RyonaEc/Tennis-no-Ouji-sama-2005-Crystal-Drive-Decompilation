@@ -3399,3 +3399,11 @@ src/ov002/func_ov002_020b0328.c:
 src/ov002/func_ov002_020cd938.c:
     complete
     .text       start:0x020cd938 end:0x020cd9ec
+
+src/ov002/func_ov002_020a9c68.c:
+    complete
+    .text       start:0x020a9c68 end:0x020a9d30
+
+src/ov002/func_ov002_020eeb98.c:
+    complete
+    .text       start:0x020eeb98 end:0x020eec60

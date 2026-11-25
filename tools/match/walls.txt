@@ -143,6 +143,8 @@ ov002 0x020e5eb0 164B func_ov002_020e5eb0 164 Best 160B. Same walker shape as th
 
 ov002 0x020f466c 188B func_ov002_020f466c 188 Best 188B, exact size, body matches end to end (three zero stores through hoisted pointers e+0x90/0x94/0xa8, the 0x7c split into 0204d270 kind 0x31/0x33, the 0x4c bit-2 call to 020f39a8(a0,0) and state 1). Single residue is the stride exchange: retail 'mul r3, r5, r0' with the module base in r2; mwcc 'mul r2, r5, r0' with the base in r3. Note the sibling 0x020cd938 matched once its source also used base for a second pointer (f = base + 0x1824), so an extra live use of base is what pins it to r2; here base only feeds e and the 0x2e6 byte. Tried declare-then-assign, v before/after the p pointers, and an off local. L12080
 
+ov002 0x020b7e20 200B func_ov002_020b7e20 200 Best 200B, exact size. All local; residue is base/e swapped (retail base r5, e r4, v reuses r5, f in lr; mwcc base r4, e r5). The zero must be shared between the early return and the e+0x66 store, which is what s32 ret=0 plus '*(u16*)(e+0x66) = ret;' achieves (a plain '= 0' costs an extra mov and lands at 204B). Tried moving the S3 copy local and the base+0x1824 pointer around the 0x2e6 read. L12083
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
