@@ -204,9 +204,7 @@ ov009 0x0204de1c 208B func_ov009_0204de1c ov009 sibling of ov005 0205519c (ident
 
 arm9 0x020179c8 148B func_020179c8 list/port init: 3 word stores, then retail writes word 0x20 as 0 and then does TWO bitfield passes over bits 0..7 of the same word (ldr/bic #0xff/str, then ldr/and #0xff/orr/str), so the source has an aliased plain-u32 store followed by an 8-bit bitfield write at the same address. b56 always folds them into one store (136B with the u32 spelling, 120B with a bitfield struct or a union overlay). Remaining 12B is that un-aliasable double write. L12173
 
-ov002 0x020f04c8 156B func_ov002_020f04c8 indexed court-state setup: p = data_ov002_02102070[0] + 0x2e4 + a0*0x158, id = q[0x2e6], guard (*(u32*)(p+0xd8) & 4), then u16 stores 0x66=0, 0x8e=0x31, 0x8c=p[0x80], the p[0x7c]==0 ? 0x2e/0x2f : 0x2f/0x2e selection on p[2]<2, 0204d270(id, p[1], sel), p[0xd1]=3, return 1/0. 156B exact; 7 slots are a pure tie on the mul result vs the base pointer (retail keeps product in r2 and base in r1, b56 the other way). 52 respell variants all stay at 7; spelling q first drops to 148B. L12176
 
-ov003 0x0205e3c0 156B func_ov003_0205e3c0 two DMA clears/copies: 020245f4, then 02025c94(b+0x1b340,0x2000) + 02024498(b+0x1b340, a[0x20], 0x2000) + a[0x20]=0x2000, 02024428, 020243e0, then the same pair at b+0x1b320 with 0x20, a[0x24]=0x20, 02024314; a = data_ov003_020eb720[0], b = data_ov003_020eb724[0]. b56 CSEs the address into an extra callee-saved register (r6) and reaches 148B; retail rematerialises 'add r0, r5, =0x1b340' before each call and carries a 4-byte frame instead. Residue: the rematerialisation, not the call sequence - plain pointer and (u32)b+const spellings both CSE. L12179
 
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.

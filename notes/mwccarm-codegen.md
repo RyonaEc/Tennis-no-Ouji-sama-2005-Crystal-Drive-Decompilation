@@ -202,6 +202,8 @@ Volatile used for a stack spill is a match-shape hack, not the original source. 
 | Same body resists both compilers in the 68-88 B band | check the b56 address clusters before rewriting again | 2.46, 2.52, 2.63 |
 | Candidate byte-matches but the link fails | absolute address where a symbol belongs, or a name/address mismatch | 2.64 |
 | A failed compile looks like a match | treat an empty object as no match and recompile | 2.35 |
+| Address hoisted into a callee-saved register where retail remakes `add` per use | declare the base `u32` and add the offset as an integer; cast to a pointer only at the dereference | 11.25-base |
+| `mul` result and base pointer swap registers, frozen across spellings | the same `u32`-base lever | 11.25-base |
 | Object diff says MATCH, ROM digest fails | SWI stubs and constant pools; only `ninja sha1` decides | 2.45 |
 
 ## Classes that are not reachable from C (park them)

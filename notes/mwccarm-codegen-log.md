@@ -6495,3 +6495,22 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
   candidates/second, sweep exhaustively instead of thinking between compiles -
   and a "dead lever" result is scoped to the current structure, so re-sweep
   after any restructuring.
+
+## 2026-11-25 - a `u32` base rematerialises `base + offset`, a `u8 *` base hoists it
+
+* `ov003 0205e3c0` (156 B): two DMA clear/copy pairs on `b + 0x1b340` and
+  `b + 0x1b320`. With `u8 *b = (u8 *)data_ov003_020eb724[0];` b56 CSEs the
+  address into an extra callee-saved register (r6) and lands at 148 B, with a
+  frameless prologue instead of retail's `sub sp, sp, #4`. Declaring
+  `u32 b = data_ov003_020eb724[0];` and passing `b + 0x1b340` as a plain integer
+  makes every use a rematerialisable `add r0, r5, =const`, which is exactly what
+  retail does before each call: 156 B, match on the first try.
+* `ov002 020f04c8` (156 B): a seven-slot tie over `mul r2, r0, r1` - retail keeps
+  the index product in r2 and the base in r1, b56 the other way round. With a
+  pointer base every one of 52 `respell` variants stays at seven slots. The same
+  integer base (`u32 base = data_ov002_02102070[0];`, then
+  `u8 *p = (u8 *)(base + 0x2e4 + a0 * 0x158);`) matches immediately.
+* Lever: when retail rematerialises `add rX, base, #off` before several calls
+  that all use the address, declare the base as `u32` and add the offset in
+  integer arithmetic, keeping the pointer cast at the dereference rather than at
+  the base. It also clears the register tie that the pointer spelling freezes.
