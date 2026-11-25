@@ -5809,3 +5809,13 @@ reloads `ldrh r0, [sp, #0xc]`); passing a literal `0` costs those 8 bytes. The
 `WM_SetMPDataToPortEx` error check is `res != WM_ERRCODE_SUCCESS (0) &&
 res != WM_ERRCODE_OPERATING (2)`, not `... != 1`: retail tests `cmp r0, #0`
 then `cmp r0, #2`, and testing against 1 produces the wrong second compare.
+
+`WM_StartDataSharing` (0x0202ffe4, 808 B) nearly died on a scheduling detail that
+looked like nothing: with the callback written as `(s32)WmDataSharingSetDataCallback`
+into an `s32 a0` parameter, mwcc hoists the literal load of the callback address
+ahead of the loop-bound constants (`ldr fp`; `mov r4, #2`; `mov r6, #1`) instead
+of after them (`mov r4, #2`; `mov r6, #1`; `ldr fp`), which is a 4-slot
+scheduling diff in an otherwise identical 808-byte body. Declaring the parameter
+as `void (*cb)(void)` and passing the function by name fixes it. 192 respell
+variants could not, so treat a signed-integer cast on a function-pointer argument
+as the suspect when only the preheader order differs.
