@@ -6204,3 +6204,16 @@ and the `[sp, #8]` / `[sp, #0xc]` homes for the double; a union-based HI/LO that
 never takes the parameter's address gives a 180-byte function with the arguments
 still in registers. When retail's double parameter is read back from the stack,
 the source took its address.
+
+## 2026-11-25 - an imm8-foldable constant retail kept in a register
+
+`func_02023df8` / `func_02023e58` (96 B, one family) add a decimal base,
+`0x6600000` / `0x6400000`, to a byte offset in both arms of an if/else. Retail
+materialises it once - `mov ip, #0x6600000` - and then uses `add r2, ip, r4` and
+`add r1, ip, r4`; mwcc folds it into both adds as `add r2, r4, #0x6600000` and
+the function comes out one instruction short (92 B). The constant is a legal
+rotated imm8, so this is not the usual "too big for an immediate" split. Naming
+it (`u32 base = ...`), making it a `u8 *` base with pointer arithmetic, and
+letting it appear inline in both arms all fold the same way. If a later unit
+shows the same one-`mov`-short pattern with a value in the 0x04000000-0x0c000000
+range, this is the same wall, not a new one.
