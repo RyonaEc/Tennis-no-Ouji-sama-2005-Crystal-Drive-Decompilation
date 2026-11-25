@@ -165,6 +165,12 @@ ov002 0x02083060 148B func_ov002_02083060 148 Best 148B, exact size and instruct
 
 ov002 0x0204fc18 408B func_ov002_0204fc18 exact 408B; only the -4/8 constant pair assignment differs: retail mvn r2,#3 ... ldr r1,[sp,#0x58] ... mov r3,#8 (a4 load between the two constants, -4 in r2, 8 in r3) while b56 puts -4 in r3 and 8 in r2 after both; respelled 8 ways (0xfffc, ~3, cast, hi/lo locals, group order before/between/after the a4 stores) - best stays 408B base with 31 slots (24 are bl relocs) L12113
 
+ov002 0x0207b35c 148B func_ov002_0207b35c clear-slot routine (base+0x3654 block: 0x52 guard, 0x40 word, q[a0] into 0xc5-style table, four teardown calls). Exact 148B; only a two-register rotation remains: retail base=r4/a0=r5/q=r6, b56 base=r5/a0=r6/q=r4. Needs u8 callee params (u32 + '& 0xff' hoists the mask into r4 and costs 16B). Three declaration/assignment orders and a cached-k form tried. L12116
+
+arm9 0x02033f90 72B func_02033f90 varargs-shuffle twin of 02033ef4 and the walled 02033e40/02033e98: 8-byte struct copy from sp+8 down to sp-4, then ldm of {r3} and {r1,r2} and a 6-arg call to 02033fd8 with the result read back from sp+0x10. Straight C for the same call gives 68B. L12119
+
+arm9 0x02033ef4 76B func_02033ef4 see 02033f90: same struct-shuffle shape, 0x24 frame, result at sp+0x18. L12122
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
