@@ -5953,3 +5953,39 @@ but makes mwcc hoist the address into a callee-saved register early, which is
 Whenever a unit reports `complete: true` with `fuzzy_match_percent < 100` in
 `build/ATOJ/report.json`, check its pool words for address literals before
 looking at the instruction stream.
+
+## 2026-11-25 - why the data units sit under 100% in objdiff
+
+With the code side fully clean (`matched_code == complete_code`, no unit under
+100%), eleven data units still report partial matches. Diffing them one at a
+time shows the same class of problem the two functions had, plus a structural
+blocker:
+
+* A `kind:load` relocation from `relocs.txt` inside the unit means the word is a
+  pointer. Where the source has a plain hex literal instead of
+  `(u32)&symbol`, the ROM is right and objdiff is not: `data_0203bca8` +0x13c
+  is `0x020a2b06` (retail: a load to `data_ov005_020a2b06`), `data_0203d908`
+  +0xeb4 is `0x02080fdf`, `ov004_02063804` has three of them, and the
+  ov006 blobs have between one and six. Listing them is mechanical: parse the
+  array literals, intersect their offsets with the module's `relocs.txt`, and
+  look up the target in the symbol table of the module the reloc names (note
+  that overlay addresses overlap across modules, so the module field is
+  authoritative; on Windows `glob` returns backslashes, so `basename` the
+  directory before keying the table).
+* Writing `(u32)&symbol` for those words does not link. The symbols exist in
+  `symbols.txt` but no delinked object defines them - they sit inside a gap
+  object that only exposes one blob symbol for the whole range. Attempts on
+  `ov004_02063804` (`data_ov004_020637cc/d0/d4`) and `arm9/data_0203bca8`
+  (`data_ov005_020a2b06`) both fail with `Undefined : "<symbol>"` from
+  `mwldarm`, so the fix needs those addresses carved out of the enclosing gap
+  into their own delinks entries and source units first.
+* `data_ov006_02065024` is a second, different case: one `u32[1024]` covers two
+  retail symbols (`data_ov006_02065024` is 2,995 B and `data_ov006_02065bd7`
+  starts unaligned at +0xbb3). Splitting into two `u8` arrays compiles and
+  fills correctly but the assembler pads between them, so the ROM digest
+  changes (`5db59af2...`); it needs the same gap carve-out, at unaligned
+  offsets this time.
+
+Net: the data percentages cannot reach 100% through source edits alone - the
+delinks coverage has to expose the individual data symbols first. Nothing was
+changed for these units; the tree is unchanged and the digest still matches.
