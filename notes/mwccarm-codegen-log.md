@@ -6217,3 +6217,19 @@ it (`u32 base = ...`), making it a `u8 *` base with pointer arithmetic, and
 letting it appear inline in both arms all fold the same way. If a later unit
 shows the same one-`mov`-short pattern with a value in the 0x04000000-0x0c000000
 range, this is the same wall, not a new one.
+
+## 2026-11-25 - two tricks that each recovered an instruction
+
+From `func_020183ac` (128 B bump allocator, best 120/128):
+
+**Operand order decides whether the -1 is a `sub` or folded.** `~(size - 1) &
+((size - 1) + cur)` gives retail's `sub r0, r2, #1; add r0, r0, r3`, while the
+algebraically identical `cur + size - 1` gives `add r0, r3, r2; sub r0, r0, #1`.
+When a unit is one instruction short around an alignment mask, try both
+associations before blaming the scheduler.
+
+**Cast through the narrow types to get a field extraction.** Retail read a flag
+word as `ldr; and #0xff; lsl #16; lsr #16; ands #1`; `*(u32 *)p & 1` produces
+just `ldr; ands #1`. Writing the source as `((u16)(u8)*(u32 *)(ctx - 4) & 1)`
+reproduces all four instructions. The double cast is the tell that the original
+read a byte field out of a word-aligned struct.
