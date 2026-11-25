@@ -11917,3 +11917,6 @@ GX_BeginLoadBGExtPltt: 260B reproduces exactly (switch tree, s32 selector for th
 
 arm9 0x0202aea8 func_0202aea8
 TP_GetCalibratedPoint: 304B source shape reproduces the whole flow (calibrate_flg gate, 8-byte struct copy, touch==0 early out, two 64-bit (raw<<2 - x0) * xInv >> 22 conversions with 0xff/0xbf clamps) but mwcc allocates only two callee-saved registers where retail uses three, so the frame gains six add/sub sp instructions (328B). Tried: tpState struct instead of raw offsets, volatile cal pointer, per-axis locals. Candidate build/cand/tpcal_0202aea8.c
+
+arm9 0x0202b43c func_0202b43c
+TP_SetCalibrateParam: the body is exact at 260 B with the SDK's own source, but mwcc colours the divider's divisor into r5 and the 0x10000000 numerator into ip/lr where retail keeps the divisor in lr, 0 in ip and 0x10000000 in r5; nine spellings (bare expression, u32/s32/u16 locals, function-scope local, implicit conversion, shared constant variable) and respell.py all give the same rotation, so it is a register-allocation tie. Candidate: build/cand/setcal_b.c

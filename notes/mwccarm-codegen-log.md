@@ -5729,3 +5729,13 @@ rotation form `lsr r1, r0, #0x1f` / `rsb r0, r1, r0, lsl #30` /
 is signed `int`; and `WM_STATECODE_PORT_RECV` is 21, so writing both `case 21:`
 and `case 0x15:` is a duplicate case that mwcc reports only as
 `<string not found>`.
+
+`WMi_CheckStateEx` (0x0202e1cc, 168 B) settled the varargs shape. mwcc's
+`va_start` is not `&paramNum + 1` but the aligned form
+`(u32 *)(((u32)&paramNum & ~3u) + 4)`, which is why retail emits
+`add r1, sp, #8` / `bic r1, r1, #3` before the first `add ip, r1, #4`. And
+`va_arg` must keep its macro spelling `*(u32 *)((ap += 1) - 1)`: the plain
+`*ap++` makes mwcc emit one post-indexed `ldr r1, [ip], #4`, while the
+add-then-load form emits retail's two instructions
+`add ip, ip, #4` / `ldr r1, [ip, #-4]` and is four bytes longer, which is the
+whole difference between 164 and 168 B.
