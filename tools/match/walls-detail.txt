@@ -11923,3 +11923,6 @@ TP_SetCalibrateParam: the body is exact at 260 B with the SDK's own source, but 
 
 arm9 0x0202d3f0 func_0202d3f0
 CARDi_ReadBackupSyncCore: exact 204 B with the SDK source and a volatile retry local, but the prologue comes out as mov/str (retry) then add r8 / mov r7 / mov fp where retail emits the loop-constant setup first and the retry spill last, and retail keeps p+0x20 in a register while mwcc rematerialises it. Four orderings of the const/volatile locals give the same 204 B with a different prologue order. Candidate: build/cand/cardread_0202d3f0.c
+
+arm9 0x02025710 func_02025710
+OSi_GetDeviceType: the body is exact at 212 B from the SDK's os_emulator.c, but mwcc colours lockId/enabled/ret into r6/r7/r8 where retail uses r8/r6/r7. Declaring ret and enabled inside the loop (as the SDK does), moving lockId after result, and respell.py's 34 variants all keep the same rotation, so it is a register-colouring tie. Candidate: build/cand/devtype_c.c

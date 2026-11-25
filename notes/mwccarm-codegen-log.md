@@ -5761,3 +5761,13 @@ materialises that value through a stack halfword
 cast, a plain local, or a `static inline` by-value parameter. Eight bytes is the
 whole difference, and the declaration has to sit inside the `else` branch, not
 at function scope, or the spill moves into the prologue.
+
+`PXI_SendWordByFifo` (0x02027e98, 180 B) is a union bitfield writer. Building
+`PXIFifoMessage.e` field by field on an *uninitialised* union is what produces
+retail's read-modify-write chain: mwcc loads the stack word, masks each field
+(`and r0, r0, #0x1f`, `bic r3, r3, #0x1f`, `orr`), and stores the union back
+after each assignment, so `tag`, `err` and `data` each cost a load/store pair
+against `[sp]`. The `PXIi_SetToFifo` status push is then three volatile accesses:
+`ldrh [0x04000184]` / `and #0x4000` for the error latch, `orr #0xc000` /
+`strh`, then `and #2` under the interrupt lock for the full flag, and finally
+`str [0x04000188]`.
