@@ -12169,3 +12169,6 @@ out-param wrapper around 02033fd8. Retail spills every parameter to the frame (a
 
 ov009 0x0204de1c func_ov009_0204de1c
 ov009 sibling of ov005 0205519c (identical body, data_02054ea4/02054eb0 and 0204dcfc): same 204B vs 208B residue. Declaring pos/target/up in retail's stack order (pos, target, up) fixes the frame layout, but retail still materialises &target in r4 with a fresh mov lr,#0 and three pointer stores, where b56 reuses a register that already holds zero and stores sp-relative. One instruction; both candidates are in build/cand/ov9_de1c_b.c.
+
+arm9 0x020179c8 func_020179c8
+list/port init: 3 word stores, then retail writes word 0x20 as 0 and then does TWO bitfield passes over bits 0..7 of the same word (ldr/bic #0xff/str, then ldr/and #0xff/orr/str), so the source has an aliased plain-u32 store followed by an 8-bit bitfield write at the same address. b56 always folds them into one store (136B with the u32 spelling, 120B with a bitfield struct or a union overlay). Remaining 12B is that un-aliasable double write.
