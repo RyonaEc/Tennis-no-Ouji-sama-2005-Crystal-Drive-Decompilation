@@ -179,7 +179,6 @@ arm9 0x02034348 148B func_02034348 run-length decoder into dst: null dst/src gua
 
 ov003 0x0205e770 148B func_ov003_0205e770 per-frame VBlank step: mirrors REG_VCOUNT into 0x870e, clears 0x240, guards on 0x12, advances 0x1c by 0x80, calls the 0x4 callback or 0205e228, and on bit 2 of 0x12 runs 020556b8 + 0205e0d4(0), then sets 0x11c = 1. Exact 148B; only a one-register shift remains (retail keeps every temp in r1/r2 with r0 free, b56 uses r0/r1). Tried a u16 vcount local (kept 148) and a b+0x100 sub-pointer (160). L12134
 
-ov002 0x0207fc50 160B func_ov002_0207fc50 per-record bit sweep: n = s32 of byte table 020fce60[rec[0]] (ldrb + signed compare), v = 0207fdd0(rec[2]>>1), do/while over i<n testing 1<<i in rec+0xd4 and clearing it when 0207fcf0(v, rec[0], i) returns 0. Exact 160B; 22 slots of pure naming left (retail keeps the stride product in r3 and the type byte in r2, b56 uses r2 and re-orders the three loads). L12137
 
 ov002 0x02081c60 156B func_ov002_02081c60 per-slot clamp pass over the four 0x158 records: clears 0x140/0x141, then for each slot with type and bit0 of 0x4c set either calls 02059150(i) when 0xd1 is 0 or ORs 8/0x10 into the 0x3654+0x10 word by rec[2] < 2, then 02059070. b56 gives 152B because it lays the 02059150 block out before the OR block; retail keeps the OR block first and jumps over the call block (+4B). L12140
 
@@ -353,7 +352,6 @@ ov002 0x0204f3cc 172B func_ov002_0204f3cc ` (172 B, 2x). Full body recovered: re
 ov002 0x0204f478 148B func_ov002_0204f478 ` / `0x0204f50c` (148 B x2) -- `build/cand/a_f478.c` is 148 B L11587
 ov002 0x0204f50c 148B func_ov002_0204f50c ` (148 B x2) -- `build/cand/a_f478.c` is 148 B L11587
 ov002 0x0204f5a0 132B func_ov002_0204f5a0 -- pushes a 12-byte record into a 0x40-entry table: index byte at L7187
-ov002 0x0204f98c 104B func_ov002_0204f98c frame regression: mwcc uses lr as the base pointer and emits push/sub... L199
 ov002 0x020532e4 388B func_ov002_020532e4 0204f6ac, 0203b0c0 (twice), 02057068 L10448
 ov002 0x02053468 220B func_ov002_02053468 0205bee4(0x1e, rec), 0204f770, 020532e4, 0204f6ac, 0203b0c0 (twice),... L10448
 ov002 0x02057068 2612B func_ov002_02057068 see-detail L10448
