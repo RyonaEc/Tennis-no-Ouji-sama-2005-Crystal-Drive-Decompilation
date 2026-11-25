@@ -55,6 +55,8 @@ arm9 0x020247f0 160B func_020247f0 register-allocation tie: 152 B against 160, b
 
 arm9 0x02032d00 180B func_02032d00 180B best: table-update ternary leaves 20 slots; retail shares one epilogue and stores through it, mwcc duplicates the epilogue on both exits and predicates the byte merge L11945
 
+arm9 0x0202cf10 148B func_0202cf10 148B best 144B: mwcc caches &data_0204aec0.thread (0x3c) in a third callee-saved register where retail recomputes add r0,r4,#0x3c twice; every spelling with a pointer local, direct symbol access or an explicit temp either keeps three registers or rematerialises &data per use L11948
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
