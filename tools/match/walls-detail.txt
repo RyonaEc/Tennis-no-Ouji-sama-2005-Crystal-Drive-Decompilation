@@ -12037,3 +12037,6 @@ ov002 0x020834c8 func_ov002_020834c8
 
 ov002 0x020c0c70 func_ov002_020c0c70
 128 128/128 with two local pointer spellings for the a8/ac stores (p = e+0xa8, q = e+0xac declared before the guard so mwcc hoists them, as retail does). Residue is one r2/r3 exchange: retail puts the a0*0x158 product in r3 and the module base in r2, mwcc the other way round, which also swaps the operands of the later 'add r2, r2, r3'. Tried off/base declaration order both ways, u32 off, (u32)a0, and writing a0*0x158 inline at both uses.
+
+ov002 0x020f4490 func_ov002_020f4490
+128 128/128 with the entry body: test bit 0x10 of d8, zero h66, write 0x20 to h8e and e[0x80] to h8c, call 0204d22c(e[2], e[1], 0x37), set d1 = 5 and re-enter 020788a8(e). Residue is one register: retail's 'mov r1,#0x158 / mul r2,r0,r1' leaves the product in r2 and the module base in r1; mwcc does 'mul r1,r0,r1' and keeps base in r2. The rest of the function matches, including ret in r4 (declare the result flag after the entry pointer). Same class as 0x020c0c70, which is this same prologue with a different tail.
