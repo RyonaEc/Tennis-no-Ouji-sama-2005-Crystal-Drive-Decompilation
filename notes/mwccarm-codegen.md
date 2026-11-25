@@ -551,3 +551,28 @@ Axes, not matches - every one still needs a compiled byte-diff and `ninja sha1`.
   reads as "inert", not as an error, so a pragma experiment only counts if the
   name is one mwccarm actually honours; `pragmas.py` already sweeps the
   vocabulary we trust.
+* **A switch is not an if-chain with sugar.** For a small `if (x==0) … if (x==1) …`
+  chain over a loaded byte, b56 is free to reorder the arms - it will test the
+  *body's* condition first when one arm's body is a constant compare (seen in
+  `func_ov002_02064cb0`, where the chain gave 164 B and reordered
+  `cmp r0,#0; bne` above the state test). The same arms written as a
+  `switch (v)` emit retail's shape: **one load, then a pure `cmp`/`beq` chain**
+  in case order. Prefer `switch` whenever retail shows a single load feeding a
+  chain of compares - and when two adjacent cases have byte-identical bodies,
+  write them as two separate case groups (mwcc emits both copies, as retail
+  does in `func_ov003_020d5948`); merging them into one `case 7: case 8:` group
+  silently costs 6 instructions (168 B -> 144 B).
+* **A value read in two arms: duplicate the load, do not share a local.** With
+  `id = *(u8 *)(base + 0x106);` hoisted before `if (a2 == 0) … else …`, b56
+  pulled the load *above* the branch and saved an instruction retail spends
+  reloading it per arm (`func_ov002_02060688`: shared local 164 B, load written
+  out in both arms 168 B = match). If retail loads the same byte once per arm,
+  repeat the full load expression in each arm.
+* **Integer base keeps a register-offset store un-folded.** Marking the bss base
+  `u32` (not `u8 *`) is what stops b56 folding `base + off` into an `add`:
+  `func_ov002_02080ce8` wanted `lsl r2, r0, #2` followed by
+  `strlt r7, [r6, r2]`; with `u8 *tbl` we got `add r2, r6, r0, lsl #2` /
+  `strlt r7, [r2]` instead (10 diffs, same size). Declaring `u32 tbl = base + …`
+  and casting only at the dereference reproduces the register-offset store
+  exactly. Same family as the u32-base lever above, now confirmed for stores as
+  well as loads.
