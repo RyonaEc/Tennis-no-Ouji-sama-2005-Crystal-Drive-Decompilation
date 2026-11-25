@@ -51,7 +51,6 @@ arm9 0x02020a44 172B func_02020a44 switch-dispatch shape: 3 sparse cases (4/0x80
 
 arm9 0x0202d0b0 148B func_0202d0b0 register-allocation tie: byte count (148) and all immediate offsets reproduce, but retail keeps the session block in r5 and the argument in r6, while every spelling tried assigns the argument r5 and the block r7/r5 with the literal loaded after the first call. Tried respell.py (10 variants) plus extern-symbol and declaration-order forms; all differ by 28 slots. Behaviour is modelled: IRQ-mask save, drain f34&4 with func_020251c0, set bit, restore, func_0202d04c, clear f28/f2c, fD0 <- data_02048d3c[2], func_0202d4bc. L11939
 
-arm9 0x020247f0 160B func_020247f0 register-allocation tie: 152 B against 160, body and pool words correct (three stride-0xc tables at data_02048ccc/cd0/cd4, bit index from data_02042374, IE read-modify-write at 0x027c3ff8), but retail keeps handler/bit/mask in r1/r3/r5 with each base in its own register while every spelling swaps two of them. respell.py best is 25 differing slots over 400 variants. L11942
 
 arm9 0x02032d00 180B func_02032d00 180B best: table-update ternary leaves 20 slots; retail shares one epilogue and stores through it, mwcc duplicates the epilogue on both exits and predicates the byte merge L11945
 

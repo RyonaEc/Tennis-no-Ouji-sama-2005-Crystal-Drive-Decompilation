@@ -6379,3 +6379,28 @@ qualifier that the other two spellings needed. `src/arm9/func_02005418.c` and
 `src/ov004/func_ov004_0204cbdc.c` already used this shape; the lesson is to
 reach for the symbol spelling first for every `0x027c0000` family unit instead
 of deriving the address in C.
+
+## 2026-11-25 - declare the handler last in an interrupt deregistration
+
+`func_020247f0` (160 B) was parked at 152 B with the note "every spelling swaps
+two registers". Two changes to the symbol-offset spelling closed it:
+
+- the callback struct's three fields are addressed through their own symbols
+  (`data_02048ccc`, `data_02048cd0`, `data_02048cd4`) with a byte offset
+  `off = a0 * 0xc` rather than through one struct base plus a field immediate -
+  that is what produces retail's three separate pool literals and the
+  `mul r4, r0, #0xc`;
+- the bit table is a `u16` view of `data_02042374` (`*(u16 *)(data_02042374 + a0 * 2)`),
+  not `data_02042374[a0 / 2]`, which costs a `lsr` and a scaled load.
+
+With both in place it was still an exact-size register rotation until `handler`
+moved to the *last* declaration:
+
+    u32 off = a0 * 0xc;
+    u32 bit = *(u16 *)(data_02042374 + a0 * 2);
+    u32 mask = 1 << bit;
+    void (*handler)(u32) = *(void (**)(u32))(data_02048ccc + off);
+
+Declaration order is a real allocation lever: earlier-declared locals get the
+low registers, so putting the long-lived call target last frees r1/r3 for the
+table bases and gives the mask r5, which is retail's assignment.
