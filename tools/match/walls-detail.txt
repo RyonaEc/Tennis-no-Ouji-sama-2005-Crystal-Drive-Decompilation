@@ -12073,3 +12073,6 @@ ov002 0x0207064c func_ov002_0207064c
 
 ov002 0x020c2b18 func_ov002_020c2b18
 144 Best 144B (build/cand/best_ov002_020c2b18.c). First two interpolations now match exactly - keeping lo/hi in locals (lo in r6 across the bl) reproduces retail's ldr r6,[r5,#0x90] / add r0,r6,r0 and the second pair's reload. Only the third block differs: retail re-reads the raw s16 at 0x66 into r3 ('ldrsh r3,[r5,#0x66]') and uses it twice, while n (clamp(cur,0x18)+m) is still live in r4; any source that re-reads the field needs a second variable and that one extra local permutes e/n/lo across r4/r5/r6 (seen with s32 c at top, block-scoped s16 c, c declared first). Without the reload the unit is 140B and correct everywhere else (0x020c2b18_b.c). Also tried the field read inline twice (CSE'd) and reusing n. respell: 54 variants, all 27 slots.
+
+ov002 0x020e5eb0 func_ov002_020e5eb0
+164 Best 160B. Same walker shape as the matched 0x020d4d4c but the kind comes from a switch on func_ov002_020e44a4(a0) - case 0 kind 0x2e, case 1 0x2f, case 2 and default 0x2d - and 0204d270's third parameter must be u8 so mwcc emits the 'and r2, r2, #0xff' retail has before the bl. Residue is the stride multiply exchange again: retail 'mul r3, r0, r1' with the module base in r2, mwcc 'mul r2, r0, r1' with the base in r3, and the unit is 4B short because of it.
