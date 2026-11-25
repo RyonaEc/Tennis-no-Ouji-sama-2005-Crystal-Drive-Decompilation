@@ -576,3 +576,15 @@ Axes, not matches - every one still needs a compiled byte-diff and `ninja sha1`.
   and casting only at the dereference reproduces the register-offset store
   exactly. Same family as the u32-base lever above, now confirmed for stores as
   well as loads.
+* **Jump-table width comes from the case labels, not the case bodies.** When
+  retail shows a wide table (`cmp rX,#N; addls pc,pc,rX,lsl #2` covering values
+  that are all `default`), b56 only builds that table if the *source* names every
+  value in the range. Two cases at 1 and 7 with a `default:` compile to a
+  `cmp`/`beq` chain (`func_020151a8`: 152 B vs retail 168 B); adding
+  `case 0: case 2: case 3: case 4: case 5: case 6: break;` produces retail's
+  8-entry table byte for byte. Same for `func_ov003_020d5948`, which needed
+  cases 0-5 spelled out to get its 10-entry table. **The case-body order in
+  memory is the reverse of the source order**: retail's blocks ran 8/9 then 7
+  then 6, so the switch has to be written `case 8: case 9: … case 7: … case 6:`
+  to land them in that order. Two adjacent cases with byte-identical bodies still
+  need separate case groups (merging them costs the second copy).
