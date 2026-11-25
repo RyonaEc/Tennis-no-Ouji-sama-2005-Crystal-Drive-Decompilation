@@ -12154,3 +12154,6 @@ ov002 0x0206ee64 func_ov002_0206ee64
 
 ov002 0x0207fcf0 func_ov002_0207fcf0
 threshold test used by 0207fc50: th = 020fd074[type][i] (the table is a 2D u8[][9] - that shape is what produces retail's mla into the table base then ldrb [i, base]), overridden by type 2/i==6 -> 4, type 0x1e or 0x20/i==0 -> 1, type 0x28/i in {0,1,4} -> 4, then returns v >= th signed. b56 gives 148B against 160: three fewer case-exit jumps because its case bodies fall through to the join instead of ending in b.
+
+ov008 0x0204de18 func_ov008_0204de18
+counter/scroll helper: bump g[9] while < 0x20 (read via g[9], store through a &g[9] pointer - retail materialises r3=r4+9 and does load/add/store through it, and the later reload still comes from [r4,#9]), v = (s32)(g[9] << 4)/32, v = a0 == 0 ? 0x10 - v : v, then either 0xd8/g[9]-of-v into sprites from 0204ed50/0204ed3c or 0x850 plus (0x10-v)|(v<<8), returning g[9] == 0x20. Exact 168B but 164 when the pointer is folded; the only gap is the one hoisted add r3,r4,#9.
