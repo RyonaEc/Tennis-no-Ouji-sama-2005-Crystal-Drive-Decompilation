@@ -6404,3 +6404,17 @@ moved to the *last* declaration:
 Declaration order is a real allocation lever: earlier-declared locals get the
 low registers, so putting the long-lived call target last frees r1/r3 for the
 table bases and gives the mask r5, which is retail's assignment.
+
+## 2026-11-25 - three identical calls in a row were written three times
+
+`func_ov004_02054878` (108 B) enables three sound channels 0x1f, 0x20, 0x21 by
+looking each up and calling a release routine when the lookup succeeds. Written
+as `for (i = 0x1f; i < 0x22; i++)` the unit compiles to 92 bytes: mwcc collapses
+the three lookups into a loop. Retail has no loop at all - the whole sequence is
+there three times - so the source had three separate statements and each
+iteration's constant is an immediate in its own `mov r0, #0x1f`/`#0x20`/`#0x21`.
+Unrolling by hand gave an immediate `MATCH`.
+
+Rule of thumb: an identical-body repeat with *different immediate arguments* and
+no loop branch in retail was unrolled in the source; do not "improve" it back
+into a loop.
