@@ -5562,3 +5562,27 @@ recorded in `walls-detail.txt` rather than weakening anything.
 `FS_RegisterArchiveName` (180 B), by contrast, went in first try: it walks to the
 tail with `while (*(u8 **)(pos + 4)) pos = *(u8 **)(pos + 4);` rather than keeping
 a `next` local, which is what makes retail's conditional load pattern.
+
+## 2026-11-24 - reading a jump table's indices, and case-body order
+
+`GX_BeginLoadClearImage` (200 B) cost four attempts, all of them on the switch,
+none on the code. Two rules make it mechanical:
+
+**The table base is the branch instruction plus 8.** With `addls pc, pc, r0, lsl #2`
+at 0x02024264, entry `n` is at 0x0202426c + 4n - the first `b` after the `addls`
+(0x02024268) is *not* entry 0, it is the "above the maximum case" default branch
+that the `addls` comparison falls into. Reading entry 0 as 0x02024268 shifts every
+case value by one, which is exactly what happened first time: the function came out
+the right size with `0x067e0000` on case 2 instead of case 1.
+
+**Bodies are laid out in source order, so a table that matches in size can still
+be wrong.** After fixing the indices, every entry pointed at a body holding a
+constant belonging to a different case, because mwcc emits the bodies in the order
+the `case` labels appear, not in numeric order. Retail's order here is
+`{2,3} {8,12} {1} {4}`, so the source has to list them that way; the switch reads
+the same whatever order the labels are written in.
+
+`G3X_Reset` (136 B) is the opposite kind of unit - a flat hardware sequence
+(geometry-busy spin, `DISP3DCNT |= 0x8000`, two `DISPCNT` bits, one call, three
+VRAM register writes) that matched first try with plain `volatile` accesses at the
+literal addresses.

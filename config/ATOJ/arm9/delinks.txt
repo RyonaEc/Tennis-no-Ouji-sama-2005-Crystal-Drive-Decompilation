@@ -4467,3 +4467,11 @@ src/arm9/func_02028fe4.c:
 src/arm9/func_02029080.c:
     complete
     .text       start:0x02029080 end:0x02029134
+
+src/arm9/func_02022738.c:
+    complete
+    .text       start:0x02022738 end:0x020227c0
+
+src/arm9/func_0202424c.c:
+    complete
+    .text       start:0x0202424c end:0x02024314
