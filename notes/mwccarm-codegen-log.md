@@ -6099,3 +6099,20 @@ the anchor must live in a parent struct (`T { u32 pad0[6]; B b[64]; }`) so the
 bucket access is `[base + a1*8 + 0x18]` rather than `[&b[0] + a1*8]`, and the
 inner search has to be written with the anchored arm first, since the inverted
 form puts the two bodies in the wrong order.
+
+## 2026-11-25 - void guards and the duplicated tail call
+
+`func_02015790` (200 B) matched once the guards were written for a `void`
+function rather than for a `u32` one. A `void` callee reached through
+`if (func_02016030(9) != 0) return;` gives `cmp r0, #0` followed by
+`addne sp, #4 / ldmne sp!, {lr} / bxne lr` with no `movne r0, #1`, and the last
+block `data_02042af0 = 0;` lets the epilogue leave the address in r0 because the
+caller ignores it. Writing the same body as `u32` with `return r;` and
+`return 0;` costs the extra `mov r0, #0` and lands one slot off.
+
+The same function also keeps two copies of `func_02017544()` - one after the
+`func_02016030(9)` guard and one on the `data_02042af0 != 3` arm - because the
+source made two separate calls instead of a shared tail. mwcc does not merge
+them, so a `goto` to a single call site shrinks the function and loses the
+match. When the retail body has two identical `bl` sites at different exits,
+leave them duplicated.
