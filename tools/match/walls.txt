@@ -47,6 +47,8 @@ arm9 0x02025864 176B func_02025864 OS_ReceiveMessage: the body is byte-exact at 
 
 arm9 0x0202b248 212B func_0202b248 TP_RequestSetStabilityAsync: the function reaches the exact 212 B and every non-scheduling slot matches, including the two inline PXI sends (tag 6, 0x02000300|retry and 0x01010000|range), the TPi_ErrorAtPxi path (err_flg +0x34 |= 8, callback(3,4,0)) and the success path. The only residue is statement scheduling: retail keeps each u16 RMW contiguous (ldrh 0x36, orr, strh, ldrh 0x34, bic, strh) while mwcc batches both loads first (ldrh 0x36, ldrh 0x34, orr, bic, strh, strh). Reversing the statement order, adding (u16) casts and 252 respell variants all keep the batched form. Candidate: build/cand/tpstability_b.c L11933
 
+arm9 0x02020a44 172B func_02020a44 switch-dispatch shape: 3 sparse cases (4/0x80/0x180) plus a fallthrough; retail emits a binary tree (cmp #0x80 first, range check 0..4) and is 20 B longer than every switch/if spelling tried. Body match (f12 store, f0 = (f0|f12) & ~a0, func_02021538(f0)) is unaffected; only the case-dispatch skeleton differs. Tried: switch with and without fallthrough, duplicated 0x180 store, if/else chains in both orders. L11936
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

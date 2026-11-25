@@ -5878,3 +5878,34 @@ relocation) and an in-block `L_...:` label for the shared tail - a plain label
 branch is fine, only `ldr r1,=L_local` is rejected. A neighbour,
 `func_02033c88`, uses the single-statement `asm { mrc p15, 0, r0, c7, c10, 1 };`
 form instead, so both spellings are established in this tree.
+
+## 2026-11-25 - const materialisation and register/load-order splitting
+
+Three small arm9 units matched after the ready-set review, each adding one
+reusable lever:
+
+* `func_02027a64` (128 B, table init then `func_02025c94(p, 0x280)` D-cache
+  clean). The 0xffff fills come out as `mvn r2, #0` only when the arrays are
+  declared `s16` and assigned `-1`; a `u16` array filled with `0xffff` or
+  `0xffffffff` makes mwcc pool the literal instead, which costs 4 bytes
+  (`got 132 want 128`). Truncation to a halfword does not by itself turn the
+  constant back into a word `-1` - the declared type of the *destination* is
+  what decides.
+* `func_0202b540` (140 B, TP calibration validity check). The three stack
+  arguments are loaded in *offset* order (`0x5d, 0x5e, 0x60`) but live in
+  `r4, r6, r5`. Declaring the locals in one order and assigning them in
+  another reproduces both at once: declaration order
+  `x1, y1, dx1, x2, y2, dy1, dx2, dy2` fixes the callee-saved assignment,
+  assignment order `... dy1, x2, y2 ...` fixes the load order. A single fused
+  declaration-with-initialiser list can only satisfy one of the two.
+* `func_020305ac` (128 B, IRQ-masked FIFO poll loop). Retail's body is
+  `do { ... } while` with two exits inside; `for (;;) { ...; if (x) break;
+  if (y) break; ... }` reproduces it byte for byte, where the natural
+  `while (cond1 && cond2)` spelling is 16 B larger and hoists the first
+  iteration out of the loop.
+* `func_02020a44` (172 B, sound-channel register update) is parked: the
+  `f12`/`f0` register arithmetic reproduces, but retail dispatches three
+  sparse cases (4, 0x80, 0x180, with the 0x180 body falling into 0x80) through
+  a binary tree that starts `cmp r0, #0x80`, while every switch and if/else
+  spelling tried compiles to a linear compare chain 20 B shorter. Wall note
+  recorded with the attempts.
