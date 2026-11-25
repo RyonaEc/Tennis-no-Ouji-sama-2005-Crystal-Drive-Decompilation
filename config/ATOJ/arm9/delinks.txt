@@ -4654,3 +4654,7 @@ src/arm9/func_0202cdc8.c:
 src/arm9/func_02019170.c:
     complete
     .text       start:0x02019170 end:0x02019234
+
+src/arm9/func_02016d1c.c:
+    complete
+    .text       start:0x02016d1c end:0x02016dd4
