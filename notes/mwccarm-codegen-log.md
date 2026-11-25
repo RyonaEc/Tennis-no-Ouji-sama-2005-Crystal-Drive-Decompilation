@@ -6312,3 +6312,18 @@ makes mwcc issue `+2` first, and swapping the statements makes it worse. When a
 squared-distance body reaches 104/104 with only the load order differing, the
 remaining lever is register pressure earlier in the function, not the order of
 those statements.
+
+## 2026-11-25 - dereference the global twice, do not cache it
+
+`func_ov002_020799d4` (112 B) loops over four records and touches a per-record
+table. Retail keeps the *address* of `data_ov002_02102070` in `ip` and
+dereferences it twice - once before the loop and once inside - so the pointer is
+reloaded each iteration (`ldr lr, [ip]`). Caching it in a local
+(`u8 *g = *(u8 **)data_ov002_02102070;`) gives 104 B instead of 112, because
+mwcc then hoists the load out of the loop. Writing the dereference at both use
+sites, `q = *(u8 **)data_ov002_02102070 + 0x274 + ...`, reproduces retail and
+matches at 112 B.
+
+The same shape explains `func_ov002_02069b3c` and the two `0x0207xxxx` sites: in
+this game the state pointer is the game's own indirection through a BSS word, and
+the original code re-read it wherever it was needed.
