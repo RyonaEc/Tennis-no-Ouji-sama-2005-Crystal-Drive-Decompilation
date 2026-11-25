@@ -5909,3 +5909,25 @@ reusable lever:
   a binary tree that starts `cmp r0, #0x80`, while every switch and if/else
   spelling tried compiles to a linear compare chain 20 B shorter. Wall note
   recorded with the attempts.
+
+## 2026-11-25 (later) - bit tests, struct field offsets, allocator ties
+
+* `func_0202b5cc` (144 B, wireless/pxi session start). A guarded one-shot init:
+  a `u16` flag in `data_0204ac64`, then seven zero stores into the block at
+  `data_0204ac68` (the store order in the source must be the retail order
+  `0x32, 0x36, 0xc, 0, 0x10, 0x30, 0x34`), then `while (func_02027f4c(6, 1) == 0);`
+  and `func_02027f74(6, (void *)func_0202b65c)`. `while (...);` and
+  `do { } while (...);` compile identically here; the `6`/`1` constants end up
+  hoisted into callee-saved registers because the call sits in a loop.
+* `func_02034154` (160 B, stream pump). Retail tests one status bit with
+  `lsl r0, r0, #0x13` + `lsrs r0, r0, #0x1f`; `(p->f4 >> 12) & 1` compiles to
+  `lsr #0xc` + `and #1` instead, so the source has to be written
+  `((p->f4 << 19) >> 31) == 0`. The running-total field is at `+0x18`, not
+  `+0x20` - reading it off the `add r2, r5, #0x18` in the tail is the quickest
+  way to fix a struct where every other offset already lines up.
+* Two more arm9 units are now walls on pure register allocation, both with the
+  right byte count and immediates: `func_0202d0b0` (session block wants `r5`,
+  argument `r6`; every spelling gets the opposite, 28 slots off, respell.py
+  over ten variants flat) and `func_020247f0` (handler/bit/mask want
+  `r1`/`r3`/`r5` with one base pointer per register; best of 400 respell
+  variants is 25 slots off). Both notes are in `walls.txt`.

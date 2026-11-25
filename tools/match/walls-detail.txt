@@ -11935,3 +11935,9 @@ TP_RequestSetStabilityAsync: the function reaches the exact 212 B and every non-
 
 arm9 0x02020a44 func_02020a44
 switch-dispatch shape: 3 sparse cases (4/0x80/0x180) plus a fallthrough; retail emits a binary tree (cmp #0x80 first, range check 0..4) and is 20 B longer than every switch/if spelling tried. Body match (f12 store, f0 = (f0|f12) & ~a0, func_02021538(f0)) is unaffected; only the case-dispatch skeleton differs. Tried: switch with and without fallthrough, duplicated 0x180 store, if/else chains in both orders.
+
+arm9 0x0202d0b0 func_0202d0b0
+register-allocation tie: byte count (148) and all immediate offsets reproduce, but retail keeps the session block in r5 and the argument in r6, while every spelling tried assigns the argument r5 and the block r7/r5 with the literal loaded after the first call. Tried respell.py (10 variants) plus extern-symbol and declaration-order forms; all differ by 28 slots. Behaviour is modelled: IRQ-mask save, drain f34&4 with func_020251c0, set bit, restore, func_0202d04c, clear f28/f2c, fD0 <- data_02048d3c[2], func_0202d4bc.
+
+arm9 0x020247f0 func_020247f0
+register-allocation tie: 152 B against 160, body and pool words correct (three stride-0xc tables at data_02048ccc/cd0/cd4, bit index from data_02042374, IE read-modify-write at 0x027c3ff8), but retail keeps handler/bit/mask in r1/r3/r5 with each base in its own register while every spelling swaps two of them. respell.py best is 25 differing slots over 400 variants.
