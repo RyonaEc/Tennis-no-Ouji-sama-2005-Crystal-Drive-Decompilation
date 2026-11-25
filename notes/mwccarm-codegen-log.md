@@ -6141,3 +6141,20 @@ branches. `s32 f1c;` turns the same source into a byte-exact match. Any length o
 index field compared against a positive literal with the signed condition codes
 in retail has to be declared signed, even when every writer stores a non-negative
 value.
+
+## 2026-11-25 - an if/else ladder where a switch would go
+
+`func_ov003_02055980` (356 B) writes a mode word per case: `0` through `4` into
+the same halfword. Written as a `switch`, mwcc builds a jump table
+(`addls pc, pc, r0, lsl #2`, six entries, 24 bytes of table). Retail instead has
+a comparison chain with if-converted bodies - `cmp r0, #n` / `addeq r0, r4,
+#0x300` / `moveq r1, #n` / `strheq r1, [r0, #0x52]` / `beq join` - which is what
+the same ladder produces when it is written as `if / else if / else if`. So a
+dense switch over small integers is not evidence of a `switch` in the source;
+if retail shows a chain, write the chain.
+
+The tail of the same unit is the other half of the lesson. `p->arr[p->f29c - 1]
+= 0;` indexes with `(n-1) lsl #16` then `lsr #15` and branches, while the same
+statement with a `u16` local (`idx = p->f29c - 1; p->arr[idx] = 0;`) keeps the
+mask, keeps the branch instead of predicating five instructions, and matches.
+A u16 index local is also what stops mwcc from folding the `*2` into the add.
