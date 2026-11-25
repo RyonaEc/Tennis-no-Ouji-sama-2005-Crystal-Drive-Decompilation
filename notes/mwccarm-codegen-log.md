@@ -5801,3 +5801,11 @@ mwcc rebuild the 16-bit truncation at each site (`lsl/lsr` plus an `and` with a
 shifted operand) and costs 8 bytes; dropping the cast and writing
 `bitmap &= ~aidBit` hoists a single `mvn r1, r5, lsr #16` that both statements
 reuse, which is exactly retail's shape.
+
+`WmDataSharingSendDataSet` (0x0202f4b8, 432 B) repeats two rules and adds one
+correction to the error ladder. `MI_CpuClear16` needs its fill value as a
+block-scoped `volatile u16 zero = 0;` (retail spills `strh r0, [sp, #0xc]` then
+reloads `ldrh r0, [sp, #0xc]`); passing a literal `0` costs those 8 bytes. The
+`WM_SetMPDataToPortEx` error check is `res != WM_ERRCODE_SUCCESS (0) &&
+res != WM_ERRCODE_OPERATING (2)`, not `... != 1`: retail tests `cmp r0, #0`
+then `cmp r0, #2`, and testing against 1 produces the wrong second compare.
