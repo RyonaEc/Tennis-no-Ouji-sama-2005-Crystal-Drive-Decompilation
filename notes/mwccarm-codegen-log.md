@@ -6080,3 +6080,22 @@ straight to the tail, which needs the no-op cases spelled out:
 ```
 
 With the empty labels listed, the table is emitted and the unit matches.
+
+## 2026-11-25 - pointer-typed comparisons put the anchor first
+
+`func_02027c9c` compares a node's back-pointer against the address of its
+bucket: `cmp r2, r0` with the address in `r2`. Spelling the test with `u32`
+casts - `if ((u32)&a0->b[a1] == cur->f18)` or the same written the other way
+round - always comes out `cmp r0, r2`, i.e. the loaded value first, and the unit
+never matches even though every other slot lines up. Casting both sides to the
+node pointer type:
+
+```c
+    if ((N *)&a0->b[a1] == (N *)cur->f18)
+```
+
+is what makes mwcc emit the address as the first operand. Also worth keeping:
+the anchor must live in a parent struct (`T { u32 pad0[6]; B b[64]; }`) so the
+bucket access is `[base + a1*8 + 0x18]` rather than `[&b[0] + a1*8]`, and the
+inner search has to be written with the anchored arm first, since the inverted
+form puts the two bodies in the wrong order.
