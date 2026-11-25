@@ -157,6 +157,12 @@ ov002 0x020c814c 260B func_ov002_020c814c 260 Best 260B, exact size. Needs the b
 
 ov002 0x020c4a3c 240B func_ov002_020c4a3c 240 Best 240B, exact size; only base/e swapped (retail base r6, e r5). Needs '*(u16*)(e+0x8e) = (u16)h;' with h = *(u16*)(base+0x1824+0xaa) + 0xa to get retail's lsl/lsr #0x10 pair, and the table entry g + h*0x14 + 4 with g = base+0x1934. Tail: kind 0x2e, state 3, then 020759d4(0x1d, 1, a0). L12101
 
+ov001 0x0204d884 112B func_ov001_0204d884 112 Best 108B (one literal short): body matches including the double data[0] reload around the 02025c94/02023eb8 pair at base+0x134c with 0x400. Retail materialises BOTH 0x027c0000 and 0x3ff8 as pool literals and folds the add into the load with writeback (ldr r0,[r1,r0]!); mwcc always folds the pair (104B, one literal) or uses 'add r1,r0,#0x27c0000' (108B, three literals). Tried direct cast, array index [0xffe], u32 addr/off variables, and vp += 0xffe pointer stepping. L12104
+
+ov004 0x0204cc48 124B func_ov004_0204cc48 124 Best 132B. Iterates n < *(u16*)buf && n < 8 (buf from 0200f9a4 into an 0x50-byte stack array), zeroing d[n].a and setting d[n].b = data_ov004_020682c4 + buf[n+1]*16 with d based at base+0x1000+0x3e8, stride 8. Residue: mwcc strength-reduces n*8 into an accumulated offset in lr and keeps n in r5, needing an extra callee-saved register (push {r4,r5,lr}, frame 0x54); retail keeps n in lr, ip = zero and re-scales with 'add r0, r4, lr, lsl #3' each pass. Tried inline offsets, u32 counter, and a D8 struct index. L12107
+
+ov002 0x02083060 148B func_ov002_02083060 148 Best 148B, exact size and instruction-for-instruction the same sequence (four pointer loads off data_ov002_02102070[0]+0x4000 at 0xf9c/0xf98/0xf94/0xf90, the a0==1/+8 else a1==0/+4 adjustment, the double u16 indirection t2[hh*4] then t3[v*4], the mla w*0x14+t4, and the 8-argument 0208381c call with 3, 0x06402f40, 0, 0 on the stack). Residue is purely register allocation: retail keeps the pointers in r3/r2/r6/r5 (push {r4,r5,r6,lr}) and puts the constants in lr/ip; mwcc keeps them in r2/ip/r4/lr (push {r4,lr}). Tried u32 pointer locals and pre-computing the two call arguments into locals. L12110
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
