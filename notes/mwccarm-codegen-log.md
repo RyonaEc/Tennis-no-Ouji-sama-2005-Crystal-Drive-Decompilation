@@ -6290,3 +6290,25 @@ Two things generalise: when retail pre-shifts a value with `lsl #16` before
 `smull`, the multiplication in the source is on the shifted value, not a plain
 divide; and the negative-wrap arm needs its own `(s16)` cast, `v = (s16)(v + K)`,
 or the `lsl #16`/`asr #16` pair in that arm is missing.
+
+## 2026-11-25 - the predicated increment that reloads, and load ordering
+
+Two 104-byte ov002 leaves were measured and parked; both residues are classes
+rather than one-offs, and both walls already carry notes (`walls.py show ov002
+0x0204f98c`, `0x02086f14`).
+
+**`if (p[2] < 1) p[2] = p[2] + 1;` reuses the loaded byte.** mwcc emits
+`cmp r0, #1` on the value it already loaded, then a predicated `add` and a single
+`strb` - two instructions in the block. Retail instead re-materialises the
+address and reloads (`addlo r1, r4, #2; ldrblo r0, [r1]; addlo r0, r0, #1;
+strblo r0, [r1]`), which is four. Naming the address as a pointer local does
+produce retail's block, but the extra live pointer costs a callee-saved register
+(`push {r4, r5, r6, lr}` instead of `{r4, lr}`), so the net is a wash. Something
+in the original made the address a value without costing a register.
+
+**Load order of paired `ldrsh` is not source order.** In `0x0204f98c` retail
+loads `+6, +0x1e, +2, +0x1a`; writing the two subtractions in that order still
+makes mwcc issue `+2` first, and swapping the statements makes it worse. When a
+squared-distance body reaches 104/104 with only the load order differing, the
+remaining lever is register pressure earlier in the function, not the order of
+those statements.
