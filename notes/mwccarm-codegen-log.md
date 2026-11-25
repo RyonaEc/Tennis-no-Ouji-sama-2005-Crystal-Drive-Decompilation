@@ -6264,3 +6264,15 @@ Also worth adopting from that trial as measurement, not folklore: object-level
 compile+diff is ~0.02 s and the digest gate is ~35 s per install, so all search
 belongs in the cheap compare and only object-clean candidates reach `reg.py`;
 and never let two builds share one tree (a contended install took 405 s).
+
+## 2026-11-25 - pointer locals beat base-plus-offset addressing
+
+`func_ov002_02082090` (96 B) sat parked since L193 as an "allocation tie": retail
+keeps the state base in `ip`, the `+0x2e4` record pointer in `r2` and the
+`+0x36ac` table pointer in `r3`, and every draft that addressed fields as
+`g[0x2e4]`, `g[0x100]` etc. made mwcc pick a different register. Naming the two
+derived pointers as locals (`u8 *r = g + 0x2e4; u8 *t = g + 0x36ac;`) and then
+addressing through them reproduces retail exactly, `ip` included, and the unit
+installs. When a leaf function is a chain of field tests off one base, give each
+base-plus-offset its own pointer local instead of folding the offset into the
+load.
