@@ -4499,3 +4499,19 @@ src/arm9/func_020225a8.c:
 src/arm9/func_0202b39c.c:
     complete
     .text       start:0x0202b39c end:0x0202b43c
+
+src/arm9/func_0202b65c.c:
+    complete
+    .text       start:0x0202b65c end:0x0202b91c
+
+src/arm9/func_0202afd8.c:
+    complete
+    .text       start:0x0202afd8 end:0x0202b248
+
+src/arm9/func_02020044.c:
+    complete
+    .text       start:0x02020044 end:0x02020220
+
+src/arm9/func_0202f77c.c:
+    complete
+    .text       start:0x0202f77c end:0x0202f8c4

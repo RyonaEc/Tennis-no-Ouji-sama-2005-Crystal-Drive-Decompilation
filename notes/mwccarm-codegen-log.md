@@ -5694,3 +5694,38 @@ fold. The same block also needs the two flag fields `volatile`: without it mwcc
 interleaves the two read-modify-write pairs (`ldrh r3, [r1, #0x36]` /
 `ldrh r2, [r1, #0x34]` before either store) instead of finishing each pair,
 which is the 160 vs 160-but-different-bytes case.
+
+Four SDK units fell in one pass: `TPi_TpCallback` (0x0202b65c, 704 B),
+`TP_CalcCalibrateParam` (0x0202afd8, 624 B), `FX_Atan2` (0x02020044, 476 B) and
+`WmDataSharingReceiveCallback_Child` (0x0202f77c, 328 B). They are the SDK
+sources from `libspi.a/tp.o`, `libfx.a/fx_atan.o` and `libwm.a/wm_ds.o`, so the
+job was to transcribe the inline helpers rather than to invent code, and four
+transcription rules decided the bytes.
+
+A `vu16` flag field must be written without an explicit truncation.
+`data_0204ac68.err_flg |= (u16)(1 << command)` makes mwcc normalise the value
+through `lsl r1, r1, #0x10` / `orr ... lsr #16`; plain `|= (1 << command)` lets
+the halfword store do the truncation and gives retail's `mov r2, #1` /
+`orr r2, r4, r2, lsl r0` / `strh r2, [r1, #0x34]`.
+
+Where the SDK's `common:` label sits inside a switch, keep it there. In
+`TP_CalcCalibrateParam`'s sibling `TPi_TpCallback` the label is between the last
+`case` body and `default:`, so moving it after the switch appends a `b common`
+that retail does not have and pushes the panic block (a `bl` to the
+`func_020263cc` halt loop) eight bytes earlier.
+
+The CP divider inlines are three volatile stores, and the denominator must be
+cast to `u32` before the 64-bit store: `CP_SetDivImm32_32_NS_` writes
+`*(REGType64*)REG_DIV_DENOM_ADDR = denom`, so a signed `dx_width` sign-extends
+into `asr r2, fp, #0x1f` / `str r2, [r1, #4]` where retail has a zero high word.
+`*(volatile u64 *)0x04000298 = (u32)dx_width;` reproduces `str ip, [fp]` /
+`str r2, [fp, #4]`, and that one cast also settled the register colouring of the
+whole function (retail keeps `raw_x1/calibrate/raw_y1/dx1` in `r6/r7/r5/r4`,
+the uncast version used `sb/sl/r8/r7`).
+
+Finally, `(x + 1) % WM_DS_DATASET_NUM` on a `u16` member compiles to the
+rotation form `lsr r1, r0, #0x1f` / `rsb r0, r1, r0, lsl #30` /
+`add r0, r1, r0, ror #30`, not to `and r0, r0, #3`, because the promoted type
+is signed `int`; and `WM_STATECODE_PORT_RECV` is 21, so writing both `case 21:`
+and `case 0x15:` is a duplicate case that mwcc reports only as
+`<string not found>`.
