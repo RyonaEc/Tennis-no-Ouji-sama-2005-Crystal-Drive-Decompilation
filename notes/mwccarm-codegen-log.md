@@ -6276,3 +6276,17 @@ addressing through them reproduces retail exactly, `ip` included, and the unit
 installs. When a leaf function is a chain of field tests off one base, give each
 base-plus-offset its own pointer local instead of folding the offset into the
 load.
+
+## 2026-11-25 - a fixed-point division only appears if the shift is in the source
+
+`func_ov002_0204f70c` (100 B) wraps a negative angle then rescales it. Retail
+emits the shifted-magic sequence: `lsl r3, r0, #0x10`, `smull`, `add ip, ip, r0,
+lsl #16`, `asr ip, ip, #0xe`, sign fixup. Writing the obvious `v / 0x6488` gave a
+plain magic division (88 B, and a different magic), and `v / 0x6488` with the
+narrowing gave 96 B. Only `(u16)((v << 16) / 0x6488)` - the `<< 16` present in
+the source - produces retail's sequence and matches at 100 B.
+
+Two things generalise: when retail pre-shifts a value with `lsl #16` before
+`smull`, the multiplication in the source is on the shifted value, not a plain
+divide; and the negative-wrap arm needs its own `(s16)` cast, `v = (s16)(v + K)`,
+or the `lsl #16`/`asr #16` pair in that arm is missing.
