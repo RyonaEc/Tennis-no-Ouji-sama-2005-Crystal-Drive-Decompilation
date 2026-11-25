@@ -12130,3 +12130,6 @@ table-driven opa packer: src=020195dc(a0,a1), n=(u16)(a2-a1+1), off=(u16)(a1*8),
 
 arm9 0x02034348 func_02034348
 run-length decoder into dst: null dst/src guard, then per code *src (zero writes dst[out]=0 and stops) calls 020343dc into a 4-byte stack word, bounds-checks out+n<=limit, copies via 020366bc and adds n, continuing while out<=limit. b56 gives 140B/144B (5 regs) because it recomputes add r0,sp / add r1,sp instead of retail's cached r6 = sp+0, and therefore needs no sb; retail's 7-register frame with src in sb is the whole 8-byte gap. Tried u32/u8[4] tmp, a cached u32* pt, and three declaration orders.
+
+ov003 0x0205e770 func_ov003_0205e770
+per-frame VBlank step: mirrors REG_VCOUNT into 0x870e, clears 0x240, guards on 0x12, advances 0x1c by 0x80, calls the 0x4 callback or 0205e228, and on bit 2 of 0x12 runs 020556b8 + 0205e0d4(0), then sets 0x11c = 1. Exact 148B; only a one-register shift remains (retail keeps every temp in r1/r2 with r0 free, b56 uses r0/r1). Tried a u16 vcount local (kept 148) and a b+0x100 sub-pointer (160).
