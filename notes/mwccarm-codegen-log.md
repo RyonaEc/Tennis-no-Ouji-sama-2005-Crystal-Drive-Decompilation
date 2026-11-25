@@ -5682,3 +5682,15 @@ a local `szBlk1`, a local `end`, a pointer local, the swapped comparison, a
 hoisted `blk2` local, and the symbol names instead of absolute addresses) all
 give 348 bytes with the same swap, so it is parked at 0x02024498 rather than
 committed.
+
+Two more allocation rules came out of `TP_RequestSamplingAsync` (0x0202b39c, 160 B).
+Reading a global state block through `*(T *)0x0204ac68` makes mwcc materialise
+the field address (`add r2, r1, #0x34`) and then use a pre-indexed writeback for
+the second RMW, which costs bytes; declaring the block as a plain
+`extern struct TPSt data_0204ac68;` and using `data_0204ac68.f34` instead gives
+retail's `ldrh r1, [r0, #0x34]` base+offset form directly, because the base
+comes from the linker rather than from an address expression the compiler can
+fold. The same block also needs the two flag fields `volatile`: without it mwcc
+interleaves the two read-modify-write pairs (`ldrh r3, [r1, #0x36]` /
+`ldrh r2, [r1, #0x34]` before either store) instead of finishing each pair,
+which is the 160 vs 160-but-different-bytes case.

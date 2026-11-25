@@ -11914,3 +11914,6 @@ VRAM block copy: full 348B body from the SDK's GX_LoadTex shape reproduces at 34
 
 arm9 0x020236f4 func_020236f4
 GX_BeginLoadBGExtPltt: 260B reproduces exactly (switch tree, s32 selector for the bgt/bge predicates, three cases + empty NONE case) except the register naming inside each case body - retail materialises the value in r3 and the offset in r2 before the first store, mwcc uses r2/r1 and schedules the immediate after it. Tried: store swap, per-case locals, braced locals, volatile stores, dropping case 0 (24B short). Candidate build/cand/bgext_020236f4.c
+
+arm9 0x0202aea8 func_0202aea8
+TP_GetCalibratedPoint: 304B source shape reproduces the whole flow (calibrate_flg gate, 8-byte struct copy, touch==0 early out, two 64-bit (raw<<2 - x0) * xInv >> 22 conversions with 0xff/0xbf clamps) but mwcc allocates only two callee-saved registers where retail uses three, so the frame gains six add/sub sp instructions (328B). Tried: tpState struct instead of raw offsets, volatile cal pointer, per-axis locals. Candidate build/cand/tpcal_0202aea8.c
