@@ -6005,3 +6005,14 @@ both halves read into locals first and the low value listed second inside the
 `|`. Reading them in the other order, or storing `f10` first, moves the mask
 into `r3` and the two loads into `ip`/`r2` - same size, four slots off, and the
 digest rejects it.
+
+## 2026-11-25 - two-case dispatch: switch with a return per case
+
+`func_020192c8` and `func_02027c04` both dispatch on a small index and both
+resist the obvious `if`/`else if`. Retail sends every case body out of line
+(`cmp; beq body1; cmp; beq body2; epilogue; body1...; body2...`). An
+`if (i == 1) { f(); return; } if (i == 2) { g(); return; }` chain inlines the
+first body and predicates the second epilogue, four bytes short; writing it as
+a `switch` with `case 1: f(); return; case 2: g(); return;` reproduces retail
+exactly. Same rule as `func_02020f48`: the block layout follows the construct,
+so read the layout first and pick the construct that produces it.
