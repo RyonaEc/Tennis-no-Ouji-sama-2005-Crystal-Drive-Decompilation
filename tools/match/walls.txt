@@ -410,7 +410,7 @@ ov002 0x02080ca4 68B func_ov002_02080ca4 vs 76B: mwcc allocates the loop counter
 ov002 0x02082034 92B func_ov002_02082034 -- copies four s16s into an 8-byte stride at p + 0x3c6 from a tab... L7301
 ov002 0x02084b28 128B func_ov002_02084b28 -- per-slot mode byte: for i in 0..3, skip when `*(u8 *)(base +... L6809
 ov002 0x02084e94 220B func_ov002_02084e94 (220B) L619
-ov002 0x02084ff4 164B func_ov002_02084ff4 -- body matches instruction for instruction except the prologue... L11205
+ov002 0x02084ff4 164B serve-side flag build: base = data_ov002_02102070[0]; *(u8*)(base+0x64) = 0; *(u8*)(base+0x65) = 0; for (i = 0; i < 4; i++) { if (e[0]) { k = (u32)e[2] >> 1; if (*(u8*)(t+3) + *(u8*)(t+4) >= 7) *(u8*)(base+k+0x64) |= 1; if (*(u8*)(t+1) + *(u8*)(t+2) >= 7) *(u8*)(base+k+0x64) |= 2; } t += 0xc; e += 0x158; }  with t = base + 0x186 and e = base + 0x2e4. Exactly 164B at 30 diffs, and the only difference is the base/t register pair (retail keeps base in r3 and t in r0; b56 swaps them). Tried and still 30: initialisers vs assignments, e/t assignment order swapped, i initialised at declaration, t as u32 with *(u8*)(t+n). Note the shift must be (u32)e[2] >> 1 - e[2] >> 1 alone emits asr where retail has lsr. build/cand/ov2_84ff4_e.c is the best candidate.
 ov002 0x02086f14 104B func_ov002_02086f14 -- clears a byte, calls func_ov002_02086da0, then bumps a counte... L7745
 ov002 0x0208804c 164B func_ov002_0208804c -- 5-byte block swap. Scalar locals collapse to 132B (bytes stay... L11209
 ov002 0x02088168 336B func_ov002_02088168 ` (336 B, pair-marking pass). Decoded: zero eight bytes at L11699
