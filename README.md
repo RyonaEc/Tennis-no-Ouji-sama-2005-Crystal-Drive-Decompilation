@@ -137,6 +137,7 @@ build/              untracked scratch: candidates, logs, probes
 
 ## Matching notes
 
+[`ROADMAP.md`](ROADMAP.md) is where the remaining work is and in what order.
 [`notes/mwccarm-codegen.md`](notes/mwccarm-codegen.md) is the project's codegen
 playbook: a short symptom-to-lever table for the source shapes that make
 `mwccarm` emit which instructions on this title (addressing modes, register

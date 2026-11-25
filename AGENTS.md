@@ -62,9 +62,12 @@ build/ATOJ/report.json   objdiff's per-unit report, consumed by tools/match/prog
 tools/                   dsd/mwccarm wrappers, configure.py, sha1.py, upload_report.py
 tools/match/             matching tools, harness and rosters (see its README)
 docs/                    build documentation (SETUP.md, WORKFLOW.md, BYTEMATCH.md)
+ROADMAP.md               forward plan to completion (phases, families, finish line)
 ```
 
 Modules are `arm9` and the overlays `ov000` ... `ov010`; `config/ATOJ/arm9/`
+`ov000` and `ov007` are empty (no `.text`), so they have no `src/` directory and
+never appear in the per-module tables.
 also holds `itcm/` and `dtcm/`. Function names are
 `func_<address>` (`func_020237f8`, `func_ov003_02066de0`); data symbols follow
 `data_<address>`. Keep those names — `symbols.txt`, `delinks.txt` and the

@@ -1,5 +1,11 @@
 # mwccarm codegen levers (ATOJ)
 
+> The older root-level playbook now lives here as
+> [`mwccarm-codegen-solved-families.md`](mwccarm-codegen-solved-families.md). It
+> holds the solved-family case studies (the 21-function per-slot state machine,
+> the `0x274` flag setters, the prior-art survey) that this file distils into
+> levers.
+
 Source-shape levers verified against this cartridge. Nothing here predicts the
 allocator: a lever is an axis to move, and every candidate still has to be
 compiled and byte-diffed before it counts. Evidence for each row - measured
