@@ -119,6 +119,10 @@ ov002 0x020f4490 128B func_ov002_020f4490 128 128/128 with the entry body: test 
 
 ov002 0x0207fe0c 132B func_ov002_0207fe0c 132 Best 136B (write the first call's mask as '(u32)a0 & 0xff' so mwcc keeps it in a register): that version has retail's frame exactly - push {r4,r5,lr} + sub sp,#4, the predicated 'addeq sp,#4 / popeq / bxeq lr' early exits, and the recomputed 'and r0,..,#0xff' - and differs only by one exchange: retail keeps a0 in r5 and v in r4, mwcc the other way round. The plain spelling compiles to 124B with push {r4,r5,r6,lr} and no frame because mwcc hoists the mask into its own register across the calls. Tried s32/u8 v, (u8)a0 in one and both call sites, and an explicit 'id = a0' copy declared before v (120B, r6 again). L12044
 
+ov002 0x02081a90 128B func_ov002_02081a90 128 Same class as 0x02081a10: an 8-argument table dispatch (four pointer loads out of base+0x4000+0xf80..0xf8c, two u16 table hops, then a call with stack args 2, 0x06401740, 4, 0). Retail frames it as push {r4-r8,lr} + sub sp,#0x10; mwcc uses push {r4,r5,lr} + sub sp,#0x14 at the same 128 bytes. Best candidate at build/cand/best_ov002_02081a90.c. L12047
+
+ov002 0x0208322c 120B func_ov002_0208322c 120 Correct size (120B) and the whole call sequence is right - four pointer loads from base+0x4000+0xf60..0xf6c, one u16 load at t1+0x88, two table hops, then func_ov002_0208381c(t2+i1*4, t3+i2*0x14, a0, a1, 0, 0x6400000, 0, 0). Residue is register allocation: retail keeps the four pointers in r1/r5/r7 plus a scratch ip and hoists 'mov ip,#0x14' and 'mov r3,r1'; mwcc coalesces the pointers into reused r2/ip/r3 and hoists the 0 and 0x6400000 literals first, so the prologue and every load offset differ. Tried load order t1,t0,i0,t2,t3, an early a0/a1 copy, and a 0x6400000U literal. L12050
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
