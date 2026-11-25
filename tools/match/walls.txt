@@ -61,6 +61,8 @@ arm9 0x02029838 172B func_02029838 172B best 144B: retail materialises each `(f0
 
 arm9 0x020199f0 176B func_020199f0 176B best 4 slots: a volatile fill local reproduces retail's str/ldr round-trip for the asm memset args, but mwcc puts data_02046e34 in r6 and the -1 in r7 where retail has them the other way; respell and pointer-local variants move it further off L11954
 
+arm9 0x0202a4e4 140B func_0202a4e4 140B best 144B: mwcc caches the sp+4 buffer address in r4 across the four calls (add r4,sp,#4 / mov r0,r4) which pushes a0 into sl and reorders every callee-saved register; retail rematerialises add r0,sp,#4 each call. All-&buf[0], all-buf, u32[] and inverted-if spellings all cache it L11957
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

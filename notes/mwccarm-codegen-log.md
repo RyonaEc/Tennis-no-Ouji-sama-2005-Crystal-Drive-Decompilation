@@ -6016,3 +6016,39 @@ first body and predicates the second epilogue, four bytes short; writing it as
 a `switch` with `case 1: f(); return; case 2: g(); return;` reproduces retail
 exactly. Same rule as `func_02020f48`: the block layout follows the construct,
 so read the layout first and pick the construct that produces it.
+
+## 2026-11-25 - pointer locals are hoisted into callee-saved registers across calls
+
+`func_02019cac` (0x2019cac, 184 B) writes a staging word at `p + 4` three times,
+once on either side of a call. Retail materialises the address fresh per block
+(`add r2, r4, #4`, then load and store through `[r2]`) and keeps only `p` in a
+callee-saved register. Writing the RMW as `*(u32 *)(p + 4) = ...` folds the +4
+into the addressing mode (`ldr/str [r4, #4]`, 12 B short overall), while a single
+`q = (u32 *)(p + 4)` reused across the blocks (or block-scoped but with the call
+between the load of the index and the RMW) makes mwcc compute `q` *before* the
+call, which costs an extra callee-saved register (`push {r4, r5, lr}`).
+
+Match shape: declare `q` once, but re-assign it inside the block *after* the
+call, with the index read and the call as separate statements first:
+
+```c
+    t = func_a(g);
+    if (t != 0) {
+        idx = (s32)(((u32)(*(u16 *)(p + 4) & 0xf000) << 4) >> 16);
+        t = func_b((u8 *)t, idx);
+        q = (u32 *)(p + 4);
+        *q = (*q & ~0xf000) | ((t & 0xf) << 12);
+    }
+```
+
+Same levers, measured on `func_0202a4e4` (still parked): there mwcc caches the
+`sp + 4` buffer address in `r4` and reuses it (`add r4, sp, #4` / `mov r0, r4`)
+where retail rematerialises `add r0, sp, #4` per call, which shifts every
+callee-saved register and leaves the unit 4 B long.
+
+## 2026-11-25 - `(x & 0xf000) << 4 >> 16` is the u16 extract, not `>> 12`
+
+`func_02019cac` reads bits 12-15 of a halfword field: retail emits
+`ldrh / and #0xf000 / lsl #4 / lsr #16`. Writing `(v & 0xf000) >> 12` gives
+`asr #0xc`; the `lsl`/`lsr` pair needs the shift expressed on a `u32` copy of the
+masked value, `(u32)(v & 0xf000) << 4` then `>> 16`.
