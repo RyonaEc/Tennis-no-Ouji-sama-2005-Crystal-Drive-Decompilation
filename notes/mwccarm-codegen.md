@@ -600,3 +600,10 @@ Axes, not matches - every one still needs a compiled byte-diff and `ninja sha1`.
   final `return a0 >= t;` emits `movhs/movlo` versus retail's `movge/movlt`.
   Declaring the parameters `s32` when retail uses signed conditions fixed the
   last 12 diffs of `func_ov002_0207fcf0` in one edit.
+* **Re-read the field for the delta; keep only the mask.** For
+  `m = g[i] & MASK; if (m == x) { off = g[i] - m; … }`, b56 will happily keep
+  `g[i]` in a register from the test and compute `off` from it, one instruction
+  short of retail. `func_0202db70` wants the *second* read (`ldr r2, [r5, #0x18]`
+  again after the branch) with the masked value reused from the test: write
+  `u32 m = g[6] & -0x200;` and then `off = g[6] - m;`, not
+  `v = g[6]; m = v & -0x200; off = v - m;` (160 B vs 164 B).
