@@ -5739,3 +5739,16 @@ and `case 0x15:` is a duplicate case that mwcc reports only as
 add-then-load form emits retail's two instructions
 `add ip, ip, #4` / `ldr r1, [ip, #-4]` and is four bytes longer, which is the
 whole difference between 164 and 168 B.
+
+Three more SDK routines came from their own sources without a formulation
+detour: `WM_GetDispersionBeaconPeriod` (0x0202e674, 164 B),
+`PMi_SetLCDPower` (0x0202ba54, 240 B) and
+`WmDataSharingSetDataCallback` (0x0202fa08, 292 B). Two details are worth
+keeping. `ret % 20` on a `u16` that has already been multiplied stays a signed
+`smull 0x66666667` with `asr #3` plus the `lsr #31` sign fixup, so the
+`(u16)` truncations have to be written exactly where the source has them or the
+magic sequence changes. And the WM port callbacks are compared by *function
+address*, so the table has to be declared as a function-pointer array
+(`typedef void (*WMCb)(void *); WMCb tab[16];`) for mwcc to load
+`ldr r0, [pc] = func_0202f8c4` and `cmp` against it instead of comparing a
+`void *` field.
