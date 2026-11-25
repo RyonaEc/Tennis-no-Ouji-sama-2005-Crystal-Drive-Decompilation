@@ -617,3 +617,11 @@ Axes, not matches - every one still needs a compiled byte-diff and `ninja sha1`.
   `typedef struct { u32 f; u16 w[4]; } Slot;` and reading `p->w[i]` - gives
   retail's `add` with a shifted register operand plus the member offset as the
   load immediate, byte for byte.
+
+- Loop shape follows where the condition lives. A `while` whose header holds the whole
+  condition expression (a nested ternary included) is rotated by b56: `mov n,#0; b test;
+  body; test: <cond>; bne body` — one load site, body before the test. Hoisting the same
+  condition into a local and looping with `while (1) { c = ...; if (c == 0) break; ... }`
+  puts the test first and predicates the body (`addne/addne; bne head`): same length,
+  different layout. An `if (cond) do {...} while (cond);` guard duplicates the body.
+  `arm9 02032c38` matched only in the first spelling.
