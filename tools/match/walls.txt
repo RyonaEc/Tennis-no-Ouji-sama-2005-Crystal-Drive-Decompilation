@@ -141,6 +141,8 @@ ov002 0x020c2b18 144B func_ov002_020c2b18 144 Best 144B (build/cand/best_ov002_0
 
 ov002 0x020e5eb0 164B func_ov002_020e5eb0 164 Best 160B. Same walker shape as the matched 0x020d4d4c but the kind comes from a switch on func_ov002_020e44a4(a0) - case 0 kind 0x2e, case 1 0x2f, case 2 and default 0x2d - and 0204d270's third parameter must be u8 so mwcc emits the 'and r2, r2, #0xff' retail has before the bl. Residue is the stride multiply exchange again: retail 'mul r3, r0, r1' with the module base in r2, mwcc 'mul r2, r0, r1' with the base in r3, and the unit is 4B short because of it. L12077
 
+ov002 0x020f466c 188B func_ov002_020f466c 188 Best 188B, exact size, body matches end to end (three zero stores through hoisted pointers e+0x90/0x94/0xa8, the 0x7c split into 0204d270 kind 0x31/0x33, the 0x4c bit-2 call to 020f39a8(a0,0) and state 1). Single residue is the stride exchange: retail 'mul r3, r5, r0' with the module base in r2; mwcc 'mul r2, r5, r0' with the base in r3. Note the sibling 0x020cd938 matched once its source also used base for a second pointer (f = base + 0x1824), so an extra live use of base is what pins it to r2; here base only feeds e and the 0x2e6 byte. Tried declare-then-assign, v before/after the p pointers, and an off local. L12080
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
