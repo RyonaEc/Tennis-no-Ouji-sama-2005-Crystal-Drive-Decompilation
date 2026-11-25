@@ -12025,3 +12025,9 @@ ov004 0x0204fc40 func_ov004_0204fc40
 
 ov004 0x020623e0 func_ov004_020623e0
 172 172/172, only the pair order of the two predicated stores differs: retail emits movne r0,#0 then moveq r0,#1 (and the same for the %256 arm); mwcc always emits the eq case first for every spelling tried: 'v%2 == 0', 'v%2 ? 0 : 1', '(v%2==0) ? 1 : 0', 'if (v%2 != 0) return 0; return 1;', '!(v%2)', '(u32)(v%2) == 0'. 'v%2 < 1' grows to 180.
+
+ov002 0x0207c630 func_ov002_0207c630
+128 128/128 the moment the guard is one short-circuit 'if ((a2 & a0) == 0 || (a2 & a1) == 0) return 0;' (separate ifs give two inlined exits, 132-136B). Residue: mwcc binds m = a2&a1 to ip and the shift constant 1 to r2, retail binds m to r2 and 1 to r3; the zero-init order also differs (retail 'mov r5,#0 / mov r4,r5', mwcc 'mov r4,#0 / mov lr,r4'). Tried v/n declaration order both ways, n = v, m precomputed before the guard.
+
+ov002 0x02081a10 func_ov002_02081a10
+128 128/128. Body shape, both scaled u16 lookups (stride 4), the mla into the d table (stride 0x14) and the four stack arguments all match. Residue: retail keeps b/k2/k3/d and the constant 2 in r4-r8 with 0x14 in ip and 0x15 in lr; mwcc uses push {r4,r5,lr}/sp 0x14 and rematerialises the constants. C88: k1 = a+4 u16, k2 = b[k1*4] u16, k3 = c[k2*4] u16, call(c + k2*4, d + k3*0x14, 0, 0, 2, 0x06401740, 0x15, 0).
