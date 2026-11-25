@@ -11902,3 +11902,6 @@ ov008 0x0204c810 func_ov008_0204c810
 
 ov008 0x0204e584 func_ov008_0204e584
 124 B vs 136: retail reads 0x04000208 before each of its two stores (dead ldrh), which no plain store, &=, bitfield or struct write reproduces
+
+arm9 0x0202a07c func_0202a07c
+FS_EndOverlay: body is known and complete, 308 against 288; mwcc spills data_e to the stack where retail keeps it in r4 and reloads the chain address per iteration instead of hoisting it in fp. Register-allocation tie, two spellings tried.

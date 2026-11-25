@@ -5540,3 +5540,25 @@ case values have to be read off the disassembly, not from `FS_COMMAND_*` names.
 repeat the field reads (`if (p->next) p->next->prev = p->prev;`) instead of going
 through locals: holding `next`/`prev` in variables makes mwcc load them
 unconditionally, where retail loads inside the branch (`ldrne r1, [r4, #8]`).
+
+## 2026-11-24 - destructor-chain walk parks on register allocation
+
+`FS_EndOverlay` (288 B) is `FS_RegisterArchiveName`'s mirror image and the body is
+fully understood - the outer loop rescans the destructor chain for entries whose
+dtor lies in the overlay's code range or whose object lies in its data range,
+unlinks them into a private list, runs them, and repeats until a pass finds
+nothing. It compiles to 308 B against 288 and the residue is allocation, not
+logic: mwcc spills `data_e` to the stack (`str r0, [sp, #4]` and a `sub sp, sp,
+#0xc` frame) where retail keeps it in `r4` with a 4-byte frame, and consequently
+reloads the chain address each iteration instead of hoisting it into `fp`.
+
+Two spellings tried: the straight transcription with `data_e` as its own constant,
+and one with `data_len` folded away and the chain addressed through a hoisted
+`MWiDestructorChain **chain = &__global_destructor_chain`. Both give 308. This is
+the register-pressure cousin of the r0/r1 tie: the live set is nine values over
+nine callee-saved registers and mwcc picks differently. Parked with the body
+recorded in `walls-detail.txt` rather than weakening anything.
+
+`FS_RegisterArchiveName` (180 B), by contrast, went in first try: it walks to the
+tail with `while (*(u8 **)(pos + 4)) pos = *(u8 **)(pos + 4);` rather than keeping
+a `next` local, which is what makes retail's conditional load pattern.
