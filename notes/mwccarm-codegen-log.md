@@ -6327,3 +6327,26 @@ matches at 112 B.
 The same shape explains `func_ov002_02069b3c` and the two `0x0207xxxx` sites: in
 this game the state pointer is the game's own indirection through a BSS word, and
 the original code re-read it wherever it was needed.
+
+## 2026-11-25 - declare then assign to move a value off lr
+
+`func_ov002_02066080` (112 B) copies a 12-byte table entry to the stack, picks
+`t.w[*p]` and compares it with `p[0x18]`. The first draft was 112 bytes already
+but had `mul ip, r0, r1` where retail has `mul lr, r0, r1`, and the stack copy
+base in `lr` where retail has `ip` - two registers swapped, everything else
+identical.
+
+Declaring the struct uninitialised and assigning base and `p` first, then copying
+the struct afterwards:
+
+    T3 t;
+    u8 *base;
+    u8 *p;
+
+    base = *(u8 **)data_ov002_02102070 + 0x1744;
+    p = base + a0 * 0x38;
+    t = *(T3 *)data_ov002_020fdc24;
+
+matches exactly. The initialised-declaration form (`T3 t = *(...);` first) is
+what put the copy in `lr`. A register swap with identical instruction count is
+worth one reordering pass before it is called an allocation tie.
