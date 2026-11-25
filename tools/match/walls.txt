@@ -196,6 +196,12 @@ ov008 0x0204de18 168B func_ov008_0204de18 counter/scroll helper: bump g[9] while
 
 ov005 0x0205519c 208B func_ov005_0205519c camera/matrix setup: zero + 0x30-byte buffer through 020269b8 (the zero must be volatile so it keeps a stack slot at sp+4 and the buffer is u32[12] so it lands at sp+8), DISPCNT bits 0x3000->8, REG 0x04000448=1, then pos = data_020c965c, target = {0,0,0}, up = data_020c9668, 02022994(&pos, &up, &target, 1, 0), 0x040004c8=0x80000, 0x040004cc=0x7fff, 0205507c(0). b56 gives 204B against 208: retail materialises &target in r4 and stores the triple through it after a separate mov lr,#0, b56 folds the three stores to sp-relative using the zero it already has in r4. L12161
 
+ov009 0x02050b0c 204B func_ov009_02050b0c channel clear, same shape as the ov005 4x220 family (020614a4/020656d8/020695bc/0206bfc0) with data_ov009_02054f84, loop zero at ip+0xa20 and the i%4==0 u32 0x200 at the same ip+0xa20, guard b[0x350]<0x1f4, then 02025c94/02026a50 on b+0x620. 204B exact and instruction-order exact; 10 differing slots from the same lr/ip tie: retail keeps the zero in lr and the row pointer in ip, b56 the other way round. Not fixable by respell (order1/split/vol all worse). L12164
+
+arm9 0x02033e40 88B func_02033e40 out-param wrapper around 02033fd8. Retail spills every parameter to the frame (a0/a1 at sp+8/sp+0xc, a2 sp+0x10, a3 sp+0x14, the trailing word sp+4) and then reloads a0/a1 as an ldm pair and a2 through a sub sp,#4 roundtrip into r3, with a3 as the stacked 5th argument; b56 passes the same call straight from registers (60B). Declaring the wrapper variadic reaches 68B. Residue: the spill-and-reload shape, probably a by-value aggregate or a hand-written va_list, not yet identified. L12167
+
+ov009 0x0204de1c 208B func_ov009_0204de1c ov009 sibling of ov005 0205519c (identical body, data_02054ea4/02054eb0 and 0204dcfc): same 204B vs 208B residue. Declaring pos/target/up in retail's stack order (pos, target, up) fixes the frame layout, but retail still materialises &target in r4 with a fresh mov lr,#0 and three pointer stores, where b56 reuses a register that already holds zero and stores sp-relative. One instruction; both candidates are in build/cand/ov9_de1c_b.c. L12170
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
