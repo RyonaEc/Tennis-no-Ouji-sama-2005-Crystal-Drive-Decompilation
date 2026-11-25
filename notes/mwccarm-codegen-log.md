@@ -5514,3 +5514,29 @@ then `blx r2`) and costs an extra instruction; the pointer-to-pointer spelling
 The inline cast form `(*(s32 (*)(u8*, u32) *)(...))` does not compile at all under
 mwcc - it produces a zero-byte object - so declare the function-pointer typedef
 first.
+
+## 2026-11-24 - volatile archive flags, and switch case ordering
+
+`FS_SuspendArchive` (184 B) needed the archive flag read through `volatile`. Retail
+loads `[p_arc + 0x10]` three times - once for the suspended test, once for the
+running test, once for the RMW - and a plain `u32` access lets mwcc CSE the first
+two into one (`ands r0, r1, #0x10` reusing the earlier load instead of a fresh
+`ldr`), which is 4 bytes and one instruction short. The flag genuinely is written
+from interrupt context, so `volatile` is the honest type here rather than a
+codegen lever.
+
+Also in that function: `bak_stat = FS_IsArchiveSuspended(p_arc) ? FALSE : TRUE`
+has to stay two statements - the inlined helper's normalised `BOOL` is materialised
+first (`movne r0, #1 / moveq r0, #0 / cmp`) and *then* inverted. Folding it into a
+single `(flag & 8) ? 0 : 1` drops that pair.
+
+`FSi_RomArchiveProc` (144 B) pins mwcc's switch layout: it emits the case
+*comparisons* in ascending value order but the case *bodies* in source order. The
+shipped build also numbers the commands differently from the SDK header comments -
+9 is `CARD_LockRom`, 10 is `CARD_UnlockRom`, and 1 is the unsupported one - so the
+case values have to be read off the disassembly, not from `FS_COMMAND_*` names.
+
+`FS_ReleaseArchiveName` (156 B) is the unlink loop, and the two `if` bodies have to
+repeat the field reads (`if (p->next) p->next->prev = p->prev;`) instead of going
+through locals: holding `next`/`prev` in variables makes mwcc load them
+unconditionally, where retail loads inside the branch (`ldrne r1, [r4, #8]`).
