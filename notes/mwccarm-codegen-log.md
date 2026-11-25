@@ -5771,3 +5771,17 @@ against `[sp]`. The `PXIi_SetToFifo` status push is then three volatile accesses
 `ldrh [0x04000184]` / `and #0x4000` for the error latch, `orr #0xc000` /
 `strh`, then `and #2` under the interrupt lock for the full flag, and finally
 `str [0x04000188]`.
+
+Absolute-address lvalues get constant-folded, so `*(T *)0x02048d3c` with a
+member at +0xc emits `ldr rN, =0x02048d48` and reads `[rN]`. Retail keeps the
+base and applies the offset (`ldr r2, =0x02048d3c` then `ldr r8, [r2, #0xc]`),
+which only happens when the base is a real extern object. `OS_SetThreadPriority`
+(0x02024f70) is exact once the thread list is written as
+`extern OSiThreadInfo data_02048d3c;` and reached as `data_02048d3c.list`.
+
+`OS_ReceiveMessage` (0x02025864) is another matter: its `% mq->msgCount`
+compiles to `bl _s32_div_f`, and retail's target 0x0203b0c0 is exactly the
+runtime signed divmod helper, but this project only exposes that address as
+`func_0203b0c0`, so the object will not link. Declaring a 2-word struct return
+to force the call changes the unit from 176 B to 196 B (hidden return pointer),
+so the unit stays parked until 0x0203b0c0 also carries the `_s32_div_f` name.

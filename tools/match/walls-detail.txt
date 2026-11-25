@@ -11926,3 +11926,6 @@ CARDi_ReadBackupSyncCore: exact 204 B with the SDK source and a volatile retry l
 
 arm9 0x02025710 func_02025710
 OSi_GetDeviceType: the body is exact at 212 B from the SDK's os_emulator.c, but mwcc colours lockId/enabled/ret into r6/r7/r8 where retail uses r8/r6/r7. Declaring ret and enabled inside the loop (as the SDK does), moving lockId after result, and respell.py's 34 variants all keep the same rotation, so it is a register-colouring tie. Candidate: build/cand/devtype_c.c
+
+arm9 0x02025864 func_02025864
+OS_ReceiveMessage: the body is byte-exact at 176 B (packed OSMessageQueue with 2-byte OSThreadQueue fields: queueSend +0, queueReceive +2, msgArray +4, msgCount +8, firstIndex +0xc, usedCount +0x10) but every attempt cannot link: mq->firstIndex = (mq->firstIndex + 1) % mq->msgCount compiles to bl _s32_div_f, and retail's target 0x0203b0c0 is the runtime signed divmod helper that this project only exposes as func_0203b0c0. Declaring it as a 2-word struct return instead grows the unit to 196 B (hidden return pointer). Needs a _s32_div_f symbol alias on 0x0203b0c0 before it can be installed. Candidates: build/cand/osmsg_02025864.c
