@@ -5491,3 +5491,26 @@ two scalars emits a plain `push {r4, lr}` instead.
 `u32 is_async = (flag & 0x100) ? 1 : 0; if (is_async)` - because retail materialises
 `movne r0, #1 / moveq r0, #0` and then a separate `cmp`. Writing the mask test
 directly in the `if` folds it into `tst`/`beq` and loses those two instructions.
+
+## 2026-11-24 - inlined `!= 0` predicates and indirect calls
+
+`FSi_ReadTable` (188 B) and `FSi_TranslateCommand` (420 B) both test the archive's
+async/sync flag through an inlined SDK helper that returns `BOOL`. Retail
+materialises the normalised value - `ands r0, r0, #0x200` then `movne r0, #1` /
+`moveq r0, #0` and a separate `cmp` - and then branches on it.
+
+Writing `while ((flag & 0x200) ? 1 : 0)` is **folded away**: mwcc sees the value is
+only used as a condition and emits `ands` plus a conditional branch, giving 168 B
+against 188 B. Appending `!= 0` to the normalised expression
+(`while (((flag & 0x200) ? 1 : 0) != 0)`) defeats that fold and reproduces retail
+exactly. Same for `FS_NotifyArchiveAsyncEnd`, where the value is assigned to a
+variable first.
+
+Indirect calls: `FSi_TranslateCommand` calls `(*p_arc->proc)(p_file, command)` with
+the function pointer stored at arc+0x48. Writing the pointer as
+`(*(s32 (*)(u8*, u32))(p_arc + 0x48))(...)` loads the *address* (`add r2, r7, #0x48`
+then `blx r2`) and costs an extra instruction; the pointer-to-pointer spelling
+`(*(FsProc *)(p_arc + 0x48))(...)` gives retail's single `ldr r2, [r7, #0x48]`.
+The inline cast form `(*(s32 (*)(u8*, u32) *)(...))` does not compile at all under
+mwcc - it produces a zero-byte object - so declare the function-pointer typedef
+first.
