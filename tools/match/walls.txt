@@ -63,6 +63,8 @@ arm9 0x020199f0 176B func_020199f0 176B best 4 slots: a volatile fill local repr
 
 arm9 0x0202a4e4 140B func_0202a4e4 140B best 144B: mwcc caches the sp+4 buffer address in r4 across the four calls (add r4,sp,#4 / mov r0,r4) which pushes a0 into sl and reorders every callee-saved register; retail rematerialises add r0,sp,#4 each call. All-&buf[0], all-buf, u32[] and inverted-if spellings all cache it L11957
 
+arm9 0x0202ce70 160B func_0202ce70 160B best 164B: single tie - retail loads s->f8 into r1 for the owner compare (ldr r1,[r5,#8]; cmp r1,r7) while mwcc copies the base into r1 and loads into r0 (mov r1,r5 / ldr r0,[r1,#8]); named-value, global-access, s-before/after-call and pointer-block variants all keep the copy L11960
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
