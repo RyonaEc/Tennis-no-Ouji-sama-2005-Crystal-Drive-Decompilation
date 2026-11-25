@@ -85,6 +85,10 @@ ov002 0x02059000 112B func_ov002_02059000 112B: 108B best. Per-slot countdown at
 
 arm9 0x02017db8 200B func_02017db8 200B: 200/200 on the sixth spelling (best-fit free-list scan with the u16 flag extract). Only placement differs: retail materialises base = a0+0x24 in r0 first (add / ldrh [r0,#0x12] / ldr [r0]) then passes that same r0 to func_02017e80, while mwcc folds the offset into both header loads and puts the add just before the call. Base-in-a-local, incremented-parameter and reordered-flag variants all keep the fold. L11990
 
+arm9 0x02017010 192B func_02017010 192B: 192/192 on the second spelling (request header copy). Only the six-halfword copy is scheduled differently - retail pairs the loads (p0,p1 into r3,r2) then stores both through ip, so the destination has to live in r12 because r0-r3 are all live; mwcc interleaves load/store pairs through r2. Struct fields, two real temporaries and named locals all change the count instead of the schedule. L11993
+
+arm9 0x02017cf4 196B func_02017cf4 196B: sibling of func_02017db8 (allocate from the end of a block: align_down(start + blk - size, align)). Best 204B with an extra callee-saved register - retail fits everything in r4-r8/sb plus ip/lr (lr holds the running best size), so the candidate needs two fewer live values before it can line up. L11996
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
