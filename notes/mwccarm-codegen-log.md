@@ -6233,3 +6233,34 @@ word as `ldr; and #0xff; lsl #16; lsr #16; ands #1`; `*(u32 *)p & 1` produces
 just `ldr; ands #1`. Writing the source as `((u16)(u8)*(u32 *)(ctx - 4) & 1)`
 reproduces all four instructions. The double cast is the tell that the original
 read a byte field out of a word-aligned struct.
+
+## 2026-11-25 - outside trial: two levers, adopted
+
+A separate agent worked three ov002 units with the same harness and left two
+matched sources plus one parking note. Both sources install here with the digest
+unchanged (`func_ov002_02065554`, 148 B and `func_ov002_02059fa4`, 188 B), so the
+levers behind them are real and worth keeping.
+
+**Live ranges are set by source order of the loads, not by declaration order.**
+In `func_ov002_02065554` retail pushes `{r4, lr}` while the first draft pushed
+only `lr` and padded the stack: a value retail kept in `r4` had been assigned
+`ip`. Reading the byte into a named local *before* the entity pointer is
+computed (and using it afterwards) puts the live range back where retail has it.
+When a draft is 4-8 bytes off and the prologue differs, move the earlier load
+ahead of the later pointer computation.
+
+**A shared-exit chain is one `||` expression, not separate early returns.**
+`func_ov002_02059fa4` ends `if (a > b || c > d || e > f) return 0; return 1;`.
+Separate early returns, `&&` forms and nested ifs all came out 4 B short - retail
+emits `bgt` to one exit and a final `ble`.
+
+**Unresolved, recorded for the next attempt:** `func_ov002_020613d8` (196 B)
+stalls at 192 B on a missing `and #0xff` after an unsigned `lsr`. Declaring a
+`u8` straight from a `u32` shift lets mwcc drop the narrowing. Candidate escape
+routes: read the field through a wider type, insert an intermediate `u8`
+variable, or use the shifted value in a comparison that forces the truncation.
+
+Also worth adopting from that trial as measurement, not folklore: object-level
+compile+diff is ~0.02 s and the digest gate is ~35 s per install, so all search
+belongs in the cheap compare and only object-clean candidates reach `reg.py`;
+and never let two builds share one tree (a contended install took 405 s).
