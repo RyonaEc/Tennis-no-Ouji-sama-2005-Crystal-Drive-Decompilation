@@ -18,6 +18,9 @@ output under `build/` (gitignored).
 | `probe.py`, `vprobe.py` | Side-by-side listing; `vprobe` runs `1.2/b56` then `1.2/sp2` |
 | `permute.py`, `pragmas.py`, `slots.py` | Statement order, pragma and register-slot experiments |
 | `lint_cand.py` | Check a candidate's extern names against `symbols.txt` |
+| `literal_load.py` | Census matched units whose source spells a pooled load's target as a
+number instead of naming the symbol (byte-invisible, so no gate catches it); candidates
+only, read the retail pool word before renaming |
 
 **Data units**
 

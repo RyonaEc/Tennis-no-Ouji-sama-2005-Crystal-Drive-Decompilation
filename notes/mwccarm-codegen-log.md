@@ -6477,3 +6477,21 @@ retail emits `movne r0, #0` then `moveq r0, #1` and mwcc always emits the `eq`
 case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
 `if (x % 2 != 0) return 0; return 1;`, `!(x % 2)` and `(u32)(x % 2) == 0`.
 `x % 2 < 1` grows to 180 B. Treat the pair order on a `%` result as fixed.
+
+## 2026-11-25 - the optimisation pragma set re-tested, and a pool-literal census
+
+* `#pragma optimize_for_size on` as a cure for a duplicated early-exit epilogue,
+  and the rest of the optimisation pragma set: 0 of the 24 combinations in
+  `tools/match/pragmas.py` matched on either `func_ov002_02082034` (100 B best)
+  or `func_ov002_020f2970` (84/84, the predicated-pair residue). The pragma axis
+  is closed for both; stop re-testing it on this class.
+* Source that spells a pooled load's target as a number instead of naming the
+  symbol is invisible to every byte gate - a literal `0x02102070` links to the
+  same word the relocation would have produced, so the digest cannot see it.
+  `tools/match/literal_load.py` censuses it from `relocs.txt` against `src/`:
+  no hits across 14 modules, 1,832 matched units and 1,432 `kind:load`
+  relocations inside them. The corpus is honest today; the tool stays as a census.
+* The edit loop costs **0.16 s per `var3.py` candidate** (three runs). At ~6
+  candidates/second, sweep exhaustively instead of thinking between compiles -
+  and a "dead lever" result is scoped to the current structure, so re-sweep
+  after any restructuring.

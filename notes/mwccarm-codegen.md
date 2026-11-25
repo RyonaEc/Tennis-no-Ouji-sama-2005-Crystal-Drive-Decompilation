@@ -504,3 +504,48 @@ that only copies the double leaves the argument in registers and comes out short
 macros produced its 40 bytes exactly; treat that shape as the first thing to try
 on any small libm wrapper, and on any older wall note that complains about an
 unexplained `push {r0-r3}` beside a double.
+
+## Frame layout and the limits of if-conversion (2026-11-25)
+
+Axes, not matches - every one still needs a compiled byte-diff and `ninja sha1`.
+
+* **The frame is a chain, then a spill pool, then aggregates.** Locals that keep
+  a stack slot form a *chain* in declaration order; compiler temporaries (and
+  locals coalesced into them) form a *spill pool* below it; arrays/structs go
+  above both. The chain's length sets where the pool starts, so **one surplus
+  chained word displaces every pool slot** - a single 4-byte surplus was worth 44
+  wrong slot references in the studied function. Read the two regions apart with
+  `slots.py`: a local with a `DW_AT_location` is in the chain, one without is
+  pool-or-register. The lever: **a second definition of a local in a different
+  block moves it out of the chain into the pool** (on the next line it is a dead
+  store and nothing moves). Absence of a DIE is not evidence a local left the
+  frame - it can keep its slot and lose its location.
+* **b56's materialisation regime.** Under `2004/b56` a member RMW materialises
+  its base by default when both sides are spelled *identically*
+  (`p->f = p->f | x`), and folds the offset when the two sides differ textually;
+  a cv-qualified cast is its own CSE class. Our materialised-RMW walls were
+  solved with a pointer local (`u32 *q = (u32 *)(p + 0x24); *q |= k;`), which is
+  this effect reached a different way. The 64-bit laundering form
+  (`*(int *)(((int)base + OFF) & 0xFFFFFFFFFFFFFFFF)`) is a third route; it is
+  LICM-hoisted out of loops unless paired with `#pragma opt_loop_invariants off`,
+  and value-numbers into one register unless paired with
+  `#pragma opt_common_subs off`. We tried the launder alone before; the pairing
+  is the part we had not.
+* **cond-opt's refusal rule.** It will not if-convert an arm whose
+  jumped-over region itself contains a conditional region (another branch or
+  predicated pair); the fold budget is ~7 instructions, not 5. Two consequences
+  we can use: *inverting an if-arm's condition defeats full if-conversion*, and
+  a predicated select (`mov r0,#A; movne r0,#B`) comes from a
+  **default-then-override** statement pair, not from a ternary. This is the
+  closest thing we have to an explanation for the parked predicated-pair walls
+  (`func_ov004_020623e0`, `func_ov002_020f2970`), where mwcc insists on
+  predicating the `eq` arm.
+* **The edit loop costs 0.16 s per candidate** (measured 2026-11-25, three
+  `var3.py` runs: 0.16 s each). At ~6 candidates/second the correct default is
+  an exhaustive sweep over a hypothesis, not more thinking between compiles -
+  and a "dead lever" result is scoped to the current structure, so re-sweep
+  after any restructuring.
+* **Tooling trap: unknown pragmas are silently ignored.** A misspelled pragma
+  reads as "inert", not as an error, so a pragma experiment only counts if the
+  name is one mwccarm actually honours; `pragmas.py` already sweeps the
+  vocabulary we trust.
