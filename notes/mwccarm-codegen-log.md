@@ -6158,3 +6158,15 @@ The tail of the same unit is the other half of the lesson. `p->arr[p->f29c - 1]
 statement with a `u16` local (`idx = p->f29c - 1; p->arr[idx] = 0;`) keeps the
 mask, keeps the branch instead of predicating five instructions, and matches.
 A u16 index local is also what stops mwcc from folding the `*2` into the add.
+
+## 2026-11-25 - do not spell an ignored argument
+
+`func_02016628` (360 B) is a small state handler: a pair of mode words at +2 and
++4, an early return ladder, then a `switch` over +4 with a jump table for
+`0xa`-`0xd` in which only `0xa` has a body. It was one instruction too long
+(364 against 360) for a single reason: the body calls `func_0201746c`, and
+writing `func_0201746c(0)` emits `mov r0, #0` before the `bl`. Retail has the
+bare `bl` because the argument is whatever the previous call left in r0. The
+callee's own prologue never reads an argument either, so the honest signature is
+`void func_0201746c(void);` - and with that the unit is byte-exact. When a call
+site has no argument setup at all, do not invent one.
