@@ -33,6 +33,8 @@ arm9 0x02022e28 496B func_02022e28 G3i_PerspectiveW_: complete transcription at 
 
 arm9 0x02024498 348B func_02024498 VRAM block copy: full 348B body from the SDK's GX_LoadTex shape reproduces at 348B with one residue - in the second test (`destSlotAddr + szByte < sSzTexBlk1`) retail keeps the global's address in r2 and the sum in r3, mwcc always the reverse. Tied spellings: raw address operand, local szBlk1, local end, pointer local, swapped comparison, blk2 hoisted to a local, symbol names data_02048cc8 - all 348B, same swap. Best candidate build/cand/vramload_02024498.c L11912
 
+arm9 0x020236f4 260B func_020236f4 GX_BeginLoadBGExtPltt: 260B reproduces exactly (switch tree, s32 selector for the bgt/bge predicates, three cases + empty NONE case) except the register naming inside each case body - retail materialises the value in r3 and the offset in r2 before the first store, mwcc uses r2/r1 and schedules the immediate after it. Tried: store swap, per-case locals, braced locals, volatile stores, dropping case 0 (24B short). Candidate build/cand/bgext_020236f4.c L11915
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
