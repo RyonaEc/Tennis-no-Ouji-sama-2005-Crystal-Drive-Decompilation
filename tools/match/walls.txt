@@ -182,7 +182,6 @@ ov003 0x0205e770 148B func_ov003_0205e770 per-frame VBlank step: mirrors REG_VCO
 
 ov002 0x02081c60 156B func_ov002_02081c60 per-slot clamp pass over the four 0x158 records: clears 0x140/0x141, then for each slot with type and bit0 of 0x4c set either calls 02059150(i) when 0xd1 is 0 or ORs 8/0x10 into the 0x3654+0x10 word by rec[2] < 2, then 02059070. b56 gives 152B because it lays the 02059150 block out before the OR block; retail keeps the OR block first and jumps over the call block (+4B). L12140
 
-ov002 0x020e6b38 156B func_ov002_020e6b38 record transform: flags |= 8, mode = 0x12a, halves 0x5c and 0x60 (signed /2), 0x64 = 0xaaaa, 0x5c *= -1, then a two-sided clamp of 0x4 to +-0x10000 gated on 0x10. b56 gives 152B: retail materialises a second address register (add r3, r0, #0x60) that b56 folds into the addressing mode. Tried pointer locals, s32[] indices and /2 vs *0.5 spellings. L12143
 
 ov002 0x02082b98 152B func_ov002_02082b98 three-table chase into the 8-arg 0208381c call (t5c[idx*4] -> t58[x*4] -> t54[y*4], arg0=&t54[y], arg1=t50+z*0x14, then 7, 0x06405940, 0, 1), with a >0x1f guard. Exact 152B with the typed 0x4000-block struct; retail keeps six callee-saved registers (r7=7, r8=z) and loads f5c->f58->f54->f50 descending, b56 keeps four and loads ascending. Same family as the parked 02083060. L12146
 
@@ -335,13 +334,11 @@ arm9 0x02015040 ?B - arm9 -- same as 02015068 with `mvn r0,r2,lsl r0` / and; sam
 arm9 0x02015068 ?B - arm9 -- retail ldr global in r1, mov #1 in r2, orr r0,r1,r2,lsl r... L3367
 arm9 0x02015fe8 ?B - (72B): sets bit 15 of the u16 at data_02042b40, then func_02025c94(p,... L3319
 arm9 0x02017954 ?B - (64B): ring buffer push (`off = *(u16*)(a0+0xa)`, two zeros at a1+off... L3331
-arm9 0x020181b0 ?B - (88B): exact size, pure r4/r5 swap - retail materialises q then `ldr... L2659
 arm9 0x02018330 ?B - (124B) / 0x020183ac (128B): arena allocator pair (bump-down / bump-up... L2935
 arm9 0x020183ac ?B - (128B): arena allocator pair (bump-down / bump-up). Body shape and L2935
 arm9 0x0201842c ?B - (80B): exact size with return-a0 and volatile-q spellings, but retail... L2641
 arm9 0x0201f26c ?B - (68B): lazy counter at +0x118, `if (field == 0 && func_0201cde8() ==... L3301
 arm9 0x0201f6c0 ?B - (172B): slot/cache lookup. Exact size and instruction count reached w... L2965
-arm9 0x0201fc1c ?B - (32B): retail loads both fields before cmp and does addlt/ldrlt/strlt... L2671
 arm9 0x0201fd50 ?B - (60B): five stores to 0x04000280/290/294/298/29c. Retail pools three... L2839
 arm9 0x020208b0 ?B - / 0x0202093c (140B each, famsurvey pair): identical skeleton, differ... L3007
 arm9 0x0202093c ?B - (140B each, famsurvey pair): identical skeleton, differ only in const... L3007
@@ -437,7 +434,6 @@ ov002 0x027fff96 ?B - every spelling differs in all 28 bytes. L2707
 arm9 0x020135cc ?B - arm9 -- 48/48 bytes, 7 slots: retail keeps p in r2 AND q=p+2 in r... L337
 arm9 0x02015040 ?B - / 02015068 36B arm9 -- materialised halfword address: retail does... L301
 arm9 0x02015068 ?B - arm9 -- materialised halfword address: retail does add r2,r1,#0x1... L301
-arm9 0x0201fc1c ?B - arm9 -- materialised RMW address (6th instance of this wall): ret... L313
 arm9 0x020208b0 ?B - . L5269
 arm9 0x0202474c ?B - arm9 -- 48-byte block copy: retail is four ldm r0!,{r2,r3,ip} / s... L307
 arm9 0x02024b5c ?B - arm9 -- flag-set RMW at raw address 0x027fffb0 (no symbol). Retai... L325
