@@ -18,6 +18,7 @@ typedef struct {
 } OSiThreadInfo;
 
 extern OSiThreadInfo data_02048d3c;
+extern OSThread data_02048d90;
 
 extern u32 func_02026350(void);
 extern void func_02026364(u32 a);
@@ -37,7 +38,7 @@ s32 func_02024f70(OSThread *thread, u32 prio)
         t = t->next;
     }
 
-    if (!t || t == (OSThread *)0x02048d90) {
+    if (!t || t == &data_02048d90) {
         func_02026364(enable);
         return 0;
     }

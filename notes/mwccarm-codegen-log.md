@@ -5931,3 +5931,25 @@ reusable lever:
   over ten variants flat) and `func_020247f0` (handler/bit/mask want
   `r1`/`r3`/`r5` with one base pointer per register; best of 400 respell
   variants is 25 slots off). Both notes are in `walls.txt`.
+
+## 2026-11-25 - symbol references, not literals, or objdiff scores below 100
+
+Two units were byte-identical in the ROM and still reported under 100% in the
+objdiff report (`func_0202b5cc` 99.861%, `func_02024f70` 99.889%), which is what
+bytematch showed. The cause is not codegen at all: both reach a bss/data symbol
+through a raw address constant (`(S *)0x0204ac68`, `(OSThread *)0x02048d90`),
+so the object carries an absolute pool word instead of a relocation. `var3.py`
+masks relocation bytes and said MATCH; the digest says OK because the value is
+right; only objdiff's fuzzy measure sees that the reference is not bound to the
+symbol.
+
+The fix is to declare the object and use it: `extern S_0204ac68 data_0204ac68;`
+then `data_0204ac68.f32 = 0;` (or `&data_02048d90` for a comparison). Note the
+spelling matters: `extern u8 data_0204ac68[]` with a cast keeps the relocation
+but makes mwcc hoist the address into a callee-saved register early, which is
+150 bytes of different code; the struct-typed extern reproduces retail exactly
+(the address is reloaded after the intervening call).
+
+Whenever a unit reports `complete: true` with `fuzzy_match_percent < 100` in
+`build/ATOJ/report.json`, check its pool words for address literals before
+looking at the instruction stream.
