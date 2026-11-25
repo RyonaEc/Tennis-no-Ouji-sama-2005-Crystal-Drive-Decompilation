@@ -607,3 +607,13 @@ Axes, not matches - every one still needs a compiled byte-diff and `ninja sha1`.
   again after the branch) with the masked value reused from the test: write
   `u32 m = g[6] & -0x200;` and then `off = g[6] - m;`, not
   `v = g[6]; m = v & -0x200; off = v - m;` (160 B vs 164 B).
+* **A struct view beats a byte offset for a base + const + scaled index.** When
+  retail addresses `base + 4 + i*2` as `add r0, base, i, lsl #1` plus a `+4`
+  load offset, do not write the arithmetic out: `p + i*2 + 4` in bytes makes b56
+  strength-reduce `i*2` into a second induction variable (an extra callee-saved
+  register *and* a stack frame: 200 B vs 168 B for `func_0201df30`), and a
+  `u16 *` view drops the accumulator but folds the 4 into the index
+  (`add r0, r5, #2; lsl; ldrh` = 172 B). Declaring the record shape -
+  `typedef struct { u32 f; u16 w[4]; } Slot;` and reading `p->w[i]` - gives
+  retail's `add` with a shifted register operand plus the member offset as the
+  load immediate, byte for byte.
