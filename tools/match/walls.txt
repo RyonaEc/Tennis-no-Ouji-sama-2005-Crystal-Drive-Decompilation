@@ -185,7 +185,7 @@ ov002 0x02081c60 156B func_ov002_02081c60 per-slot clamp pass over the four 0x15
 
 ov002 0x02082b98 152B func_ov002_02082b98 three-table chase into the 8-arg 0208381c call (t5c[idx*4] -> t58[x*4] -> t54[y*4], arg0=&t54[y], arg1=t50+z*0x14, then 7, 0x06405940, 0, 1), with a >0x1f guard. Exact 152B with the typed 0x4000-block struct; retail keeps six callee-saved registers (r7=7, r8=z) and loads f5c->f58->f54->f50 descending, b56 keeps four and loads ascending. Same family as the parked 02083060. L12146
 
-ov002 0x0208a3cc 156B func_ov002_0208a3cc four VMU slots: p = b+0x138, 0204f5a0(p + b[0x338]*4, 0x0500071c + i*0x20, 4) for i<4 with p += 0x80, then the 0x338 selector steps by s8 b[0x339] (0x1f -> -1, 0 -> 1). b56 152B vs retail 156: retail materialises &b[0x338] into a second register at the tail; respell found 156B variants but all still 12 slots out, and volatile spellings are not justified here. L12149
+ov002 0x0208a3cc 156B func_ov002_0208a3cc four VMU slots: b = data_ov002_02102070[0]+0x4bc4 (declared u32), for i<4 call 0204f5a0(p + b[0x338]*4, 0x0500071c + i*0x20, 4) with p = b+0x138 stepped 0x80, then b[0x339] = -1 if b[0x338]==0x1f, 1 if it is 0, and b[0x338] += (s8)b[0x339]. Reaches 156B with the u32 base and *(s8*)=-1 (mvn) but 18 slots are a p/i register tie: retail p in r6 and i in r8, b56 the other way. Declaration order, comma-for, pointer p and pad variables all keep the swap; respell's best is 3 slots. L12149
 
 ov002 0x0206ee64 164B func_ov002_0206ee64 0x8c guard, then *(u32*)(g+0x1e6c) |= 0x200, copy the selected 0x158 slot's type byte to 0x5f2, bail unless it is 0x29, and set 0x100 when the 0x3654 table byte for that index is 1. Exact 164B; retail associates the index address as (g + a0) + 0x4000 + 0xbc0 and b56 as g + (a0 + 0x4000) + 0xbc0, which reorders the whole prologue. Struct-typed slot/ctl spelling gives 168B. L12152
 
@@ -204,6 +204,10 @@ ov009 0x0204de1c 208B func_ov009_0204de1c ov009 sibling of ov005 0205519c (ident
 arm9 0x020179c8 148B func_020179c8 list/port init: 3 word stores, then retail writes word 0x20 as 0 and then does TWO bitfield passes over bits 0..7 of the same word (ldr/bic #0xff/str, then ldr/and #0xff/orr/str), so the source has an aliased plain-u32 store followed by an 8-bit bitfield write at the same address. b56 always folds them into one store (136B with the u32 spelling, 120B with a bitfield struct or a union overlay). Remaining 12B is that un-aliasable double write. L12173
 
 
+
+ov002 0x020832a4 144B func_ov002_020832a4 sprite/anim-node spawner: base = data_ov002_02102070[0], then t6c/t68/t64/t60 = *(u32*)(base+0x4000+0xf6c/0xf68/0xf64/0xf60); return a0 if a0 > 7; v = u16[t6c + (a0+0x1a)*4]; v = u16[t68 + v*4]; w = u16[t64 + v*4]; return 0208381c(t64 + v*4, t60 + w*0x14, a1, a2, 0, 0x6400000, 0, 0) - 8 args, four on the stack. Decode is complete and the candidate reaches 144B exactly (build/cand/ov2_832a4.c) but 66 slots differ: retail reuses r4 as the 0x14 multiplier and r5 as 0x6400000 after the table loads, keeps the third index in r7 and derives the first argument from the surviving index register. respell's best is 28 slots at 152B. L12182
+
+ov003 0x020c2144 160B func_ov003_020c2144 pad-state switch on a1: ip = data_ov003_020eb720[0], st = ip+0xb8dc, v = u16[st+0x3e]; a1==8 writes 0x10/0x14 alternating at ip+0x8800 (+8..+0x10), st[0x2e]=0xa, ip[0xb60c]=0xc, return 0; a1==9 calls 020101f8(v) and 02005958(1,0), return 0; otherwise return 1. Best candidate 164B vs 160 (build/cand/ov3_c2144_c.c): b56 predicates the 'return 1' as addne/movne/ldmne/bxne where retail branches to a separate epilogue, and the two return-0 paths do not share retail's single epilogue. respell 30 variants, best 34 slots. L12185
 
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.

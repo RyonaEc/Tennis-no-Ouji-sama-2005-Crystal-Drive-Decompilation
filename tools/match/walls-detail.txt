@@ -12178,3 +12178,9 @@ indexed court-state setup: p = data_ov002_02102070[0] + 0x2e4 + a0*0x158, id = q
 
 ov003 0x0205e3c0 func_ov003_0205e3c0
 two DMA clears/copies: 020245f4, then 02025c94(b+0x1b340,0x2000) + 02024498(b+0x1b340, a[0x20], 0x2000) + a[0x20]=0x2000, 02024428, 020243e0, then the same pair at b+0x1b320 with 0x20, a[0x24]=0x20, 02024314; a = data_ov003_020eb720[0], b = data_ov003_020eb724[0]. b56 CSEs the address into an extra callee-saved register (r6) and reaches 148B; retail rematerialises 'add r0, r5, =0x1b340' before each call and carries a 4-byte frame instead. Residue: the rematerialisation, not the call sequence - plain pointer and (u32)b+const spellings both CSE.
+
+ov002 0x020832a4 func_ov002_020832a4
+sprite/anim-node spawner: base = data_ov002_02102070[0], then t6c/t68/t64/t60 = *(u32*)(base+0x4000+0xf6c/0xf68/0xf64/0xf60); return a0 if a0 > 7; v = u16[t6c + (a0+0x1a)*4]; v = u16[t68 + v*4]; w = u16[t64 + v*4]; return 0208381c(t64 + v*4, t60 + w*0x14, a1, a2, 0, 0x6400000, 0, 0) - 8 args, four on the stack. Decode is complete and the candidate reaches 144B exactly (build/cand/ov2_832a4.c) but 66 slots differ: retail reuses r4 as the 0x14 multiplier and r5 as 0x6400000 after the table loads, keeps the third index in r7 and derives the first argument from the surviving index register. respell's best is 28 slots at 152B.
+
+ov003 0x020c2144 func_ov003_020c2144
+pad-state switch on a1: ip = data_ov003_020eb720[0], st = ip+0xb8dc, v = u16[st+0x3e]; a1==8 writes 0x10/0x14 alternating at ip+0x8800 (+8..+0x10), st[0x2e]=0xa, ip[0xb60c]=0xc, return 0; a1==9 calls 020101f8(v) and 02005958(1,0), return 0; otherwise return 1. Best candidate 164B vs 160 (build/cand/ov3_c2144_c.c): b56 predicates the 'return 1' as addne/movne/ldmne/bxne where retail branches to a separate epilogue, and the two return-0 paths do not share retail's single epilogue. respell 30 variants, best 34 slots.
