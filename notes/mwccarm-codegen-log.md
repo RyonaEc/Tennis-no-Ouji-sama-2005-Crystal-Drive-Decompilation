@@ -5866,3 +5866,15 @@ the entry was therefore written as `ldr r1, [pc, #0x30]` with an explicit `dcd`
 last, which reproduces retail's `ldr/bx` self-jump followed by the pool word.
 The bodies set/clear CPSR bit 0x40 (FIQ) and 0x80 (IRQ) from the argument and
 return the previous state as 1/0.
+
+The 0x02033c00 block is a hand-written asm cluster, not compiled C:
+`func_02033c58` is a CP15 c1 (SCTLR) enable stub with two entries one word
+apart (`mov r0,#1; b tail` / `mov r0,#0; b tail`) sharing a
+`mrc p15,0,r1,c1,c0,0` ... `mcr p15,0,r1,c1,c0,0` tail that returns the old bit
+0, and `func_02033c0c` is the matching pair of `mov r0,#imm; b func_02033c1c`
+tail branches into the IRQ-mask helper. Both assemble byte for byte under b56
+as `asm void` blocks, including the cross-function `b <symbol>` (which takes a
+relocation) and an in-block `L_...:` label for the shared tail - a plain label
+branch is fine, only `ldr r1,=L_local` is rejected. A neighbour,
+`func_02033c88`, uses the single-statement `asm { mrc p15, 0, r0, c7, c10, 1 };`
+form instead, so both spellings are established in this tree.
