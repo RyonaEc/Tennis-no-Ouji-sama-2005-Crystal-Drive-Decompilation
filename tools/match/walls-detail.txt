@@ -12013,3 +12013,6 @@ ov002 0x02062dbc func_ov002_02062dbc
 
 ov004 0x02050b70 func_ov004_02050b70
 152 152/152; identical instruction count and the same three-way structure (counter increment, overflow branch, %3 dispatch), but mwcc folds the counter field into ldrsh/strh [r4,#0xa4] while retail materialises the field address in r1 and reuses it (add r1,r4,#0xa4; ldrsh r0,[r1]; add r0,r0,#1; strh r0,[r1]). A s16* field-pointer local costs four bytes (156) because it needs its own register, and (*cnt)++/+= variants cost 8. Everything else - the signed %3 sequence from 0x55555556 and both dispatch arms - already matches.
+
+ov004 0x02060868 func_ov004_02060868
+156 156/156; the only difference is the order of the two stack-address computations before the call - retail does add r3,sp,#4 (arg4) then add r2,sp,#0 (arg3), mwcc the reverse. Four spellings tried: buf/buf+2, &buf[0]/&buf[2], pointer locals declared in both orders, and two Pair structs passed by member address. Everything else, including both 4-halfword global pairs and both calls, already matches.
