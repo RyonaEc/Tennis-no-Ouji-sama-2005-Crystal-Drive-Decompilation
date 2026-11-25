@@ -184,6 +184,14 @@ ov002 0x02081c60 156B func_ov002_02081c60 per-slot clamp pass over the four 0x15
 
 ov002 0x020e6b38 156B func_ov002_020e6b38 record transform: flags |= 8, mode = 0x12a, halves 0x5c and 0x60 (signed /2), 0x64 = 0xaaaa, 0x5c *= -1, then a two-sided clamp of 0x4 to +-0x10000 gated on 0x10. b56 gives 152B: retail materialises a second address register (add r3, r0, #0x60) that b56 folds into the addressing mode. Tried pointer locals, s32[] indices and /2 vs *0.5 spellings. L12143
 
+ov002 0x02082b98 152B func_ov002_02082b98 three-table chase into the 8-arg 0208381c call (t5c[idx*4] -> t58[x*4] -> t54[y*4], arg0=&t54[y], arg1=t50+z*0x14, then 7, 0x06405940, 0, 1), with a >0x1f guard. Exact 152B with the typed 0x4000-block struct; retail keeps six callee-saved registers (r7=7, r8=z) and loads f5c->f58->f54->f50 descending, b56 keeps four and loads ascending. Same family as the parked 02083060. L12146
+
+ov002 0x0208a3cc 156B func_ov002_0208a3cc four VMU slots: p = b+0x138, 0204f5a0(p + b[0x338]*4, 0x0500071c + i*0x20, 4) for i<4 with p += 0x80, then the 0x338 selector steps by s8 b[0x339] (0x1f -> -1, 0 -> 1). b56 152B vs retail 156: retail materialises &b[0x338] into a second register at the tail; respell found 156B variants but all still 12 slots out, and volatile spellings are not justified here. L12149
+
+ov002 0x0206ee64 164B func_ov002_0206ee64 0x8c guard, then *(u32*)(g+0x1e6c) |= 0x200, copy the selected 0x158 slot's type byte to 0x5f2, bail unless it is 0x29, and set 0x100 when the 0x3654 table byte for that index is 1. Exact 164B; retail associates the index address as (g + a0) + 0x4000 + 0xbc0 and b56 as g + (a0 + 0x4000) + 0xbc0, which reorders the whole prologue. Struct-typed slot/ctl spelling gives 168B. L12152
+
+ov002 0x0207fcf0 160B func_ov002_0207fcf0 threshold test used by 0207fc50: th = 020fd074[type][i] (the table is a 2D u8[][9] - that shape is what produces retail's mla into the table base then ldrb [i, base]), overridden by type 2/i==6 -> 4, type 0x1e or 0x20/i==0 -> 1, type 0x28/i in {0,1,4} -> 4, then returns v >= th signed. b56 gives 148B against 160: three fewer case-exit jumps because its case bodies fall through to the join instead of ending in b. L12155
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
