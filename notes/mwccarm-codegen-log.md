@@ -5651,3 +5651,14 @@ The matrix ports differ per load width: MTX_LOAD_4x4 is 0x04000458, but
 MTX_LOAD_4x3 (`G3i_LookAt_`) is 0x0400045c. Writing the 4x4 port for the 4x3
 load leaves a single differing pool byte and `fastmatch` still reports the same
 size, so the raw byte diff is the thing to read.
+
+`G3X_Init` (348 B) shows the other half of this family: not a computation but a
+straight-line register init. Its C is nothing more than explicit
+`*(volatile u16 *)0x04000060` / `*(volatile u32 *)0x04000600` read-modify-writes
+with the masks the SDK's inline header functions compute, in the SDK's statement
+order, plus the three calls (`func_02022704`, `func_02022654`, `func_02022454`).
+Every constant is a plain literal; the pool then comes out in first-use order
+(0x04000504, 0x04000600, 0x04000060, 0x04000010, 0xffffcffd, 0x0000cffb, ...),
+which is what makes the digest accept it. Writing the SDK's named masks as
+literals changes nothing: the mask value, not its spelling, is what reaches the
+pool.
