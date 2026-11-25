@@ -12187,3 +12187,6 @@ pad-state switch on a1: ip = data_ov003_020eb720[0], st = ip+0xb8dc, v = u16[st+
 
 ov002 0x02082c78 func_ov002_02082c78
 opponent-state push: base = data_ov002_02102070[0], node = *(u32*)(base+0x134), p = base+0x36ac, r4 = u8 0, r5 = 0; if (node) { r4 = *(u8*)(node+2) >> 1; r5 = r4; if (bit) r5 = (r4 == 0); } then 02082e2c(*(u32*)(p+0xc), r5), 02082e2c(*(u32*)(p+0x10), r5 == 0), 02083060(0, r4). The gate is a 3-instruction extract on the byte at base+0x10c: lsr r2,r1,#31; rsb r1,r2,r1,lsl #31; add r1,r2,r1,ror #31, then cmp r1,#1 - algebraically x & 1, but writing '& 1' gives and/cmp (2 instructions, 148B). Residue: the spelling that makes mwcc emit that rotate-based 1-bit extract; try a signed 1-bit bitfield read.
+
+ov002 0x02060688 func_ov002_02060688
+sound-mode select: base = data_ov002_02102070[0]; if (*(u32*)(base+0x4000+0xbc8) & 4) call 0200fc58 with *(u32*)(base + id*4 + 0xd4) when a2==0 else *(u32*)(base+0x47d0 + id*4 + 8), id = *(u8*)(base+0x106); then if (*(u8*)(base+0xbf)==0) call 020103f8 on a local {u32 v; u8 c;} filled from base+8/base+0xc; finally 020052ec((u16)a0, (u16)a1). Candidate 164B vs 168 (build/cand/ov2_60688.c): retail materialises add r1, r4, =0x47d0 unconditionally before the ands, b56 sinks it into the else arm and loses one instruction. respell 62 variants, best 30 slots at 164B.
