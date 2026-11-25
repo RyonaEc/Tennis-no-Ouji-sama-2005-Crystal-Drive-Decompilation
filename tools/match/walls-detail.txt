@@ -12016,3 +12016,12 @@ ov004 0x02050b70 func_ov004_02050b70
 
 ov004 0x02060868 func_ov004_02060868
 156 156/156; the only difference is the order of the two stack-address computations before the call - retail does add r3,sp,#4 (arg4) then add r2,sp,#0 (arg3), mwcc the reverse. Four spellings tried: buf/buf+2, &buf[0]/&buf[2], pointer locals declared in both orders, and two Pair structs passed by member address. Everything else, including both 4-halfword global pairs and both calls, already matches.
+
+ov004 0x0205a4d0 func_ov004_0205a4d0
+172 172/172; the frame, both 4-halfword global pairs, both calls and the u32 stack word all match. Residue is the same two-instruction swap as 0x02060868: retail emits add r3,sp,#0xc (arg4's address) before add r2,sp,#8 (arg3's), mwcc the reverse - and in the *second* call of this unit retail does r2 first, so it is a scheduler choice, not a convention. Six spellings tried (pair write order, &buf[i], byte-offset casts, u32 and void* parameter types).
+
+ov004 0x0204fc40 func_ov004_0204fc40
+176 164B best. Two guards (g == 0, then *g == 0) share a return-1 epilogue at the end in retail and reach it with beq; mwcc predicates both (addeq/moveq) in the straight form (164) and drops to 156 if they are merged into one || or a wrapping if/else. The bitfield clamp (clear bits 16..24, reload, or in the low byte) and the tail call to func_02018ee8 with g+0x35d4 already read correctly.
+
+ov004 0x020623e0 func_ov004_020623e0
+172 172/172, only the pair order of the two predicated stores differs: retail emits movne r0,#0 then moveq r0,#1 (and the same for the %256 arm); mwcc always emits the eq case first for every spelling tried: 'v%2 == 0', 'v%2 ? 0 : 1', '(v%2==0) ? 1 : 0', 'if (v%2 != 0) return 0; return 1;', '!(v%2)', '(u32)(v%2) == 0'. 'v%2 < 1' grows to 180.

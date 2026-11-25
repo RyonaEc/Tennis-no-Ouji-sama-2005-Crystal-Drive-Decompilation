@@ -6441,3 +6441,39 @@ materialised, and `x = x + 1` is not equivalent to `x++` in this compiler.
 
 `func_ov004_02050b70` (152 B) is the same field with the same `++` need, and is
 now at 156 B with only the reload register different - see its wall.
+
+## 2026-11-25 - a switch's default 0 belongs after the call, not at the declaration
+
+`func_ov002_02064b04` (108 B) is a `switch` on a byte table entry that returns
+0 in the default arm, with a call in front of the switch. Two spellings of the
+same logic differ only in register pressure:
+
+```c
+    s32 ret = 0;                    /* 104 B, push {r4,r5,r6,lr} */
+    r = func(0x100);
+    switch (p[0]) { case 2: ret = 1; ... }
+```
+
+vs.
+
+```c
+    s32 ret;
+    r = func(0x100);
+    ret = 0;                        /* 108 B, push {r4,r5,lr} - retail */
+    switch (p[0]) { case 2: ret = 1; ... }
+```
+
+Initialising at the declaration makes the flag live across the call, so it
+needs a callee-saved register and costs a fourth push. Assigning the default
+after the call lets it sit in r2 and the prologue shrink to retail's
+`push {r4, r5, lr}`. The same unit also needed the derived pointer
+(`data[0] + 0x1744 + a0 * 0x38`) built before the call and the callee typed
+`s32`, not `u32`, to get `cmp`/`movlt` instead of `movlo`.
+
+## 2026-11-25 - unreachable class: predicated-store pair order for `x % n == 0`
+
+`func_ov004_020623e0` reaches 172/172 with every other instruction equal, but
+retail emits `movne r0, #0` then `moveq r0, #1` and mwcc always emits the `eq`
+case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
+`if (x % 2 != 0) return 0; return 1;`, `!(x % 2)` and `(u32)(x % 2) == 0`.
+`x % 2 < 1` grows to 180 B. Treat the pair order on a `%` result as fixed.

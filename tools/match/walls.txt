@@ -80,7 +80,6 @@ arm9 0x02032ecc 108B func_02032ecc 108B: builds a five-word descriptor on the st
 
 ov004 0x0205a7b4 104B func_ov004_0205a7b4 104B: 104/104 on the first spelling, only the zero constant's home differs - retail keeps 0 in r0 and the loaded fields in r1, mwcc the other way round (stable across u32-index, struct-field and named-zero variants). Reset + conditional release of the fixed 0x13a8 block. L11984
 
-ov002 0x02059000 112B func_ov002_02059000 112B: 108B best. Per-slot countdown at p = base + 0x2e4 + idx*0x158, decrement [p+0x12e], then call func_ov002_0206e140() when *p == 0xd. Retail keeps the block in r3 and the 0x12e offset in r1 (add r2,r3,r1); the two-pointer spelling puts the offset in r2 and lands 4 B short L11987
 
 arm9 0x02017db8 200B func_02017db8 200B: 200/200 on the sixth spelling (best-fit free-list scan with the u16 flag extract). Only placement differs: retail materialises base = a0+0x24 in r0 first (add / ldrh [r0,#0x12] / ldr [r0]) then passes that same r0 to func_02017e80, while mwcc folds the offset into both header loads and puts the add just before the call. Base-in-a-local, incremented-parameter and reordered-flag variants all keep the fold. L11990
 
@@ -101,6 +100,12 @@ ov002 0x02062dbc 124B func_ov002_02062dbc 124 124/124; the whole diff is registe
 ov004 0x02050b70 152B func_ov004_02050b70 152 152/152; identical instruction count and the same three-way structure (counter increment, overflow branch, %3 dispatch), but mwcc folds the counter field into ldrsh/strh [r4,#0xa4] while retail materialises the field address in r1 and reuses it (add r1,r4,#0xa4; ldrsh r0,[r1]; add r0,r0,#1; strh r0,[r1]). A s16* field-pointer local costs four bytes (156) because it needs its own register, and (*cnt)++/+= variants cost 8. Everything else - the signed %3 sequence from 0x55555556 and both dispatch arms - already matches. L12014
 
 ov004 0x02060868 156B func_ov004_02060868 156 156/156; the only difference is the order of the two stack-address computations before the call - retail does add r3,sp,#4 (arg4) then add r2,sp,#0 (arg3), mwcc the reverse. Four spellings tried: buf/buf+2, &buf[0]/&buf[2], pointer locals declared in both orders, and two Pair structs passed by member address. Everything else, including both 4-halfword global pairs and both calls, already matches. L12017
+
+ov004 0x0205a4d0 172B func_ov004_0205a4d0 172 172/172; the frame, both 4-halfword global pairs, both calls and the u32 stack word all match. Residue is the same two-instruction swap as 0x02060868: retail emits add r3,sp,#0xc (arg4's address) before add r2,sp,#8 (arg3's), mwcc the reverse - and in the *second* call of this unit retail does r2 first, so it is a scheduler choice, not a convention. Six spellings tried (pair write order, &buf[i], byte-offset casts, u32 and void* parameter types). L12020
+
+ov004 0x0204fc40 176B func_ov004_0204fc40 176 164B best. Two guards (g == 0, then *g == 0) share a return-1 epilogue at the end in retail and reach it with beq; mwcc predicates both (addeq/moveq) in the straight form (164) and drops to 156 if they are merged into one || or a wrapping if/else. The bitfield clamp (clear bits 16..24, reload, or in the low byte) and the tail call to func_02018ee8 with g+0x35d4 already read correctly. L12023
+
+ov004 0x020623e0 172B func_ov004_020623e0 172 172/172, only the pair order of the two predicated stores differs: retail emits movne r0,#0 then moveq r0,#1 (and the same for the %256 arm); mwcc always emits the eq case first for every spelling tried: 'v%2 == 0', 'v%2 ? 0 : 1', '(v%2==0) ? 1 : 0', 'if (v%2 != 0) return 0; return 1;', '!(v%2)', '(u32)(v%2) == 0'. 'v%2 < 1' grows to 180. L12026
 
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
@@ -282,7 +287,6 @@ ov002 0x020617d0 128B func_ov002_020617d0 -- finds the two indices i in 0..3 whe
 ov002 0x020630f4 116B func_ov002_020630f4 116B: dead ldr of func_02005418 and discarded ldrh of 0x04000208 prec... L2423
 ov002 0x02063874 128B func_ov002_02063874 (128B): sibling of 0x020636b4, but retail re-materialises `add r1, r4... L2911
 ov002 0x02063dc0 152B func_ov002_02063dc0 (152B): ov002 switch/membership test. The switch part matches byte-fo... L3115
-ov002 0x02064b04 108B func_ov002_02064b04 -- selects a state predicate from `*(u8 *)(base + 0x1744 + a0 *... L7769
 ov002 0x02065ffc 132B func_ov002_02065ffc -- returns 1 unless bit 0x100000 of `b + 0x24` is set, then 1 ag... L7103
 ov002 0x02068c78 64B func_ov002_02068c78 register-shift cascade: retail base in ip, record in r2, target in r1... L205
 ov002 0x02068e2c 276B func_ov002_02068e2c ` (276 B, 9-slice sine-pair writer). Decoded: base + L11630
