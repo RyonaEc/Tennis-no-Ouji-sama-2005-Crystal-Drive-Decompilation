@@ -6418,3 +6418,26 @@ Unrolling by hand gave an immediate `MATCH`.
 Rule of thumb: an identical-body repeat with *different immediate arguments* and
 no loop branch in retail was unrolled in the source; do not "improve" it back
 into a loop.
+
+## 2026-11-25 - halfword RMW: x++ materialises the address, x = x + 1 does not
+
+`func_ov004_020510a0` (168 B) increments two `s16` fields of the object and
+dispatches on a mode halfword. Written as `*(s16 *)(p + 0xa2) = *(s16 *)(p + 0xa2) + 1;`
+the unit compiles to 160 bytes: mwcc folds the field into the load and store
+(`ldrsh r1, [r4, #0xa2]` ... `strh r1, [r4, #0xa2]`). Retail has an extra
+instruction there - `add r2, r4, #0xa2` once, then `ldrsh r1, [r2]` and
+`strh r1, [r2]` - eight bytes of address materialisation per field.
+
+Writing the increment with the postfix operator instead:
+
+    (*(s16 *)(p + 0xa2))++;
+    (*(s16 *)(p + 0xa6))++;
+
+reproduces retail exactly, both fields, and the unit matched at 168 bytes. A
+named `s16 *` local costs more (180 B) because it needs its own register; a
+`s32` local or a cast leaves the extra instruction in place. So for a
+halfword read-modify-write the *operator* decides whether the address is
+materialised, and `x = x + 1` is not equivalent to `x++` in this compiler.
+
+`func_ov004_02050b70` (152 B) is the same field with the same `++` need, and is
+now at 156 B with only the reload register different - see its wall.
