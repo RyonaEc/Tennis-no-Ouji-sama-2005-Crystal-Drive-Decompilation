@@ -6066,3 +6066,17 @@ but neither `busy = (p->f0c & 1) ? 1 : 0; if (busy)` nor the in-condition form
 keeps it - mwcc folds both back to `tst`/branch and the unit lands 16 B short at
 156 B. Something in the original shape gave the flag a second consumer that the
 retail listing does not obviously show yet.
+
+## 2026-11-25 - the empty cases hold the jump table together
+
+`func_020150d8` switches on `func_0201745c()` with only three live arms
+(`case 1`, `case 2`, `case 7`). Written that way - three cases and a default
+tail - mwcc emits a compare chain and the unit comes out 16 B short. The retail
+body is a nine-entry `addls pc, pc, r0, lsl #2` table with six arms falling
+straight to the tail, which needs the no-op cases spelled out:
+
+```c
+    case 0: case 3: case 4: case 5: case 6: break;
+```
+
+With the empty labels listed, the table is emitted and the unit matches.
