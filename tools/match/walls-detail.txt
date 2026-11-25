@@ -12109,3 +12109,6 @@ ov004 0x0204cc48 func_ov004_0204cc48
 
 ov002 0x02083060 func_ov002_02083060
 148 Best 148B, exact size and instruction-for-instruction the same sequence (four pointer loads off data_ov002_02102070[0]+0x4000 at 0xf9c/0xf98/0xf94/0xf90, the a0==1/+8 else a1==0/+4 adjustment, the double u16 indirection t2[hh*4] then t3[v*4], the mla w*0x14+t4, and the 8-argument 0208381c call with 3, 0x06402f40, 0, 0 on the stack). Residue is purely register allocation: retail keeps the pointers in r3/r2/r6/r5 (push {r4,r5,r6,lr}) and puts the constants in lr/ip; mwcc keeps them in r2/ip/r4/lr (push {r4,lr}). Tried u32 pointer locals and pre-computing the two call arguments into locals.
+
+ov002 0x0204fc18 func_ov002_0204fc18
+exact 408B; only the -4/8 constant pair assignment differs: retail mvn r2,#3 ... ldr r1,[sp,#0x58] ... mov r3,#8 (a4 load between the two constants, -4 in r2, 8 in r3) while b56 puts -4 in r3 and 8 in r2 after both; respelled 8 ways (0xfffc, ~3, cast, hi/lo locals, group order before/between/after the a4 stores) - best stays 408B base with 31 slots (24 are bl relocs)
