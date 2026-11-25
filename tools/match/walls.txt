@@ -75,6 +75,10 @@ arm9 0x02027784 228B func_02027784 228B best 2 slots: only the pool registers di
 
 arm9 0x02013eb0 240B func_02013eb0 240B best 236B: base must not be kept in a callee-saved register across the func_02014670 call (retail re-loads the pool at 0x3c and keeps base in r2), the byte scan strength-reduces to a walking pointer with [r3,#0x24], and the count/slot append needs the old-count form; struct-with-count, inline-f14 and late-base variants give 224/256 instead L11975
 
+arm9 0x0203a2e0 92B func_0203a2e0 96B: guard on the word func_0203b6d0() returns, set bit 0 and return 0x7fffffff/0x80000000 by the sign of the untouched first arg. Retail keeps the arg alive across the call with push {r0,r1,r3,ip,lr} / pop and materialises the clamp as mvn r0,r0,asr #31 + add #0x80000000; the ternary spelling compiles to 76B L11978
+
+arm9 0x02032ecc 108B func_02032ecc 108B: builds a five-word descriptor on the stack (0/-1/0/func_02032db4) and calls func_02030b1c with the first vararg and a va pointer. Entry is push {r0,r1,r2,r3}, i.e. mwcc's variadic prologue, so the unit needs a real varargs source and the exact descriptor offsets L11981
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
