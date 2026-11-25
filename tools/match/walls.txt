@@ -137,6 +137,8 @@ ov002 0x020d5328 156B func_ov002_020d5328 156 Best 148B (build/cand/best_ov002_0
 
 ov002 0x0207064c 148B func_ov002_0207064c 148 Best 148B (build/cand/best_ov002_0207064c.c). Whole body right - table lookup base+0x274+kind*0x1c, func_ov002_02077974(func_ov002_020701a8, 8, 1, 0, 0), then the +2 flag, p[5]=a0, p[7]=t[1] and a pointer q = p+0x10 carrying t[4] (u16) and a1 (u32). Two things must both hold and each spelling gets one: computing q before the null check gives the right temp register (r1 for the flag load, r2 for q) but hoists 'add r2, r0, #0x10' above the popeq epilogue; computing q inside the block keeps the add where retail has it but swaps the temp to r2 and q to r1. Tried q declared first/last/mid, a named fl temp for '|= 2', and q as a block-scoped local. L12071
 
+ov002 0x020c2b18 144B func_ov002_020c2b18 144 Best 144B (build/cand/best_ov002_020c2b18.c). First two interpolations now match exactly - keeping lo/hi in locals (lo in r6 across the bl) reproduces retail's ldr r6,[r5,#0x90] / add r0,r6,r0 and the second pair's reload. Only the third block differs: retail re-reads the raw s16 at 0x66 into r3 ('ldrsh r3,[r5,#0x66]') and uses it twice, while n (clamp(cur,0x18)+m) is still live in r4; any source that re-reads the field needs a second variable and that one extra local permutes e/n/lo across r4/r5/r6 (seen with s32 c at top, block-scoped s16 c, c declared first). Without the reload the unit is 140B and correct everywhere else (0x020c2b18_b.c). Also tried the field read inline twice (CSE'd) and reusing n. respell: 54 variants, all 27 slots. L12074
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
