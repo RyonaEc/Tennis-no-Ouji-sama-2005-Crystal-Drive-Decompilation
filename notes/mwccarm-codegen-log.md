@@ -5662,3 +5662,23 @@ Every constant is a plain literal; the pool then comes out in first-use order
 which is what makes the digest accept it. Writing the SDK's named masks as
 literals changes nothing: the mask value, not its spelling, is what reaches the
 pool.
+
+The GX VRAM-load worker at 0x02024498 (348 B) is transcribed in full — it is
+the SDK's `GX_LoadTex` shape reading its four globals directly, with the
+copy helper chosen per call by `*(u32 *)0x02042370 == 0xffffffff` (CPU
+`func_020269ec` otherwise `func_020268e0`/`func_02026738`, the sync and async
+DMA wrappers). Two facts came out of it.
+
+Those globals must **not** be `volatile`. With `volatile` mwcc reloads every
+one of them at every use and the function grows to 376 bytes; without it the
+compiler keeps `sTexLCDCBlk2` in `r5` and `sSzTexBlk1` in `r4` across the whole
+body and merely reloads `GXi_DmaId` after each call, which is exactly retail's
+allocation and lands on 348 bytes.
+
+What remains is a single register-naming tie in the second test: retail puts
+the address of `sSzTexBlk1` in `r2` and the sum `destSlotAddr + szByte` in
+`r3`; mwcc always produces the reverse. Seven spellings (raw address operand,
+a local `szBlk1`, a local `end`, a pointer local, the swapped comparison, a
+hoisted `blk2` local, and the symbol names instead of absolute addresses) all
+give 348 bytes with the same swap, so it is parked at 0x02024498 rather than
+committed.

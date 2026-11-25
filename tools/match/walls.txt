@@ -31,6 +31,8 @@ arm9 0x0202a07c 288B func_0202a07c FS_EndOverlay: body is known and complete, 30
 
 arm9 0x02022e28 496B func_02022e28 G3i_PerspectiveW_: complete transcription at 496/496 B, byte-identical except sb/sl swapped for the second divider block's base pointer and its 0x1000 constant (ldr sb vs ldr sl, mov sl/#0x1000 vs mov sb). Best candidate in build/cand/persp.c; 6 spellings of the div block tried. L11909
 
+arm9 0x02024498 348B func_02024498 VRAM block copy: full 348B body from the SDK's GX_LoadTex shape reproduces at 348B with one residue - in the second test (`destSlotAddr + szByte < sSzTexBlk1`) retail keeps the global's address in r2 and the sum in r3, mwcc always the reverse. Tied spellings: raw address operand, local szBlk1, local end, pointer local, swapped comparison, blk2 hoisted to a local, symbol names data_02048cc8 - all 348B, same swap. Best candidate build/cand/vramload_02024498.c L11912
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
