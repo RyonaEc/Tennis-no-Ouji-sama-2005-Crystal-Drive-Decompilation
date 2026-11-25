@@ -4475,3 +4475,15 @@ src/arm9/func_02022738.c:
 src/arm9/func_0202424c.c:
     complete
     .text       start:0x0202424c end:0x02024314
+
+src/arm9/func_02022b2c.c:
+    complete
+    .text       start:0x02022b2c end:0x02022e28
+
+src/arm9/func_02023018.c:
+    complete
+    .text       start:0x02023018 end:0x0202330c
+
+src/arm9/func_02022994.c:
+    complete
+    .text       start:0x02022994 end:0x02022b2c

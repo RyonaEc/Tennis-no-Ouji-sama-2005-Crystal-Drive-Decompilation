@@ -5626,3 +5626,28 @@ constant hoisted before the pointer, declaration order swapped) all give the sam
 with a `mov` before the branch; naming the destination as a variable to force the
 hoist folds the whole thing and drops the object to 80 bytes. Best recorded
 candidate is 92.
+
+The same g3_util.c family then gave three straight matches once two fresh
+facts were in hand.
+
+A 64-bit division written as `x / FX32_ONE` does not link: mwcc emits a call
+to `_ll_sdiv`, which this ROM does not contain, and the link stops with
+`Undefined : "_ll_sdiv"`. Retail instead calls `func_0203af10` (the 0x1b0-byte
+64/32 divide helper) with the divisor in `r2:r3` = `(0x1000, 0)`. Writing the
+call out — `inv = func_0203af10(inv * scaleW, FX32_ONE)` — produces retail's
+exact sequence. Note that `var3.py` reports MATCH for the broken spelling,
+because the differing bytes are the `bl` displacement that the reloc mask
+hides; only `reg.py`'s link step catches it, which is the standing argument for
+never counting a var3 MATCH on its own.
+
+`FX_Mul32x64c` argument order is not cosmetic when one operand is a variable:
+`G3i_FrustumW_` needs `FX_Mul32x64c(inv1, dblN)`, not the source's
+`FX_Mul32x64c(dblN, inv1)`. The wrong order still compiles to the same values
+but lays the operands into `umull`/`mla` the other way round, which grows the
+function from 756 to 780 bytes. When `umull`/`smull` register order disagrees
+with retail, swap the commutative arguments before touching anything else.
+
+The matrix ports differ per load width: MTX_LOAD_4x4 is 0x04000458, but
+MTX_LOAD_4x3 (`G3i_LookAt_`) is 0x0400045c. Writing the 4x4 port for the 4x3
+load leaves a single differing pool byte and `fastmatch` still reports the same
+size, so the raw byte diff is the thing to read.
