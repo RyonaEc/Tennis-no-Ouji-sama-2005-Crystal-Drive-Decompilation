@@ -2100,3 +2100,7 @@ src/ov004/func_ov004_02054878.c:
 src/ov004/func_ov004_02050af0.c:
     complete
     .text       start:0x02050af0 end:0x02050b70
+
+src/ov004/func_ov004_02050c08.c:
+    complete
+    .text       start:0x02050c08 end:0x02050c98

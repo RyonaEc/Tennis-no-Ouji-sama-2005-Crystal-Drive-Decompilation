@@ -98,6 +98,8 @@ ov002 0x02082f38 120B func_ov002_02082f38 120 120/120 on the struct-element spel
 
 ov002 0x02062dbc 124B func_ov002_02062dbc 124 124/124; the whole diff is register naming for the state pointer - retail keeps it in r2 (ldr r2,[pc]; ldr r2,[r2]; ldr lr,[r2,#8]; add ip,r2,#0xc) and mwcc keeps it in lr with the 0x3039 pool constant in r2 (ldr lr,[r2]; ldr r2,[pc]; ldr r3,[lr,#8]). Parked after u8*/u32*-typed state, declare-then-assign, direct g[0xc] indexing and pointer-local spellings. Note the u64-return usage: (u8)(func_0203b2cc(v, a0) >> 32) is what produces 'and r0, r1, #0xff' after the call. L12011
 
+ov004 0x02050b70 152B func_ov004_02050b70 152 152/152; identical instruction count and the same three-way structure (counter increment, overflow branch, %3 dispatch), but mwcc folds the counter field into ldrsh/strh [r4,#0xa4] while retail materialises the field address in r1 and reuses it (add r1,r4,#0xa4; ldrsh r0,[r1]; add r0,r0,#1; strh r0,[r1]). A s16* field-pointer local costs four bytes (156) because it needs its own register, and (*cnt)++/+= variants cost 8. Everything else - the signed %3 sequence from 0x55555556 and both dispatch arms - already matches. L12014
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
