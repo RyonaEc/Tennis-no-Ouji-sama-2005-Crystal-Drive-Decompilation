@@ -5586,3 +5586,43 @@ the same whatever order the labels are written in.
 (geometry-busy spin, `DISP3DCNT |= 0x8000`, two `DISPCNT` bits, one call, three
 VRAM register writes) that matched first try with plain `volatile` accesses at the
 literal addresses.
+
+## 2026-11-24 - the hardware divider sequence, and two parks
+
+`G3i_PerspectiveW_` (496 B) is the first unit transcribed in full and still parked:
+the sizes match exactly and every instruction agrees except two lines. The divider
+is driven by writing a base pointer plus offset, not by four absolute addresses:
+
+    volatile u32 *divcnt = (volatile u32 *)0x04000290;   /* cnt, numer */
+    divcnt[0] = 0;
+    divcnt[1] = value;
+    volatile u32 *divnum = (volatile u32 *)0x04000298;   /* denom lo, hi */
+    divnum[0] = denom;
+    divnum[1] = 0;
+
+Four separate `*(volatile u32 *)0x0400029x = ...` statements instead give four
+literal-pool words and 24 bytes too many, because each absolute address is
+materialised separately.
+
+The matrix register is a fixed write-only port, so the SDK's repeated `*p = ...`
+must stay `*p = ...` (no `p++`): post-increment turns nine identical `str rX,[r4]`
+into nine offsets off `r4`, changing every store. Declaring `s32 *p = 0;` also
+costs a stray `mov r4, #0`; leave it uninitialised.
+
+The FX helpers are worth writing with their rounding exactly right, since they
+determine half the instruction count:
+
+    FX_Mul(a, b)        = (s32)(((s64)(a) * (b) + 0x800) >> 12)
+    FX_Mul32x64c(a, b)  = (s32)(((s64)(a) * (b) + 0x80000000LL) >> 32)
+
+What is left is a register-allocation tie: retail holds the second block's base
+pointer in `sb` and the `0x1000` divisor in `sl`, mwcc prefers the opposite. Six
+spellings of that block (two scopes, a shared pointer variable reassigned, the
+constant hoisted before the pointer, declaration order swapped) all give the same
+496 bytes and the same swap.
+
+`GX_LoadOBJ` (96 B) is parked for a different reason: the immediate form of
+`0x06600000 + bank` matches everything except that retail hoists the base into `ip`
+with a `mov` before the branch; naming the destination as a variable to force the
+hoist folds the whole thing and drops the object to 80 bytes. Best recorded
+candidate is 92.

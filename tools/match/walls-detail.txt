@@ -11905,3 +11905,6 @@ ov008 0x0204e584 func_ov008_0204e584
 
 arm9 0x0202a07c func_0202a07c
 FS_EndOverlay: body is known and complete, 308 against 288; mwcc spills data_e to the stack where retail keeps it in r4 and reloads the chain address per iteration instead of hoisting it in fp. Register-allocation tie, two spellings tried.
+
+arm9 0x02022e28 func_02022e28
+G3i_PerspectiveW_: complete transcription at 496/496 B, byte-identical except sb/sl swapped for the second divider block's base pointer and its 0x1000 constant (ldr sb vs ldr sl, mov sl/#0x1000 vs mov sb). Best candidate in build/cand/persp.c; 6 spellings of the div block tried.
