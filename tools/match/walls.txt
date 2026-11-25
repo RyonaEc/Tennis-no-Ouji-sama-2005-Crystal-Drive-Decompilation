@@ -83,6 +83,8 @@ ov004 0x0205a7b4 104B func_ov004_0205a7b4 104B: 104/104 on the first spelling, o
 
 ov002 0x02059000 112B func_ov002_02059000 112B: 108B best. Per-slot countdown at p = base + 0x2e4 + idx*0x158, decrement [p+0x12e], then call func_ov002_0206e140() when *p == 0xd. Retail keeps the block in r3 and the 0x12e offset in r1 (add r2,r3,r1); the two-pointer spelling puts the offset in r2 and lands 4 B short L11987
 
+arm9 0x02017db8 200B func_02017db8 200B: 200/200 on the sixth spelling (best-fit free-list scan with the u16 flag extract). Only placement differs: retail materialises base = a0+0x24 in r0 first (add / ldrh [r0,#0x12] / ldr [r0]) then passes that same r0 to func_02017e80, while mwcc folds the offset into both header loads and puts the add just before the call. Base-in-a-local, incremented-parameter and reordered-flag variants all keep the fold. L11990
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

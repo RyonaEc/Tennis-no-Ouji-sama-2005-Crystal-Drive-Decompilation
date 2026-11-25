@@ -6116,3 +6116,15 @@ source made two separate calls instead of a shared tail. mwcc does not merge
 them, so a `goto` to a single call site shrinks the function and loses the
 match. When the retail body has two identical `bl` sites at different exits,
 leave them duplicated.
+
+## 2026-11-25 - folded header loads
+
+`func_02017db8` (200 B) reproduces retail instruction for instruction except for
+how the allocator header is reached. Retail materialises `base = a0 + 0x24` into
+r0 once (`add r0, r0, #0x24`, then `ldrh r4, [r0, #0x12]`, `ldr r5, [r0]`) and
+hands that same r0 to the tail call. Writing `a0 += 0x24` and reading through
+it makes mwcc fold the offset into both loads (`ldrh r4, [r0, #0x36]`,
+`ldr r5, [r0, #0x24]`) and schedule the `add` just before the call instead. Both
+forms are 200 bytes, so the size check passes and the diff is placement only;
+keeping the base in a local, incrementing the parameter and reordering the flag
+test all leave the fold in place.
