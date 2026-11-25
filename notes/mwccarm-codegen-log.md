@@ -5785,3 +5785,12 @@ runtime signed divmod helper, but this project only exposes that address as
 `func_0203b0c0`, so the object will not link. Declaring a 2-word struct return
 to force the call changes the unit from 176 B to 196 B (hidden return pointer),
 so the unit stays parked until 0x0203b0c0 also carries the `_s32_div_f` name.
+
+`OS_RescheduleThread` (0x02025024, 200 B) confirms the rematerialisation rule for
+a *different* reason than usual: with `OSThreadInfo *info = &OSi_ThreadInfo;`
+held in `r4`, writing `info->currentThread = nextThread` reuses `r4`
+(`str r5, [r4, #8]`) and the unit comes out 4 bytes short. Retail reloads the
+base literal into a fresh register first (`ldr r1, =0x02048d3c; str r5, [r1, #8]`),
+which is what you get when that store goes through the global by name
+(`data_02048d3c.currentThread = nextThread`, i.e. an inlined
+`OS_SetCurrentThread`) instead of through the local pointer.
