@@ -6170,3 +6170,17 @@ bare `bl` because the argument is whatever the previous call left in r0. The
 callee's own prologue never reads an argument either, so the honest signature is
 `void func_0201746c(void);` - and with that the unit is byte-exact. When a call
 site has no argument setup at all, do not invent one.
+
+## 2026-11-25 - write the smaller arm first
+
+`func_020291f4` (360 B) opens with a lock, tests a handle flag, registers a
+callback and either walks a list or unlocks and returns early. The first
+spelling was one instruction long: `if (flag != 0) { list walk } else { unlock
+and dispatch }` puts the list walk first, so reaching `func_0202935c` at the end
+needs an extra `b` over the else block (364 bytes). Retail has no such branch:
+its `bne` at the top jumps *forward* to the list walk, which means the list walk
+is the `else` arm and the unlock path is the fall-through. Writing `if (flag ==
+0) { unlock and dispatch } else { list walk }` lets the else arm fall straight
+into the tail call and matches. When retail's conditional at the top jumps
+forward over a whole block, that block is the else arm, no matter which one
+reads better.
