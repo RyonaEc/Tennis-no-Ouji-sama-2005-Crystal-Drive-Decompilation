@@ -4,6 +4,8 @@
    the SDK as a hand-written arm asm block. The SET_PROTECTION_A/B macros expand
    to the literal values below. Body is retail byte for byte; 1.2/b56 assembles
    it without a per-file override. */
+extern u8 data_027c0000;
+
 asm void func_02004a14(void)
 {
         mrc     p15, 0, r0, c1, c0, 0
@@ -24,7 +26,7 @@ asm void func_02004a14(void)
         mcr     p15, 0, r0, c6, c2, 0
         ldr     r0, =0x08000035
         mcr     p15, 0, r0, c6, c3, 0
-        ldr     r0, =0x027c0000
+        ldr     r0, =data_027c0000
         orr     r0, r0, #0x1a
         orr     r0, r0, #1
         mcr     p15, 0, r0, c6, c4, 0
@@ -37,7 +39,7 @@ asm void func_02004a14(void)
 
         mov     r0, #0x20
         mcr     p15, 0, r0, c9, c1, 1
-        ldr     r0, =0x027c0000
+        ldr     r0, =data_027c0000
         orr     r0, r0, #0xa
         mcr     p15, 0, r0, c9, c1, 0
 
