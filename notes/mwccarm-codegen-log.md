@@ -5837,3 +5837,11 @@ at +0xc/+0x10/+0x14. The request constants are `CARD_REQ_PROGRAM_BACKUP` 8 with
 `CARD_RETRY_COUNT_MAX` 10 followed by `CARD_REQ_VERIFY_BACKUP` 9 with retry 1,
 and the `do { } while (p->len > 0)` shape is what puts the `cmp r0, #0` /
 `bne` back-edge at the bottom of the loop rather than a guard at the top.
+
+`PMi_CommonCallback` (0x0202c1bc, 236 B) is a plain transcription of the SDK
+dispatcher once the PM globals are named: `PMi_RegisterBuffer` at 0x0204acdc is
+an array of `{ u16 flag; u16 pad; u16 *buffer; }` (stride 8, which is why the
+flag store is `strh` at +0 and the buffer load is `ldr` at +4), the sync and
+sleep-end flags are 32-bit words at 0x0204aca4/0x0204aca8, and `PMi_Work.work`
+sits at +0xc of 0x0204acb8. The command field is `(u16)((data & 0x7f00) >> 8)`
+and the result is `(u16)(data & 0xff)`.
