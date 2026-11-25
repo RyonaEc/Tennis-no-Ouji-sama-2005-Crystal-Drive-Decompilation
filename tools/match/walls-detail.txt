@@ -12091,3 +12091,12 @@ ov002 0x02099d50 func_ov002_02099d50
 
 ov002 0x020dd680 func_ov002_020dd680
 208 Best 212B, one instruction over. Retail keeps the zero constant in r0 from entry (mov r0,#0 before the base load) and shares it between the early return and the e+0x66/e+0xac/e+0x9c stores; mwcc materialises it twice (moveq r0,#0 plus mov r1,#0) and also folds the movlo for +0x80000 away. s32 ret = 0 with return ret / stores of ret reduces it to 212B but still double-materialises. Tried a plain '= 0' form and the ret form.
+
+ov002 0x020b8144 func_ov002_020b8144
+244 Best 244B, exact size; only the stride exchange differs (retail 'mul r3, r5, r0' with base in r2, mwcc the reverse). Same shape as 020f466c: base is used exactly twice (base+0x2e4+off and base+off+0x2e6), while the sibling 020cd938 matched once base also fed a base+0x1824 pointer. Tried a shared 'p = base + off', an 'off' local, respell (76 variants, 53 uncompilable, best still 11 slots).
+
+ov002 0x020c814c func_ov002_020c814c
+260 Best 260B, exact size. Needs the base+0x80/0x84/0x88 writes spelled directly off base (not a separate g pointer) and the negation block as '*= -1' so mwcc emits mvn/mul rather than rsb; that alone brought it from 268B to 260B and dropped the extra callee-saved register. Residue is base/v swapped: retail base r5, v r7; mwcc base r7, v r5. Tried v declared before e and after ret.
+
+ov002 0x020c4a3c func_ov002_020c4a3c
+240 Best 240B, exact size; only base/e swapped (retail base r6, e r5). Needs '*(u16*)(e+0x8e) = (u16)h;' with h = *(u16*)(base+0x1824+0xaa) + 0xa to get retail's lsl/lsr #0x10 pair, and the table entry g + h*0x14 + 4 with g = base+0x1934. Tail: kind 0x2e, state 3, then 020759d4(0x1d, 1, a0).
