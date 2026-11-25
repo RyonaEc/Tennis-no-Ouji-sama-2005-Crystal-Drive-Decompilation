@@ -6052,3 +6052,17 @@ callee-saved register and leaves the unit 4 B long.
 `ldrh / and #0xf000 / lsl #4 / lsr #16`. Writing `(v & 0xf000) >> 12` gives
 `asr #0xc`; the `lsl`/`lsr` pair needs the shift expressed on a `u32` copy of the
 masked value, `(u32)(v & 0xf000) << 4` then `>> 16`.
+
+## 2026-11-25 - `(x & n) ? 1 : 0` is the source of `ands / movne / moveq`
+
+`func_02028d00` (matched) writes `suspended = (*(volatile u32 *)(p + 0x10) & 8) ? 1 : 0;`
+and the compiler answers with `ands r0, r1, #8 / movne r0, #1 / moveq r0, #0`. That
+ternary, not `!= 0`, is what produces the 0/1 materialisation retail shows in the
+lock helpers; `!= 0` in a condition always folds to `ands` + branch.
+
+The conversion only survives while the value has a second use. `func_02029838`
+(parked) materialises the same flag twice and compares each result against zero,
+but neither `busy = (p->f0c & 1) ? 1 : 0; if (busy)` nor the in-condition form
+keeps it - mwcc folds both back to `tst`/branch and the unit lands 16 B short at
+156 B. Something in the original shape gave the flag a second consumer that the
+retail listing does not obviously show yet.
