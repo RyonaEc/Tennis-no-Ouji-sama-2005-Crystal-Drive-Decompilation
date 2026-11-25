@@ -185,3 +185,11 @@ src/ov008/func_ov008_0204e51c.c:
 src/ov008/func_ov008_0204f0a4.c:
     complete
     .text       start:0x0204f0a4 end:0x0204f144
+
+src/ov008/func_ov008_0204c9b8.c:
+    complete
+    .text       start:0x0204c9b8 end:0x0204ca78
+
+src/ov008/func_ov008_0204c8dc.c:
+    complete
+    .text       start:0x0204c8dc end:0x0204c9ac
