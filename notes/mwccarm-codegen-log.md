@@ -5828,3 +5828,12 @@ copy. Its parent/child branches both do `dsInfo->currentSeqNum =
 dsInfo->seqNum[dsInfo->readIndex]` before advancing `readIndex`, and the child's
 transmit buffer is `((u8*)&dsInfo->ds[sendIndex]) + 32`, thirty-two bytes into
 the dataset, which is why that offset must not be folded into the struct.
+
+`CARDi_ProgramAndVerifyBackupSyncCore` (0x0202d300, 240 B) is the first card
+routine to come off the wall list. The CARDiCommon layout that matters is
+`cmd` +0, `src` +0x18, `dst` +0x1c, `len` +0x20 and a 0x100-byte
+`backup_cache_page_buf` at +0xe0, with the command record's `src`/`dst`/`len`
+at +0xc/+0x10/+0x14. The request constants are `CARD_REQ_PROGRAM_BACKUP` 8 with
+`CARD_RETRY_COUNT_MAX` 10 followed by `CARD_REQ_VERIFY_BACKUP` 9 with retry 1,
+and the `do { } while (p->len > 0)` shape is what puts the `cmp r0, #0` /
+`bne` back-edge at the bottom of the loop rather than a guard at the top.

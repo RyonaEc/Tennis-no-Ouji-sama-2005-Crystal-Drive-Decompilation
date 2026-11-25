@@ -85,7 +85,6 @@ arm9 0x0202c430 24B func_0202c430 var3 matches, ROM digest rejects: best is 3 sl
 arm9 0x0202cc90 92B func_0202cc90 -- spin-wait wrapper: `g = data_0204aec0; s = func_02026350(); while L10646
 arm9 0x0202cfa4 84B func_0202cfa4 -- 92B. Main-thread loop: `s = func_02026350(); while (!(*(u32*)(... L8977
 arm9 0x0202cff8 84B func_0202cff8 -- 88 best. C: `if (a0 != 0xb) return; if (a2 == 0) return L8837
-arm9 0x0202d300 240B func_0202d300 ) or copy L10862
 arm9 0x0202d9f4 88B func_0202d9f4 -- `func_02026e2c(*(u32 *)(g + 0x24), 0x04100010, *(u32 *)(g + 0x1c) L10657
 arm9 0x0202daec 132B func_0202daec -- shutdown half of the 0x0202d4f0 teardown, reading data_0204aec0 L10933
 arm9 0x0202db70 164B func_0202db70 -- page-chunked copy from a global stream state at 0x0204aec0: [... L11201
