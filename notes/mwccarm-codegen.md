@@ -485,3 +485,16 @@ exactly as retail does, worth 8 bytes on that unit and moving it from 124 B to
   declaration order is also how the slots are placed
   (`func_ov002_02060344`, `func_ov008_0204e084`: declaration order `b, d, a, c, e`
   gives the use order `a, b, c, d, e`, slots `8, 0, 0xc, 4, 0x10`).
+
+## Taking a double parameter's address
+
+When retail's double argument is spilled by `push {r0, r1, r2, r3}` and then read
+back from `[sp, #8]` / `[sp, #0xc]`, the source took the parameter's address. The
+fdlibm macros do exactly that - `#define HI(d) (*(1 + (s32 *)&(d)))`,
+`#define LO(d) (*(s32 *)&(d))` - and reproduce the prologue. A union-based HI/LO
+that only copies the double leaves the argument in registers and comes out short
+(`func_02036874`: 180 B against 192 B). `func_0203684c` was parked as an
+"unreachable prologue, 8-byte struct + 2 unused u32 args" wall until the same
+macros produced its 40 bytes exactly; treat that shape as the first thing to try
+on any small libm wrapper, and on any older wall note that complains about an
+unexplained `push {r0-r3}` beside a double.
