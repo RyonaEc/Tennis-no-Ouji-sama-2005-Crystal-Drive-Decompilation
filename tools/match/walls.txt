@@ -39,6 +39,8 @@ arm9 0x0202aea8 304B func_0202aea8 TP_GetCalibratedPoint: 304B source shape repr
 
 arm9 0x0202b43c 260B func_0202b43c TP_SetCalibrateParam: the body is exact at 260 B with the SDK's own source, but mwcc colours the divider's divisor into r5 and the 0x10000000 numerator into ip/lr where retail keeps the divisor in lr, 0 in ip and 0x10000000 in r5; nine spellings (bare expression, u32/s32/u16 locals, function-scope local, implicit conversion, shared constant variable) and respell.py all give the same rotation, so it is a register-allocation tie. Candidate: build/cand/setcal_b.c L11921
 
+arm9 0x0202d3f0 204B func_0202d3f0 CARDi_ReadBackupSyncCore: exact 204 B with the SDK source and a volatile retry local, but the prologue comes out as mov/str (retry) then add r8 / mov r7 / mov fp where retail emits the loop-constant setup first and the retry spill last, and retail keeps p+0x20 in a register while mwcc rematerialises it. Four orderings of the const/volatile locals give the same 204 B with a different prologue order. Candidate: build/cand/cardread_0202d3f0.c L11924
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

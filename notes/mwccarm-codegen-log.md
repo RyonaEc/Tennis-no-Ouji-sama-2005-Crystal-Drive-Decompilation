@@ -5752,3 +5752,12 @@ address*, so the table has to be declared as a function-pointer array
 (`typedef void (*WMCb)(void *); WMCb tab[16];`) for mwcc to load
 `ldr r0, [pc] = func_0202f8c4` and `cmp` against it instead of comparing a
 `void *` field.
+
+`WmDataSharingReceiveData` (0x0202f668, 276 B) showed the halfword-constant
+spill: `MI_CpuClear16(buf, len)` reaches the fill core as `(u16)0`, and mwcc
+materialises that value through a stack halfword
+(`mov r0, #0` / `strh r0, [sp]` / `ldrh r0, [sp]`) only when the zero is a
+`volatile u16` declared in the same block, not when it is a literal, a `(u16)`
+cast, a plain local, or a `static inline` by-value parameter. Eight bytes is the
+whole difference, and the declaration has to sit inside the `else` branch, not
+at function scope, or the spill moves into the prologue.
