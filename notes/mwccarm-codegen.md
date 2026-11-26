@@ -1099,3 +1099,24 @@ offset in the load/store. Declaring the index `u16` prevents the fold.
 The function came out byte-identical except for the two known diff artifacts (an
 unresolved `bl` printed as a local address and the literal-pool pad word), and the
 digest gate accepted it first time.
+
+## 2.56 A pool-register swap is often statement order plus signedness (2026-11-26)
+
+`arm9 0x02027784` (228 B) sat in `walls.txt` as a 2-slot "only the pool registers
+differ" park, where retail loads `&data_0204904c` into `r2` and `&data_02049040`
+into `r3` and mwcc did the reverse. The fix was two independent changes, and both
+were needed:
+
+1. **Statement order at the tail.** Retail's stores go `ldr r1(0x34)`, `str 0x40`,
+   `str 0x4c`, `str 0x34`. Writing the three tail statements in that order
+   (`data_02049040 = tail` *before* `data_0204904c -= 1`) removed the register
+   swap. A pool address is materialised in the order the pool is first referenced,
+   so the first statement that mentions each global decides the register.
+2. **Signedness.** What remained was `movhi`/`strhi` where retail has
+   `movgt`/`strgt`: the wrap counter is compared with `> 8` as a *signed* value.
+   Declaring it `s32` instead of `u32` closed the unit.
+
+So when a diff bottoms out at "only the pool registers differ", read which
+statement first touches each global and reorder the source accordingly, then check
+any conditional in the residue for `hi`/`ls` vs `gt`/`le` - a `hi` where retail
+has `gt` means an unsigned local that should be signed.
