@@ -11,12 +11,12 @@ criterion that the digest gate decides, not a percentage alone.
 
 | Metric | Matched | Total | Left |
 |---|---:|---:|---:|
-| Functions | 1,902 | 3,806 | **1,904** |
-| Code | 171,252 B | 1,841,700 B | **1,670,448 B** |
+| Functions | 1,903 | 3,806 | **1,903** |
+| Code | 171,308 B | 1,841,700 B | **1,670,392 B** |
 | Data | 630,724 B | 801,936 B | **171,212 B** |
-| Complete units | 4,191 | 4,862 | **671** |
+| Complete units | 4,192 | 4,862 | **670** |
 
-The important asymmetry: **49.97% of functions but 9.30% of code bytes.** What
+The important asymmetry: **50.00% of functions but 9.30% of code bytes.** What
 remains is not a long tail of small leaves - it is a few hundred large functions.
 
 Data is the mirror image: 78.65% matched. Its fully-linked figure is higher
@@ -27,10 +27,10 @@ By module, sorted by bytes still unmatched:
 
 | Module | Code matched | Bytes left | Functions left |
 |---|---:|---:|---:|
-| OV002 | 6.49% of 715,724 B | 669,296 | 902 |
-| OV003 | 2.51% of 586,712 B | 571,964 | 414 |
-| ARM9 main | 36.81% of 224,616 B | 141,932 | 292 |
-| OV005 | 6.57% of 142,964 B | 133,576 | 104 |
+| OV002 | 6.66% of 715,724 B | 668,024 | 897 |
+| OV003 | 2.54% of 586,712 B | 571,800 | 413 |
+| ARM9 main | 36.84% of 224,616 B | 141,876 | 291 |
+| OV005 | 7.02% of 142,964 B | 132,932 | 102 |
 | OV004 | 7.21% of 89,584 B | 83,124 | 99 |
 | OV010 | 5.09% of 25,144 B | 23,864 | 23 |
 | OV009 | 15.60% of 24,788 B | 20,920 | 31 |
@@ -59,37 +59,28 @@ per-slot state machine and an 8-function flag-setter family.
 
 ### Engine status (measured 2026-11-26)
 
-Measured 2026-11-26. The old `grind.py` re-spell engine is spent (7,351 visited
-units, zero matches, 870 marked exhausted), but its replacement is not: the
-rewritten `permute.py` plus `permusweep.py` has landed five units this week
-(`0209d988` 328 B, `020c5428` 328 B, `0208a3cc` 156 B, `020b7e20` 200 B,
-`020d72f8` 164 B).
+`permute.py` plus `permusweep.py` is the live search engine; `grind.py` is spent
+and should not be restarted. The engine's limit is measured, not assumed: fed the
+queue by proximity it keeps picking register-only walls and returns nothing,
+while restricted to candidates with a real structural difference
+(`--min-structural 2`) it matches on the first run. Register residue is different
+work rather than harder search, and the sweep now defaults away from it.
 
-The useful finding is *what* it can and cannot do. Fed the queue by proximity it
-kept choosing register-only walls and returning nothing; restricted to
-candidates with a real structural difference it matched on the first run
-(`--min-structural 2`). Register residue is therefore not merely hard, it is
-different work, and it was crowding out the candidates where the search still
-has traction. The search now defaults away from it.
-
-What remains true is that the bottleneck for the large families below is
-**authoring C**, not variant search: a 756 B function with 60 structural slots
-of residue is a decode problem, not a permutation problem.
+So the bottleneck for the families below is **authoring C**, not variant search:
+a 756 B function with 60 structural slots of residue is a decode problem, not a
+permutation problem.
 
 Both flagship members have a complete decode on disk and a draft that is short
 only on allocation, not algorithm:
 
-| Member | Draft | Retail | Residue |
+| Member | Draft | Target | What is left to author |
 |---|---|--:|---|
-| `0x0208f38c` (14 x 608) | 588 B, 291 slots | 608 B | colouring: retail `g`→r8, `rec`→sl, `sb`→sb, frame 0x3c, `idx` spilled to `[sp+0x20]`; mwcc gives `g`→sl, `rec`→r8, frame 0x34 |
-| `0x0208f860` (13 x 756) | 732 B | 756 B | 24 B: body order after the direction branch; full decode in `notes/ov002-0208f860.md` |
+| `0x0208f38c` (14 x 608) | 588 B | 608 B | `g`/`rec` colouring: retail `g`→r8, `rec`→sl, frame 0x3c, `idx` spilled to `[sp+0x20]`. The shared `mul` for `off = idx * 0x158` is already exercised. |
+| `0x0208f860` (13 x 756) | 732 B | 756 B | 24 B of body order after the direction branch; decode in `notes/ov002-0208f860.md`. |
 
-Tried on `0x0208f38c` and recorded in its note: `off = idx * 0x158` used twice
-(forces the shared `mul`, 588 B), `sb` declared before `rec` (flips `sb`, leaves
-`g`/`rec` swapped), and `v28` assigned after the `/5` instead of at declaration
-(scheduling only). Declaration order moves *which* pointer gets `sb` but not
-`g`/`rec` - that pair is the remaining lever, and it is a register-colouring
-tie of the kind `notes/mwccarm-codegen.md` documents.
+For the 608 group the lever to try is the `g`/`rec` pair itself: declaration
+order moves `sb` but not that pair, so it is the documented colouring tie until
+some spelling moves it - and a moved pair is worth 14 members.
 
 Method, per group: match one member completely (it is a 150-190 instruction
 function, so budget real time), then generate siblings by substituting **only**
@@ -118,9 +109,10 @@ Criterion: as Phase 1. Total here is 31 functions and 11,188 bytes.
 
 ## Phase 3 - wall triage by residue class
 
-`tools/match/walls.txt` holds **614 parked near-misses**. They are not 614
-independent problems; they are a handful of classes, and one of them is now
-measured as unreachable and should be triaged out rather than worked:
+`tools/match/walls.txt` holds **468 parked near-misses** (count them with
+`grep -vc '^#' tools/match/walls.txt`). They are not 468 independent problems;
+they are a handful of classes, and one of them is measured as unreachable and
+should be triaged out rather than worked:
 
 **The register-permutation class.** Every wall whose only residue is register
 choice - six ov002 prologue walls (`020b5d28`, `020c0c70`, `020c82d4`,
@@ -133,15 +125,26 @@ and four slots rotated, because retail holds the base in `ip` - a compiler
 temporary - and b56 picks `r3`. No source spelling reaches `ip`. Treat these as
 bounded: record the residue, do not re-spend search time.
 
-Recent evidence from the classes that *are* reachable:
+The classes that are still worth working, with the lever to try on each:
 
-- The address-macro class (`HI`/`LO` taking `&param`) turned a wall written off as
-  "unreachable prologue, 8-byte struct + 2 unused u32 args" into
-  `func_0203684c`'s exact 40 bytes. One lever, one wall, and the same lever
-  explained `func_02036874`.
-- The imm8-fold class (`func_02023df8`, one instruction short) and the "load
-  issued before the increment" class (`func_02037320`, `func_02037788`) each have
-  a written residue and no lever yet.
+- **Address macros** (`HI`/`LO` taking `&param`): this lever already reproduces a
+  prologue that looked unreachable, so try it on the parked prologue walls that
+  take a struct by reference before writing them off.
+- **imm8 fold** (one instruction short) and **"load issued before the
+  increment"**: residues are written and no lever is known; the route is to find
+  the source statement whose scheduling produces the early load, not to permute.
+- **One-instruction-short folded arithmetic**: where retail keeps a two-step
+  computation (`(x - c) - c`) that b56 folds into one, no spelling has defeated
+  the folder yet - treat as bounded unless a non-foldable intermediate exists.
+- **Counters and pointer pairs**: two symmetric nested counters, and two
+  pointers that trade `sl`/`r8`, both move under a declaration shuffle with the
+  initialisers split out of the declarations. `permute.py` finds these; `respell`
+  does not.
+- **Identical arms that retail keeps separate**: three copies of a three-arm
+  range test with the same body (`ov003 0x02082220`, `ov003 0x020c806c`,
+  `ov005 0x0205ac30`, 96 B each) and the opening chain of `ov005 0x0204e99c`.
+  b56 merges or if-converts the arms in every spelling tried, so the source
+  shape that keeps them apart is still unknown; 288 B sits behind one lever.
 
 Do this as a batch job, not one wall at a time: read the notes, bucket them by
 residue text, then work one bucket to a lever. A bucket that yields a lever turns
@@ -174,11 +177,9 @@ OV002 (13,260 B) and OV003 (11,076 B) as large blobs that need structure
 recovery, plus about 1,753 B of missing delinks carve-outs (mechanical). Treat
 the blobs as part of the Phase 5 long tail.
 
-Already done, for the record: `symreloc.py apply` rewrote 1,065 relocated words
-across 33 units in arm9/ov002/ov003 from numeric addresses to the symbols
-`relocs.txt` records. It changes no published number (objdiff already credited
-those words) but it is the faithful spelling, and it fixed the three
-code-side relocation findings `objcheck.py` reported.
+`symreloc.py scan`/`apply` is the tool for the numeric-address sweep that belongs
+with this phase. It moves no published number, so run it for faithfulness once
+the credited bytes above have moved, not before.
 
 Criterion: `ninja report` data matched rises, digest unchanged.
 
@@ -194,6 +195,24 @@ Pick by bytes, not count: a 1,028-byte function is 257 instructions of progress
 in one unit. Work the biggest unmatched functions in the module the worker owns.
 
 Criterion: digest unchanged after every merge.
+
+## Next actions (in order)
+
+1. **Phase 1, 608 group**: `0x0208f38c` is 588 B of 608 B and its only residue is
+   the `g`/`rec` colouring pair. One match is worth 14 members and 8.5 KB.
+2. **Phase 1, 756 group**: `0x0208f860` needs 24 B of body order; the decode is
+   already written, so this is a re-order and re-gate, not a re-read.
+3. **Phase 3, address-macro bucket**: apply the lever that recovered the
+   prologue wall to the other struct-by-reference prologues in the wall index.
+4. **Phase 2, OV003**: nine groups, 19 functions, 6,556 B, same machinery as
+   Phase 1 once one member is authored.
+5. **Phase 4, delinker**: export the interior data symbols so the 31,760 B of
+   already-correct pointer words get credited; it is a config change plus a
+   digest re-verification, not a spelling hunt.
+
+Everything else in the wall index waits for a lever from one of these five; the
+queue (large unique functions in OV002/OV003) is Phase 5 and needs a worktree per
+module.
 
 ## Finish line
 
@@ -214,13 +233,10 @@ Two checks exist because a unit can be byte-perfect in the ROM and still be
 counted wrong:
 
 - `python tools/match/progress.py` **exits 1** when any unit scores below 100%
-  in objdiff, naming the unit and its matched/complete bytes. This is the
-  publish-time gate: ByteMatch reads `matched_*` as it stands, so one 99.9% unit
-  makes the site publish "matched 8.87%" against "fully linked 8.88%". That is
-  what `src/arm9/func_02004a14` did - 232 bytes and one function - because
-  `ldr r0, =0x027c0000` was spelled as a number instead of `=data_027c0000`, so
-  the object carried no relocation where retail has one. `ninja sha1` and
-  `var3` both mask relocated words and passed it.
+  in objdiff, naming the unit and its matched/complete bytes. ByteMatch publishes
+  `matched_*` as it stands, so a unit that is byte-perfect in the ROM but spells
+  a relocated address as a number keeps `matched_*` below `complete_*`. Treat the
+  exit status as a publish-time gate and use `objcheck.py --unit` to read why.
 - `python tools/match/objcheck.py --unit <mod> <name>` explains *why*: it
   compares the unit's object with the delinked retail object word by word and
   relocation by relocation. It is a diagnostic, not a gate - it is stricter
@@ -233,9 +249,10 @@ stop and read the relocation, do not re-spell the code blindly.
 
 ## Traps worth restating
 
-- `var3` alone lies: a C `*` on doubles emits `bl _dmul`, which is not in
-  `symbols.txt`, and the relocation bytes are masked - it reported `MATCH` while
-  the linked ROM differed. `reg.py` and the digest decide.
+- `var3` alone lies: relocations are masked, so a `bl` to a helper that is not
+  in `symbols.txt`, a wrong pooled literal, or a numeric address in place of a
+  symbol all still report `MATCH`. `reg.py` and the digest decide, and
+  `objcheck.py` scores the relocations.
 - A residue is not a licence. Never weaken `t10.py`, the expected digest, the
   flags or `configure.py` defaults to close a gap.
 - Do not commit the ROM, BIOS or a save. Verified in this tree: `*.nds`,

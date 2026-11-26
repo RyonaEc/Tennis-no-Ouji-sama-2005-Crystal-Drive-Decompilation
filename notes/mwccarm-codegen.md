@@ -741,3 +741,21 @@ declaration order: whichever is declared first is not automatically the outer
 one. When only `lr`/`r6` are swapped across the whole loop, a declaration
 shuffle with the initialisers split out of the declarations is the lever, and
 `permute.py` finds it in seconds where `respell.py` plateaus.
+
+## Tail-test loops: put the condition in one `while`
+
+A table walk written as `while (p != 0) { if (*p == 0) break; (*p)(); p++; }`
+produces two predicated exits and its own `pop`/`bx` pair. Folding the null
+test into the loop condition -
+
+```c
+Fn f;
+while (p != 0 && (f = *p) != 0) {
+    f();
+    p++;
+}
+```
+
+- gives retail's rotated loop: one `cmp`/`popeq` at the top, `blx` in the body
+  and a single shared epilogue. One instruction saved, and the only shape that
+  matched on `arm9 0203b698`.

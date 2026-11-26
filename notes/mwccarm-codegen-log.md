@@ -6619,3 +6619,17 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
   (three full `mov/mov/b` blocks, no predication anywhere) is a whole-function
   style b56 does not produce from any chain we can spell, so the unit stays
   parked with that residue rather than a spelling gap.
+
+* `arm9 0203b698` matched (56 B). A null-terminated table of function pointers
+  walked as `while (p != 0 && (f = *p) != 0) { f(); p++; }`: writing the loop as
+  a `while (p)` with an `if (f == 0) break;` inside gives **two** predicated
+  exits (`popeq` twice, 60 B), while the compound condition gives retail's
+  rotated loop with one shared epilogue and `bne` back to the `blx`. The
+  single-expression form is the lever whenever a tail-test loop comes out one
+  `pop` too long.
+
+  It also had to spell the pooled word as `ARM9_CTOR_START` (the name
+  `relocs.txt` records for that `link_time_const`), not `0x02042228`: the ROM
+  digest matched either way because relocations are masked, but `progress.py`
+  dropped it to 99.643% and `objcheck.py` named the missing relocation. Check
+  `relocs.txt` for the address before writing a table pointer as a number.

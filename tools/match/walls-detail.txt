@@ -12630,3 +12630,6 @@ ov005 0x02050974 func_ov005_02050974
 
 ov005 0x0204e99c func_ov005_0204e99c
 320B: full transcription at exact size (38 slots); retail has THREE identical cmp/mov blocks (0x45, 0x48, default) but if/else if-converts and switch builds a jump table
+
+ov005 0x0205aae0 func_ov005_0205aae0
+332 of 336 B, one instruction short: the 90..180 quadrant computes (deg-0x5a)-0x5a in retail as two subs (retail 0xac/0xb4), and b56 folds it to deg-0xb4 in every spelling tried - one expression, two statements via s32 d, s16 d (adds the truncation pair, 352 B). The table read wants a struct overlay at rec+0x400 (field at +0x24) to keep 0x400 as an add and 0x24 as the ldrh displacement; plain pointer and flat-offset spellings fold to 0x7b00/+0x70 or 0x424. A permute run (4,986 candidates) found nothing better than 6 structural.
