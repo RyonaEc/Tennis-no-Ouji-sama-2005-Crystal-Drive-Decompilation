@@ -6752,3 +6752,29 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
   extra argument words) and `ov002 0204d60c` (192 B, a BLX interworking call to
   the thumb `MTX_RotZ33_` that mwcc will not emit from an ARM caller in any
   spelling tried).
+
+## 2026-11-26 (third pass) - two units, and two re-derivations that moved nothing
+
+* `arm9 0x0203b50c` (76 B) - the packed-field sibling of the matched
+  `func_0203b4e4`: pack both arguments, share the accessor call and the
+  bic/eor/str, return the repacked previous word with bit 30 set. Written as
+  `asm void` straight from the neighbour's shape.
+* `arm9 0x0202564c` (76 B) - `OS_SaveContext`, transcribed from the NitroSDK's
+  `os_context.c`. `sdk.py` gave 72/76 at `libos.a(os_context.o)`; the four
+  differing bytes were the `CP_SaveContext` pool word and its `blx`.
+* Two further "matches" moved no counter: `func_02028888` and `func_0202bea8`
+  already had sources committed, and `true_fresh.txt` was stale. Both were
+  re-derived to identical bytes and then reverted, so the tree keeps the
+  originals. This is the trap `tools/match/README.md` warns about, and the cost
+  was a full build cycle spent learning that `c433...` had not changed.
+* `func_0202bea8` turned out to be `PM_SetBackLightAsync` from
+  `spi/ARM9/src/pm.c` and its SDK C body still compiles byte-exactly under b56 -
+  useful to know, but it was already matched.
+* `func_02025e48` (`OS_GetInitArenaHi`) is parked: the switch, the jump table and
+  every arena boundary match, but the DTCM arm needs the SDK's absolute LCF
+  `OSi_SYS_STACKSIZE` (a symbol whose value is 0) rather than a literal, and a
+  literal folds 172 B down to 104 B.
+* Net: 1,919 / 3,806 functions (50.42 %), 174,240 / 1,841,700 B (9.46 %),
+  4,208 / 4,876 units (86.30 %), up two units and 152 B from the previous commit
+  and exactly consistent with it once the two pre-existing units are removed
+  from the arithmetic.

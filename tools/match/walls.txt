@@ -296,7 +296,6 @@ arm9 0x02023df8 96B func_02023df8 / 0x02023e58 96B -- open-handle dispatch on da
 arm9 0x02023e58 96B func_02023e58 -- open-handle dispatch on data_02042370 (-1 = unopened). L4033
 arm9 0x02024674 184B func_02024674 arm9 184B - alignment-padding cascade; 176-180B/184B, 15 diff. L943
 arm9 0x0202497c 76B func_0202497c on b56: everything reproduces except that mwcc hoists the `data_0... L3497
-arm9 0x0202564c 76B func_0202564c -- mrs/msr and mrc/mcr p15, and a banked-sp setup L8761
 arm9 0x02025b88 148B func_02025b88 scout: **140/148.** `func_02026350()` / `func_02026364(r)` bracket an... L181
 arm9 0x02025e48 172B func_02025e48 -- switch on 0..6 returning constants, with a case that loads a... L11220
 arm9 0x020260b8 116B func_020260b8 -- hand-written dispatcher (`mrs r1, apsr`, `teq`, banked `sp` L10664
@@ -332,7 +331,6 @@ arm9 0x02037718 112B func_02037718 -- table walk over p[5+idx], length p[4], tai
 arm9 0x02037788 124B func_02037788 -- bit-run scanner over four word parameters copied to the stack L3785
 arm9 0x0203aeb8 12B func_0203aeb8 '12B' branches past its own extent; 02033c58 starts mid-function; 020... L397
 arm9 0x0203b2cc 8B func_0203b2cc cmp/bxeq fragment, falls through into the next unit L73
-arm9 0x0203b50c 76B func_0203b50c -- the packed-field sibling of 0x0203b4e4: repack both arguments as L6533
 arm9 0x0203b6e8 ?B - `.bss` at L11774
 arm9 0x02042228 ?B - calling L10507
 arm9 0x02042354 ?B - /020423dc/02042a24, ov004 020637c8..020647c0 L11242

@@ -897,3 +897,44 @@ The same choice decides `blt`/`blo` and `asr`/`lsr`: the loop counter has to be
 `a1 = *(s8 *)(r + 9)` emits `ldrsb`; retail often has `ldrb` with the value
 landing in a `s32` parameter, which is `a1 = *(u8 *)(r + 9)`. Pick the load width
 from retail's mnemonic and let the assignment widen to the parameter.
+
+## Refresh the queue before matching, or the counter will not move
+
+`true_fresh.txt` is a snapshot. Two units re-derived this pass (`func_02028888`,
+`func_0202bea8`) already had sources in git: `cdiff` and `var3` reported IDENTICAL
+and `reg.py` reported MATCH, but the totals did not change, because a matched unit
+counted once stays counted once. Always run `python tools/match/fresh.py --write`
+first; `git ls-tree HEAD src/<mod>/<name>.c` answers "is this already matched" in
+one command.
+
+## An SDK partial hit is usually a transcribable unit
+
+`sdk.py` reporting 72/76 rather than 76/76 is normal for an SDK routine: retail
+has its relocations applied, so the differing bytes are the pool word and the
+`bl`. `func_0202564c` is `libos.a(os_context.o)` `OS_SaveContext`: transcribing the
+SDK's own `asm void` block, with the struct offsets restated numerically
+(CP_CONTEXT `+0x48`, CPSR `+0`, PC_PLUS4 `+0x40`, SP_SVC `+0x44`) and
+`ldr r1, =func_0202ae08` for the `CP_SaveContext` call, assembled byte-exactly on
+b56. For an SDK C function, restate the header's structs at the offsets retail
+uses and compile the body unchanged: `func_0202bea8` is `PM_SetBackLightAsync`
+(`spi/ARM9/src/pm.c`) almost verbatim, and `FSi_SeekDirCommand`
+(`fs/common/src/fs_command.c`) needs only `FSDirPos {arc, own_id, index, pos}`,
+`FSArchiveFNT {start, index, parent}` and `fnt +0x28`.
+
+## A unit next to a matched `asm void` unit is often its sibling
+
+`func_0203b50c` sits right after the matched `func_0203b4e4` and is the same
+read-modify-write with the arguments repacked first:
+`(x & 0x1f) | ((x & 0x1f0000) >> 8)` for each, then the shared bic/eor/str, then
+the repacked previous value with `| 0x40000000`. Reading the matched neighbour
+gave the whole calling convention, the push set and the pool layout; grep
+`src/<mod>/` for `asm void` and check the addresses adjacent to those files.
+
+## A constant that must not fold needs a symbol, not a literal
+
+`func_02025e48` (`OS_GetInitArenaHi`) reproduces its switch, its jump table and
+every arena boundary, but the DTCM arm needs `OSi_SYS_STACKSIZE` to be a
+*nonymous* zero: retail materialises it from a pool word and keeps
+`cmp r1,#0`, `sublt`, `subge` around it, i.e. the SDK's absolute LCF symbol whose
+value is 0. Written as a plain `0` (or a `const u32 = 0`) mwcc folds the whole arm
+to `return 0x027c0020` and 172 B becomes 104 B.
