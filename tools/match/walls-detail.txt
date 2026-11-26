@@ -12514,3 +12514,22 @@ arguments, not eleven.
   Decisive but unverified theory: the original may call through a cast function pointer,
   or read the angle through a struct/union member, either of which makes mwcc emit the
   extra conversion. Worth one experiment next time; do not pad the body with a no-op.
+
+0209d988 ov002 328B - NEW SHAPE, body correct, pure register-renaming wall
+  Found by scanning all 243 unmatched callers of func_ov002_02057068 (172 KB total);
+  this is the smallest (328 B) and confirms the 12-argument signature a third time:
+    func_ov002_02057068(0, 0, -0x60000, 0, 0, 0, half, 0x40000000, 0x39, *e, u16(e+0x12c), a0)
+  Candidate build/cand/ov2_9d988_v6.c compiles to exactly 328 B and is instruction-for-
+  instruction identical to retail after masking register names: 82/82 instructions, same
+  opcodes, same immediates, same order. All 7 residual normalised diffs are artifacts
+  (6 bl targets are unresolved pool stubs in the bare compile, the 7th is trailing padding).
+  Only real residue: which physical register each variable landed in, 37 of 82 slots.
+    retail   z=r4  y=r5  half=r6  g=r7  q=r8  e=sb
+    mine     y=r4  half=r5  e=r6  q=r7  g=r8  z=sb      (a systematic one-slot rotation)
+  Levers already ruled out this turn: declaring the vars uninitialised then assigning
+  (w1/w2/x1/x2, grouped in both retail's and the reverse order) all stay at 37 slots;
+  u32/unsigned shifts and b/2 vs b>>1 change the size (324 B) and are wrong; only
+  `u8 half = b / 2;` keeps 328 B and matches retail's lsr.
+  NEXT: this is a permute-class wall, not a spelling wall. The body is correct, so the
+  remaining work is a register-assignment permutation, and whichever source shape lands
+  the rotation also applies to the 242 other unmatched callers of 02057068.
