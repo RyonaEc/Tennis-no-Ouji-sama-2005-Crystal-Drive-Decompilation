@@ -666,3 +666,11 @@ Axes, not matches - every one still needs a compiled byte-diff and `ninja sha1`.
   return block that retail has. Measured on `ov002 02063e58`: 232 B when merged,
   256 B with the explicit case, and 260 B once the inner test is ordered so the
   non-negated branch is the one that returns.
+
+- **A store before a guard can be 4 bytes cheaper than after it.** When a function
+  stores a constant and also returns it on an early exit, writing the store *first*
+  lets the two paths share one `mov rN, #const`; writing the guard first makes mwcc
+  emit the return value predicated (`moveq`) plus a second materialisation. The
+  compiler may sink the store past the guard as long as the guard does not read the
+  stored field, so the source order is free to be the cheaper one. Measured on
+  `ov002 0209d584`: 264 B guard-first, exactly 260 B store-first.
