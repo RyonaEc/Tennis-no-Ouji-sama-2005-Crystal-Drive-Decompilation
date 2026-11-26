@@ -208,7 +208,10 @@ changes the definition of done above.
   --check <module>` and `ninja sha1` before anything is committed.
 - **Ghidra (headless).** Portable install at `M:\\ATOJ-tools\\ghidra11` with the
   JDK at `M:\\ATOJ-tools\\jdk`, projects in `M:\\ATOJ-tools\\proj`, scripts in
-  `build/ghidra/`. Importing any remaining module is allowed without asking
+  `tools/ghidra/` (one-function dumps and logs stay in `build/ghidra/`).
+  `tools/ghidra/sync_headless.bat <config.yaml> <rom.nds>` imports a module with
+  its dsd names in one dialog-free run; see `notes/ghidra-headless.md`.
+  Importing any remaining module is allowed without asking
   (each import is ~3 min of JVM startup; run it in the background and poll).
   Decompiler output stays a reading aid - it never decides a match.
 - **melonDS decomp workbench, including playing the game.** Install at

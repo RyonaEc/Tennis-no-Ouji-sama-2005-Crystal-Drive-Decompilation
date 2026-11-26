@@ -1,7 +1,10 @@
 # Ghidra decompiler, headless (no GUI, no prompts)
 
 `dsd-ghidra`'s loader asks which modules to mount (arm7 / arm9 / overlays) with a
-dialog, which is useless for batch work. Two ways around it, both used here:
+dialog, and `SyncDsd.java` asks for the config with a file chooser, so neither runs
+under `analyzeHeadless` as shipped. The preferred route is now the dialog-free
+script in `tools/ghidra/` (section "Headless import + sync" below); the two
+fallbacks that follow are for one-function dumps:
 
 1. Never launch the GUI at all — only `analyzeHeadless.bat`. Headless cannot
    display a dialog, so no input is ever required.
@@ -24,6 +27,40 @@ analyzeHeadless <projdir> <projname> -process arm9.bin -noanalysis \
 `-noanalysis` is deliberate: a full auto-analysis of a 64 MB ROM takes minutes and
 finds the wrong boundaries anyway. The post-script disassembles a 0x400-byte
 window at each address and creates the function itself.
+
+## Headless import + sync (names, no dialogs)
+
+`tools/ghidra/DsdHeadless.java`, driven by `tools/ghidra/sync_headless.bat`, does
+what the GUI does in one run by calling the same dialog-free entry points:
+
+| GUI step | Dialog-free entry point |
+|---|---|
+| `DsRomLoader.load` asks ARM7/ARM9 with `OptionDialogBuilder` | `DsdGhidra.INSTANCE.get_loader_data(rom, len, data, err)` |
+| `SyncDsd.run` asks for `config.yaml` with `DsdConfigChooser` | `get_dsd_sync_data(configPath, data, err)` |
+
+```
+tools\ghidra\sync_headless.bat config\ATOJ\arm9\config.yaml extract\baserom_tennis_ATOJ.nds arm9
+```
+
+The config is the **module rom config** (`config\ATOJ\arm9\config.yaml`), not the
+extract config: the native parser wants the struct with the `rom_config` field and
+rejects `extract\ATOJ\config.yaml` with `missing field rom_config`. The script
+deletes whatever blocks the placeholder import made, builds the dsd blocks from the
+ROM (`arm9_main`, `arm9_ov000`..`ov010`, `itcm`, `dtcm`, `swram`, `io`, ... plus the
+`REG_` labels), then applies symbols, functions, thumb bits, data labels and
+relocation references from the config.
+
+Measured 2026-11-26 against project `ATOJHL`: 66 blocks, **3,805 functions**, all
+carrying repo names (`func_020237f8` resolves, not `LAB_...`), zero errors, about
+three minutes including JVM start. The script prints its own verdict:
+
+```
+dsd headless: blocks=66 functions=3805 func_020237f8=named
+```
+
+Arguments: `<config.yaml> <rom.nds> [arm9|arm7] [dry] [project]`. `dry` skips every
+write; `project` defaults to `ATOJHL` and is created on first run from a placeholder
+`arm9.bin` import. A re-run reuses the project and re-syncs, so it is idempotent.
 
 ## Local install
 
