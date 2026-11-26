@@ -1265,3 +1265,36 @@ argument is live across the call instead.
 function is already listed, so the duplicate made configure drop the compile
 rule and every probe failed with `no known rule to make it`. It now appends only
 when `src/<mod>/<name>.c:` is absent, which fixes all arm9 probing.
+
+## 2.62 Three cheap spellings found sweeping arm9 (2026-11-26)
+
+arm9 0x0201ce4c, 0x020179c8, 0x020202b4 and 0x0202cff8 fell to ordinary source
+shapes; the ones worth remembering:
+
+- **Separate base and field pointers** (`0x0202cff8`). `*(u32 *)(data + 0x34)`
+  with `data` an array and `+0x34` spelled inline is constant-folded into a
+  pool literal, and a `struct` spelling folds the offset into the load
+  displacement. Retail has `add r1, r2, #0x34` over a base register that is
+  reused for a second field, which needs both a base pointer *and* a second
+  pointer made from it:
+
+      u8 *b = (u8 *)data_0204aec0;
+      u8 *f = b + 0x34;
+      *(u32 *)f &= ~0x20;                 /* add r1, r2, #0x34 ; ldr/str [r1] */
+      func_02025118(*(u32 *)(b + 0xd0));  /* ldr r0, [r2, #0xd0] */
+
+- **Two RMWs stay two RMWs** (`0x020179c8`). `field = (field & ~0xff) | v;` is
+  one bic+orr with a single store; retail stores the masked word, reloads, then
+  stores the OR. Writing `field &= ~0xff; field |= v;` as two statements
+  reproduces it, and the address is then CSEd into one register.
+
+- **Early return to stop if-conversion** (`0x020202b4`). With both bodies small,
+  b56 predicates the second one too (`movne`/`ldrne`/`bicne`/`strne`) and the
+  unit comes out 4 bytes short. Writing the *large* branch first, with an
+  explicit `return` after it, leaves the zero case as the only predicated block,
+  which is retail's layout. Pool-pointer register order then follows statement
+  order: assigning the store target before reading the value gave `r0`/`r1`
+  retail's way round.
+
+- **A plain `if` chain beats a predicate** (`0x0202cff8`): two early-return
+  guards reproduce `addne sp` / `ldmne sp!` / `bxne lr` exactly.

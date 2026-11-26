@@ -196,7 +196,6 @@ arm9 0x02033e40 88B func_02033e40 out-param wrapper around 02033fd8. Retail spil
 
 ov009 0x0204de1c 208B func_ov009_0204de1c ov009 sibling of ov005 0205519c (identical body, data_02054ea4/02054eb0 and 0204dcfc): same 204B vs 208B residue. Declaring pos/target/up in retail's stack order (pos, target, up) fixes the frame layout, but retail still materialises &target in r4 with a fresh mov lr,#0 and three pointer stores, where b56 reuses a register that already holds zero and stores sp-relative. One instruction; both candidates are in build/cand/ov9_de1c_b.c. L12170
 
-arm9 0x020179c8 148B func_020179c8 list/port init: 3 word stores, then retail writes word 0x20 as 0 and then does TWO bitfield passes over bits 0..7 of the same word (ldr/bic #0xff/str, then ldr/and #0xff/orr/str), so the source has an aliased plain-u32 store followed by an 8-bit bitfield write at the same address. b56 always folds them into one store (136B with the u32 spelling, 120B with a bitfield struct or a union overlay). Remaining 12B is that un-aliasable double write. L12173
 
 
 
@@ -298,9 +297,7 @@ arm9 0x02018330 124B func_02018330 124B) L3871
 arm9 0x02018ee8 148B func_02018ee8 scout: **140/148.** `if (func_020194a8(a0 + 4, 1) == 0) return 0;` th... L175
 arm9 0x0201c0c4 124B func_0201c0c4 -- look the node up in data_020475f0, else in data_020475fc and... L10903
 arm9 0x0201c17c 96B func_0201c17c (twin 0x0201c2d4) -- hash-bucket walk: `p = func_02017784(data_02... L7955
-arm9 0x0201ce4c 136B func_0201ce4c . Bound-pointer and direct spellings both fold. L577
 arm9 0x0201d7c0 124B func_0201d7c0 -- reset an object: zero +0x84/+0x7c/+0x80, func_02029a5c(&p->f74) L10909
-arm9 0x020202b4 76B func_020202b4 DISPSTAT update: retail loads A then B and returns on the eq path; ev... L3443
 arm9 0x020209c8 124B func_020209c8 -- update the display window and key mask: read the u16 at L10917
 arm9 0x02023df8 96B func_02023df8 / 0x02023e58 96B -- open-handle dispatch on data_02042370 (-1 = unope... L4067
 arm9 0x02023e58 96B func_02023e58 -- open-handle dispatch on data_02042370 (-1 = unopened). L4033
@@ -316,7 +313,6 @@ arm9 0x0202c018 120B func_0202c018 -- slot setup: `func_0202c3e0(a0)` guard, `*(
 arm9 0x0202c430 24B func_0202c430 var3 matches, ROM digest rejects: best is 3 slots, retail keeps the global address in ip where mwcc uses r1 for every spelling tried (plain/volatile global, volatile u32 *p, do/while, with and without a returned value) L127
 arm9 0x0202cc90 92B func_0202cc90 -- spin-wait wrapper: `g = data_0204aec0; s = func_02026350(); while L10646
 arm9 0x0202cfa4 84B func_0202cfa4 -- 92B. Main-thread loop: `s = func_02026350(); while (!(*(u32*)(... L8977
-arm9 0x0202cff8 84B func_0202cff8 -- 88 best. C: `if (a0 != 0xb) return; if (a2 == 0) return L8837
 arm9 0x0202d9f4 88B func_0202d9f4 -- `func_02026e2c(*(u32 *)(g + 0x24), 0x04100010, *(u32 *)(g + 0x1c) L10657
 arm9 0x0202daec 132B func_0202daec -- shutdown half of the 0x0202d4f0 teardown, reading data_0204aec0 L10933
 arm9 0x0202f28c 312B func_0202f28c -- match guards (`func_0202e1cc(2, 7, 8)`, `func_02025c5c(p + 0x... L10681
