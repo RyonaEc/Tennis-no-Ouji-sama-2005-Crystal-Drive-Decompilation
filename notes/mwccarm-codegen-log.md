@@ -6575,3 +6575,10 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
   (58 -> 10 diffs); four separate locals, a shared initialiser and
   `*(u32 *)&z` all scored worse (16, 4-and-larger, 16). The source shape behind
   retail's single reused slot is still unknown.
+
+* `ov005 02050974` matched. The residue after transcribing the body was
+  entirely frame slots: retail reuses `[sp+4]` across four VRAM-clear calls
+  (frame 8), b56 gave each `z = 0;` store its own slot (frame 0x18). Scoping
+  each volatile temporary in its own `{ }` block - so lifetimes end before the
+  next begins - is what makes b56 reuse the slot. Score went 25 -> 10 -> 0 with
+  that one change, and `reg.py` kept it; `ninja sha1` prints the retail hash.
