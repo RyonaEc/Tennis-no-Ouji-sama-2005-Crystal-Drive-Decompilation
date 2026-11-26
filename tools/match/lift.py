@@ -49,6 +49,9 @@ def resolve(addr, names):
     return sym or "func_%08x" % addr
 
 
+BRANCH = re.compile(r"b(eq|ne|lt|le|gt|ge|hi|hs|lo|ls|mi|pl|vs|vc|cs|cc)?$|bl$|bx$|blx$")
+
+
 def pool_addr(ins, size):
     """Address of the word a pc-relative load reads."""
     token = [t for t in ins.op_str.replace("]", "").split(",") if "#" in t][-1]
@@ -114,8 +117,11 @@ def listing(mod, addr, size, name):
             lines.append("/* %x */ %s %s" % (i.address - addr, mn,
                                              re.sub(r"\[pc[^\]]*\]", ".LC_%08x" % pool, op)))
             continue
-        # branches and calls address a label inside the unit or a symbol outside
-        if mn.startswith("b") and "[" not in op and "#" in op:
+        # branches and calls address a label inside the unit or a symbol outside.
+        # Match the branch mnemonics exactly: `bic r5, r5, #0xf000` also starts
+        # with "b" and carries an immediate, and rewriting its operands as a
+        # symbol produced a listing m2c could not parse.
+        if BRANCH.fullmatch(mn) and "[" not in op and "#" in op:
             t = branch_target(op)
             if t is not None:
                 op = labels[t] if (addr <= t < end) else resolve(t, names)

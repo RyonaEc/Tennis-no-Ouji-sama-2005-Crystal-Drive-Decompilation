@@ -12657,3 +12657,6 @@ ov002 0x02084cec func_ov002_02084cec
 
 ov003 0x02053b58 func_ov003_02053b58
 236B maps the four panel selections at +0x29c into output slots at +0x2bc (slot i claims entry sel-1; selections already zero leave it). Decoded from lift.py; semantics match at 188B but mwcc CSEs the 'st + 0x200' sub-base into one register where retail recomputes 'add r0, r4, #0x200' before each of the four blocks, and fuses the four zero stores into one base. Two spellings tried: 0x2bc base directly (172B) and st+0x200 sub-base with 0x9c/0xbc fields (188B). Candidates build/cand/o3_53b58_a.c and _b.c
+
+ov002 0x0208a57c func_ov002_0208a57c
+288B builds one 8-byte display-list packet: state = *(u32*)(data_ov002_02102070)+0x4bc4, idx = state[0x49] (post-incremented), entry = func_ov002_02084888() + 0x190 + idx*8; six bytes cleared, word0 = 0x80002000 then (word0 & 0xfe00ffff) | (((a1+1) & 0x1ff) << 16), byte0 = a2+1, then three read-modify-writes on the halfword at entry+4: bits 0-9 = (slot*0x400 + 0x5580) >> 7, bits 12-15 = (a3 == 1 ? 4 : slot) & 0xf, bit 10 set. Fully lifted (build/cand/lift_func_ov002_0208a57c.s); not yet written as C - the packet builder needs the three RMW expressions spelled so mwcc keeps the same registers (r4 holds the halfword across all three).
