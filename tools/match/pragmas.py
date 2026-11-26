@@ -20,11 +20,23 @@ def load(path, name):
 
 fm = load("tools/match/fastmatch.py", "fm")
 
-PRAGMAS = ([("optimization_level", v) for v in "0123"]
-           + [(s, v) for s in ("opt_common_subs", "opt_propagation", "opt_dead_assignments",
-                               "opt_loop_invariants", "opt_strength_reduction", "peephole",
-                               "scheduling", "optimize_for_size", "opt_cse", "opt_strength_reduction")
-              for v in ("on", "off")])
+# Only these change codegen in mwccarm 1.2/b56. Measured 2026-11-26 on a 260-byte
+# body (notes/mwccarm-codegen.md 2.52): Metrowerks' pragma reference documents a
+# dozen optimiser switches, but the ARM backend accepts and IGNORES schedule/
+# scheduling, opt_strength_reduction, opt_loop_invariants, opt_common_subs, opt_cse,
+# opt_dead_assignments, opt_unroll_loops, peephole, inline_depth, dont_inline and
+# pool_strings - flipping any of them leaves the bytes identical. Sweeping them
+# costs a compile each and can never win, so the default list is the honoured set.
+PRAGMAS = ([("optimization_level", v) for v in "012"]
+           + [("opt_propagation", v) for v in ("off", "on")]
+           + [("opt_dead_code", "off"), ("optimize_for_size", "on")])
+
+# Accepted and ignored by this build; `--all` sweeps them anyway, for the day a
+# different compiler key makes one live.
+IGNORED = [(s, v) for s in ("opt_common_subs", "opt_dead_assignments", "opt_loop_invariants",
+                            "opt_strength_reduction", "peephole", "scheduling", "opt_cse",
+                            "opt_unroll_loops", "dont_inline", "pool_strings")
+           for v in ("on", "off")] + [("inline_depth", "(0)")]
 
 
 def body_of(path):
@@ -42,7 +54,9 @@ def matches(got, want):
 
 
 def main():
-    mod, addr, size, path = sys.argv[1], int(sys.argv[2], 0), int(sys.argv[3], 0), sys.argv[4]
+    argv = [a for a in sys.argv[1:] if a != "--all"]
+    sweep = PRAGMAS + IGNORED if "--all" in sys.argv[1:] else PRAGMAS
+    mod, addr, size, path = argv[0], int(argv[1], 0), int(argv[2], 0), argv[3]
     body = body_of(path)
     want = fm.retail(mod, addr, size)
     if matches(fm.compile_text(body, "probe"), want)[0]:
@@ -50,7 +64,7 @@ def main():
         return 0
 
     tried, winners = 0, []
-    for name, val in PRAGMAS:
+    for name, val in sweep:
         text = f"#pragma push\n#pragma {name} {val}\n{body}\n#pragma pop\n"
         got = fm.compile_text(text, "probe")
         ok, got_size = matches(got, want)

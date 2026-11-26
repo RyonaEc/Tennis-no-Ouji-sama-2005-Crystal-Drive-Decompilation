@@ -970,3 +970,46 @@ SDK's statement order, then let the digest decide. The 0.95-0.98 near hits in
 Check `walls.py show <mod> <addr>` first: `func_0202b43c` and several other SDK
 near hits are already parked with a register tie, and re-deriving them costs a
 pass for nothing.
+
+## 2.52 Which pragmas this compiler actually honours (2026-11-26)
+
+Metrowerks' *C Compilers Reference* documents the optimiser pragmas
+(`opt_strength_reduction`, `opt_loop_invariants`, `opt_common_subs`, `opt_cse`,
+`opt_dead_assignments`, `opt_unroll_loops`, `peephole`, `schedule`/`scheduling`,
+`inline_depth`, `dont_inline`, `pool_strings`), which looked like the answer to
+whole wall classes - in particular `opt_strength_reduction off` for the induction
+variable in `ov002 0x02080ca4` and `schedule once` for the scheduling parks.
+Measured on the 260-byte `func_02027fe8` body, compiled with the project's own
+flags and hashed per pragma:
+
+| pragma | .text | verdict |
+|---|---|---|
+| (none) | 260 B, `8d547c4c` | baseline |
+| `optimization_level 0 / 1 / 2` | 272 / 260 / 252 B | honoured |
+| `optimization_level 3` | 260 B, same hash | default |
+| `optimize_for_size on` | 248 B | honoured |
+| `opt_dead_code off` | 248 B (same as optimize_for_size) | honoured |
+| `opt_propagation off` | 268 B | honoured |
+| `opt_propagation on` | 260 B, same hash | already on |
+| `schedule once` / `schedule twice` | 260 B, same hash | **ignored** |
+| `scheduling on` / `scheduling off` | 260 B, same hash | **ignored** |
+| `opt_strength_reduction off` | 260 B, same hash | **ignored** |
+| `opt_loop_invariants off` | 260 B, same hash | **ignored** |
+| `opt_common_subs off` | 260 B, same hash | **ignored** |
+| `opt_cse off` | 260 B, same hash | **ignored** |
+| `opt_dead_assignments off` | 260 B, same hash | **ignored** |
+| `opt_unroll_loops off` | 260 B, same hash | **ignored** |
+| `peephole off` | 260 B, same hash | **ignored** |
+| `inline_depth(0)` | 260 B, same hash | **ignored** |
+| `dont_inline on` | 260 B, same hash | **ignored** |
+| `pool_strings on` | 260 B, same hash | **ignored** |
+
+So the ARM backend of 1.2/b56 accepts these pragmas and throws them away: the only
+codegen levers behind a pragma are the optimisation level, size mode, dead-code
+removal and propagation. `pragmas.py` now sweeps just that honoured set by default
+(`--all` restores the full list for a future compiler key); a wall whose residue
+survives the default sweep is not a pragma problem and the time belongs on the C.
+
+Consequence for two parks: `02080ca4`'s induction variable is *not* switchable off
+with a pragma, and the "pure scheduling" parks cannot be re-scheduled with
+`schedule once` - both remain source-shape problems.
