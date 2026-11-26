@@ -702,6 +702,8 @@ def main(argv):
             if install:
                 kept = t10.try_unit(name, addr, size, found[0], mod=mod)
                 print("install: %s" % ("KEPT" if kept else "rejected by the ROM digest"))
+                if not kept:
+                    return 3
             return 0
 
     evaluator = Evaluator(mod, addr, size, opt["--jobs"])
@@ -716,6 +718,8 @@ def main(argv):
             if install:
                 kept = t10.try_unit(name, addr, size, match, mod=mod)
                 print("install: %s" % ("KEPT" if kept else "rejected by the ROM digest"))
+                if not kept:
+                    return 3
             return 0
 
         batch = opt["--batch"] or max(2, 2 * opt["--jobs"])
@@ -737,6 +741,8 @@ def main(argv):
         if install:
             kept = t10.try_unit(name, addr, size, best[2], mod=mod)
             print("install: %s" % ("KEPT" if kept else "rejected by the ROM digest"))
+            if not kept:
+                return 3
         return 0
     return 1
 

@@ -79,3 +79,31 @@ NEEDS-EXPLANATION and must be justified before anything is kept.
 * No batch driver: the 34 angle-family members and the other callers of
   `func_ov002_02057068` still need a per-candidate run, or a manifest-driven
   sweep, before this scales past one wall at a time.
+
+## Batch triage (2026-11-26, `permusweep.py`)
+
+`permusweep.py` scores every candidate in `build/cand` once and sorts by
+(structural pairs, weighted cost), which is the triage the section above asked
+for. First run over ov002, 66 candidates:
+
+* 8 candidates were pure register renaming (structural 0) or one instruction off
+  (structural 1) - exactly the population the permuter can address.
+* `func_ov002_0208a3cc` (156 B, a four-slot VMU loop) matched and installed: the
+  declaration sweep alone solved it, no random search needed.
+* Every other wall in the top eight is the same class, and it is worth naming:
+  **the `mul`/`ldr` prologue exchange**. Retail does `mov r1,#0x158; mul r2,r0,r1`
+  with the module base in r1; b56 does `mul r1,r0,r1` with the base in r2, or the
+  reverse on other units (`0x020c0c70`, `0x020c82d4`, `0x020da96c`, `0x020f4490`,
+  `0x020f466c`, `0x020b5d28` all share it). Declaration order, `u32 off`,
+  declare-then-assign and inline-at-both-uses have all been tried by hand; the
+  permuter's axes do not reach it either, so this is a compiler-behaviour
+  question, not a search-space one.
+
+### A zero score is not a match
+
+`func_ov002_020c2b18` reached structural 0 / cost 0 and was still **rejected by
+the ROM digest**. That is the documented hazard in this repository - a masked
+object compare agrees while the linked ROM differs through constant pools and
+pc-relative displacements. `permute.py` now returns 3 (not 0) when `--install`
+is rejected, and `permusweep.py` prints those as "scored 0 but the ROM digest
+rejected it" rather than counting them as matches.
