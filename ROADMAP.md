@@ -1,13 +1,32 @@
 # Roadmap to a complete decompilation
 
-Forward-looking only. For what has already been matched see
-[`PROGRESS.md`](PROGRESS.md); for how to work see [`AGENTS.md`](AGENTS.md) and
+Forward-looking only. What is already matched is in [`PROGRESS.md`](PROGRESS.md);
+how to work is in [`AGENTS.md`](AGENTS.md) and
 [`notes/mwccarm-codegen.md`](notes/mwccarm-codegen.md).
 
-Every number here was measured against this tree, and every phase has a success
-criterion that the digest gate decides, not a percentage alone.
+Every figure below was measured against this tree on **2026-11-26** with
+`ninja report`, `tools/match/progress.py`, `tools/match/fresh.py --write`,
+`tools/match/famsurvey.py`, `tools/match/sdkmap.py --near 0.85` and a keyword
+census of `tools/match/walls-detail.txt`. Re-measure before trusting a number
+that decides what to do next; two phases of this file previously pointed at work
+that had already been done.
 
-## Where the work actually is
+What changed in this revision, and why:
+
+- **The SDK residue is now Phase 1, not absent.** Measured: 23 arm9 units agree on
+  85%+ of their bytes with a prebuilt NitroSDK object (7,568 B) and one is exact.
+  Three of the last five matches came from this recipe, and it is written down.
+- **The ov002 families stay Phase 2 but are no longer sold as one tie away.** The
+  drafts compile at 600/608 B and 688-712/756 B today, so the residue is tens of
+  bytes of body, and the phase is priced as authoring work.
+- **Walls re-measured and triaged**: 598 parked units, 315 notes, and three
+  register sub-classes (including two found this week) declared bounded instead
+  of queued.
+- **Two arithmetic errors corrected**: the finish line's unit count (4,803 was
+  stale; the tree has 4,876) and the cost of crossing 10% code (9,930 B, not
+  26 KB).
+
+## Where the work is
 
 | Metric | Matched | Total | Left |
 |---|---:|---:|---:|
@@ -16,244 +35,280 @@ criterion that the digest gate decides, not a percentage alone.
 | Data | 630,724 B | 801,936 B | **171,212 B** |
 | Complete units | 4,208 | 4,876 | **668** |
 
-The important asymmetry: **50.42% of functions but 9.46% of code bytes.** What
-remains is not a long tail of small leaves - it is a few hundred large functions.
+**50.42% of functions but 9.46% of code bytes.** The remaining 1,875 functions
+are not a tail of small leaves:
 
-Data is the mirror image: 78.65% matched. Its fully-linked figure is higher
-(82.61%, 662,484 B) and the 31,760-byte difference is a known, diagnosed gap -
-see Phase 4.
+| Size | Functions | Bytes |
+|---|---:|---:|
+| 0-63 B | 9 | 244 |
+| 64-127 B | 71 | 7,176 |
+| 128-255 B | 288 | 55,784 |
+| 256-511 B | 514 | 184,388 |
+| 512-1023 B | 567 | 404,620 |
+| 1024-2047 B | 248 | 355,988 |
+| 2048 B + | 178 | **659,692** |
+| **total** | **1,875** | **1,667,892** |
 
-By module, sorted by bytes still unmatched:
+(The 432-byte difference from the 1,667,460 B in the headline table is delinked
+pool words that live inside code ranges but are not functions.)
 
-| Module | Code matched | Bytes left | Functions left |
-|---|---:|---:|---:|
-| OV002 | 6.66% of 715,724 B | 668,024 | 897 |
-| OV003 | 2.57% of 586,712 B | 571,612 | 412 |
-| ARM9 main | 37.23% of 224,616 B | 141,000 | 285 |
-| OV005 | 7.02% of 142,964 B | 132,932 | 102 |
-| OV004 | 9.30% of 89,584 B | 81,256 | 90 |
-| OV010 | 5.09% of 25,144 B | 23,864 | 23 |
-| OV009 | 15.60% of 24,788 B | 20,920 | 31 |
-| OV001 | 4.60% of 13,904 B | 13,264 | 16 |
-| OV008 | 27.20% of 10,940 B | 7,964 | 20 |
-| OV006 | 9.56% of 7,324 B | 6,624 | 11 |
+So 178 functions hold 40% of the remaining code and 993 hold 85%. Small-unit
+passes still matter - they are where a lever is proven cheaply - but no amount of
+them closes the byte gap.
 
-OV002 and OV003 together are **74% of the remaining code**. `ov000` and `ov007`
-are empty overlays (no `.text`, `start == end` in `delinks.txt`); they have no
-`src/` directory and never will. That is why they are absent from these tables.
+| Module | Code matched | Bytes left | Functions left | Largest 10 |
+|---|---:|---:|---:|---:|
+| OV002 | 6.66% of 715,724 B | 668,024 | 897 | 58,752 B |
+| OV003 | 2.57% of 586,712 B | 571,612 | 412 | 84,412 B |
+| ARM9 main | 37.23% of 224,616 B | 141,000 | 285 | 39,828 B |
+| OV005 | 7.02% of 142,964 B | 132,932 | 102 | 46,504 B |
+| OV004 | 9.30% of 89,584 B | 81,256 | 90 | 35,580 B |
+| OV010 | 5.09% of 25,144 B | 23,864 | 23 | 17,264 B |
+| OV009 | 15.60% of 24,788 B | 20,920 | 31 | 13,520 B |
+| OV001 | 4.60% of 13,904 B | 13,264 | 16 | 11,148 B |
+| OV008 | 27.20% of 10,940 B | 7,964 | 20 | 6,112 B |
+| OV006 | 9.56% of 7,324 B | 6,624 | 11 | 6,468 B |
 
-## Phase 1 - the OV002 family spine (highest value)
+OV002 and OV003 together are 74% of the remaining code. `ov000` and `ov007` are
+empty overlays (no `.text`); they have no `src/` directory and never will.
 
-`famsurvey.py ov002` groups unmatched functions by identical skeleton. The top
-four groups alone are **47 functions and 31,980 bytes**, and they are one shape
-(per-entity 3D placement) at four sizes:
+Data has its own shape: 78.65% matched, 82.61% credited as fully linked, and the
+31,760-byte difference is one diagnosed cause, not eleven bugs - see Phase 5.
 
-- `13 x 756 B` = 9,828 B - `0x0208f860, 0x0209a5f4, 0x0209c728, 0x0209eb18, ...`
-- `14 x 608 B` = 8,512 B - `0x0208f38c, 0x02096a64, 0x02098aac, 0x020a06e8, ...`
-- `10 x 688 B` = 6,880 B - `0x0209ab8c, ...`
-- `10 x 676 B` = 6,760 B - `0x0208f0e8, ...`
+## What actually moves the counter
 
-Two cracked skeletons are worth 27 functions and 18 KB. The project has done
-this before: `notes/mwccarm-codegen-solved-families.md` records a 21-function
-per-slot state machine and an 8-function flag-setter family.
+Ranked by measured yield, not plausibility. Each row is what recent passes
+actually produced:
 
-### Engine status (measured 2026-11-26)
+| Lever | Evidence | What it yields, or the rule |
+|---|---|---|
+| SDK transcription | `OS_SaveContext` (76 B), `FSi_SeekDirCommand` (152 B), `PM_SetBackLightAsync`, `FSi_ReadFileCommand`, the 16 SDK asm units | one unit per short session; the recipe is written down |
+| `asm void` sibling of a matched unit | `func_0203b50c` from `func_0203b4e4` (76 B) | near-free when the neighbour is matched |
+| Hand authoring a 60-300 B unit | this project's steady rate | 2-3 units, 150-300 B per pass |
+| Family substitution | 31,980 B sitting in ov002's top four groups | the big multiplier, but blocked on decode |
+| `permute.py` / `permusweep.py` | returns nothing on register-only residue, matches on the first run at `--min-structural 2` | fire it only on structural residue |
+| `grind.py` | journal: 7,329 units, 0 matches, 41,619 variants | spent; do not restart |
 
-`permute.py` plus `permusweep.py` is the live search engine; `grind.py` is spent
-and should not be restarted. The engine's limit is measured, not assumed: fed the
-queue by proximity it keeps picking register-only walls and returns nothing,
-while restricted to candidates with a real structural difference
-(`--min-structural 2`) it matches on the first run. Register residue is different
-work rather than harder search, and the sweep now defaults away from it.
+Two rules follow. **Refresh the queue before picking** (`fresh.py --write` plus
+`git ls-tree HEAD src/<mod>/<name>.c`): one pass this week spent two build cycles
+re-deriving `func_02028888` and `func_0202bea8`, both already matched, and moved
+no counter. And **the SDK map is nearly drained**: arm9 has 1 exact hit left (an
+8-byte stub) and 23 partial hits at 85% or better (7,568 B); ov002, ov003 and
+ov005 have *zero* hits at that threshold, so the SDK is an arm9-only source.
 
-So the bottleneck for the families below is **authoring C**, not variant search:
-a 756 B function with 60 structural slots of residue is a decode problem, not a
-permutation problem.
+## Phase 1 - the SDK residue in arm9
 
-Both flagship members have a complete decode on disk and a draft that is short
-only on allocation, not algorithm:
+23 unmatched units agree on 85% or more of their bytes with a prebuilt NitroSDK
+2.0 RC3 object, and one more is exact. Partial agreement is normal: retail has
+relocations applied, the archive object does not. Two recipes are proven:
 
-| Member | Draft | Target | What is left to author |
-|---|---|--:|---|
-| `0x0208f38c` (14 x 608) | 588 B | 608 B | `g`/`rec` colouring: retail `g`→r8, `rec`→sl, frame 0x3c, `idx` spilled to `[sp+0x20]`. The shared `mul` for `off = idx * 0x158` is already exercised. |
-| `0x0208f860` (13 x 756) | 732 B | 756 B | 24 B of body order after the direction branch; decode in `notes/ov002-0208f860.md`. |
+- **asm block**: transcribe the SDK's own `asm void` body with the offsets
+  restated numerically and `ldr rX, =<symbol>` for every pooled callee
+  (`src/arm9/func_0202564c.c` is `OS_SaveContext`).
+- **C body**: restate the SDK header's structs at the offsets retail uses and
+  compile the body unchanged (`FSi_SeekDirCommand`, `PM_SetBackLightAsync`).
 
-For the 608 group the lever to try is the `g`/`rec` pair itself: declaration
-order moves `sb` but not that pair, so it is the documented colouring tie until
-some spelling moves it - and a moved pair is worth 14 members.
+The files behind the hits are `os_arena.c`, `os_spinlock.c`, `os_thread.c`,
+`spi/ARM9/src/{pm,tp}.c`, `fs/{fs_archive,fs_overlay,fs_command}.c`,
+`card_{backup,common,request}.c`, `pxi_fifo.c`, `ctrdg.c`, `wm_system.c`,
+`gx_load2d.c`, `gx_util.c`, `rtc_external.c`.
 
-Method, per group: match one member completely (it is a 150-190 instruction
-function, so budget real time), then generate siblings by substituting **only**
-per-function constants - masks, field offsets, callee names, globals, mode bytes
-- exactly as `AGENTS.md` describes, and never pc-relative offsets or branch
-targets. Each sibling still goes through `var3` then `reg.py`; a family does not
-inherit a match, it earns one per member.
+`GXS_LoadOBJ`/`GX_LoadOBJ` (`0x02023df8`, `0x02023e58`, 96 B each) are also the
+only "family" `famsurvey` reports for arm9 - they are SDK routines, so they belong
+here rather than in Phase 3.
 
-Criterion: every member of a group passes `reg.py` with the digest unchanged.
-Success signal: crossing 10% code is +27 KB, which the top two groups alone
-cover.
+Criterion: each unit is installed by `reg.py` with the digest unchanged. A
+partial `sdk.py` hit is provenance, never a match.
 
-## Phase 2 - the remaining families
+## Phase 2 - the OV002 family spine
 
-Worth doing straight after Phase 1 because the machinery is already warm:
+`famsurvey.py ov002` groups the module's unmatched functions into **53
+identical-skeleton groups**; the largest 25 cover 102 functions and 73,024 B. The
+top four are one per-entity 3D update at four sizes - **47 functions, 31,980 B**:
+
+| Group | Members | Bytes | Member |
+|---|---:|---:|---|
+| 756 B | 13 | 9,828 | `0x0208f860` |
+| 608 B | 14 | 8,512 | `0x0208f38c` |
+| 688 B | 10 | 6,880 | `0x0209ab8c` |
+| 676 B | 10 | 6,760 | `0x0208f0e8` |
+
+Both flagship members have their decode on disk and a compiled draft, and both
+are parked on body residue, not on search:
+
+| Member | Decode | Best draft (measured today) | What is left |
+|---|---|---:|---|
+| `0x0208f38c` | `notes/ov002_family_0208f38c.md` - full data map, arithmetic and call table | `build/cand/f_8f38c.c` compiles **600 / 608 B** | 8 bytes of body; the `g`/`rec` colour pair is the known tie |
+| `0x0208f860` | `notes/ov002-0208f860.md` - frame, register roles, pool constants | `build/cand/ov2_8f860.c` **688 / 756 B**, `n_8f860_a.c` **712 / 756 B** | 44-68 bytes of body order and spill placement |
+
+This is authoring work, not permutation work: a 756 B function is ~190
+instructions and a residue of tens of bytes is a decode disagreement somewhere in
+the middle, which `permute.py` cannot invent. Budget one member end to end,
+`var3` then `reg.py`, and only then generate siblings.
+
+Criterion: one member of a group passes `reg.py`; then each sibling is produced by
+substituting **only** per-function constants (masks, field offsets, callee names,
+globals, mode bytes) and each earns its own gate. 10% of the code is 184,170 B,
+so 9,930 B stands between the tree and that line - the top two groups (18,340 B)
+clear it twice over.
+
+## Phase 3 - the remaining families
 
 | Module | Groups | Functions | Bytes |
 |---|---:|---:|---:|
-| OV003 | 9 | 19 | 6,556 |
+| OV003 | 8 | 17 | 6,228 |
 | OV005 | 2 | 6 | 3,272 |
 | OV004 | 1 | 2 | 744 |
 | OV009 | 1 | 2 | 424 |
-| ARM9 | 1 | 2 | 192 |
 
-Criterion: as Phase 1. Total here is 31 functions and 11,188 bytes.
+27 functions and 10,668 B, same machinery as Phase 2. The ov002 groups beyond the
+top four (49 of them) shade into the Phase 6 long tail; treat 512 B and up as
+long-tail work and use family substitution only where a member is already matched.
 
-## Phase 3 - wall triage by residue class
+## Phase 4 - wall triage by residue class
 
-`tools/match/walls.txt` holds **468 parked near-misses** (count them with
-`grep -vc '^#' tools/match/walls.txt`). They are not 468 independent problems;
-they are a handful of classes, and one of them is measured as unreachable and
-should be triaged out rather than worked:
+`tools/match/walls.txt` parks **598 units**; `walls-detail.txt` holds 315 notes
+(one note can cover several units). A keyword census of the notes, classes
+overlapping:
 
-**The register-permutation class.** Every wall whose only residue is register
-choice - six ov002 prologue walls (`020b5d28`, `020c0c70`, `020c82d4`,
-`020f4490`, `020da96c`, `020f466c`), `02068c78`, `020604b4`, and arm9's
-`0202c430` - has now been attacked with declaration order, statement order and
-moves, init split/join, additive-chain order, signedness swaps, 24 pragmas, and
-the SM64DS-style first-demand ordering. None of it moves the allocation. The
-canonical case is `02068c78` (64 B): the candidate has every instruction right
-and four slots rotated, because retail holds the base in `ip` - a compiler
-temporary - and b56 picks `r3`. No source spelling reaches `ip`. Treat these as
-bounded: record the residue, do not re-spend search time.
+| Residue | Notes |
+|---|---:|
+| register colouring / allocation | 111 |
+| folded or short arithmetic | 73 |
+| frame slot / spill | 68 |
+| branch layout / if-conversion | 52 |
+| pool or literal word | 52 |
+| BLX interworking | 7 |
+| unclassified | 97 |
 
-The classes that are still worth working, with the lever to try on each:
+**Bounded - do not re-spend.** The register class is now measured in three
+flavours and none of them has a known source lever: retail keeps a value in `ip`
+(the `02068c78` case), keeps a pointer in caller-saved `r1` across a call and
+needs no frame (`OS_InitLock`, 240 B), or ties two pointers to `sl`/`r8` while
+b56 swaps them. Declaration order, statement order, 24 pragmas and the
+SM64DS-style first-demand ordering have all been tried. BLX interworking is the
+same story: an ARM caller cannot be made to emit `blx` to a Thumb callee under
+any declaration or pragma spelling.
 
-- **Address macros** (`HI`/`LO` taking `&param`): this lever already reproduces a
-  prologue that looked unreachable, so try it on the parked prologue walls that
-  take a struct by reference before writing them off.
-- **imm8 fold** (one instruction short) and **"load issued before the
-  increment"**: residues are written and no lever is known; the route is to find
-  the source statement whose scheduling produces the early load, not to permute.
-- **One-instruction-short folded arithmetic**: where retail keeps a two-step
-  computation (`(x - c) - c`) that b56 folds into one, no spelling has defeated
-  the folder yet - treat as bounded unless a non-foldable intermediate exists.
-- **Counters and pointer pairs**: two symmetric nested counters, and two
-  pointers that trade `sl`/`r8`, both move under a declaration shuffle with the
-  initialisers split out of the declarations. `permute.py` finds these; `respell`
-  does not.
-- **Identical arms that retail keeps separate**: three copies of a three-arm
-  range test with the same body (`ov003 0x02082220`, `ov003 0x020c806c`,
-  `ov005 0x0205ac30`, 96 B each) and the opening chain of `ov005 0x0204e99c`.
-  b56 merges or if-converts the arms in every spelling tried, so the source
-  shape that keeps them apart is still unknown; 288 B sits behind one lever.
+**Live classes**, with the lever that has actually worked:
 
-Do this as a batch job, not one wall at a time: read the notes, bucket them by
-residue text, then work one bucket to a lever. A bucket that yields a lever turns
-into a `respell.py` axis for the whole queue, which is where the automated
-sweeper stopped finding anything.
+- **Address macros** (`HI`/`LO` over `&param`): recovered a prologue that looked
+  unreachable. Try on every struct-by-reference prologue before writing it off.
+- **A constant that must not fold**: retail materialises an *anonymous* zero from
+  a pool word - an absolute LCF symbol such as `OSi_SYS_STACKSIZE` - and keeps
+  both branches around it (`OS_GetInitArenaHi`). A literal, even a `const`
+  initialiser, folds the arm away.
+- **Counters and pointer pairs**: two symmetric nested counters and two pointers
+  that trade `sl`/`r8` move under a declaration shuffle with initialisers split
+  out of the declarations. `permute.py` finds these; `respell.py` does not.
+- **Identical arms retail keeps separate**: three copies of a three-arm range
+  test with the same body (96 B each, 288 B total) where b56 merges or
+  if-converts. Source shape still unknown.
+- **imm8 fold / "load issued before the increment"**: find the statement whose
+  scheduling produces it; permuting does not help.
 
-Criterion: every wall ends at MATCH or carries a residue that names its class.
+Criterion: every wall ends at MATCH or carries a note naming its class, so the
+next pass can ignore the bounded ones without re-reading them.
 
-## Phase 4 - data sections
+## Phase 5 - data sections
 
-The 171 KB data gap has two parts, and only one of them is C work.
+**The relocation gap (31,760 B, 11 units).** These units already score 100.0%
+fuzzy but are not credited as matched, which is why published matched data
+(630,724 B) sits below fully linked (662,484 B). Their pointer words target
+*interior* byte addresses of another module's data blob
+(`data_ov005_02080fdf` inside `data_ov005_02080368`; 9,980 B of this is in
+`src/arm9/data_0203d908` alone). The names exist in `symbols.txt` as
+`kind:data(any)`, but the linker does not export them, so a reference fails with
+`Undefined`. Spelling them as container-plus-offset does not work either: mwcc
+rejects `(u32)((u8 *)&sym + 0xc77)` in a `const u32[]` initialiser; only a bare
+`(u32)&sym` relocates. The fix is a **delinker/config export of those interior
+symbols**, then a digest re-verification - 31,760 B of already-correct bytes.
 
-**The relocation gap (31,760 B, 11 units).** `matched_data` is missing for these
-units even though each scores 100.0% fuzzy, which is why the published matched
-data (630,724 B) sits below fully linked (662,484 B). The cause is diagnosed and
-it is not a source bug: their pointer words target *interior* byte addresses in
-another module's data blob (`data_ov005_02080fdf` inside `data_ov005_02080368`,
-9,980 B in `src/arm9/data_0203d908` alone). Those names are recorded in
-`symbols.txt` with `kind:data(any)`, but the linker never exports them, so
-referencing one fails the link (`Undefined : "data_ov005_02080fdf"`). Spelling
-it as the containing symbol plus an offset does not work either: mwcc rejects
-`(u32)((u8 *)&sym + 0xc77)` in a `const u32[]` initialiser with `<string not
-found>`; only a bare `(u32)&sym` produces a relocation. Fixing this needs the
-delinker to export those interior symbols (config change, then re-verify the
-digest), not a spelling hunt. Do that first: it is 31,760 B of already-correct
-bytes that only fail to be credited.
+**The real gap (171,212 B)** sits in OV005 (45,808 B), OV006 (33,668 B), OV002
+(13,260 B) and OV003 (11,076 B) as unstructured blobs, plus ~1,753 B of missing
+carve-outs. Structure recovery, not spelling.
 
-**The real data gap.** The rest sits inside OV005 (45,808 B), OV006 (33,668 B),
-OV002 (13,260 B) and OV003 (11,076 B) as large blobs that need structure
-recovery, plus about 1,753 B of missing delinks carve-outs (mechanical). Treat
-the blobs as part of the Phase 5 long tail.
-
-`symreloc.py scan`/`apply` is the tool for the numeric-address sweep that belongs
-with this phase. It moves no published number, so run it for faithfulness once
-the credited bytes above have moved, not before.
+`symreloc.py scan`/`apply` is for faithfulness and moves no published number;
+run it after the credited bytes move.
 
 Criterion: `ninja report` data matched rises, digest unchanged.
 
-## Phase 5 - the long tail
+## Phase 6 - the long tail
 
-After Phases 1-4 the remainder is large unique functions, overwhelmingly in OV002
-and OV003. This is where the authorised per-module worktrees pay off:
-`git worktree add build/worktrees/ov002 -b work/ov002`, one module per worker,
-never two workers on a module, workers never push, merge back source plus that
-module's `delinks.txt` only, then re-gate in the main tree.
+178 functions of 2 KB or more are 659,692 B; the largest are:
 
-Pick by bytes, not count: a 1,028-byte function is 257 instructions of progress
-in one unit. Work the biggest unmatched functions in the module the worker owns.
+| Unit | Size |
+|---|---:|
+| `arm9 0x0200a904` | 14,312 B |
+| `ov003 0x0208af10` | 13,540 B |
+| `ov005 0x02051cac` | 11,292 B |
+| `ov003 0x020589d0` | 11,292 B |
+| `ov003 0x020aaa10` | 9,724 B |
+| `ov003 0x0207659c` | 9,272 B |
+| `ov003 0x0205ee64` | 9,240 B |
+| `ov010 0x0204c7c0` | 8,204 B |
+| `ov002 0x02055110` | 8,024 B |
+
+This is where the authorised per-module worktrees pay off:
+`git worktree add build/worktrees/ov003 -b work/ov003`, one module per worker,
+never two workers on one module, workers never push, merge back source plus that
+module's `delinks.txt`, then re-gate in the main tree.
+
+Pick by bytes and by shape reuse: an 8 KB function that shares its skeleton with
+a matched neighbour is worth more than one that does not. Expect to author a
+decode note per large unit - the Phase 2 members show that pays for itself.
 
 Criterion: digest unchanged after every merge.
 
-## Next actions (in order)
+## Next actions, in order
 
-1. **Phase 1, 608 group**: `0x0208f38c` is 588 B of 608 B and its only residue is
-   the `g`/`rec` colouring pair. One match is worth 14 members and 8.5 KB.
-2. **Phase 1, 756 group**: `0x0208f860` needs 24 B of body order; the decode is
-   already written, so this is a re-order and re-gate, not a re-read.
-3. **Phase 3, address-macro bucket**: apply the lever that recovered the
-   prologue wall to the other struct-by-reference prologues in the wall index.
-4. **Phase 2, OV003**: nine groups, 19 functions, 6,556 B, same machinery as
-   Phase 1 once one member is authored.
-5. **Phase 4, delinker**: export the interior data symbols so the 31,760 B of
-   already-correct pointer words get credited; it is a config change plus a
-   digest re-verification, not a spelling hunt.
+1. **Phase 1, arm9 SDK residue**: 23 partial hits over 7,568 B, clustered in a
+   dozen SDK source files. Start with `os_thread.o` `OS_CreateThread` (264 B) and
+   `pxi_fifo.o` `PXI_InitFifo` (260 B), then the `gx_load2d.o` pair (96 B each).
+2. **Phase 2, 608 group**: `0x0208f38c` is 600 of 608 B with the decode written.
+   One match is worth 14 members and 8,512 B.
+3. **Phase 2, 756 group**: `0x0208f860` has two drafts at 688 and 712 of 756 B;
+   diff them against each other first - the answer is probably in the difference.
+4. **Phase 4, the two live classes with written levers** (address macros, and a
+   constant that must not fold) across the parked prologue/arena walls.
+5. **Phase 5, delinker export** so 31,760 B of correct data gets credited.
+6. **Phase 3, OV003** once one Phase 2 member proves the family flow end to end.
 
-Everything else in the wall index waits for a lever from one of these five; the
-queue (large unique functions in OV002/OV003) is Phase 5 and needs a worktree per
-module.
+Everything else waits for a lever from one of these six. Wall units outside the
+live classes are recorded dead ends, not a backlog.
 
 ## Finish line
 
-Done means all four of these, together:
+All four together:
 
-1. `python tools/match/t10.py --check` `ok` for every module, `dangling=0`,
+1. `python tools/match/t10.py --check` `ok` for every module - `dangling=0`,
    `unlinked=0`, `dupes=0`.
 2. `ninja sha1` prints `9eec3248d3569eba8abcb3244adcbdf01a5ea424` and `OK`.
-3. Functions 3,806 / 3,806, code 1,841,700 / 1,841,700 B, data 801,936 /
-   801,936 B, complete units 4,803 / 4,803 in `PROGRESS.md`, with `README.md`
-   showing the same numbers - and `matched_*` equal to `complete_*` throughout,
-   which `progress.py` now enforces (see Verification guards).
+3. `PROGRESS.md` shows 3,806 / 3,806 functions, 1,841,700 / 1,841,700 code
+   bytes, 801,936 / 801,936 data bytes and 4,876 / 4,876 complete units, with
+   `README.md` carrying the same numbers and `matched_*` equal to `complete_*`.
 4. No `src/` file is a stub, an approximation or a generalised asm block.
 
 ## Verification guards
 
-Two checks exist because a unit can be byte-perfect in the ROM and still be
-counted wrong:
-
-- `python tools/match/progress.py` **exits 1** when any unit scores below 100%
-  in objdiff, naming the unit and its matched/complete bytes. ByteMatch publishes
-  `matched_*` as it stands, so a unit that is byte-perfect in the ROM but spells
-  a relocated address as a number keeps `matched_*` below `complete_*`. Treat the
-  exit status as a publish-time gate and use `objcheck.py --unit` to read why.
-- `python tools/match/objcheck.py --unit <mod> <name>` explains *why*: it
-  compares the unit's object with the delinked retail object word by word and
-  relocation by relocation. It is a diagnostic, not a gate - it is stricter
-  than objdiff and reports address-equivalent findings (a `data_x[n]` access
-  that retail records against the next symbol, `bl` placeholders a delink
-  leaves as `ebfffffe`) on a healthy tree.
-
-Rule of thumb: if a unit's ROM bytes match but objdiff does not give it 100%,
-stop and read the relocation, do not re-spell the code blindly.
+- `progress.py` **exits 1** when any unit scores below 100% in objdiff and names
+  it: a unit can be byte-perfect in the ROM and still be counted wrong if its
+  source spells a relocated address as a number. Treat the exit status as a
+  publish-time gate.
+- `objcheck.py --unit <mod> <name>` explains one such unit word by word and
+  relocation by relocation. It is a diagnostic, stricter than objdiff, and
+  reports address-equivalent findings on a healthy tree.
+- Rule of thumb: bytes right but objdiff below 100% means read the relocation,
+  not re-spell the code.
 
 ## Traps worth restating
 
-- `var3` alone lies: relocations are masked, so a `bl` to a helper that is not
-  in `symbols.txt`, a wrong pooled literal, or a numeric address in place of a
-  symbol all still report `MATCH`. `reg.py` and the digest decide, and
-  `objcheck.py` scores the relocations.
-- A residue is not a licence. Never weaken `t10.py`, the expected digest, the
+- `var3` alone lies: relocations are masked, so a `bl` to a name missing from
+  `symbols.txt`, a wrong pooled literal or a numeric address all report `MATCH`.
+  `reg.py` and the digest decide.
+- A stale `true_fresh.txt` makes matched work look new. Refresh, then check
+  `git ls-tree HEAD src/<mod>/<name>.c`.
+- A residue is not a licence: never weaken `t10.py`, the expected digest, the
   flags or `configure.py` defaults to close a gap.
-- Do not commit the ROM, BIOS or a save. Verified in this tree: `*.nds`,
-  `arm7_bios.bin` and `extract/` are gitignored and untracked.
+- Do not commit the ROM, BIOS or a save; `*.nds`, `arm7_bios.bin` and `extract/`
+  are gitignored and untracked.
