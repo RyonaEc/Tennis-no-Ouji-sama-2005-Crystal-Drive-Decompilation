@@ -1049,3 +1049,22 @@ Rule: a mirrored scratch pair is not automatically a wall. Before parking,
 name the intermediate address as its own variable inside the loop, even when the
 result looks redundant, and check whether retail's two address splits differ -
 that difference is the fingerprint of a named intermediate.
+
+## 2.54 Defeating a CSE: inline the base expression at each site (2026-11-26)
+
+`ov003 0x02053b58` was parked because mwcc folded the `st + 0x200` sub-base into one
+register where retail recomputes `add r0, r4, #0x200` before each of the four blocks.
+Two earlier spellings gave 172 B and 188 B against retail's 236 B.
+
+Inlining the whole base expression at every use - `((u16 *)(st + 0x200))[0x4e]`,
+repeated in each `if` and each store - took it to 204 B, the closest so far. The
+named pointer (`u16 *p = (u16 *)(st + 0x200)`), the two-pointer form
+(`sel` / `dst`), and `volatile u16 *p` all scored worse (188 B, 188 B, 192 B)
+because mwcc keeps a named pointer in a register, which is exactly the behaviour
+retail does not show.
+
+So when retail recomputes an address that looks loop-invariant, that is evidence
+the original source repeated the expression rather than naming it - and for mwcc,
+repeating it in the source is how you reproduce the recompute. The remaining
+`0x02053b58` gap is elsewhere: retail keeps `(sel - 1)` as the index and 0xbc as the
+store offset, while every spelling tried folds 0x5e into the index instead.
