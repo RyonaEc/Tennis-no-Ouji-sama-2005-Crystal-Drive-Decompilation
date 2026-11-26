@@ -182,7 +182,8 @@ def main(argv):
     flags = [a for a in argv if a.startswith("--")]
     args = [a for a in argv if not a.startswith("--")]
     opt = {"--count": 8, "--time-each": 60, "--minutes": 20, "--jobs": 1,
-           "--sweep-max": 6, "--iters": 120, "--islands": 3}
+           "--sweep-max": 6, "--iters": 120, "--islands": 3,
+           "--min-structural": 0, "--max-structural": 10 ** 6}
     for flag in list(opt):
         if flag in argv:
             opt[flag] = int(argv[argv.index(flag) + 1])
@@ -208,6 +209,14 @@ def main(argv):
         return 2
 
     rows = triage(items, opt["--jobs"])
+    # A structural difference means the source is still wrong; a pure register
+    # difference means the compiler chose differently, which the search has been
+    # demonstrated not to change.  `--min-structural 1` skips the second kind.
+    lo, hi = opt["--min-structural"], opt["--max-structural"]
+    rows = [r for r in rows if r[0] is None or lo <= r[0][0] <= hi]
+    if not rows:
+        print("no candidate in the structural range %d..%d" % (lo, hi))
+        return 2
     print("\n%-34s %10s %7s  %s" % ("function", "structural", "cost", "candidate"))
     for s, mod, name, addr, size, path in rows[: max(opt["--count"], 12)]:
         if s is None:

@@ -234,3 +234,12 @@ a 90-120 s search across declaration order, statement order and moves, init
 split/join, chain order and signedness. Every regperm wall found so far behaves
 the same way, which is now a large enough sample to state plainly: the permuter's
 axes do not change mwcc's register assignment for these functions.
+
+### The structural filter pays immediately
+
+`--min-structural` exists because the queue kept filling with register-only
+walls. Restricting a sweep to `structural >= 2` - the candidates where the source
+itself is still wrong - produced `func_ov002_020b7e20` (200 B) on the first run.
+The declaration sweep alone found it: 25 orders over 6 declarations, no annealing
+needed. Register residue is therefore not just hard, it is *different work*: it
+crowds out candidates where the search still has traction.
