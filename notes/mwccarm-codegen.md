@@ -674,3 +674,40 @@ Axes, not matches - every one still needs a compiled byte-diff and `ninja sha1`.
   compiler may sink the store past the guard as long as the guard does not read the
   stored field, so the source order is free to be the cheaper one. Measured on
   `ov002 0209d584`: 264 B guard-first, exactly 260 B store-first.
+
+## Direction byte: `lsl / sub / rsb`, not one `rsb`
+
+Both ov002 angle-driving families set a direction from the entity's byte 0x2e6
+(`b`), take `half = b >> 1` and a direction of `1 - 2*half`. Two spellings:
+
+    s8 dir = 1 - (b & 0xfe);        /* rsb only: one instruction   */
+
+Retail emits three:
+
+    lsl  r2, r3, #1                 ; half * 2
+    sub  r2, r2, #1                 ; half * 2 - 1
+    rsb  r2, r2, #0                 ; -(half * 2 - 1)
+
+which is the source
+
+    s8 dir = -(half * 2 - 1);
+
+Symmetric in value, two instructions apart. Writing it as `1 - (half << 1)`
+still folds, so keep the negation on the outside of the multiply. This alone
+took ov002 0x0208f38c from 596 to 600 of 608 and 0x0208f860 from 732 to 736 of
+756 - check it first on any sibling of these families.
+
+## Signed cast of a call result: `add r0, r0, #0` before the shift pair
+
+Retail both families contain
+
+    bl   #0x2053468
+    add  r0, r0, #0
+    lsl  r0, r0, #0x10
+    asr  r5, r0, #0x10
+
+after `func_ov002_02053468`. The `add #0` is a real emitted instruction, not a
+disassembler artifact, and `(s16)call()`, `(s16)(s32)call()`, a `s32` temporary
+and declaring the extern as returning `s16` all fail to reproduce it (the last
+one is worse by a whole instruction). Unsolved; whoever closes it gains one
+instruction on every member of both angle families.
