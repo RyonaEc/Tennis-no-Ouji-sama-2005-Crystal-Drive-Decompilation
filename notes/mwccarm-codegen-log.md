@@ -6529,3 +6529,14 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
 * `ov002 020882d4` (76 B): retail reloads `base + i * 4` before the call and
   after it; every C spelling tried hoists the element pointer and pays an extra
   `r7` push plus a stack slot (80 B) or, with an integer base, ten slots.
+
+* The `add r0, r0, #0` class is solved. It has sat in the notes as an
+  unreachable dead end for the 608/688/676 families and appears inside
+  `0208f860`. It is an accumulator initialised to zero: `s16 y = 0;
+  y = y + f();` emits `bl; add #0; lsl #16; asr #16`, while `y = (s16)f()`,
+  `y = (s16)(f() + 0)`, `s16 y = f();` and `s32 y; y = (s16)f();` do not.
+  Eight spellings were compiled and each was scanned for the `0xE2800000` word
+  before the table in `mwccarm-codegen.md` was written. On `0208f38c` the lever
+  moved a 34-slot, +20 B draft to 31 slots and +4 B; a 200-second permute from
+  there reached 25 slots but not the last instruction, so the family still needs
+  the body, not the initialisation.
