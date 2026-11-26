@@ -107,3 +107,22 @@ object compare agrees while the linked ROM differs through constant pools and
 pc-relative displacements. `permute.py` now returns 3 (not 0) when `--install`
 is rejected, and `permusweep.py` prints those as "scored 0 but the ROM digest
 rejected it" rather than counting them as matches.
+
+## New axis: additive-chain order (2026-11-26)
+
+`mut_addchain` reorders the operands of a side-effect-free additive chain
+(`g + a0 * 0x158 + 0x2e6`), which is a source-level change that moves *which*
+register holds the stride product. It was added because six ov002 walls turned
+out to be one class: `0x020c0c70`, `0x020c82d4`, `0x020da96c`, `0x020f4490`,
+`0x020f466c`, `0x020b5d28` all keep the module base and the `a0 * 0x158` product
+in the opposite registers to retail (`mul r3,r5,r0` with the base in r2 versus
+`mul r2,r5,r0` with the base in r3, or the mirror).
+
+Result: every one of the six moved to exactly **1 structural difference**,
+weighted cost 91-97, at retail's exact size. So the axis does help - they were
+further away before - but none crossed, and the residue is now a single paired
+divergence in the prologue. Declaration order, init split/join, statement order,
+`u32 off`, declare-then-assign and chain order have all been searched
+exhaustively or near-exhaustively on these; the permuter is not the tool that
+will close them. The next lever worth trying is a per-unit pragma via
+`tools/match/pragma_probe.py`, not more source shapes.

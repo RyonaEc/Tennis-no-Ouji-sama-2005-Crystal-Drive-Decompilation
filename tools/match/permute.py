@@ -449,6 +449,51 @@ def mut_sameline(state, rng):
 
 TEMP_SAFE = re.compile(r"^\s*(\w+)\s*=\s*([A-Za-z_]\w*)\s*([-+*/&|^])\s*([A-Za-z_]\w*)\s*;$")
 
+# An additive chain of side-effect-free atoms, e.g. `g + a0 * 0x158 + 0x2e6`.
+# Operand order inside an address expression decides which register mwcc puts the
+# stride product in, which is the duplicate `mul`/`ldr` exchange across the ov002
+# prologue walls; no other axis reaches it.
+ATOM = (r"(?:[A-Za-z_]\w*(?:\[[^\]]*\])?)"
+        r"(?:\s*\*\s*(?:[A-Za-z_]\w*|0x[0-9a-fA-F]+|\d+))?"
+        r"|0x[0-9a-fA-F]+|\d+")
+CHAIN = re.compile(rf"(?<![\w.])(?:{ATOM})(?:\s*\+\s*(?:{ATOM})){{1,}}")
+
+
+def _chain_parts(chain):
+    return [p.strip() for p in re.split(r"\s*\+\s*", chain)]
+
+
+def mut_addchain(state, rng):
+    """Reorder an additive chain: commutative and associative, so it is free."""
+    prefix, decls, groups, suffix = state
+    spots = []
+    for gi, group in enumerate(groups):
+        for li, line in enumerate(group):
+            for m in CHAIN.finditer(line):
+                parts = _chain_parts(m.group(0))
+                if len(parts) >= 2 and len(set(parts)) == len(parts):
+                    spots.append((gi, li, line, m.span(), parts))
+    if not spots:
+        return None
+    gi, li, line, (a, b), parts = rng.choice(spots)
+    if len(parts) == 2:
+        new_parts = parts[::-1]
+        label = "chain swap"
+    else:
+        style = rng.randrange(2)
+        if style == 0:
+            new_parts = parts[::-1]
+            label = "chain reverse"
+        else:
+            k = rng.randrange(1, len(parts))
+            new_parts = parts[k:] + parts[:k]
+            label = "chain rot %d" % k
+    new_line = line[:a] + " + ".join(new_parts) + line[b:]
+    new_groups = list(groups)
+    new_groups[gi] = list(groups[gi])
+    new_groups[gi][li] = new_line
+    return label, (prefix, decls, new_groups, suffix)
+
 
 def mut_temp(state, rng):
     """Evidence-only: split a pure binary expression through a local."""
@@ -468,6 +513,7 @@ def mut_temp(state, rng):
 
 MUTATIONS = {mut_swap_stmt: "swap stmt", mut_swap_decl: "decl swap",
              mut_rotate_decl: "decl rot", mut_shuffle_decl: "decl shuffle",
+             mut_addchain: "chain order",
              mut_split_init: "split init", mut_join_init: "join init",
              mut_compound: "compound", mut_signed: "signed",
              mut_ternary: "ternary", mut_sameline: "line"}

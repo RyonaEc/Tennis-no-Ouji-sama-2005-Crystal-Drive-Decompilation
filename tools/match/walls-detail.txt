@@ -12602,3 +12602,13 @@ NEW: 10x676 family, 0x0208f0e8 (+0x0209a8e8 0x020a1a8c 0x020a1d30 0x020ab2d8 ...
   declaration, and the sign choice written as `if (half == 0) ... else ...`
   rather than a conditional expression. Source reformatted afterwards and still
   byte-exact; t10 ok, ninja sha1 OK for both units.
+
+ov002 prologue class - six walls all at 1 structural pair (2026-11-26)
+  0x020c0c70 128B, 0x020c82d4 148B, 0x020da96c 184B, 0x020f4490 128B,
+  0x020f466c 188B, 0x020b5d28 144B: each at retail's exact size with weighted cost
+  91-97 and exactly one structural (non-register) divergence left, after the
+  permuter searched declaration order, statement order, init split/join, additive
+  chain order, `u32 off` and declare-then-assign. Shared cause: the module base
+  and the a0*0x158 stride product land in the opposite registers from retail.
+  Conclusion: this is one compiler decision, not six source problems. Try a
+  per-unit pragma (tools/match/pragma_probe.py) before writing more variants.
