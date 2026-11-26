@@ -625,3 +625,9 @@ Axes, not matches - every one still needs a compiled byte-diff and `ninja sha1`.
   puts the test first and predicates the body (`addne/addne; bne head`): same length,
   different layout. An `if (cond) do {...} while (cond);` guard duplicates the body.
   `arm9 02032c38` matched only in the first spelling.
+
+- b56 will not inline a plain `static` helper - it emits a call for it (a helper called
+  three times from one loop turned 340 B of straight-line code into a 152 B function plus
+  three `bl`). Only `static inline` is inlined. When a routine shows the same block of
+  code three times and no `bl` anywhere, the original used an inline/macro, not a static
+  function.
