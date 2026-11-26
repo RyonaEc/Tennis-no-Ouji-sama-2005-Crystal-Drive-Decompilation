@@ -13,11 +13,11 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 | Metric | Matched | Total | Progress |
 |---|---:|---:|---|
-| Code | 170,444 B | 1,841,700 B | 9.25% `██░░░░░░░░░░░░░░░░░░░░░░` |
-| Functions | 1,899 | 3,806 | 49.89% `████████████░░░░░░░░░░░░` |
-| Fuzzy match | 9.25% | n/a | `██░░░░░░░░░░░░░░░░░░░░░░` |
+| Code | 170,608 B | 1,841,700 B | 9.26% `██░░░░░░░░░░░░░░░░░░░░░░` |
+| Functions | 1,900 | 3,806 | 49.92% `████████████░░░░░░░░░░░░` |
+| Fuzzy match | 9.26% | n/a | `██░░░░░░░░░░░░░░░░░░░░░░` |
 | Data | 630,724 B | 801,936 B | 78.65% `███████████████████░░░░░` |
-| Complete units | 4,188 | 4,859 | 86.19% `█████████████████████░░░` |
+| Complete units | 4,189 | 4,860 | 86.19% `█████████████████████░░░` |
 
 ## By module
 
@@ -25,7 +25,7 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 |---|---:|---:|---:|---:|---:|
 | ARM9 main | 36.81% (82,684 / 224,616 B) | 1,085 / 1,377 (78.8%) | 36.81% | 13.20% (9,224 / 69,856 B) | 1,216 / 1,403 |
 | OV002 | 6.66% (47,700 / 715,724 B) | 463 / 1,360 (34.0%) | 6.66% | 61.19% (20,904 / 34,164 B) | 1,019 / 1,256 |
-| OV003 | 2.51% (14,748 / 586,712 B) | 133 / 547 (24.3%) | 2.51% | 82.87% (53,572 / 64,648 B) | 640 / 732 |
+| OV003 | 2.54% (14,912 / 586,712 B) | 134 / 547 (24.5%) | 2.54% | 82.87% (53,572 / 64,648 B) | 641 / 733 |
 | OV004 | 7.21% (6,460 / 89,584 B) | 71 / 170 (41.8%) | 7.21% | 86.66% (23,748 / 27,404 B) | 684 / 740 |
 | OV005 | 6.57% (9,388 / 142,964 B) | 62 / 166 (37.3%) | 6.57% | 87.59% (323,324 / 369,132 B) | 318 / 360 |
 | OV006 | 9.56% (700 / 7,324 B) | 5 / 16 (31.2%) | 9.56% | 80.25% (136,836 / 170,504 B) | 102 / 114 |
@@ -36,6 +36,6 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 ## Against the whole ROM
 
-1,899 of 3,806 functions (49.89%) and 170,444 of 1,841,700 code bytes (9.25%) are matching C; the rest are still delinked assembly.
+1,900 of 3,806 functions (49.92%) and 170,608 of 1,841,700 code bytes (9.26%) are matching C; the rest are still delinked assembly.
 
 630,724 bytes of `.data` are matching C definitions; the rest of the data sections are still raw bytes in the delinked image.
