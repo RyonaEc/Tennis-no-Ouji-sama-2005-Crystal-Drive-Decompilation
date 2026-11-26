@@ -2068,3 +2068,19 @@ src/ov003/func_ov003_020a7790.c:
 src/ov003/func_ov003_020d29d0.c:
     complete
     .text       start:0x020d29d0 end:0x020d2aa0
+
+src/ov003/func_ov003_020d9f2c.c:
+    complete
+    .text       start:0x020d9f2c end:0x020d9fd0
+
+src/ov003/func_ov003_02066a54.c:
+    complete
+    .text       start:0x02066a54 end:0x02066b08
+
+src/ov003/func_ov003_020b85b8.c:
+    complete
+    .text       start:0x020b85b8 end:0x020b866c
+
+src/ov003/func_ov003_020db6ec.c:
+    complete
+    .text       start:0x020db6ec end:0x020db7a0

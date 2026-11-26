@@ -309,7 +309,6 @@ arm9 0x0202497c 76B func_0202497c on b56: everything reproduces except that mwcc
 arm9 0x02025b88 148B func_02025b88 scout: **140/148.** `func_02026350()` / `func_02026364(r)` bracket an... L181
 arm9 0x02025e48 172B func_02025e48 -- switch on 0..6 returning constants, with a case that loads a... L11220
 arm9 0x020260b8 116B func_020260b8 -- hand-written dispatcher (`mrs r1, apsr`, `teq`, banked `sp` L10664
-arm9 0x02027080 88B func_02027080 (8-arg bit packing via orr lsl chain), 02032aa8 88B (2 unaligned L10862
 arm9 0x02027ffb ?B - 0, allocating the set bit in the first word (id 0x40+n) or second (0x... L8737
 arm9 0x02029704 100B func_02029704 -- packs up to four characters into a u32, lowercasing A-Z: guards L7913
 arm9 0x0202a3a0 188B func_0202a3a0 -- slot fetch: `base = (a1 == 0) ? 0x0204ac04 : 0x0204ac0c;` the... L10955
@@ -529,11 +528,9 @@ ov003 0x02052384 372B func_ov003_02052384 ` (372 B, RGB555 -> BGR555 shade). Sib
 ov003 0x020524f8 340B func_ov003_020524f8 ` (340 B, 16-pixel BGR555 halving loop) is 340 B with only 39 L11780
 ov003 0x020538b0 320B func_ov003_020538b0 ` (320 B, two 4-way field classifier chains). Decoded: for L11687
 ov003 0x02054190 336B func_ov003_02054190 ` (336 B, 2x8 halfword transpose + packed register write). L11710
-ov003 0x02066a54 180B func_ov003_02066a54 / 0x020b85b8 / 0x020db6ec 180B -- engine-B init: clear 0x200 u16 slot... L4283
 ov003 0x020820d0 336B func_ov003_020820d0 ` / `0x020c7dc4` (336 B x2) -- closest draft L11521
 ov003 0x02082220 96B func_ov003_02082220 / 0x020c806c 96B each (famsurvey pair) -- DEGENERATE, no source expre... L5309
 ov003 0x020960a4 120B func_ov003_020960a4 120B: all 8 stores reproduce; only the tail counter ip+0x8736 differs... L253
-ov003 0x020b85b8 180B func_ov003_020b85b8 / 0x020db6ec 180B -- engine-B init: clear 0x200 u16 slots and L4249
 ov003 0x020bb0b0 120B func_ov003_020bb0b0 -- mode switch: `p = *(u32 *)0x020eb720 + 0xc8dc`; when the argu... L11038
 ov003 0x020c1ab0 128B func_ov003_020c1ab0 128B: 124/128B, ONE instruction short. Working body (frame+pool+arith... L277
 ov003 0x020c7ac0 376B func_ov003_020c7ac0 ` (376 B, battle-entry init; the sibling of the ov005 L11811
@@ -542,8 +539,6 @@ ov003 0x020c806c 96B func_ov003_020c806c each (famsurvey pair) -- DEGENERATE, no
 ov003 0x020d72f8 164B screen-clear / DMA-ctrl init: if (a0 == 0) { 020209c8(8); 020208b0(0x100); *(u32*)0x04001000 = (*(u32*)0x04001000 & 0xffcfffef) | 0x00100010; for (i = 0; i < 0x200; i++) { ip = base + i*2; *(u16*)(ip + 0x8de8) = 0; if (i % 4 == 0) *(u32*)(ip + 0x8de8) = 0x200; } } return 0;  (u16 i; u32 ip; base = data_ov003_020eb720[0]). build/cand/ov3_d72f8_m.c is exactly 164B at 18 diffs. The divisor is 4, not 2: `x % 4` emits rsb r1,r2,x,lsl #30 + adds r0,r2,r1,ror #30 (a lsl/ror pair of 32-2n tests the value mod 2^n), so far my %2 gave the #31 variant. Only residue left is the ip/lr assignment (retail: ip = the address, lr = the zero constant; b56 swaps them) - unbrakeable across six spellings. ov003 020d9f2c is a byte-identical twin of this function, so the same candidate/match applies to both.
 ov003 0x020d77b4 204B func_ov003_020d77b4 -- 196/204. Call func_02021b14(0x04001050, 0xe, 0x24, s[0x3f], s... L8507
 ov003 0x020d8604 ?B - ` (164 B x2) -- closest draft L11531
-ov003 0x020d9f2c 164B func_ov003_020d9f2c each (famsurvey pair, 328B total) -- module reset routine. L5089
-ov003 0x020db6ec 180B func_ov003_020db6ec -- engine-B init: clear 0x200 u16 slots and L4249
 ov003 0x020eb720 ?B - ]` -> `[that]` -> function pointer, called if L9028
 dtcm 0x027c0000 ?B - ldr r0,[pc]=0x3ff8; ldr r0,[r1,r0]!; orr r0,r0,#1; str r0,[r1]`. L9010
 ov003 0x027c3ff8 ?B - and emits L9016
