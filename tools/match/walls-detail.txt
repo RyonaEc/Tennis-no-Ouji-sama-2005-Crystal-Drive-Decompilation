@@ -12585,3 +12585,12 @@ NEW: 10x676 family, 0x0208f0e8 (+0x0209a8e8 0x020a1a8c 0x020a1d30 0x020ab2d8 ...
   `half == 1` invert (`mvneq`;`muleq`), dir spilled at [0x24], 12-arg call
   func_ov002_02057068(0,0,-0x60000,0,0,0,half,0x3000000,0xc,*e,u16(e+0x12c),a0).
   Parked behind the same add#0 question; do not build a candidate until it is answered.
+
+0209d988 ov002 328B - UPDATE: permuter frontier now 17 slots (was 37)
+  With tools/match/permute.py rewritten (declaration sweep + annealed random search),
+  the same candidate reaches 17 differing slots, best reached by `split init q`
+  (`u8 *q = g + 0x1744 + a0 * 0x38;` split into a declaration plus an assignment).
+  That is evidence, not a match: 17 slots still differ. The split-init direction says
+  the original probably did not initialise q at its declaration, so the next attempt
+  should start from that shape and re-run the sweep (declaration order is the axis the
+  remaining slots live on).
