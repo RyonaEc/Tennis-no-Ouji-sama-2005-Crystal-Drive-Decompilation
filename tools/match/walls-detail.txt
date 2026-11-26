@@ -12484,3 +12484,14 @@ arguments, not eleven.
   `g + a0*0x158 + 0x2e4` makes mwcc fold the base into an `mla`. Keep the mul+add split
   (write `g + 0x2e4 + a0*0x158`) and the sequence aligns, at the cost of the fourth slot
   shown above. Next pass: fix the 12-arg prototype first, then compare prologue order.
+
+0209ab8c ov002 688B - UPDATE 2: index-split experiments (688 B / 134 slots is the best)
+  With the 12-arg prototype the argument block and frame match retail exactly. Tried to
+  reproduce retail's `mov r1,#0x158 / mul r4,r0,r1` + `add r2,r8,r4` split:
+    z1  s32 off = a0*0x158; before g      -> 692 B, 165 slots
+    z2  s32 off = a0*0x158; after  g      -> 692 B, 165 slots
+    y3  (g + a0*0x158 + 0x2e4 inline)     -> 688 B, 134 slots   <- best
+  So mwcc folds `g + a0*0x158` into an mla whatever the declaration order, and holding
+  the split costs one instruction (692 vs 688). y3 is the size-exact candidate; its
+  residue is that fold plus register assignment (g in sl where retail uses r8).
+  The 608 sibling is at 612 B with the 12-arg fix (one instruction over, retail 608).
