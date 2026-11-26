@@ -6554,3 +6554,14 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
   the reloc record; spelling the other address changes nothing (still one slot,
   cost 70). Leave it parked - the object carries the relocation, the two
   readings of the same instruction just disagree.
+
+* In the 688 B family the angle conversion is a **u16** conversion, not s16:
+  retail emits `lsl #16; lsr #16` at that point. Spelling it `(s16)(u16)f()`
+  (what the old draft had) makes b56 emit `add #0` instead and costs the size
+  back; `(u16)f()`, `f() & 0xffff` and a `u16` local all scored worse than the
+  draft that keeps the pair, so the pair is produced by the arithmetic that
+  follows, not by the cast. Left at 21 slots with the exact size - the rest is
+  the `sl`/`r8` global colouring tie.
+* `ov004 0204d980` and `ov004 0204e8a4` were re-attempted from their wall notes
+  and reproduced them exactly (52 B bodies, direct branches / mla+add #0xf0),
+  which confirms both are bounded rather than merely unattempted.
