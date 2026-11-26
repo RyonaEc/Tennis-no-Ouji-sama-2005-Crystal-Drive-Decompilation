@@ -1,7 +1,11 @@
 """Rank untried functions by how likely this mwcc build can reproduce them.
 
 Usage:
-    python tools/match/scan.py [--show N] [--min B] [--max B] [--limit N] mod [mod ...]
+    python tools/match/scan.py [--show N] [--min B] [--max B] [--limit N] [--parked]
+                               mod [mod ...]
+
+Units already recorded in `walls.txt` are skipped by default - their residue is
+known and re-deriving them moves no counter. `--parked` ranks them anyway.
 
 Functions are scored on codegen shapes that have never matched: pre-indexed
 writeback, offsets too large for imm12, materialised field addresses, mla and
@@ -22,11 +26,37 @@ fm = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(fm)
 
 
-def load(mod, lo, hi, limit):
+def parked(mod):
+    """Addresses `walls.txt` has already parked for this module.
+
+    A parked unit has had its residue measured and written down; ranking it again
+    is the same pass twice. `--parked` puts them back in the list.
+    """
+    out = set()
+    path = os.path.join(ROOT, "tools", "match", "walls.txt")
+    try:
+        text = open(path, encoding="utf-8", errors="replace").read()
+    except OSError:
+        return out
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split()
+        if len(parts) >= 2 and parts[0] == mod:
+            try:
+                out.add(int(parts[1], 16))
+            except ValueError:
+                pass
+    return out
+
+
+def load(mod, lo, hi, limit, skip=()):
     fm.auto.set_module(mod)
     done = {f[:-2] for f in os.listdir(os.path.join(ROOT, "src", mod))}
     rows = sorted(
-        (sz, a, n) for a, (n, sz) in fm.auto.FUNCS.items() if n not in done
+        (sz, a, n) for a, (n, sz) in fm.auto.FUNCS.items()
+        if n not in done and a not in skip
     )
     pick = [r for r in rows if lo <= r[0] <= hi][:limit]
     if not pick:
@@ -73,6 +103,7 @@ def score(ins):
 
 def main(argv):
     show, lo, hi, limit = 3, 60, 200, 70
+    include_parked = False
     mods, rest = [], list(argv)
     while rest:
         a = rest.pop(0)
@@ -84,11 +115,14 @@ def main(argv):
             hi = int(rest.pop(0))
         elif a == "--limit":
             limit = int(rest.pop(0))
+        elif a == "--parked":
+            include_parked = True
         else:
             mods.append(a)
     rank = []
     for mod in mods:
-        for (m, name, size), ins in load(mod, lo, hi, limit).items():
+        skip = set() if include_parked else parked(mod)
+        for (m, name, size), ins in load(mod, lo, hi, limit, skip).items():
             rank.append((score(ins), size, m, name, ins))
     rank.sort(key=lambda r: (r[0], r[1]))
     for s, size, m, name, ins in rank:

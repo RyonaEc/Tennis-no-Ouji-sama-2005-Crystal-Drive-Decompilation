@@ -12651,3 +12651,6 @@ ov002 0x0204d60c func_ov002_0204d60c
 
 arm9 0x02024e30 func_02024e30
 OS_InitLock (240B) is os_spinlock.c's main-processor half and every constant, call and order matches, but retail's extension-wait loop keeps the 0x027ffff0 address in caller-saved r1 across 'bl OSi_WaitByLoop' (ldrh r0,[r1,#6] after the call) with no push at all; mwcc b56 puts the address in r4 and pushes it, so the frame, the loop and the 16-byte tail never line up whatever the spelling
+
+ov002 0x02084cec func_ov002_02084cec
+196B five-byte record compaction at *(u32*)(data_ov002_02102070)+0x47ac: zero a 5-byte stack buffer, bail if rec[4] != 0, copy the non-zero bytes of rec[4..8] into the buffer, write all five back, then base[a0] = rec[4]. Decoded with lift.py; first candidate is 180B against 196 with the same instruction multiset. Residue: retail materialises the buffer as a pointer (add r4, sp, #0) and writes the five zero bytes through it with displacements, and computes rec = base + a0*5 with mul/add instead of mla; mwcc 1.2/b56 uses mla and direct [sp,#n] stores. Candidate build/cand/o2_84cec_a.c
