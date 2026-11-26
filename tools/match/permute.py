@@ -1,4 +1,4 @@
-"""Permutation search over one candidate: exhaustive, or seeded random.
+"""Permutation search over one candidate: exhaustive sweeps plus random search.
 
 Why this exists
 ---------------
@@ -8,51 +8,71 @@ comes out predicated the other way.  No spelling change is obvious from reading
 the disassembly, so the remaining search is over *source shapes* scored against
 retail bytes.
 
-`simonlindholm/decomp-permuter` does this with random mutation of the C file and
-a graded objdump diff (0 = exact).  This keeps that idea but drives the project's
-own harness, so a winner is already a `src/` candidate that the ROM digest can
-check, and every score comes from `fastmatch.diff_summary` (same decoder, same
-slots).  Differences from upstream, deliberately:
+What it borrows, and what it refuses
+------------------------------------
+`simonlindholm/decomp-permuter` randomises the C file and scores an objdump diff;
+its own FAQ says the score "should probably be tweaked to look at e.g. the
+register diff graph", and the metrics it settled on (regalloc 5, reordering 60,
+insertion/deletion 100) are the same ones asm-differ and objdiff use.  Two
+projects had to replace that scorer because relocation-name differences became
+penalties the search could never reduce (BFM-decomp, rac3-decomp's aligned
+scorer), and one survey found roughly half of upstream's "improvements" change
+what the code does.  So this tool keeps the weighted gradient but:
 
-* only semantics-preserving rewrites are offered (see "What it will not do"),
-  so a winner is plausible source rather than an accident of regalloc;
-* exhaustive permutation of `// P` marked lines is still available for tiny
-  statement sets, where trying all orders beats sampling.
+* masks everything the linker fills in - call targets, pooled literals,
+  in-function branch displacements - so a stub address in a bare compile is
+  never scored as a hit;
+* only offers rewrites that preserve meaning (see "What it will not do"), so a
+  winner is plausible source rather than an accident of regalloc;
+* scores the *structure* first and the weighted cost second, so a regperm one
+  instruction from done always beats a structurally wrong candidate that happens
+  to have a cheaper register bill.
 
-Two modes
----------
-* Any line ending in `// P` -> exhaustive: those lines are permuted in place
-  (the original behaviour of this tool).  With more permutations than `--limit`
-  orders are sampled instead of enumerated.
-* No markers -> random mode: seeded hill-climbing with restarts over the rewrites
-  below, scored by (differing slots, distance from the retail size).
+Scoring
+-------
+Instructions are aligned with `difflib` on a key that keeps the mnemonic and
+operand shapes but blanks registers, immediates and stack offsets, so an
+insertion cannot cascade into a wall of unrelated diffs.  Aligned pairs cost
+5 per differing register, 1 per differing immediate, 1 per differing stack
+offset; replaced pairs cost 60, insertions and deletions 100.  A candidate is
+compared as `(structural_pairs, weighted_cost, abs(size - retail))`, and 0 on the
+first element means byte-exact.
 
-What it tries (random mode)
----------------------------
+Modes
+-----
+* `--decl-sweep` (default up to `--sweep-max` locals): exhaustive declaration
+  order, the axis that decides colouring.
+* lines ending in `// P`: exhaustive permutation of those statements.
+* otherwise: seeded annealed random search over the rewrites below, with
+  restarts, a mutation bandit and optional worker processes.
+
+What it tries
+-------------
 statement order between neighbours whose read/write sets are disjoint and that
-contain no calls or control flow; the same for initialisation statements;
-declaration order (adjacent swaps and block rotations); `T x = e;` <-> `T x; x = e;`;
-`x op= y` <-> `x = x op y`; `u32` <-> `s32` counters; `if/else` <-> a conditional
-expression when both arms assign the same lvalue; two statements joined onto one
-line or split apart.  `--temps` additionally splits a pure arithmetic expression
-through a local, which is evidence only: it changes live ranges on purpose and
-must be explained before anything is kept.
+contain no calls or control flow; and the same for initialisation statements;
+declaration order (adjacent swaps, rotations, whole-block shuffles); `T x = e;`
+<-> `T x; x = e;`; `x op= y` <-> `x = x op y`; `u32` <-> `s32` counters;
+`if/else` <-> a conditional expression when both arms assign the same lvalue;
+two statements joined onto one line or split apart.  `--temps` additionally
+splits a pure arithmetic expression through a local: evidence only, printed as
+NEEDS-EXPLANATION, because it changes live ranges on purpose.
 
 What it will not do
 -------------------
-It will not reorder statements that touch a common name, reorder across a call or
-a branch, introduce a temp by default, add `volatile`, add padding, or otherwise
-disturb what the source means.  It never installs on its own: a zero score still
-has to pass `--install`, which runs `t10.try_unit` and the ROM digest, and a
-candidate found only with `--temps` is printed as NEEDS-EXPLANATION.
+No reordering across a shared name, a call or a branch, no temps by default, no
+`volatile`, no padding, no narrowed types.  It never installs on its own: a zero
+score still has to pass `--install`, which runs `t10.try_unit` and the ROM
+digest.
 
 Usage
 -----
     python tools/match/permute.py <mod> <addr> <size> <file.c>
-        [--iters N] [--islands N] [--time S] [--seed N] [--limit N] [--top N]
-        [--temps] [--install] [--verbose]
+        [--iters N] [--islands N] [--time S] [--seed N] [--jobs N]
+        [--sweep-max N] [--batch N] [--top N] [--temps] [--install] [--verbose]
 """
 import collections
+import difflib
+import hashlib
 import importlib.util
 import itertools
 import math
@@ -80,10 +100,17 @@ TYPE_WORDS = {"u8", "u16", "u32", "s8", "s16", "s32", "u64", "s64", "int", "char
               "struct", "union", "enum", "float", "double"}
 CONTROL = ("if", "for", "while", "do", "switch", "return", "goto", "else", "break",
            "continue", "case", "default")
+REGS = r"\b(?:r\d+|sb|sl|fp|ip|lr|sp|pc)\b"
+
+# Penalties as used by decomp-permuter's scorer.py, asm-differ and objdiff:
+# a register choice is nearly free, a reorder is expensive, a missing or extra
+# instruction is worst.
+W_REG, W_IMM, W_STACK = 5, 1, 1
+W_REPLACE, W_INSERT, W_DELETE = 60, 100, 100
 
 
 # --------------------------------------------------------------------------
-# state: (decls, groups) -> source text
+# state: (prefix, decls, groups, suffix) -> source text
 # --------------------------------------------------------------------------
 
 def flatten(groups):
@@ -109,16 +136,104 @@ def body_of(text):
 
 
 # --------------------------------------------------------------------------
+# scoring
+# --------------------------------------------------------------------------
+
+_CACHE = {}
+
+
+def _key(ins):
+    """Alignment key: mnemonic and operand shapes, without registers/numbers."""
+    ops = re.sub(REGS, "R", ins.op_str)
+    ops = re.sub(r"#-?0x[0-9a-fA-F]+|#-?\d+", "#I", ops)
+    ops = re.sub(r"\s+", " ", ops).strip()
+    return ins.mnemonic + " " + ops
+
+
+def _regs(ins):
+    return re.findall(REGS, ins.op_str)
+
+
+def _imms(ins):
+    return re.findall(r"#(-?0x[0-9a-fA-F]+|-?\d+)", ins.op_str)
+
+
+def _stacks(ins):
+    return re.findall(r"\[sp, #(-?0x[0-9a-fA-F]+|-?\d+)\]", ins.op_str)
+
+
+def score_blob(want_ins, got_ins, size, n):
+    """(structural, weighted, size delta) for one already-disassembled pair."""
+    wk = [_key(i) for i in want_ins]
+    gk = [_key(i) for i in got_ins]
+    structural = 0
+    cost = 0
+    matcher = difflib.SequenceMatcher(a=gk, b=wk, autojunk=False)
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            for g, w in zip(got_ins[i1:i2], want_ins[j1:j2]):
+                if g.op_str == w.op_str:
+                    continue
+                gr, wr = _regs(g), _regs(w)
+                cost += W_REG * sum(1 for a, b in zip(gr, wr) if a != b)
+                cost += W_REG * abs(len(gr) - len(wr))
+                gi, wi = _imms(g), _imms(w)
+                cost += W_IMM * sum(1 for a, b in zip(gi, wi) if a != b)
+                gs, ws = _stacks(g), _stacks(w)
+                cost += W_STACK * sum(1 for a, b in zip(gs, ws) if a != b)
+                if not (gr or wr or gi or wi or gs or ws):
+                    structural += 1
+                    cost += W_REPLACE
+        else:
+            pairs = min(i2 - i1, j2 - j1)
+            structural += max(i2 - i1, j2 - j1)
+            cost += W_REPLACE * pairs
+            cost += W_DELETE * max(0, (j2 - j1) - pairs)
+            cost += W_INSERT * max(0, (i2 - i1) - pairs)
+    if not got_ins:
+        structural = len(want_ins)
+        cost = W_DELETE * len(want_ins)
+    return structural, cost, abs(n - size)
+
+
+def score_body(mod, addr, size, body):
+    """(structural, weighted, size delta) for one candidate, or None if it fails.
+
+    Compiles once, masks the linker-filled words before the byte compare, and
+    caches by body hash so repeated states across islands are free.
+    """
+    digest = hashlib.sha1(body.encode("utf-8")).hexdigest()
+    hit = _CACHE.get(digest)
+    if hit is not None:
+        return hit
+    blob = fm.compile_text(body, "probe")
+    if not blob:
+        return None
+    want = fm.retail(mod, addr, size)
+    ok = blob == want
+    if not ok:
+        relocs = fm.compile_text.last_relocs
+        ok = bool(relocs) and fm.masked(blob, relocs) == fm.masked(want, relocs)
+    if ok:
+        result = (0, 0, 0)
+    else:
+        want_ins = [i for i in fm.parse_ins(addr, size)]
+        got_ins = list(fm.md.disasm(blob, addr))
+        result = score_blob(want_ins, got_ins, size, len(blob))
+    _CACHE[digest] = result
+    return result
+
+
+def score_text(mod, addr, size, text):
+    return score_body(mod, addr, size, body_of(text))
+
+
+# --------------------------------------------------------------------------
 # statement analysis
 # --------------------------------------------------------------------------
 
 def simple(line):
-    """(writes, reads, lhs, rhs) for one simple statement, else None.
-
-    A "simple" statement is one assignment or declaration with a single `;`,
-    no control keyword, and no call on either side.  Being conservative here is
-    what keeps reordering semantics-preserving.
-    """
+    """(writes, reads, lhs, rhs) for one simple statement, else None."""
     s = line.strip()
     if not s or s[0] in "#{}":
         return None
@@ -145,13 +260,9 @@ def simple(line):
     lhs, rhs = body[:cut].strip(), body[cut + 1:].strip()
     if not lhs or not rhs:
         return None
-    calls = [n for n in re.findall(r"\b([A-Za-z_]\w*)\s*\(", rhs)
-             if n not in TYPE_WORDS]
-    if calls:
+    calls = [n for n in re.findall(r"\b([A-Za-z_]\w*)\s*\(", rhs) if n not in TYPE_WORDS]
+    if calls or re.search(r"\bvolatile\b", rhs):
         return None
-    if re.search(r"\b(volatile)\b", rhs):
-        return None
-    ids = set(re.findall(r"[A-Za-z_]\w*", body))
     writes = set(re.findall(r"[A-Za-z_]\w*", lhs))
     reads = (set(re.findall(r"[A-Za-z_]\w*", rhs)) | (writes - {lhs})) - TYPE_WORDS
     return writes - TYPE_WORDS, reads, lhs, rhs
@@ -161,13 +272,8 @@ def may_swap(a, b):
     sa, sb = simple(a), simple(b)
     if not sa or not sb:
         return False
-    wa, ra = sa[0], sa[1]
-    wb, rb = sb[0], sb[1]
-    if wa & wb:
-        return False
-    if wa & rb or wb & ra:
-        return False
-    return True
+    wa, ra, wb, rb = sa[0], sa[1], sb[0], sb[1]
+    return not (wa & wb) and not (wa & rb) and not (wb & ra)
 
 
 def single(group):
@@ -210,7 +316,6 @@ def mut_rotate_decl(state, rng):
 
 
 def mut_shuffle_decl(state, rng):
-    """Jump the declaration block to an unrelated order (escapes a plateau)."""
     prefix, decls, groups, suffix = state
     if len(decls) < 3 or len(decls) > 8:
         return None
@@ -227,12 +332,10 @@ def mut_split_init(state, rng):
     if not cands:
         return None
     i = rng.choice(cands)
-    m = resp.DECL.match(decls[i])
-    typ, star, name, arr, expr = m.groups()
+    typ, star, name, arr, expr = resp.DECL.match(decls[i]).groups()
     new = list(decls)
     new[i] = "    %s %s%s%s;" % (typ, star, name, arr or "")
-    new_groups = [["    %s = %s;" % (name, expr)]] + list(groups)
-    return "split init %s" % name, (prefix, new, new_groups, suffix)
+    return "split init %s" % name, (prefix, new, [["    %s = %s;" % (name, expr)]] + list(groups), suffix)
 
 
 def mut_join_init(state, rng):
@@ -244,11 +347,10 @@ def mut_join_init(state, rng):
         m = re.match(r"^\s*(\w+)\s*=\s*(.+?);\s*$", group[0])
         if not m:
             continue
-        name = m.group(1)
         for di, d in enumerate(decls):
             dm = resp.DECL.match(d)
-            if dm and dm.group(3) == name and dm.group(5) is None and not dm.group(4):
-                cands.append((gi, di, name, dm, m.group(2)))
+            if dm and dm.group(3) == m.group(1) and dm.group(5) is None and not dm.group(4):
+                cands.append((gi, di, m.group(1), dm, m.group(2)))
     if not cands:
         return None
     gi, di, name, dm, expr = rng.choice(cands)
@@ -300,8 +402,7 @@ def mut_ternary(state, rng):
     prefix, decls, groups, suffix = state
     cands = []
     for i, group in enumerate(groups):
-        text = "\n".join(group)
-        m = IF_ELSE.match(text)
+        m = IF_ELSE.match("\n".join(group))
         if m and m.group(2) == m.group(4):
             cands.append((i, "to ?:", m))
             continue
@@ -314,8 +415,7 @@ def mut_ternary(state, rng):
     i, kind, m = rng.choice(cands)
     new_groups = list(groups)
     if kind == "to ?:":
-        new_groups[i] = ["    %s = (%s) ? %s : %s;" % (m.group(2), m.group(1), m.group(3),
-                                                      m.group(5))]
+        new_groups[i] = ["    %s = (%s) ? %s : %s;" % (m.group(2), m.group(1), m.group(3), m.group(5))]
     else:
         new_groups[i] = ["    if (%s) {" % m.group(2),
                          "        %s = %s;" % (m.group(1), m.group(3)),
@@ -327,9 +427,6 @@ def mut_ternary(state, rng):
 
 def mut_sameline(state, rng):
     prefix, decls, groups, suffix = state
-    pairs = [i for i in range(len(groups) - 1)
-             if single(groups[i]) and single(groups[i + 1])
-             and may_swap(groups[i][0], groups[i + 1][0])]
     joined = [i for i, g in enumerate(groups)
               if single(g) and g[0].rstrip().endswith(";") and g[0].count(";") == 2]
     if joined:
@@ -339,6 +436,9 @@ def mut_sameline(state, rng):
         new_groups[i] = [a + ";"]
         new_groups.insert(i + 1, [b.strip()])
         return "split line", (prefix, decls, new_groups, suffix)
+    pairs = [i for i in range(len(groups) - 1)
+             if single(groups[i]) and single(groups[i + 1])
+             and may_swap(groups[i][0], groups[i + 1][0])]
     if not pairs:
         return None
     i = rng.choice(pairs)
@@ -366,72 +466,92 @@ def mut_temp(state, rng):
     return "temp %s" % name, (prefix, new_decls, new_groups, suffix)
 
 
-MUTATIONS = [mut_swap_stmt, mut_swap_decl, mut_rotate_decl, mut_shuffle_decl,
-             mut_split_init, mut_join_init, mut_compound, mut_signed, mut_ternary,
-             mut_sameline]
+MUTATIONS = {mut_swap_stmt: "swap stmt", mut_swap_decl: "decl swap",
+             mut_rotate_decl: "decl rot", mut_shuffle_decl: "decl shuffle",
+             mut_split_init: "split init", mut_join_init: "join init",
+             mut_compound: "compound", mut_signed: "signed",
+             mut_ternary: "ternary", mut_sameline: "line"}
 
 
 # --------------------------------------------------------------------------
-# search
+# parallel evaluation
 # --------------------------------------------------------------------------
 
-def decl_sweep(mod, addr, size, state, max_decls, verbose):
-    """Exhaustive declaration order, which is the axis that decides colouring.
+def eval_batch(job):
+    """Worker entry point: score a list of bodies, return their scores."""
+    mod, addr, size, bodies = job
+    return [score_body(mod, addr, size, b) for b in bodies]
 
-    Compiling one body costs about 25 ms, so 720 orders (six locals) is a few
-    seconds; seven is a couple of minutes.  Stops on an exact match.
-    """
+
+class Evaluator:
+    """Scores candidate bodies, in worker processes when asked for them."""
+
+    def __init__(self, mod, addr, size, jobs):
+        self.mod, self.addr, self.size = mod, addr, size
+        self.jobs = max(1, jobs)
+        self.pool = None
+        if self.jobs > 1:
+            try:
+                import concurrent.futures
+                self.pool = concurrent.futures.ProcessPoolExecutor(max_workers=self.jobs)
+            except Exception:
+                self.pool = None
+
+    def many(self, bodies):
+        if not bodies:
+            return []
+        if self.pool is None:
+            return [score_body(self.mod, self.addr, self.size, b) for b in bodies]
+        chunk = max(1, len(bodies) // (self.jobs * 2))
+        jobs = []
+        for k in range(0, len(bodies), chunk):
+            jobs.append((self.mod, self.addr, self.size, bodies[k:k + chunk]))
+        return [s for part in self.pool.map(eval_batch, jobs) for s in part]
+
+    def close(self):
+        if self.pool is not None:
+            self.pool.shutdown(wait=False)
+
+
+# --------------------------------------------------------------------------
+# sweeps
+# --------------------------------------------------------------------------
+
+def decl_sweep(evaluator, state, max_decls, verbose):
     prefix, decls, groups, suffix = state
     n = len(decls)
     if n < 2 or n > max_decls:
         return None, state, "base", 0
-    base = score(mod, addr, size, render(state))
+    base = evaluator.many([body_of(render(state))])[0]
     best = (base, list(decls), "base")
     tried = 0
     for perm in itertools.permutations(decls):
         cand = (prefix, list(perm), groups, suffix)
         text_c = render(cand)
-        s = score(mod, addr, size, text_c)
+        s = evaluator.many([body_of(text_c)])[0]
         tried += 1
         if s is None:
             continue
         if s[0] == 0:
-            print("MATCH in declaration sweep after %d orders" % tried)
             return text_c, cand, "%d decls, sweep order %d" % (n, tried), tried
         if best[0] is None or s < best[0]:
             best = (s, list(perm), "sweep order %d" % tried)
     if verbose:
-        print("  declaration sweep: %d orders, best %s"
+        print("  declaration sweep: %d orders, best structural %s"
               % (tried, best[0][0] if best[0] else "-"))
     return None, (prefix, best[1], groups, suffix), best[2], tried
 
 
-def score(mod, addr, size, text):
-    ok, n, diffs = fm.diff_summary(mod, addr, size, body_of(text))
-    if n is None:
-        return None
-    if ok:
-        return (0, 0)
-    return (len(diffs), abs(n - size))
-
-
-def better(a, b):
-    return a is not None and (b is None or a < b)
-
-
-def exhaustive(mod, addr, size, text, limit):
+def marked_sweep(mod, addr, size, text, limit):
     lines = text.splitlines()
     slots = [i for i, l in enumerate(lines) if l.rstrip().endswith(MARK)]
     if not slots:
         return None
     marked = [lines[i][: lines[i].rindex(MARK)].rstrip() for i in slots]
-    total = 1
-    for k in range(2, len(marked) + 1):
-        total *= k
-    print("%d marked statements (%d orders%s)" % (len(marked), total,
-                                                  ", sampled" if total > limit else ""))
-    orders = itertools.permutations(marked)
-    for n, order in enumerate(orders):
+    total = math.factorial(len(marked))
+    print("%d marked statements (%d orders%s)"
+          % (len(marked), total, ", sampled" if total > limit else ""))
+    for n, order in enumerate(itertools.permutations(marked)):
         if n >= limit:
             print("stopped after %d orders" % limit)
             break
@@ -444,21 +564,25 @@ def exhaustive(mod, addr, size, text, limit):
     return None
 
 
-def search(mod, addr, size, text, iters, islands, budget, seed, use_temps, verbose):
-    """Annealed hill climb: accept improvements, drift sideways, cross valleys.
+# --------------------------------------------------------------------------
+# random search
+# --------------------------------------------------------------------------
 
-    Accepting only strict improvements stalls on a plateau - in practice one
-    adjacent-transposition grid is all a single pass ever visits, and no
-    sequence of single improving moves reaches the right declaration order.
-    So: sideways moves are always taken, worse moves are taken with a
-    temperature that cools, and roughly a third of the steps apply two or
-    three rewrites together, which is what crosses a valley in one hop.
+def search(evaluator, text, iters, islands, budget, seed, use_temps, batch, verbose):
+    """Anneal over semantics-preserving rewrites, with a mutation bandit.
+
+    Each step proposes `batch` candidates (default: two per worker) by mutating
+    the current state one to three times, scores them together, and moves to the
+    best one that annealing accepts.  Bandit weights favour the mutations that
+    have produced improvements, which matters because the productive axis
+    changes as a function gets closer.
     """
     rng = random.Random(seed)
     base = read_state(text)
-    muts = MUTATIONS + ([mut_temp] if use_temps else [])
-    frontier = []          # [(score, label, text)] best first, distinct bodies
-    recent = collections.deque(maxlen=900)
+    muts = list(MUTATIONS) + ([mut_temp] if use_temps else [])
+    weight = {m: 1.0 for m in muts}
+    frontier = []
+    recent = collections.deque(maxlen=1200)
     recent_set = set()
     started = time.time()
     tried = failed = 0
@@ -470,67 +594,82 @@ def search(mod, addr, size, text, iters, islands, budget, seed, use_temps, verbo
         if island == 0 or not frontier:
             state = base
         else:
-            state = read_state(rng.choice(frontier[:2])[2])
-        current = score(mod, addr, size, render(state))
-        for step in range(iters):
+            state = read_state(frontier[rng.randrange(min(2, len(frontier)))][2])
+        current = evaluator.many([body_of(render(state))])[0]
+        for _ in range(iters):
             if time.time() - started > budget:
                 break
-            cand, labels = state, []
-            for _ in range(rng.choices((1, 2, 3), weights=(65, 25, 10))[0]):
-                got = rng.choice(muts)(cand, rng)
-                if not got:
-                    break
-                labels.append(got[0])
-                cand = got[1]
-            if not labels:
+            proposals, labels = [], []
+            for _ in range(batch):
+                cand, labs = state, []
+                for _ in range(rng.choices((1, 2, 3), weights=(65, 25, 10))[0]):
+                    mut = rng.choices(muts, weights=[weight[m] for m in muts])[0]
+                    got = mut(cand, rng)
+                    if not got:
+                        break
+                    labs.append(got[0])
+                    cand = got[1]
+                if not labs:
+                    continue
+                text_c = render(cand)
+                if text_c in recent_set:
+                    continue
+                if len(recent) == recent.maxlen:
+                    recent_set.discard(recent[0])
+                recent.append(text_c)
+                recent_set.add(text_c)
+                proposals.append((text_c, " + ".join(labs)))
+                labels.append((labs, mut))
+            if not proposals:
                 continue
-            label = " + ".join(labels)
-            text_c = render(cand)
-            if text_c in recent_set:
-                continue
-            if len(recent) == recent.maxlen:
-                recent_set.discard(recent[0])
-            recent.append(text_c)
-            recent_set.add(text_c)
-            s = score(mod, addr, size, text_c)
-            tried += 1
-            if s is None:
-                failed += 1
-                continue
-            if verbose and tried % 50 == 0:
-                print("  [%ds] island %d step %d  %s  %s"
-                      % (time.time() - started, island, step,
-                         "%d slots" % s[0] if s[0] else "MATCH", label))
-            if s[0] == 0:
-                need = use_temps and "temp tmp" in label
-                frontier.insert(0, (s, label + (" NEEDS-EXPLANATION" if need else ""), text_c))
-                print("MATCH after %d tries (%ds): %s"
-                      % (tried, time.time() - started, label))
-                return frontier, tried, failed
-            if best is None or s < best:
-                best = s
-                frontier.append((s, label, text_c))
-                frontier.sort(key=lambda x: x[0])
-                keep, uniq = [], set()
-                for entry in frontier:
-                    k = re.sub(r"\s+", " ", entry[2])
-                    if k in uniq:
+            scores = evaluator.many([body_of(p[0]) for p in proposals])
+            for (text_c, label), s in zip(proposals, scores):
+                tried += 1
+                if s is None:
+                    failed += 1
+                    continue
+                if s[0] == 0:
+                    need = use_temps and "temp tmp" in label
+                    print("MATCH after %d tries (%ds): %s"
+                          % (tried, time.time() - started, label))
+                    frontier.insert(0, (s, label + (" NEEDS-EXPLANATION" if need else ""), text_c))
+                    return frontier, tried, failed
+                if best is None or s < best:
+                    best = s
+                    frontier.append((s, label, text_c))
+                    frontier.sort(key=lambda x: x[0])
+                    keep, uniq = [], set()
+                    for entry in frontier:
+                        k = re.sub(r"\s+", " ", entry[2])
+                        if k in uniq:
+                            continue
+                        uniq.add(k)
+                        keep.append(entry)
+                    frontier = keep[:4]
+                if current is None:
+                    current = s
+                    state = read_state(text_c)
+                    continue
+                if s[0] < current[0] or (s[0] == current[0] and s[1] <= current[1]):
+                    delta = 0
+                else:
+                    temp = max(0.15, 3.0 * (0.93 ** tried))
+                    delta = (s[0] - current[0]) * 2 + max(0, s[1] - current[1]) / 20.0
+                    if rng.random() >= math.exp(-delta / temp):
                         continue
-                    uniq.add(k)
-                    keep.append(entry)
-                frontier = keep[:4]
-            if current is None:
-                state, current = cand, s
-                continue
-            delta = s[0] - current[0]
-            if delta <= 0:
-                state, current = cand, s
-            else:
-                temp = max(0.15, 3.0 * (0.93 ** step))
-                if rng.random() < math.exp(-delta / temp):
-                    state, current = cand, s
+                for _, mut in labels:
+                    weight[mut] = min(12.0, weight[mut] + 0.5)
+                state, current = read_state(text_c), s
+                if verbose and tried % 100 < batch:
+                    print("  [%ds] %d tries, structural %d cost %d  %s"
+                          % (time.time() - started, tried, s[0], s[1], label))
+                break
     return frontier, tried, failed
 
+
+# --------------------------------------------------------------------------
+# CLI
+# --------------------------------------------------------------------------
 
 def main(argv):
     flags = [a for a in argv if a.startswith("--")]
@@ -539,8 +678,8 @@ def main(argv):
         print(__doc__)
         return 2
     mod, addr, size, path = args[0], int(args[1], 0), int(args[2], 0), pathlib.Path(args[3])
-    opt = {"--iters": 150, "--islands": 4, "--time": 180, "--seed": 1,
-           "--limit": 4000, "--top": 4, "--sweep-max": 6}
+    opt = {"--iters": 200, "--islands": 4, "--time": 180, "--seed": 1, "--jobs": 1,
+           "--sweep-max": 6, "--limit": 4000, "--top": 4, "--batch": 0}
     for flag in list(opt):
         if flag in argv:
             opt[flag] = int(argv[argv.index(flag) + 1])
@@ -553,44 +692,46 @@ def main(argv):
     if note:
         print("note: parked - %s" % note)
     name = resp.func_name(mod, addr)
+    out = pathlib.Path("build/cand/permute_%s.c" % name)
 
-    found = exhaustive(mod, addr, size, text, opt["--limit"]) if \
-        any(l.rstrip().endswith(MARK) for l in text.splitlines()) else None
-    if found:
-        src, label = found
-        out = pathlib.Path("build/cand/permute_%s.c" % name)
-        out.write_text(src + "\n")
-        print("wrote %s" % out)
-        if install:
-            kept = t10.try_unit(name, addr, size, src, mod=mod)
-            print("install: %s" % ("KEPT" if kept else "rejected by the ROM digest"))
-        return 0
+    if any(l.rstrip().endswith(MARK) for l in text.splitlines()):
+        found = marked_sweep(mod, addr, size, text, opt["--limit"])
+        if found:
+            out.write_text(found[0] + "\n")
+            print("wrote %s" % out)
+            if install:
+                kept = t10.try_unit(name, addr, size, found[0], mod=mod)
+                print("install: %s" % ("KEPT" if kept else "rejected by the ROM digest"))
+            return 0
 
-    state = read_state(text)
-    match, seed_state, seed_label, swept = decl_sweep(mod, addr, size, state,
-                                                      opt["--sweep-max"], verbose)
-    if swept:
-        print("declaration sweep: %d orders, best state %s" % (swept, seed_label))
-    if match:
-        out = pathlib.Path("build/cand/permute_%s.c" % name)
-        out.write_text(match)
-        print("wrote %s  (%s)" % (out, seed_label))
-        if install:
-            kept = t10.try_unit(name, addr, size, match, mod=mod)
-            print("install: %s" % ("KEPT" if kept else "rejected by the ROM digest"))
-        return 0
+    evaluator = Evaluator(mod, addr, size, opt["--jobs"])
+    try:
+        match, seed_state, seed_label, swept = decl_sweep(evaluator, read_state(text),
+                                                          opt["--sweep-max"], verbose)
+        if swept:
+            print("declaration sweep: %d orders, best state %s" % (swept, seed_label))
+        if match:
+            out.write_text(match)
+            print("wrote %s  (%s)" % (out, seed_label))
+            if install:
+                kept = t10.try_unit(name, addr, size, match, mod=mod)
+                print("install: %s" % ("KEPT" if kept else "rejected by the ROM digest"))
+            return 0
 
-    frontier, tried, failed = search(mod, addr, size, render(seed_state), opt["--iters"],
-                                     opt["--islands"], opt["--time"], opt["--seed"],
-                                     use_temps, verbose)
+        batch = opt["--batch"] or max(2, 2 * opt["--jobs"])
+        frontier, tried, failed = search(evaluator, render(seed_state), opt["--iters"],
+                                         opt["--islands"], opt["--time"], opt["--seed"],
+                                         use_temps, batch, verbose)
+    finally:
+        evaluator.close()
+
     print("%d candidates, %d did not compile, best:" % (tried, failed))
     if not frontier:
-        print("  no improving state found - widen --iters/--islands or add --temps")
-    for s, label, text_c in frontier[: opt["--top"]]:
-        print("  %3d slots  %+d B  %s" % (s[0], s[1], label))
+        print("  no improving state found - widen --iters/--islands/--time or add --temps")
+    for s, label, _ in frontier[: opt["--top"]]:
+        print("  %3d structural  cost %4d  %+d B  %s" % (s[0], s[1], s[2], label))
     if frontier and frontier[0][0][0] == 0:
         best = frontier[0]
-        out = pathlib.Path("build/cand/permute_%s.c" % name)
         out.write_text(best[2])
         print("wrote %s  (%s)" % (out, best[1]))
         if install:

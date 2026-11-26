@@ -12594,3 +12594,11 @@ NEW: 10x676 family, 0x0208f0e8 (+0x0209a8e8 0x020a1a8c 0x020a1d30 0x020ab2d8 ...
   the original probably did not initialise q at its declaration, so the next attempt
   should start from that shape and re-run the sweep (declaration order is the axis the
   remaining slots live on).
+
+0209d988 / 020c5428 ov002 328B - MATCHED 2026-11-26 (was a register-renaming wall)
+  Found by tools/match/permute.py with the aligned weighted scorer:
+  `join init y + decl 0/1` - 192 candidates, 6 s, from 37 differing slots.
+  Winning shape: `u32 z;` declared uninitialised, `s32 y = 0;` initialised at its
+  declaration, and the sign choice written as `if (half == 0) ... else ...`
+  rather than a conditional expression. Source reformatted afterwards and still
+  byte-exact; t10 ok, ninja sha1 OK for both units.
