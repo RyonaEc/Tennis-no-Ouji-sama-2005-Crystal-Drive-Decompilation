@@ -11,12 +11,12 @@ criterion that the digest gate decides, not a percentage alone.
 
 | Metric | Matched | Total | Left |
 |---|---:|---:|---:|
-| Functions | 1,894 | 3,806 | **1,912** |
-| Code | 169,172 B | 1,841,700 B | **1,672,528 B** |
+| Functions | 1,900 | 3,806 | **1,906** |
+| Code | 170,608 B | 1,841,700 B | **1,671,092 B** |
 | Data | 630,724 B | 801,936 B | **171,212 B** |
-| Complete units | 4,183 | 4,851 | **668** |
+| Complete units | 4,189 | 4,860 | **671** |
 
-The important asymmetry: **49.8% of functions but 9.2% of code bytes.** What
+The important asymmetry: **49.92% of functions but 9.26% of code bytes.** What
 remains is not a long tail of small leaves - it is a few hundred large functions.
 
 Data is the mirror image: 78.65% matched. Its fully-linked figure is higher
@@ -59,12 +59,22 @@ per-slot state machine and an 8-function flag-setter family.
 
 ### Engine status (measured 2026-11-26)
 
-The unattended re-spell engine is spent, and the numbers say so: the grind
-journal holds 7,351 visited units with **zero** matches, 870 of them marked
-exhausted and 6,458 with no candidate file to re-spell at all. In the same
-period hand decode kept landing units. So the bottleneck is not variant search,
-it is **authoring C for large functions**, and the plan below is ordered that
-way: no work is scheduled against `grind.py` as the primary engine.
+Measured 2026-11-26. The old `grind.py` re-spell engine is spent (7,351 visited
+units, zero matches, 870 marked exhausted), but its replacement is not: the
+rewritten `permute.py` plus `permusweep.py` has landed five units this week
+(`0209d988` 328 B, `020c5428` 328 B, `0208a3cc` 156 B, `020b7e20` 200 B,
+`020d72f8` 164 B).
+
+The useful finding is *what* it can and cannot do. Fed the queue by proximity it
+kept choosing register-only walls and returning nothing; restricted to
+candidates with a real structural difference it matched on the first run
+(`--min-structural 2`). Register residue is therefore not merely hard, it is
+different work, and it was crowding out the candidates where the search still
+has traction. The search now defaults away from it.
+
+What remains true is that the bottleneck for the large families below is
+**authoring C**, not variant search: a 756 B function with 60 structural slots
+of residue is a decode problem, not a permutation problem.
 
 Both flagship members have a complete decode on disk and a draft that is short
 only on allocation, not algorithm:
@@ -72,7 +82,7 @@ only on allocation, not algorithm:
 | Member | Draft | Retail | Residue |
 |---|---|--:|---|
 | `0x0208f38c` (14 x 608) | 588 B, 291 slots | 608 B | colouring: retail `g`→r8, `rec`→sl, `sb`→sb, frame 0x3c, `idx` spilled to `[sp+0x20]`; mwcc gives `g`→sl, `rec`→r8, frame 0x34 |
-| `0x0208f860` (13 x 756) | 548 B | 756 B | body order after the direction branch (see `notes/ov002-0208f860.md`) |
+| `0x0208f860` (13 x 756) | 732 B | 756 B | 24 B: body order after the direction branch; full decode in `notes/ov002-0208f860.md` |
 
 Tried on `0x0208f38c` and recorded in its note: `off = idx * 0x158` used twice
 (forces the shared `mul`, 588 B), `sb` declared before `rec` (flips `sb`, leaves
@@ -108,8 +118,22 @@ Criterion: as Phase 1. Total here is 31 functions and 11,188 bytes.
 
 ## Phase 3 - wall triage by residue class
 
-`tools/match/walls.txt` holds **589 parked near-misses**. They are not 589
-independent problems; they are a handful of classes. Recent evidence:
+`tools/match/walls.txt` holds **614 parked near-misses**. They are not 614
+independent problems; they are a handful of classes, and one of them is now
+measured as unreachable and should be triaged out rather than worked:
+
+**The register-permutation class.** Every wall whose only residue is register
+choice - six ov002 prologue walls (`020b5d28`, `020c0c70`, `020c82d4`,
+`020f4490`, `020da96c`, `020f466c`), `02068c78`, `020604b4`, and arm9's
+`0202c430` - has now been attacked with declaration order, statement order and
+moves, init split/join, additive-chain order, signedness swaps, 24 pragmas, and
+the SM64DS-style first-demand ordering. None of it moves the allocation. The
+canonical case is `02068c78` (64 B): the candidate has every instruction right
+and four slots rotated, because retail holds the base in `ip` - a compiler
+temporary - and b56 picks `r3`. No source spelling reaches `ip`. Treat these as
+bounded: record the residue, do not re-spend search time.
+
+Recent evidence from the classes that *are* reachable:
 
 - The address-macro class (`HI`/`LO` taking `&param`) turned a wall written off as
   "unreachable prologue, 8-byte struct + 2 unused u32 args" into
@@ -119,7 +143,7 @@ independent problems; they are a handful of classes. Recent evidence:
   issued before the increment" class (`func_02037320`, `func_02037788`) each have
   a written residue and no lever yet.
 
-Do this as a batch job, not one wall at a time: read the 427 notes, bucket them by
+Do this as a batch job, not one wall at a time: read the notes, bucket them by
 residue text, then work one bucket to a lever. A bucket that yields a lever turns
 into a `respell.py` axis for the whole queue, which is where the automated
 sweeper stopped finding anything.
