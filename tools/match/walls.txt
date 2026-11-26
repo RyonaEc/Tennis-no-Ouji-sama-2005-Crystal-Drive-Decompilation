@@ -420,7 +420,6 @@ arm9 0x0202612c ?B - arm9 -- two-call wrapper, retail `stmdb sp!,{lr} / bl / bl 
 arm9 0x020263c0 ?B - arm9 -- retail `subs r0,r0,#4 / bhs / bx lr`; while, do-while, `w... L3349
 arm9 0x02026a88 ?B - (28B) / 0x02026aa4 (36B) / 0x0202474c (36B): the ldm/stm copy family.... L2683
 arm9 0x02026aa4 ?B - (36B) / 0x0202474c (36B): the ldm/stm copy family. Retail is L2683
-arm9 0x02028920 ?B - / 0x02028958 (56B each): siblings; retail keeps the base in r0 and th... L2821
 arm9 0x02028958 ?B - (56B each): siblings; retail keeps the base in r0 and the field pair in L2821
 arm9 0x02029cc4 ?B - (60B): once-guard on data_0204abf8 (`if (*p) return; *p = 1; func_020... L3265
 arm9 0x0202d158 ?B - / 0x0202d22c (212B each, famsurvey pair): 6-argument state setter on... L3139
@@ -437,8 +436,6 @@ arm9 0x0203b698 ?B - (56B): function-table walker. Retail is do-while with a `cm
 ov002 0x0204c884 148B func_ov002_0204c884 148B: idx=((s32)a1+1)/2; q=(u32*)(B+0x274+a0*0x1c+0x18); *q|=0x400 L2471
 ov002 0x0204f320 172B func_ov002_0204f320 ` / `0x0204f3cc` (172 B, 2x). Full body recovered: read the id L11350
 ov002 0x0204f3cc 172B func_ov002_0204f3cc ` (172 B, 2x). Full body recovered: read the id L11350
-ov002 0x0204f478 148B func_ov002_0204f478 ` / `0x0204f50c` (148 B x2) -- `build/cand/a_f478.c` is 148 B L11587
-ov002 0x0204f50c 148B func_ov002_0204f50c ` (148 B x2) -- `build/cand/a_f478.c` is 148 B L11587
 ov002 0x0204f5a0 132B func_ov002_0204f5a0 -- pushes a 12-byte record into a 0x40-entry table: index byte at L7187
 ov002 0x020532e4 388B func_ov002_020532e4 0204f6ac, 0203b0c0 (twice), 02057068 L10448
 ov002 0x02053468 220B func_ov002_02053468 0205bee4(0x1e, rec), 0204f770, 020532e4, 0204f6ac, 0203b0c0 (twice),... L10448

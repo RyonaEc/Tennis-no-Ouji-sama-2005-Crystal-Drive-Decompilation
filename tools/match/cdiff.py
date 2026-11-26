@@ -84,7 +84,10 @@ def main(argv):
         dl = ROOT / f'config/ATOJ/{dlmod}/delinks.txt'
         before = dl.read_text()
         src.write_text('#include "types.h"\n\n' + pathlib.Path(cfile).read_text())
-        dl.write_text(before.rstrip('\n') + '\n\n' + T.entry_for(srcdir, name, addr, size))
+        # arm9 already lists every function, so appending a second entry for the
+        # same slice makes configure drop the rule and the build fails.
+        if f'{srcdir}/{name}.c:' not in before:
+            dl.write_text(before.rstrip('\n') + '\n\n' + T.entry_for(srcdir, name, addr, size))
         obj_path = ROOT / f'build/ATOJ/{srcdir}/{name}.o'
         obj_path.unlink(missing_ok=True)
         try:

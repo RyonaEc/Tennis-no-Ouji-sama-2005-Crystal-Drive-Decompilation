@@ -1230,3 +1230,38 @@ Generalisation: when a tie is "constant in lr vs ip", give the pointer an
 integer home that the source assigns explicitly, and write the addressed
 constant in front of the base. Pointer-typed locals and `&local` spellings let
 b56 rematerialise and lose the tie.
+
+## 2.60 `volatile` for retail's repeated loads (2026-11-26)
+
+Retail sometimes reads the same location two or three times where a `C` source
+would read it once. b56 always CSEs the repeat, which then changes the whole
+live range and the frame. Marking the field `volatile` is the spelling that
+reproduces the repeats:
+
+    volatile u8 *cnt = base + 0x36d8;      /* ov002 0x0204f478 / 0x0204f50c */
+
+`ov002 0x0204f478` (148 B) reads the index byte three times (count lookup, slot
+base, counter increment); the plain spelling CSEs to one, keeps the pointer in
+`r4`, and never matches. With `volatile` all three loads come back and the
+function matches exactly. Two further spellings were needed there:
+
+- the increment is `*(u32 *)(p + 0xc10 + *cnt * 4) += 1;` — a compound
+  assignment reads the index once; writing `x = x + 1` with the `*cnt`
+  expression twice makes the volatile rule emit two index loads (14 diffs).
+- the read and the increment split `0xc10` opposite ways: the read is
+  `p + *cnt * 4 + 0xc10` (constant as displacement) and the increment is
+  `p + 0xc10 + *cnt * 4` (`add r3, ip, #0xc10` first). Constant placement is
+  per-site.
+
+Not every repeat is a win: on `arm9 0x02028920` the same double read of
+`*(u32 *)(p + 0x28)` needs `volatile`, but that spelling also makes b56 drop the
+`push {r4, lr}` frame that retail has, so the pair stays parked. When `volatile`
+changes the frame, the repeat is not the real difference — look at which
+argument is live across the call instead.
+
+## 2.61 cdiff and arm9's pre-listed delinks (tool)
+
+`cdiff.py` used to append a delinks entry unconditionally. For arm9 every
+function is already listed, so the duplicate made configure drop the compile
+rule and every probe failed with `no known rule to make it`. It now appends only
+when `src/<mod>/<name>.c:` is absent, which fixes all arm9 probing.
