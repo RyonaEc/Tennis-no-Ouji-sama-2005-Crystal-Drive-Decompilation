@@ -1013,3 +1013,33 @@ survives the default sweep is not a pragma problem and the time belongs on the C
 Consequence for two parks: `02080ca4`'s induction variable is *not* switchable off
 with a pragma, and the "pure scheduling" parks cannot be re-scheduled with
 `schedule once` - both remain source-shape problems.
+
+## 2.53 A mirrored scratch pair is a wall, not a spelling miss (2026-11-26)
+
+`ov003 0x02066a54` (180 B, three-member family) reaches retail's exact size and its
+loop is instruction-for-instruction identical:
+
+```
+add ip, r4, r5, lsl #1      ; ip = base + i*2
+lsr r2, r5, #0x1f           ; (i & 3) test, u16 sign fix
+add r0, ip, #0x8d00
+rsb r1, r2, r5, lsl #30
+strh lr, [r0, #0xe8]        ; *p = 0
+adds r0, r2, r1, ror #30
+addeq r0, ip, #0x8000
+streq r3, [r0, #0xde8]      ; every fourth slot = 0x200, a *word* store
+```
+
+b56 hands the loop-invariant zero to `ip` and the running pointer to `lr`; retail has
+them the other way round. Six slots differ and nothing else does. The allocation did
+not move for any of: naming the constant (`u32 zero = 0`), naming the address
+(`u8 *q`), declaring the index before the pointer, casting the stored constant
+(`(u16)0`), or spelling the body with a `u8 *` cursor instead of the full address
+expression. Two spellings that dropped the cursor variable were worse (168 B, 176 B)
+because they also lost the `+0x8d00/#0xe8` split.
+
+The rule: when the sizes already agree and the whole residue is a two-way swap
+between the two scratch registers (`ip` and `lr`, or `ip` and `r12`), stop. Every
+spelling that produces the same three-address code produces the same, mirrored,
+allocation, so more C text cannot reach it. This is the same class of park as a
+scheduled pool load, not a missing idiom.
