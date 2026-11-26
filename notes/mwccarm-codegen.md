@@ -1319,3 +1319,38 @@ Also note the two live-pointer reloads in that unit: the callback arguments read
 the global through one dereference and the dispatch guard through two, and both
 reload `data_020475c4` from the pool rather than keeping it in a callee-saved
 register — spelling each access out inline is what reproduces that.
+
+## 2.64 Split base from index to move a callee-saved colour (2026-11-26)
+
+`ov003 0x02061cc8`/`0x02061f28` (608 B each) are twins that build two pointers
+from one index:
+
+    i = a3 * 0x418;                 ; r8 in retail
+    w = (u32 *)(p + 0x3c0 + i);     ; r7 in retail
+    b = p + 0x3d4 + i;              ; r6 in retail
+
+Written that way b56 emits exactly retail's instruction stream but colours `i`
+into r7 and `w` into r8 — the pair is swapped, 29 relocations and nothing else.
+Eight reorderings (declaration order, `s32 i`, `u32 i, *w`, index inlined into
+both addresses, a third dummy live local, a separately named base pointer) all
+reproduce the same swap; `permute.py` found no state below 29 structural.
+
+What moves it is splitting each `base + index` pointer into two assignments:
+
+    i = a3 * 0x418;
+    w = (u32 *)(p + 0x3c0);
+    b = p + 0x3d4;
+    w = (u32 *)((u8 *)w + i);
+    b = b + i;
+
+The emitted code is unchanged — the same `add r1, sb, #0x3c0`, `mul`, `add r0,
+sb, #0x3d4`, `add r7, r1, r8`, `add r6, r0, r8` — but the allocator now starts
+`i`'s live range first and gives it the higher register, which is retail's
+colouring. So when a folded address and a bare index compete for callee-saved
+registers, the fix is not the declaration list but which *statement* first makes
+the pointer live.
+
+The twin differs only in its table symbol (`data_ov003_020eb0f4` rather than
+`data_ov003_020eb124`) and in the two pooled loads; everything else, including
+the four unrolled corner blocks reading `q.b, q.a, q.c, q.d` from a struct copy
+that b56 emits as `ldm`/`stm`, is shared.
