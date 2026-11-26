@@ -6565,3 +6565,13 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
 * `ov004 0204d980` and `ov004 0204e8a4` were re-attempted from their wall notes
   and reproduced them exactly (52 B bodies, direct branches / mla+add #0xf0),
   which confirms both are bounded rather than merely unattempted.
+
+* `ov005 02050974` (308 B init) transcribed from disassembly reaches 77/77
+  instructions and the exact size with 10 differences, all of them frame slots.
+  The four VRAM-clear calls each take a zeroed argument; retail writes and
+  re-reads ONE stack slot (`str r0,[sp,#4]; ldr r0,[sp,#4]`, frame 8 bytes)
+  while b56 gives every `z = 0;` store its own slot (frame 0x18). `volatile u32
+  z;` with an explicit `z = 0;` before each call is the spelling that got there
+  (58 -> 10 diffs); four separate locals, a shared initialiser and
+  `*(u32 *)&z` all scored worse (16, 4-and-larger, 16). The source shape behind
+  retail's single reused slot is still unknown.

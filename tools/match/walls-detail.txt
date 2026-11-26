@@ -12624,3 +12624,6 @@ ov002 prologue class - CORRECTION: these are pure register residue, not structur
   (first-demand order, typed temporaries) which are also already covered.
   Untried idea from the research: express the stride through a typed array index
   (&g->ent[a0] with element size 0x158) instead of an explicit a0 * 0x158.
+
+ov005 0x02050974 func_ov005_02050974
+308B init: 77/77 slots, 10 diffs all frame slots - retail reuses [sp+4] for four zeroed args, b56 gives each volatile store its own slot (frame 8 vs 0x18)
