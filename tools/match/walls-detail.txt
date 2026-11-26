@@ -12262,3 +12262,48 @@ ov002 0x02078424 func_ov002_02078424
 
 ov002 0x0209d584 func_ov002_0209d584
 260B entity update, one index arg, 0x158 stride. g = *(u32*)data_ov002_02102070; e = g+0x2e4+a0*0x158; p = g+0x1824; cb = *(u8*)(g+0x2e6+a0*0x158). Body: store 0 to e->0x66, guard 'if (!(*(s32*)(e+0xd8) & 1)) return 0;', v = *(Vec3*)(p+0x24) (3-word ldm/stm struct copy), e->0x8e and e->0x8c both = p->0xac, then if (v.x > e->4) { mode = (e->2 < 2) ? 0x2e : 0x2d; off = -0x120000; } else { mode = (e->2 < 2) ? 0x2d : 0x2e; off = 0x120000; }, e->0x90 = e->4, e->0x94 = e->8, e->0x9c = v.x + off, e->0xa0 = v.y, func_ov002_02078208(a0), func_ov002_0204d270(cb, e->1, mode), e->0xd1 = 1, return 1. LEVER: the zero store must be written BEFORE the guard - guard-first gives b56 a separate 'moveq r0,#0' plus 'mov r0,#0' and the function is 264B; store-first lets both paths share one 'mov r0,#0' and lands exactly 260B (the compiler is free to sink the store, the guard does not read e->0x66). Best candidate build/cand/ov2_9d584_c.c is EXACT SIZE with 35 differing slots, all scheduling/colouring of the same instruction multiset: retail schedules 'mov r0,#0' into the predicated epilogue and sinks the strh after it where b56 hoists both to the top, retail keeps a0 in r3 while b56 uses ip, retail branches (b into the join) on the second mode selection where b56 if-converts it, and retail's mode/cb registers (r4/r6) are swapped against b56's (r6/r4). Guard-first with a shared zero local and respell over 80 variants (45 compiling) all scored worse, best 35.
+
+0208f860 ov002 756B - 13-member family (9828B: 0208f860 0209a5f4 0209c728 0209eb18 020a8ba0 020ad2b0 020bc108 020ce9d4 020f36bc ...)
+  DECODE (one index arg, 0x158 stride):
+    g = *(u32*)data_ov002_02102070; e = g+0x2e4+a0*0x158; q = g+0x1744+a0*0x38; w = g+0x1824;
+    b = *(u8*)(g+0x2e6+a0*0x158); half = (u8)(b>>1); dir = (s8)(1-(b&0xfe));
+      (asm: b>>1, lsl #1, sub #1, negate, lsl #24 / asr #24)
+    y   = ((s32)func_ov002_0205bf64() - 0x14) << 16;
+    t   = func_02034148(-0x4074) + 0x157c;
+    d   = *(s32*)(e+0x128);
+    ang = (s16)func_ov002_02053468();
+    v   = func_ov002_0205bee4(0x1e, e);
+    if (*(u32*)(e+0x4c) & 4) {
+        if (*(u8*)(q+8) == 2) ang = (s16)(ang + v);
+        if (*(u8*)(q+8) == 0) ang = (s16)(ang - v);
+    } else {
+        u16 f = *(u16*)(e+0x50);
+        if (f & 0x10) ang = (s16)(ang + v);
+        if (f & 0x20) ang = (s16)(ang - v);
+    }
+      (every ang write is lsl #16 / asr #16)
+    ang2 = (ang << 8) / 360;                      /* 0xb60b60b7 idiom */
+    func_ov002_0204f770(d*dir, (u8)(s16)(dir*ang2), buf);   /* buf = 3 words at sp+0x34 */
+    if (half == 1)                    z = -z;     /* z = 0x760000 */
+    if (buf[0] < 0)                   y = -y;
+    if (buf[0] == 0 && *(s32*)w < 0)  y = -y;
+    r = func_ov002_020532e4(y, z, buf, d*dir) * buf[0];
+    m = 0x2d0000 - *(s32*)(w+8); if (m < 0) m = 0;
+    k = z - *(s32*)(w+4);
+    m = func_ov002_0204f6ac((m >> 8) * ((t >> 8) << 1)) << 8;
+    k = func_0203b0c0(m, t);
+    acc2 = k*t; acc1 = k*m;
+    do {                                          /* u16 counter, /2 is add lsr#31 + asr #1 */
+        acc2 += t; acc1 += m; k++; i++;
+        yy = *(s32*)(w+8) + acc1 - (acc2*k)/2;
+    } while (i <= 100 && yy > 0x30000);
+    if (k <= 0) k = 10;
+    p1 = func_0203b0c0(r, k); p2 = func_0203b0c0(fp, k);
+    func_ov002_02057068(p1, p2, m, 0, -0x4074, half, 0x42000000, 9, *(u8*)e, *(u16*)(e+0x12c), a0);
+      ELEVEN args: 3 in r0-r2 + 8 stack words at sp+0..0x1c. Frame is 0x44:
+      args sp+0x00..0x1c, locals [0x20]=a0 [0x24]=q [0x28]=half [0x2c]=d [0x30]=r [0x34..0x3c]=buf [0x3c]=m.
+    func_ov002_020780f8(); *(u32*)(g+0x38) &= ~1;
+  CANDIDATE build/cand/ov2_8f860.c: compiles to 688/756 B, 167 vs 184 instructions, 353 differing
+  slots (shell-masked compare). Head, ang adjust and store block line up; b56 keeps one fewer spill,
+  folds k*t into mla and drops the acc1/acc2 split, and emits only 3 of the 8 stack-arg stores.
+  NEXT: force the two loop accumulators to stay live and the full 8-word argument block.
