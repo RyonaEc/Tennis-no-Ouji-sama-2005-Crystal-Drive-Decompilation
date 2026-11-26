@@ -204,3 +204,33 @@ that var3 matches while the ROM digest rejects, with retail keeping the global
 address in `ip` where mwcc uses `r1` for every spelling tried. That is the same
 class as the ov002 prologue walls: regperm, unreachable from the source shapes
 we can generate.
+
+## Triage speed and candidate selection (2026-11-26)
+
+`permusweep.py` had two defects that made it nearly unusable at this repo's scale
+and quietly pointed it at the wrong files:
+
+* **Discovery was O(files x symbols).** `build/cand` holds 4,547 `.c` files and
+  the config trees several thousand symbols, so the per-file scan over every
+  symbol spent minutes before printing anything - it looked like a hang. It is now
+  a suffix index (`9d988` -> the symbol whose address ends that way), built once:
+  the same discovery takes about 8 seconds for ov002 including triage.
+* **It kept the newest file per address.** An address accumulates drafts and
+  variants, so the run was often permuting a worse draft than one sitting next to
+  it. Discovery now keeps every file for an address and `triage` scores them
+  (best-first ordering, capped at two per address) and keeps the best.
+
+A Windows note: worker processes cannot import a module that was loaded
+dynamically, so parallel scoring through `ProcessPoolExecutor` never returns.
+Triage is serial with progress output instead; `permute.py --jobs` is unaffected
+because its pool is created inside one process.
+
+### What the corrected triage shows
+
+ov002 now reports 75 candidate addresses, and the top of the table is different
+from before: `func_ov002_02068c78` (64 B, cost 65) and `func_ov002_020604b4`
+(352 B, cost 110) are both structural 0 - pure register residue - and both resist
+a 90-120 s search across declaration order, statement order and moves, init
+split/join, chain order and signedness. Every regperm wall found so far behaves
+the same way, which is now a large enough sample to state plainly: the permuter's
+axes do not change mwcc's register assignment for these functions.

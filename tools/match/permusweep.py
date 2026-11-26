@@ -83,29 +83,44 @@ def matched(mod, name):
 
 
 def discover(mod_filter):
-    """[(mod, name, addr, size, path)] candidates worth triage."""
+    """{address: [candidate files]} for unmatched functions.
+
+    Address suffix lookup, not a per-file scan over every symbol: `build/cand`
+    holds thousands of drafts and the config several thousand symbols, so the
+    naive double loop costs minutes before the first line of output.
+
+    Several files usually exist for one address (drafts, variants, a `best_`
+    snapshot).  They are all kept and scored in `triage`, because picking the
+    newest file is how a run ends up permuting a worse draft than the one sitting
+    next to it.
+    """
     table = symbols()
-    by_suffix = {}
+    index = {}
     for mod, name, addr, size in table:
-        by_suffix.setdefault("%08x" % addr, (mod, name, addr, size))
+        key = "%08x" % addr
+        for k in {key, key[-6:], key[-5:]}:
+            index.setdefault(k, []).append((mod, name, addr, size))
     work, ambiguous = {}, set()
     for path in sorted(pathlib.Path("build/cand").glob("*.c")):
         stem = path.stem.lower()
-        hits = [key for key in by_suffix if key[-6:] in stem or key[-5:] in stem]
-        hits = [k for k in hits if re.search(r"(^|[^0-9a-f])" + k[-6:] + r"([^0-9a-f]|$)", stem)
-                or re.search(r"(^|[^0-9a-f])" + k[-5:] + r"([^0-9a-f]|$)", stem)]
+        hits = {}
+        for token in set(re.findall(r"[0-9a-f]{5,8}", stem)):
+            for entry in index.get(token, ()):
+                hits[entry[2]] = entry
         if len(hits) != 1:
             if len(hits) > 1:
                 ambiguous.add(path.name)
             continue
-        mod, name, addr, size = by_suffix[hits[0]]
+        mod, name, addr, size = next(iter(hits.values()))
         if mod_filter and mod != mod_filter:
             continue
         if matched(mod, name):
             continue
-        prev = work.get(addr)
-        if prev is None or path.stat().st_mtime > prev[4].stat().st_mtime:
-            work[addr] = (mod, name, addr, size, path)
+        entry = work.get(addr)
+        if entry is None:
+            work[addr] = [mod, name, addr, size, [path]]
+        else:
+            entry[4].append(path)
     return list(work.values()), ambiguous
 
 
@@ -118,18 +133,47 @@ def read_manifest(path):
         parts = line.split()
         if len(parts) < 4:
             continue
-        items.append((parts[0], "", int(parts[1], 0), int(parts[2], 0), pathlib.Path(parts[3])))
+        items.append((parts[0], "", int(parts[1], 0), int(parts[2], 0), [pathlib.Path(parts[3])]))
     return items
 
 
-def triage(items):
-    """Score every candidate once, cheapest evidence first."""
-    rows = []
-    for mod, name, addr, size, path in items:
-        text = path.read_text(encoding="utf-8", errors="ignore")
-        s = perm.score_text(mod, addr, size, text)
-        name = name or perm.resp.func_name(mod, addr)
-        rows.append((s, mod, name, addr, size, path))
+def triage(items, jobs=1):
+    """Score every candidate file once, in parallel, and keep the best per address.
+
+    Scoring is one compile per file and there can be several hundred files, so
+    this is the slowest phase of a sweep.  It is also embarrassingly parallel,
+    which is why `permute.eval_batch` exists.
+    """
+    plan, results = [], []
+    for mod, name, addr, size, paths in items:
+        paths = paths if isinstance(paths, list) else [paths]
+        paths = sorted(paths, key=lambda f: (0 if f.stem.startswith("best_") else 1,
+                                             -f.stat().st_mtime))[:2]
+        for path in paths:
+            plan.append((mod, name, addr, size, path))
+    jobs_in = [(m, a, s, [perm.body_of(p.read_text(encoding="utf-8", errors="ignore"))])
+               for m, _, a, s, p in plan]
+    if jobs > 1 and False:
+        try:
+            import concurrent.futures
+            with concurrent.futures.ProcessPoolExecutor(max_workers=jobs) as pool:
+                results = [r[0] for r in pool.map(perm.eval_batch, jobs_in)]
+        except Exception:
+            results = []
+    if not results:
+        results = []
+        for n, job in enumerate(jobs_in, 1):
+            results.append(perm.eval_batch(job)[0])
+            if n % 25 == 0:
+                print("  scored %d/%d" % (n, len(jobs_in)), flush=True)
+
+    best = {}
+    for (mod, name, addr, size, path), s in zip(plan, results):
+        key = (mod, addr)
+        cur = best.get(key)
+        if cur is None or (s is not None and (cur[0] is None or s < cur[0])):
+            best[key] = (s, mod, name, addr, size, path)
+    rows = list(best.values())
     rows.sort(key=lambda r: (r[0] is None, r[0] if r[0] else (10 ** 6, 10 ** 6, 10 ** 6)))
     return rows
 
@@ -163,7 +207,7 @@ def main(argv):
     if not items:
         return 2
 
-    rows = triage(items)
+    rows = triage(items, opt["--jobs"])
     print("\n%-34s %10s %7s  %s" % ("function", "structural", "cost", "candidate"))
     for s, mod, name, addr, size, path in rows[: max(opt["--count"], 12)]:
         if s is None:
