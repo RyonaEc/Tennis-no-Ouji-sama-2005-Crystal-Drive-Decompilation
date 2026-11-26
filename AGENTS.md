@@ -109,6 +109,7 @@ Source files must `#include "types.h"` first, or the compiler emits
 | `python tools/match/sdk.py <mod> <addr> <size>` | find a retail function in the prebuilt NitroSDK libraries |
 | `python tools/match/var3.py <mod> <addr> <size> <file.c>` | compile a candidate and diff it against retail |
 | `python tools/match/annotate.py <mod> <addr>...` | disassembly plus pool literals, their symbols, and each callee's name and prototype in one pass |
+| `python tools/match/lift.py <mod> <addr> [size]` | lift a retail function to a draft C body with m2c (ARM/mwcc backend); a scaffold for hand work, never a candidate |
 | `python tools/match/respell.py <mod> <addr> <size> <file.c> [--install]` | re-spell one candidate over declaration order, init/assign, compound assign, `volatile`, signed counters, statement order and dead pads, ranked by differing slots |
 | `python tools/match/fresh.py [--module M] [--min N] [--max N] [--write]` | the live unmatched queue, derived from `symbols.txt` minus source-backed `delinks.txt` ranges; `--write` regenerates `true_fresh.txt` |
 | `python tools/match/reg.py <mod> <name> <addr> <size> <file.c>` | install a candidate, rebuild, keep only on ROM match |

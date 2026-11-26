@@ -19,6 +19,7 @@ output under `build/` (gitignored).
 | `permute.py`, `pragmas.py`, `slots.py` | `permute.py`: permutation search on one candidate with an aligned weighted score (reg 5 / imm 1 / reorder 60 / insert-delete 100, linker fields masked) — exhaustive declaration order, `// P` statement order, and a seeded annealed random search over semantics-preserving rewrites, scored by an aligned weighted diff that masks linker-filled fields (`--explain` prints the residue by kind, `--self-test` checks the scorer against matched units, `--install` verifies a winner through `t10.try_unit`). `pragmas.py`, `slots.py`: pragma and register-slot experiments |
 | `permusweep.py` | Triage every `build/cand` address (best draft of each, suffix-indexed discovery) by structural vs weighted difference, then permute the closest ones (`--count`, `--time-each`, `--jobs`, `--install`); journal in `build/permusweep.jsonl` |
 | `lint_cand.py` | Check a candidate's extern names against `symbols.txt` |
+| `lift.py` | `lift.py <mod> 0xADDR [size]`: emit an m2c listing from the retail bytes and run m2c's ARM/mwcc backend on it, so a draft C body exists before hand work (needs `git clone https://github.com/matt-kempster/m2c build/m2c`; the output is a draft, never a candidate) |
 | `literal_load.py` | Census matched units whose source spells a pooled load's target as a
 number instead of naming the symbol (byte-invisible, so no gate catches it); candidates
 only, read the retail pool word before renaming |
@@ -117,3 +118,27 @@ units without starting anything. `--commit` commits each kept unit locally so an
 unattended run's work is in git history rather than only in the working tree; it
 never pushes and never edits `PROGRESS.md` or `README.md` - that release step is
 still the hand pass. One instance per build tree.
+
+## Lifting a function first (`lift.py` + m2c)
+
+A 190-instruction function is a decode problem before it is a spelling problem.
+`lift.py <mod> 0xADDR [size]` disassembles the retail bytes with the same capstone
+pass the harness uses, resolves every pc-relative pool word to the symbol it names,
+turns branches into labels and calls into symbols, and hands that listing to
+[m2c](https://github.com/matt-kempster/m2c)'s ARM backend with `-t arm-mwcc-c`:
+
+```
+git clone --depth 1 https://github.com/matt-kempster/m2c build/m2c   # once, gitignored
+python tools/match/lift.py arm9 0x02027fe8 260
+```
+
+What comes back is a statement-level draft: the switch, the loops, the globals, the
+struct fields at their real offsets and the callee arities, with `M2C_UNK` where the
+types are unknown. On `func_0202bea8` (a matched unit) the draft is structurally the
+true source, which is the point - it is a scaffold for `var3`/`reg.py`, not an
+answer. m2c's types are guesses and its statement order is not mwcc's, so a lifted
+body still has to be re-spelt; the saving is in not reading 190 instructions off a
+listing by hand, and in the struct offsets it reports for free.
+
+It is not a gate and never installs anything. `reg.py` plus the digest still decide,
+and a lift that "looks right" is worth nothing until `var3` agrees.

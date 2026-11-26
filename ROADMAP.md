@@ -84,6 +84,7 @@ actually produced:
 |---|---|---|
 | SDK transcription | `OS_SaveContext` (76 B), `FSi_SeekDirCommand` (152 B), `PM_SetBackLightAsync`, `FSi_ReadFileCommand`, the 16 SDK asm units | one unit per short session; the recipe is written down |
 | `asm void` sibling of a matched unit | `func_0203b50c` from `func_0203b4e4` (76 B) | near-free when the neighbour is matched |
+| `lift.py` (m2c bridge) | decodes a 260 B unit into switch/loops/globals/offsets in one call; used to write the `02080ca4` candidate above | removes the 190-instruction read, not the re-spelling |
 | Hand authoring a 60-300 B unit | this project's steady rate | 2-3 units, 150-300 B per pass |
 | Family substitution | 31,980 B sitting in ov002's top four groups | the big multiplier, but blocked on decode |
 | `permute.py` / `permusweep.py` | returns nothing on register-only residue, matches on the first run at `--min-structural 2` | fire it only on structural residue |
