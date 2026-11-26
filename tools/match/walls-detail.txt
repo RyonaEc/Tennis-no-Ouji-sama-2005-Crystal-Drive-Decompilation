@@ -12307,3 +12307,26 @@ ov002 0x0209d584 func_ov002_0209d584
   slots (shell-masked compare). Head, ang adjust and store block line up; b56 keeps one fewer spill,
   folds k*t into mla and drops the acc1/acc2 split, and emits only 3 of the 8 stack-arg stores.
   NEXT: force the two loop accumulators to stay live and the full 8-word argument block.
+
+0208f860 ov002 756B - family UPDATE (candidate progression 688 -> 708 -> 728 of 756)
+  build/cand/ov2_8f860_d.c = 728/756 B, 177 vs 184 instructions. Levers found this pass:
+  1. The loop is a mid-body-exit loop, not a do/while tail test:
+       acc2 = k*t; acc1 = k*m; i = 0; w8 = *(s32*)(w+8);
+       for (;;) { acc2 += t; i++; if (i > 100) break; acc1 += m; k++;
+                  yy = acc1 - (acc2*k)/2; yy = w8 + yy; if (yy <= 0x30000) break; }
+     Writing it as a do/while made b56 fold acc2 into an mla and lose 20 B. The two
+     adds on yy must stay separate statements (acc1 term first, then w8 + yy).
+  2. The three sign flips are MULTIPLIES BY A -1 VARIABLE, not unary minus:
+     `s32 neg = -1;` then `z = z * neg;` / `y = y * neg;`. Unary minus and `* -1`
+     both fold to one rsb; retail has mvn #0 + mul + mov (3 instructions) per flip,
+     which is the variable form. +8 B each, +20 B total for the three.
+  3. `zz = z - *(s32*)(w+4)` must stay a separate variable (not reused as k) - retail
+     keeps it in fp across the tail and passes it as the second func_0203b0c0 arg.
+  REMAINING 28 B / 7 instructions: all of it is spill count. Retail's frame is 0x44 and
+  it spills half [0x28], d [0x2c], r [0x30], m [0x3c] and passes d*dir and the args from
+  the stack; b56 keeps half/d/d*dir in registers, so its frame is 0x3c and it omits the
+  reloads (`ldr r3,[sp,#0x2c]`, `ldr r0,[sp,#0x28]`) and two stores. Force those spills
+  (a live set that keeps half, d and d*dir across the 020532e4/0204f6ac calls) to close it.
+  Every other part of the body - the ang adjust, the /360 idiom, the sine-table call, the
+  whole loop and the 11-arg call's constant stores - now lines up instruction for
+  instruction; what differs is register naming (e is sl in retail, sb in b56; w is r8 vs sb).
