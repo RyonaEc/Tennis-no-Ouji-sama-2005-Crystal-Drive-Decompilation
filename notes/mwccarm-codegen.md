@@ -652,3 +652,10 @@ Axes, not matches - every one still needs a compiled byte-diff and `ninja sha1`.
   across the call is what produces retail's extra push and `sub sp, #4` (188 B).
   Declaring it earlier in the block does not change when the scheduler emits the
   `add` — source order is not the lever there.
+
+- `(x / 2) * 2` and `(x & ~1)` are not interchangeable. The mask folds to a
+  single `bic r0, r0, #1`; the division spelling keeps retail's
+  `lsr r0, r0, #1` + `lsl r0, r0, #1` pair and is 4 B longer. Measured on
+  `ov002 020bd5e8`, which is 4 B short in both mask forms. Rewriting the same
+  value as `(x >> 1) << 1` does not help - b56 re-folds it - so the division has
+  to be written as a division.
