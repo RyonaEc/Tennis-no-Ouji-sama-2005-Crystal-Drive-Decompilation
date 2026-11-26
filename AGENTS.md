@@ -75,9 +75,12 @@ objdiff configuration all key off them.
 
 ## The edit loop
 
-1. Pick an unmatched function. `tools/match/famsurvey.py` groups unmatched functions
-   by size and mnemonic sequence; groups of identical skeleton are the cheapest wins because one
-   source shape covers every member.
+1. Pick an unmatched function. Refresh the queue first -
+   `python tools/match/fresh.py --write` - because `tools/match/true_fresh.txt` is a
+   snapshot: a stale copy listed 173 functions that were already matched, and
+   re-deriving one of them moves no counter. `tools/match/famsurvey.py` groups
+   unmatched functions by size and mnemonic sequence; groups of identical skeleton
+   are the cheapest wins because one source shape covers every member.
 2. Disassemble it: `python tools/match/udis.py <module> 0xADDR [0xADDR ...]`.
 3. Before blaming the compiler, check whether the unit is prebuilt SDK code:
    `python tools/match/sdk.py <module> 0xADDR <size>` searches the extracted
