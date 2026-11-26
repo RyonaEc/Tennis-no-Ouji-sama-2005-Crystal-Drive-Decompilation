@@ -4772,3 +4772,6 @@ src/arm9/func_02028888.c:
     complete
     .text       start:0x02028888 end:0x02028920
 
+src/arm9/func_02027fe8.c:
+    complete
+    .text       start:0x02027fe8 end:0x020280ec

@@ -30,12 +30,12 @@ What changed in this revision, and why:
 
 | Metric | Matched | Total | Left |
 |---|---:|---:|---:|
-| Functions | 1,919 | 3,806 | **1,887** |
-| Code | 174,240 B | 1,841,700 B | **1,667,460 B** |
+| Functions | 1,920 | 3,806 | **1,886** |
+| Code | 174,500 B | 1,841,700 B | **1,667,200 B** |
 | Data | 630,724 B | 801,936 B | **171,212 B** |
-| Complete units | 4,208 | 4,876 | **668** |
+| Complete units | 4,209 | 4,876 | **667** |
 
-**50.42% of functions but 9.46% of code bytes.** The remaining 1,875 functions
+**50.45% of functions but 9.47% of code bytes.** The remaining 1,874 functions
 are not a tail of small leaves:
 
 | Size | Functions | Bytes |
@@ -43,24 +43,24 @@ are not a tail of small leaves:
 | 0-63 B | 9 | 244 |
 | 64-127 B | 71 | 7,176 |
 | 128-255 B | 288 | 55,784 |
-| 256-511 B | 514 | 184,388 |
+| 256-511 B | 513 | 184,128 |
 | 512-1023 B | 567 | 404,620 |
 | 1024-2047 B | 248 | 355,988 |
 | 2048 B + | 178 | **659,692** |
-| **total** | **1,875** | **1,667,892** |
+| **total** | **1,874** | **1,667,632** |
 
-(The 432-byte difference from the 1,667,460 B in the headline table is delinked
+(The 432-byte difference from the 1,667,200 B in the headline table is delinked
 pool words that live inside code ranges but are not functions.)
 
-So 178 functions hold 40% of the remaining code and 993 hold 85%. Small-unit
+So 182 functions hold 40% of the remaining code and 988 hold 85%. Small-unit
 passes still matter - they are where a lever is proven cheaply - but no amount of
 them closes the byte gap.
 
 | Module | Code matched | Bytes left | Functions left | Largest 10 |
 |---|---:|---:|---:|---:|
-| OV002 | 6.66% of 715,724 B | 668,024 | 897 | 58,752 B |
+| OV002 | 6.66% of 715,724 B | 668,032 | 897 | 58,752 B |
 | OV003 | 2.57% of 586,712 B | 571,612 | 412 | 84,412 B |
-| ARM9 main | 37.23% of 224,616 B | 141,000 | 285 | 39,828 B |
+| ARM9 main | 37.15% of 224,616 B | 141,164 | 272 | 39,828 B |
 | OV005 | 7.02% of 142,964 B | 132,932 | 102 | 46,504 B |
 | OV004 | 9.30% of 89,584 B | 81,256 | 90 | 35,580 B |
 | OV010 | 5.09% of 25,144 B | 23,864 | 23 | 17,264 B |

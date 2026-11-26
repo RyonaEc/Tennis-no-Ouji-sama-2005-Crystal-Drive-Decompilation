@@ -938,3 +938,35 @@ every arena boundary, but the DTCM arm needs `OSi_SYS_STACKSIZE` to be a
 `cmp r1,#0`, `sublt`, `subge` around it, i.e. the SDK's absolute LCF symbol whose
 value is 0. Written as a plain `0` (or a `const u32 = 0`) mwcc folds the whole arm
 to `return 0x027c0020` and 172 B becomes 104 B.
+
+## 2.50 A NULL comparison does not compile in b56 (2026-11-26)
+
+`if (param == NULL)` in a unit aborts the compiler with
+
+```
+func.c:12: <string not found>
+```
+
+- no line text, no diagnostic - and the message text is missing from the binary,
+so it reads like a parser bug rather than a type rule. `if (param == NULL) return;`
+fails the same way whatever the pointer type is; `if (!param)` compiles. The
+MINIMAL repro is `void f(u8 *p) { if (p == NULL) { return; } }`.
+
+So `NULL` (as `types.h` spells it) cannot be compared against a pointer with `==`
+in this build. Every unit that tests a pointer argument for null has to use `!p`
+or compare with `0`, and a candidate that fails with `<string not found>` should be
+checked for a `== NULL` before anything else - it is not a codegen question.
+
+## 2.51 Lift the SDK near-hits with m2c first (2026-11-26)
+
+`tools/match/lift.py` on `arm9 0x02027fe8` (260 B, `PXI_InitFifo`) gave a draft in
+one call, and the transcription written from the SDK's own `pxi_fifo.c` plus the
+lifted offsets compiled **byte-exact on the first try**. The pattern that works:
+lift (or `annotate`) for the offsets and constants, then write the body in the
+SDK's statement order, then let the digest decide. The 0.95-0.98 near hits in
+`sdkmap.py --near 0.85` are the cheapest bytes on the board and they are cheap
+*because* the SDK source already fixes the shape; only the constants differ.
+
+Check `walls.py show <mod> <addr>` first: `func_0202b43c` and several other SDK
+near hits are already parked with a register tie, and re-deriving them costs a
+pass for nothing.
