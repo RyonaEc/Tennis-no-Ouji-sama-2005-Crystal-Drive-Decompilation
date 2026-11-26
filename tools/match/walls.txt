@@ -362,7 +362,7 @@ ov003 0x02066e84 ?B - ov003 196B - 4-member family (784B). 164/196, 34 diff. see
 ov002 0x0207ff34 ?B - ) permuting the six body statements (720 orders) never reaches a matc... L11145
 arm9 0x0207ffb0 ?B - `. Retail tests the threshold with L10680
 ov003 0x0208ae70 ?B - / 02052160. L313
-ov002 0x0208f860 756B func_ov002_0208f860 13-member 756B family, decode + 728/756 candidate + spill inventory L12334
+ov002 0x0208f860 756B func_ov002_0208f860 13-member 756B family, decode + 732/756 candidate + spill inventory L12349
 ov002 0x020ad2b0 ?B - +7). Confirmed 185/186 identical across members. See notes 2.16 for f... L1057
 ov003 0x020b85b8 ?B - ` / `0x020db6ec` (180 B, 3x). The whole body reproduces L11299
 ov003 0x020c1ab0 ?B - / 0208ae70 / 02052160. L313
@@ -462,7 +462,7 @@ ov002 0x02089f68 204B func_ov002_02089f68 -- two-slot jump-table walk. Table is 
 ov002 0x0208a034 128B func_ov002_0208a034 -- two-slot tick: for i in 0..1, decrement `*(u8 *)(base + 0x4bc... L6881
 ov002 0x0208f0e8 676B func_ov002_0208f0e8 worth 6,760B. A representative, 0x0208f860, is not a quick win: it op... L11110
 ov002 0x0208f38c 608B func_ov002_0208f38c worth 8,512B, 10x688 from 0x0209ab8c worth 6,880B, 10x676 from L11109
-ov002 0x0208f860 756B func_ov002_0208f860 13-member 756B family, decode + 728/756 candidate + spill inventory L12334
+ov002 0x0208f860 756B func_ov002_0208f860 13-member 756B family, decode + 732/756 candidate + spill inventory L12349
 ov002 0x020959a8 252B func_ov002_020959a8 ` / `0x020f6258` (252 B, 2x). Body recovered in full: flag test on L11357
 ov002 0x0209a5f4 756B func_ov002_0209a5f4 0209c728 0209eb18 020a8ba0 L1051
 ov002 0x0209ab8c 688B func_ov002_0209ab8c worth 6,880B, 10x676 from L11109

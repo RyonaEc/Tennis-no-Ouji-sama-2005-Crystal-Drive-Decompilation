@@ -12345,3 +12345,19 @@ ov002 0x0209d584 func_ov002_0209d584
   expressions: e.g. keep r, m, half and dd all live across 0204f6ac/0203b0c0 (declare them
   before the loop and only use them afterwards). Anything that lets b56 fold or re-read one
   of them removes the pair of instructions. Parked here at 3 grids per the working rules.
+
+0208f860 ov002 756B - family UPDATE 3 (732/756; the tail buffer shape is solved)
+  build/cand/ov2_8f860_g.c = 732/756 B, 177 vs 183 instructions. New lever, worth +4 B:
+  the two func_0203b0c0 results go back into the SAME 3-word buffer that the sine call
+  filled, not into fresh locals:
+      buf[0] = func_0203b0c0(r, k);
+      buf[1] = func_0203b0c0(zz, k);
+      func_ov002_02057068(buf[0], buf[1], m, 0, -0x4074, half, 0x42000000, 9, *e, e_u16, a0);
+  Retail stores them at [sp+0x34]/[sp+0x38] (= buf[0]/buf[1]) and reloads all three words
+  for the call ([0x34],[0x38],[0x3c]); naming them p1/p2 instead keeps them in registers
+  and costs the reloads.
+  Still short by 24 B / 6 instructions, all pressure: retail additionally spills `half`
+  [0x28] and `d`, overwritten by d*dir, at [0x2c], and spills a0 at [0x20]; b56 keeps half
+  and dd in callee-saved registers and its frame is 0x3c instead of 0x44. Fourth grid on
+  this family; parked per the rule, the next pass should try forcing those two spills
+  (more values simultaneously live across 0204f6ac/0203b0c0) rather than new expressions.
