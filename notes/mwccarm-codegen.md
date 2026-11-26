@@ -1014,32 +1014,38 @@ Consequence for two parks: `02080ca4`'s induction variable is *not* switchable o
 with a pragma, and the "pure scheduling" parks cannot be re-scheduled with
 `schedule once` - both remain source-shape problems.
 
-## 2.53 A mirrored scratch pair is a wall, not a spelling miss (2026-11-26)
+## 2.53 A mirrored scratch pair: name the intermediate (2026-11-26)
 
-`ov003 0x02066a54` (180 B, three-member family) reaches retail's exact size and its
-loop is instruction-for-instruction identical:
+This section was first written as "a mirrored pair is a wall". The next match
+disproved that, and the corrected rule is the useful one.
 
+`ov003 0x02066a54` (180 B) reached 180/180 with six slots differing purely as an
+`ip`/`lr` swap: b56 put the loop-invariant zero in one scratch register and the
+running pointer in the other, retail the reverse. Naming the constant
+(`u32 zero = 0`), naming the address (`u8 *q`), reordering the declarations,
+casting the stored value, and a 40-variant `respell.py` sweep all produced the
+same mirrored pair, which is what made it look like a wall of the allocator.
+
+What actually fixed it: a source that names the intermediate *inside* the loop.
+
+```c
+        for (i = 0; i < 0x200; i++) {
+            *(u16 *)(0x8de8 + base + i * 2) = 0;
+            ip = i * 2 + base;
+            if (i % 4 == 0)
+                *(u32 *)(ip + 0x8de8) = 0x200;
+        }
 ```
-add ip, r4, r5, lsl #1      ; ip = base + i*2
-lsr r2, r5, #0x1f           ; (i & 3) test, u16 sign fix
-add r0, ip, #0x8d00
-rsb r1, r2, r5, lsl #30
-strh lr, [r0, #0xe8]        ; *p = 0
-adds r0, r2, r1, ror #30
-addeq r0, ip, #0x8000
-streq r3, [r0, #0xde8]      ; every fourth slot = 0x200, a *word* store
-```
 
-b56 hands the loop-invariant zero to `ip` and the running pointer to `lr`; retail has
-them the other way round. Six slots differ and nothing else does. The allocation did
-not move for any of: naming the constant (`u32 zero = 0`), naming the address
-(`u8 *q`), declaring the index before the pointer, casting the stored constant
-(`(u16)0`), or spelling the body with a `u8 *` cursor instead of the full address
-expression. Two spellings that dropped the cursor variable were worse (168 B, 176 B)
-because they also lost the `+0x8d00/#0xe8` split.
+`ip` (a `u32`, assigned after the first store) makes the two stores compute
+their addresses independently. That is exactly why retail splits one as
+`add #0x8d00` + `[#0xe8]` and the other as `add #0x8000` + `[#0xde8]` instead of
+pooling one shared `0x8de8`, and the separate value moves the allocator onto
+retail's assignment. The identical body, cloned to `0x020b85b8` and
+`0x020db6ec` (same instructions, different pc-relative displacement), matched
+both siblings straight away - three units from one shape.
 
-The rule: when the sizes already agree and the whole residue is a two-way swap
-between the two scratch registers (`ip` and `lr`, or `ip` and `r12`), stop. Every
-spelling that produces the same three-address code produces the same, mirrored,
-allocation, so more C text cannot reach it. This is the same class of park as a
-scheduled pool load, not a missing idiom.
+Rule: a mirrored scratch pair is not automatically a wall. Before parking,
+name the intermediate address as its own variable inside the loop, even when the
+result looks redundant, and check whether retail's two address splits differ -
+that difference is the fingerprint of a named intermediate.
