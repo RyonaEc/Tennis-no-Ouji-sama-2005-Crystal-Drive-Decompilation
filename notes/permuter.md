@@ -174,3 +174,33 @@ Next lever, not yet tried: represent the entity table as a real array of a recor
 type and index it (`&g->ent[a0]` with an element size of 0x158) so the stride comes
 from the type rather than from an explicit multiply. That changes the expression
 mwcc sees without changing the meaning.
+
+## Self-test, and two bugs it would have caught (2026-11-26)
+
+Three defects in two turns is enough to justify a check on the check. `permute.py
+--self-test [module]` takes matched units and asserts two properties:
+
+1. a matched unit's own source scores a true `(0, 0, 0)`;
+2. reversing its declarations makes it score non-zero, and the declaration sweep
+   recovers the exact match.
+
+It also exercises the module load and the alignment path, which is where the
+other two bugs lived. Current state: ov002 and arm9, 8 units each, 0 failures.
+
+Bugs this class of test would have caught immediately:
+
+* the search treating `structural == 0` as a match (a register-only difference
+  reported as done);
+* `gi`/`wi` referenced after the linker-target guard skipped their assignment,
+  which crashed on any instruction whose operands are only registers - it only
+  showed up on arm9 candidates, not ov002.
+
+## Triage beyond ov002
+
+`permusweep.py --dry-run` over the other modules: arm9 has 46 candidates, ov003
+17, ov004 6, ov005 3. The best arm9 one is `func_0202c430` (24 B): structural 0,
+weighted cost 20 - four register differences - and its wall note already records
+that var3 matches while the ROM digest rejects, with retail keeping the global
+address in `ip` where mwcc uses `r1` for every spelling tried. That is the same
+class as the ov002 prologue walls: regperm, unreachable from the source shapes
+we can generate.

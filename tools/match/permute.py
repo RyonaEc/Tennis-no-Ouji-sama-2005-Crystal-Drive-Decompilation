@@ -196,6 +196,7 @@ def score_blob(want_ins, got_ins, size, n):
                 gr, wr = _regs(g), _regs(w)
                 cost += W_REG * sum(1 for a, b in zip(gr, wr) if a != b)
                 cost += W_REG * abs(len(gr) - len(wr))
+                gi, wi = [], []
                 if not (g.mnemonic in LINKER_TARGET and g.op_str.startswith("#")):
                     gi, wi = _imms(g), _imms(w)
                     cost += W_IMM * sum(1 for a, b in zip(gi, wi) if a != b)
@@ -815,9 +816,69 @@ def search(evaluator, text, iters, islands, budget, seed, use_temps, batch, verb
 # CLI
 # --------------------------------------------------------------------------
 
+def self_test(mod, limit):
+    """Check the scorer against ground truth before trusting a search.
+
+    Two properties, both of which have been wrong at least once: a matched
+    unit's own source must score a true zero, and a candidate with its
+    declarations shuffled must score non-zero and still be recovered by the
+    declaration sweep.  Run this after touching the scorer - it is much cheaper
+    than discovering a broken score through a search that "succeeds".
+    """
+    root = pathlib.Path("config/ATOJ/arm9")
+    path = root / "symbols.txt" if mod == "arm9" else root / "overlays" / mod / "symbols.txt"
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    sizes = {m.group(1): int(m.group(2), 16) for m in
+             re.finditer(r"(func_\w+) kind:function\([^,]*,size=0x([0-9a-fA-F]+)\)", text)}
+    failures = 0
+    checked = 0
+    for src in sorted(pathlib.Path("src", mod).glob("*.c")):
+        if checked >= limit:
+            break
+        name = src.stem
+        if name not in sizes:
+            continue
+        size = sizes[name]
+        addr = int(name.split("_")[-1], 16)
+        source = src.read_text(encoding="utf-8")
+        s = score_text(mod, addr, size, source)
+        checked += 1
+        if s != (0, 0, 0):
+            print("FAIL %s: matched source scores %s" % (name, s))
+            failures += 1
+            continue
+        try:
+            prefix, decls, groups, suffix = read_state(source)
+        except SystemExit:
+            continue          # data units and asm blocks have no C body to permute
+        if len(decls) < 3 or len(decls) > 6:
+            continue
+        state = (prefix, list(reversed(decls)), groups, suffix)
+        shuffled = render(state)
+        s2 = score_text(mod, addr, size, shuffled)
+        if s2 is not None and s2 == (0, 0, 0):
+            print("FAIL %s: reversed declarations still score zero" % name)
+            failures += 1
+            continue
+        class _One:
+            def many(self, bodies):
+                return [score_body(mod, addr, size, b) for b in bodies]
+        match, _, label, orders = decl_sweep(_One(), state, 6, False)
+        if not match:
+            print("FAIL %s: sweep did not recover the match (%s, %d orders)"
+                  % (name, label, orders))
+            failures += 1
+        else:
+            print("ok   %s  (%d B, %d orders)" % (name, size, orders))
+    print("self-test: %d units, %d failures" % (checked, failures))
+    return 0 if failures == 0 else 1
+
+
 def main(argv):
     flags = [a for a in argv if a.startswith("--")]
     args = [a for a in argv if not a.startswith("--")]
+    if "--self-test" in flags:
+        return self_test(args[0] if args else "ov002", 8)
     if len(args) < 4:
         print(__doc__)
         return 2
