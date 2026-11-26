@@ -12412,3 +12412,18 @@ ov002 0x0209d584 func_ov002_0209d584
   Parked at four grids; the next pass needs two more simultaneously-live values rather
   than any expression change. Do not add dead padding: that is a fakematch.
   sweet spot: retail's locals are 0x20=a0 0x24=q 0x28=z 0x2c..0x34=buf with 0x38 spare.
+
+0208f38c ov002 608B - UPDATE 2: bytes and frame now exact, allocation residue only (NEW)
+  Build on build/cand/ov2_8f38c_s2.c gave 608B/150 insns with frame 0x34; two more findings:
+    * s32 buf[4]  (not buf[3]) is what produces retail's 0x3c frame. Retail's locals are
+      0x20=a0, 0x24=q, 0x28=z, 0x2c..0x38=buf, and 0x38 is buf's fourth word, never used
+      at runtime but allocated. With buf[3] the frame is 8 bytes short and every
+      sp-relative operand differs.
+    * declaration order: g, w(=g+0x1824), e, b, half, q, dir matches retail's prologue
+      sequence (q's mla comes after the ldb, dir last). Best candidate:
+      build/cand/ov2_8f38c_v3.c - 608 B, frame 0x3c, 131 differing slots.
+  Still not passing: the residue is instruction ORDER in the prologue plus register
+  assignment (retail holds g in r8 and e in sl; mwcc gives g to sl) and retail's choice of
+  a real a0 local at 0x20 with a copy into the outgoing slot 0x1c, where mwcc keeps a0 in
+  0x1c and skips the copy. Those are the allocation class the playbook says resists;
+  do not fake it with padding or by reordering after the fact.
