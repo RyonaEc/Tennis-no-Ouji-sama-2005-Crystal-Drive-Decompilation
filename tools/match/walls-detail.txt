@@ -12330,3 +12330,18 @@ ov002 0x0209d584 func_ov002_0209d584
   Every other part of the body - the ang adjust, the /360 idiom, the sine-table call, the
   whole loop and the 11-arg call's constant stores - now lines up instruction for
   instruction; what differs is register naming (e is sl in retail, sb in b56; w is r8 vs sb).
+
+0208f860 ov002 756B - family UPDATE 2 (stays 728/756; spill inventory for the next pass)
+  Tried after the 728 candidate: a shared `s32 dd = d * dir;` used for both the sine-table
+  arg and the 020532e4 arg (retail does compute it once and overwrite its `d` slot with the
+  product) - no change, b56 had already shared it. So the last 28 B is NOT expression shape.
+  Retail's frame 0x44 / spill set, read off the prologue and body:
+    [0x20]=a0  [0x24]=q (dies in the ang block)  [0x28]=half (live to the final arg)
+    [0x2c]=d, overwritten by d*dir at the sine call  [0x30]=r  [0x34..0x3c]=buf  [0x3c]=m
+  and it keeps g(r8), e(sl), w(sb), t(r4), z(r5), k, acc1, acc2, i and w8 in registers, which
+  is what forces five spills. b56's frame is 0x3c: it keeps half, d and dd in registers and
+  re-reads instead of spilling, so it emits 177 instructions against 184.
+  To close it the source needs MORE simultaneous live values at the loop, not different
+  expressions: e.g. keep r, m, half and dd all live across 0204f6ac/0203b0c0 (declare them
+  before the loop and only use them afterwards). Anything that lets b56 fold or re-read one
+  of them removes the pair of instructions. Parked here at 3 grids per the working rules.
