@@ -269,6 +269,8 @@ arm9 0x02034560 52B func_02034560 52B varargs thunk: push {r0-r3} to expose the 
 
 ov002 0x0204d60c 192B func_ov002_0204d60c 192B matrix-stage update: func_0202216c(m) then func_02022048(m, (p[8] - q[2]) << 5, (p[0xa] - q[4]) << 5, 0) with m = data_ov002_02102070+0x1a89a4 and q = the same base +0x1e34, then MTX_RotZ33_ (func_0201fd00, a Thumb asm block in the SDK) with sin/cos from the s16 table at data_0203d908 indexed by (p[0xc] >> 4) * 2, func_020220c0(m, mtx), and func_02022084(m, p[0x10], p[0x14], 0x1000). Every instruction matches except two: (1) retail calls the thumb routine with BLX immediate (0xfaff499b) while mwcc emits BL for an ARM caller - declaring the extern inside #pragma thumb on/off, #pragma arm on, a function-pointer cast and __declspec(thumb) all fail (the pragma pair leaves the function ARM but the call BL); (2) the two pool literals come out in the other registers (retail data -> r2 / 0x1a89a4 -> r1, mwcc the reverse). Candidate: build/cand/o2_4d60c_b.c L12649
 
+arm9 0x02024e30 240B func_02024e30 OS_InitLock (240B) is os_spinlock.c's main-processor half and every constant, call and order matches, but retail's extension-wait loop keeps the 0x027ffff0 address in caller-saved r1 across 'bl OSi_WaitByLoop' (ldrh r0,[r1,#6] after the call) with no push at all; mwcc b56 puts the address in r4 and pushes it, so the frame, the loop and the 16-byte tail never line up whatever the spelling L12652
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
