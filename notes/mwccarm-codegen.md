@@ -659,3 +659,10 @@ Axes, not matches - every one still needs a compiled byte-diff and `ninja sha1`.
   `ov002 020bd5e8`, which is 4 B short in both mask forms. Rewriting the same
   value as `(x >> 1) << 1` does not help - b56 re-folds it - so the division has
   to be written as a division.
+
+- A `switch` whose default is the same value as the trailing `return` merges both
+  into one block, and the size drops with it. Writing the case out explicitly
+  (`case 2: return 1;` before `}` plus a trailing `return 1;`) keeps the separate
+  return block that retail has. Measured on `ov002 02063e58`: 232 B when merged,
+  256 B with the explicit case, and 260 B once the inner test is ordered so the
+  non-negated branch is the one that returns.
