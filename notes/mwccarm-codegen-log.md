@@ -6514,3 +6514,18 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
   that all use the address, declare the base as `u32` and add the offset in
   integer arithmetic, keeping the pointer cast at the dereference rather than at
   the base. It also clears the register tie that the pointer spelling freezes.
+* `ov002 02068c78` (64 B): the integer-base lever above does **not** break this
+  one. Pointer base and `u32 base = data_ov002_02102070[0]` with the cast at the
+  dereference both score `(0, 65, 0)` - identical size, four-slot rotation:
+  retail puts the global value in `ip` (r2 = index product, r3 = the loaded
+  byte, r1 = base + 0x1e6c), b56 puts it in `r3` and shifts every other value up
+  one. `ip` is a compiler temporary, so no declaration spelling reaches it.
+* `ov002 02080ca4` (68 B): mwcc splits the induction variable into a counter and
+  a walking byte offset (`mov ip, lr` + `add ip, ip, #8`, 76 B where retail is
+  68 B). Retail keeps one variable and scales inline (`add r1, r0, ip, lsl #3`).
+  `u32`/`s32` counters, `i != 4`, `do/while`, `i << 3` and indexing a `u32 *` as
+  `base[i * 2]` all keep the split; the last is closest at three slots. This is
+  the same class as the base-vs-stride product residue.
+* `ov002 020882d4` (76 B): retail reloads `base + i * 4` before the call and
+  after it; every C spelling tried hoists the element pointer and pays an extra
+  `r7` push plus a stack slot (80 B) or, with an integer base, ten slots.
