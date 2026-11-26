@@ -1,6 +1,6 @@
 #include "types.h"
 
-extern s32 func_0203b0c0(s32 a0, s32 a1);
+extern s32 _s32_div_f(s32 a0, s32 a1);
 
 s32 func_ov002_0204d4d8(s32 a0, s32 a1)
 {
@@ -16,7 +16,7 @@ s32 func_ov002_0204d4d8(s32 a0, s32 a1)
         lo = 0x200;
         hi = 0x600;
     }
-    v = lo + func_0203b0c0((n - 1 - a0) * (hi - lo), n) + a1;
+    v = lo + _s32_div_f((n - 1 - a0) * (hi - lo), n) + a1;
     if (v > hi)
         return hi;
     if (v < lo)

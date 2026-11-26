@@ -1,6 +1,6 @@
 #include "types.h"
 
-extern s32 func_0203b0c0(s32 a, s32 b);
+extern s32 _s32_div_f(s32 a, s32 b);
 
 u16 func_ov003_02093e64(s32 a0, s32 a1) {
     s32 x;
@@ -21,5 +21,5 @@ u16 func_ov003_02093e64(s32 a0, s32 a1) {
     }
     if (x == 0)
         return 0;
-    return (u16)func_0203b0c0(y * a1, x);
+    return (u16)_s32_div_f(y * a1, x);
 }

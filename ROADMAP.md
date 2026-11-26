@@ -11,12 +11,12 @@ criterion that the digest gate decides, not a percentage alone.
 
 | Metric | Matched | Total | Left |
 |---|---:|---:|---:|
-| Functions | 1,912 | 3,806 | **1,894** |
-| Code | 173,176 B | 1,841,700 B | **1,668,524 B** |
+| Functions | 1,917 | 3,806 | **1,889** |
+| Code | 174,088 B | 1,841,700 B | **1,667,612 B** |
 | Data | 630,724 B | 801,936 B | **171,212 B** |
-| Complete units | 4,201 | 4,867 | **670** |
+| Complete units | 4,206 | 4,876 | **670** |
 
-The important asymmetry: **50.24% of functions but 9.40% of code bytes.** What
+The important asymmetry: **50.37% of functions but 9.45% of code bytes.** What
 remains is not a long tail of small leaves - it is a few hundred large functions.
 
 Data is the mirror image: 78.65% matched. Its fully-linked figure is higher
@@ -28,8 +28,8 @@ By module, sorted by bytes still unmatched:
 | Module | Code matched | Bytes left | Functions left |
 |---|---:|---:|---:|
 | OV002 | 6.66% of 715,724 B | 668,024 | 897 |
-| OV003 | 2.54% of 586,712 B | 571,800 | 413 |
-| ARM9 main | 36.84% of 224,616 B | 141,876 | 291 |
+| OV003 | 2.57% of 586,712 B | 571,612 | 412 |
+| ARM9 main | 37.16% of 224,616 B | 141,152 | 287 |
 | OV005 | 7.02% of 142,964 B | 132,932 | 102 |
 | OV004 | 9.30% of 89,584 B | 81,256 | 90 |
 | OV010 | 5.09% of 25,144 B | 23,864 | 23 |

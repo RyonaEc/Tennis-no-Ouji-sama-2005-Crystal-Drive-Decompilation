@@ -2,7 +2,7 @@
 
 extern u32 data_ov002_02102070[];
 extern s32 func_02034148(s32 a0);
-extern u32 func_0203b0c0(u32 a0, u32 a1);
+extern u32 _s32_div_f(u32 a0, u32 a1);
 extern u32 func_ov002_0204f6ac(u32 a0);
 
 void func_ov002_020528cc(u8 *obj, s32 a1, s32 a2)
@@ -19,7 +19,7 @@ void func_ov002_020528cc(u8 *obj, s32 a1, s32 a2)
         return;
     d = 0x157c - a2;
     t = *(s32 *)(p + 8);
-    if (t + (s32)(func_0203b0c0((v >> 8) * (v >> 8), d << 1) << 16) <= a1)
+    if (t + (s32)(_s32_div_f((v >> 8) * (v >> 8), d << 1) << 16) <= a1)
         return;
     v = a1 - t;
     if (v < 0)

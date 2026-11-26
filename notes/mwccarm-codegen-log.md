@@ -6718,3 +6718,37 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
 * Tooling gotcha: `cdiff.py <mod> <name>=<file.c>` writes `src/<mod>/<name>.c`
   and unlinks it afterwards, so probing with the name of an *already matched*
   unit deletes its source. Check `git status` after a probe sweep.
+
+## 2026-11-26 (second pass) - `_s32_div_f` named, and five units that needed it
+
+* The two OS message-queue units were parked only because a `%` by a run-time
+  divisor compiles to `bl _s32_div_f` and 0x0203b0c0 was named `func_0203b0c0`.
+  The fix that works is renaming the symbol in `config/ATOJ/arm9/symbols.txt`
+  (`_s32_div_f kind:function(arm,size=0x20c) addr:0x0203b0c0`); a second alias
+  line at the same address is not usable, because dsd rejects
+  `kind:label` and a duplicate function symbol inflates objdiff's totals by one
+  function and 524 bytes. The seven units that already called it by the old name
+  (func_0201fc3c, func_ov002_0204d4d8/0204f808/020528cc/020588dc,
+  func_ov003_02052344/02093e64) were updated to the new name; the digest still
+  matches, so mwcc does not special-case the name on an explicit call.
+* `OS_SendMessage` `02025914` (172 B) and `OS_ReceiveMessage` `02025864` (176 B)
+  then matched from the bodies already stored in `walls.txt`. Both are the SDK's
+  os_message.c with a packed queue: queueSend +0, queueReceive +2, msgArray +4,
+  msgCount +8, firstIndex +0xc, usedCount +0x10. The `s32` fields are what make
+  retail's `bgt` and the signed divmod agree; an unsigned `%` links against
+  `_u32_div_f`, which the ROM does not contain.
+* `0201e53c` (188 B) is a five-guard lookup that forwards to `func_0201e174`
+  with eight arguments (the four stack words are the entry pointer, the resolved
+  object, and the two trailing parameters). `ldrb` not `ldrsb` was the only
+  difference.
+* `0202ac78` (188 B) packs 0x14 bytes out of the word array at p: `ldrsh`/
+  `ldrb`-free but for the `((u32 *)p)[i >> 2]` spelling that keeps
+  `asr #2` + `ldr [rBase, rX, lsl #2]`, and a `s32` loop counter for `blt`.
+* `ov003 020a7790` (188 B) drives a two-state transition: it needs both the raw
+  overlay base (for the `+0x250` store) and that base `+0xb8dc`, which is why
+  retail keeps `r3` untouched and adds `0x200` from it while the state fields go
+  through `r4`.
+* Still parked: `arm9 02034560` (52 B varargs thunk whose callee ignores the two
+  extra argument words) and `ov002 0204d60c` (192 B, a BLX interworking call to
+  the thumb `MTX_RotZ33_` that mwcc will not emit from an ARM caller in any
+  spelling tried).

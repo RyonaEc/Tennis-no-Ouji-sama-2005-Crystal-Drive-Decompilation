@@ -862,3 +862,38 @@ The init block sitting between the loop guard and the loop head, rather than at
 the top of the function, is the confirmation. Literals used only in a
 comparison stay in registers (`mov fp, #0xff`), so the frame holds only the
 ones read as values.
+
+## Variable `/` and `%` call `_s32_div_f`, which lives at 0x0203b0c0
+
+mwcc emits `bl _s32_div_f` for a division or modulo by a run-time value, and the
+ROM's own signed divmod helper (quotient in r0, remainder in r1) sits at
+0x0203b0c0. That address is now named `_s32_div_f` in `config/ATOJ/arm9/symbols.txt`
+instead of `func_0203b0c0`, so `%` in a unit links. Two consequences:
+
+- The *operands must be signed*. An unsigned `%` compiles to `_u32_div_f`, and
+  this ROM has no unsigned helper, so the unit fails to link with
+  `Undefined : "_u32_div_f"`. Give the fields `s32` types (retail's signed `bgt`
+  on the same fields is the confirmation) rather than casting to `u32`.
+- Because mwcc reads the remainder out of r1, retail's index often comes from r1
+  while r0 is overwritten by the next load; do not try to spell that with a
+  struct return or a function-pointer call, which changes the frame.
+
+## `((u32 *)p)[i >> 2]` keeps the shift, `*(u32 *)(p + (i >> 2) * 4)` folds it
+
+Retail often shows `asr rX, rY, #2` followed by `ldr rX, [rBase, rX, lsl #2]`.
+Written as a byte offset (`p + (i >> 2) * 4`) mwcc folds the pair into
+`bic rX, rY, #3` plus an unscaled load, which is two bytes and one instruction
+different. Indexing a typed pointer keeps the shift and the scaled access:
+
+```c
+*(u8 *)(dst + i) = (u8)(((u32 *)p)[i >> 2] >> ((3 - (i & 3)) * 8));
+```
+
+The same choice decides `blt`/`blo` and `asr`/`lsr`: the loop counter has to be
+`s32` for retail's signed forms.
+
+## `ldrb` vs `ldrsb` is the load's type, not the destination's
+
+`a1 = *(s8 *)(r + 9)` emits `ldrsb`; retail often has `ldrb` with the value
+landing in a `s32` parameter, which is `a1 = *(u8 *)(r + 9)`. Pick the load width
+from retail's mnemonic and let the assignment widen to the parameter.
