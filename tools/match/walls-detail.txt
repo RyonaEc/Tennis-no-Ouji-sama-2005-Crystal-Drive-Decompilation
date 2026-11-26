@@ -12462,3 +12462,25 @@ FAMILY-WIDE CLUE (all three angle families: 756, 608, 688)
   keeps a0 live past the last call - e.g. a returns/if use of a0, or the parameter being
   used to index something after func_ov002_020780f8 - because a live-across-call a0 cannot
   share the outgoing slot. Do not fake the split with padding.
+
+FAMILY-WIDE RESULT (supersedes the a0-slot clue above): func_ov002_02057068 takes TWELVE
+arguments, not eleven.
+  Retail's argument block has EIGHT stack words plus four in r0-r3, so 12 args:
+    608 family: (buf[0], buf[1], buf[2], 0,  0, 0, half, 0x8000000, 0xb, *e, u16(e+0x12c), a0)
+    688 family: (buf[0], buf[1], buf[2], 0,  0, 0, half, 0,         0x27, *e, u16(e+0x12c), a0)
+  With an 11-parameter prototype mwcc silently drops the fourth argument, which collapses
+  one stack slot, shifts every local down by four bytes and lets a0 share the outgoing
+  argument slot - that was the whole "a0 at 0x20 vs 0x1c" mystery in all three families,
+  and it is why identical instruction counts still differed in every sp offset.
+  After the fix the 688's argument block and frame match retail exactly:
+    str r3,[sp] / str r3,[sp,#4] / str r7,[sp,#8] / str r3,[sp,#0xc] / mov r0,#0x27 /
+    str r0,[sp,#0x10] / ... / ldr r0,[sp,#0x20] / str r0,[sp,#0x1c] / ldr buf0..2 / bl
+  Best candidates now:
+    build/cand/ov2_9ab8c_y3.c   688 B, 134 differing slots (was 153)
+    build/cand/ov2_8f38c_12.c   612 B, 146 slots (4 B over: one extra instruction)
+    the 756 family takes ELEVEN args (7 stack words), so it is NOT affected by this.
+  Residue in the 688 is pointer-arithmetic folding and register assignment: retail emits
+  `mov r1,#0x158 / mul r4,r0,r1` then `add r2,r8,r4`, where writing the address as
+  `g + a0*0x158 + 0x2e4` makes mwcc fold the base into an `mla`. Keep the mul+add split
+  (write `g + 0x2e4 + a0*0x158`) and the sequence aligns, at the cost of the fourth slot
+  shown above. Next pass: fix the 12-arg prototype first, then compare prologue order.
