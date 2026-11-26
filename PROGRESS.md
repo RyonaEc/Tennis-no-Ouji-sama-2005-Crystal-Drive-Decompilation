@@ -13,18 +13,18 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 | Metric | Matched | Total | Progress |
 |---|---:|---:|---|
-| Code | 169,172 B | 1,841,700 B | 9.19% `██░░░░░░░░░░░░░░░░░░░░░░` |
-| Functions | 1,894 | 3,806 | 49.76% `████████████░░░░░░░░░░░░` |
-| Fuzzy match | 9.19% | n/a | `██░░░░░░░░░░░░░░░░░░░░░░` |
+| Code | 169,432 B | 1,841,700 B | 9.20% `██░░░░░░░░░░░░░░░░░░░░░░` |
+| Functions | 1,895 | 3,806 | 49.79% `████████████░░░░░░░░░░░░` |
+| Fuzzy match | 9.20% | n/a | `██░░░░░░░░░░░░░░░░░░░░░░` |
 | Data | 630,724 B | 801,936 B | 78.65% `███████████████████░░░░░` |
-| Complete units | 4,183 | 4,851 | 86.23% `█████████████████████░░░` |
+| Complete units | 4,184 | 4,851 | 86.25% `█████████████████████░░░` |
 
 ## By module
 
 | Module | Code | Functions | Fuzzy | Data | Complete units |
 |---|---:|---:|---:|---:|---:|
 | ARM9 main | 36.81% (82,684 / 224,616 B) | 1,085 / 1,377 (78.8%) | 36.81% | 13.20% (9,224 / 69,856 B) | 1,216 / 1,403 |
-| OV002 | 6.49% (46,428 / 715,724 B) | 458 / 1,360 (33.7%) | 6.49% | 61.19% (20,904 / 34,164 B) | 1,014 / 1,248 |
+| OV002 | 6.52% (46,688 / 715,724 B) | 459 / 1,360 (33.8%) | 6.52% | 61.19% (20,904 / 34,164 B) | 1,015 / 1,248 |
 | OV003 | 2.51% (14,748 / 586,712 B) | 133 / 547 (24.3%) | 2.51% | 82.87% (53,572 / 64,648 B) | 640 / 732 |
 | OV004 | 7.21% (6,460 / 89,584 B) | 71 / 170 (41.8%) | 7.21% | 86.66% (23,748 / 27,404 B) | 684 / 740 |
 | OV005 | 6.57% (9,388 / 142,964 B) | 62 / 166 (37.3%) | 6.57% | 87.59% (323,324 / 369,132 B) | 318 / 360 |
@@ -36,6 +36,6 @@ The figures come from `ninja report` (objdiff). A complete unit has its whole bo
 
 ## Against the whole ROM
 
-1,894 of 3,806 functions (49.76%) and 169,172 of 1,841,700 code bytes (9.19%) are matching C; the rest are still delinked assembly.
+1,895 of 3,806 functions (49.79%) and 169,432 of 1,841,700 code bytes (9.20%) are matching C; the rest are still delinked assembly.
 
 630,724 bytes of `.data` are matching C definitions; the rest of the data sections are still raw bytes in the delinked image.
