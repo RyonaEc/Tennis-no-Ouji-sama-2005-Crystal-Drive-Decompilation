@@ -142,12 +142,29 @@ def body_of(text):
 _CACHE = {}
 
 
+LINKER_TARGET = ("bl", "blx", "b")     # pc-relative words the linker fills in
+PAD = ("andeq", "andseq")             # zero words that decode as padding
+
+
 def _key(ins):
     """Alignment key: mnemonic and operand shapes, without registers/numbers."""
     ops = re.sub(REGS, "R", ins.op_str)
     ops = re.sub(r"#-?0x[0-9a-fA-F]+|#-?\d+", "#I", ops)
     ops = re.sub(r"\s+", " ", ops).strip()
+    if ins.mnemonic in LINKER_TARGET and ins.op_str.startswith("#"):
+        # A bare compile leaves a stub offset here; retail has the linked
+        # address.  Scoring that as an immediate is a penalty the search can
+        # never reduce, which is the trap BFM-decomp had to patch out of
+        # decomp-permuter's scorer.
+        return ins.mnemonic + " #T"
     return ins.mnemonic + " " + ops
+
+
+def _trim_pad(ins_list):
+    out = list(ins_list)
+    while out and out[-1].mnemonic in PAD:
+        out.pop()
+    return out
 
 
 def _regs(ins):
@@ -164,6 +181,8 @@ def _stacks(ins):
 
 def score_blob(want_ins, got_ins, size, n):
     """(structural, weighted, size delta) for one already-disassembled pair."""
+    want_ins = _trim_pad(want_ins)
+    got_ins = _trim_pad(got_ins)
     wk = [_key(i) for i in want_ins]
     gk = [_key(i) for i in got_ins]
     structural = 0
@@ -177,8 +196,9 @@ def score_blob(want_ins, got_ins, size, n):
                 gr, wr = _regs(g), _regs(w)
                 cost += W_REG * sum(1 for a, b in zip(gr, wr) if a != b)
                 cost += W_REG * abs(len(gr) - len(wr))
-                gi, wi = _imms(g), _imms(w)
-                cost += W_IMM * sum(1 for a, b in zip(gi, wi) if a != b)
+                if not (g.mnemonic in LINKER_TARGET and g.op_str.startswith("#")):
+                    gi, wi = _imms(g), _imms(w)
+                    cost += W_IMM * sum(1 for a, b in zip(gi, wi) if a != b)
                 gs, ws = _stacks(g), _stacks(w)
                 cost += W_STACK * sum(1 for a, b in zip(gs, ws) if a != b)
                 if not (gr or wr or gi or wi or gs or ws):
@@ -226,6 +246,52 @@ def score_body(mod, addr, size, body):
 
 def score_text(mod, addr, size, text):
     return score_body(mod, addr, size, body_of(text))
+
+
+def explain(mod, addr, size, text):
+    """Print the aligned difference, one line per pair, with its penalty kind.
+
+    The score alone says how far away a candidate is; this says what is away,
+    which is what decides whether a permuter run, a source edit or a different
+    lever is the right next move.
+    """
+    fm.retail(mod, addr, size)          # selects the module before parse_ins
+    blob = fm.compile_text(body_of(text), "probe")
+    if not blob:
+        print("does not compile")
+        return 1
+    want_ins = _trim_pad(list(fm.parse_ins(addr, size)))
+    got_ins = _trim_pad(list(fm.md.disasm(blob, addr)))
+    print("retail %d instructions / %d B, candidate %d instructions / %d B"
+          % (len(want_ins), size, len(got_ins), len(blob)))
+    matcher = difflib.SequenceMatcher(a=[_key(i) for i in got_ins],
+                                      b=[_key(i) for i in want_ins], autojunk=False)
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            for g, w in zip(got_ins[i1:i2], want_ins[j1:j2]):
+                if g.op_str == w.op_str:
+                    continue
+                kinds = []
+                if _regs(g) != _regs(w):
+                    kinds.append("reg")
+                if _imms(g) != _imms(w) and not (g.mnemonic in LINKER_TARGET
+                                                 and g.op_str.startswith("#")):
+                    kinds.append("imm")
+                if _stacks(g) != _stacks(w):
+                    kinds.append("stack")
+                print("  %04x  %-24s | %-24s  %s"
+                      % (w.address - addr, g.mnemonic + " " + g.op_str,
+                         w.mnemonic + " " + w.op_str, ",".join(kinds) or "shape"))
+            continue
+        for k in range(max(i2 - i1, j2 - j1)):
+            g = got_ins[i1 + k] if i1 + k < i2 else None
+            w = want_ins[j1 + k] if j1 + k < j2 else None
+            kind = {"replace": "replace", "insert": "extra", "delete": "missing"}[tag]
+            print("  %04x  %-24s | %-24s  %s"
+                  % ((w or g).address - addr,
+                     (g.mnemonic + " " + g.op_str) if g else "-",
+                     (w.mnemonic + " " + w.op_str) if w else "-", kind))
+    return 0
 
 
 # --------------------------------------------------------------------------
@@ -295,6 +361,37 @@ def mut_swap_stmt(state, rng):
     new = list(groups)
     new[i], new[i + 1] = new[i + 1], new[i]
     return "swap stmt %d/%d" % (i, i + 1), (state[0], decls, new, state[3])
+
+
+def mut_move_stmt(state, rng):
+    """Move one statement past others it does not touch.
+
+    Reordering only neighbours cannot reach the case a DS-project note reports:
+    moving a real value's demand *before* a stride multiply changes which
+    register the mul destination coalesces into.  A move is safe under the same
+    rule as a swap, applied to every statement it crosses.
+    """
+    prefix, decls, groups, suffix = state
+    if len(groups) < 3:
+        return None
+    movable = [i for i, g in enumerate(groups) if single(g) and simple(g[0])]
+    if len(movable) < 2:
+        return None
+    i = rng.choice(movable)
+    j = rng.randrange(len(groups))
+    if j == i:
+        return None
+    lo, hi = (i, j) if i < j else (j, i)
+    moved = groups[i][0]
+    for k in range(lo, hi + 1):
+        if k == i:
+            continue
+        if not single(groups[k]) or not may_swap(moved, groups[k][0]):
+            return None
+    new = list(groups)
+    item = new.pop(i)
+    new.insert(j, item)
+    return "move stmt %d->%d" % (i, j), (prefix, decls, new, suffix)
 
 
 def mut_swap_decl(state, rng):
@@ -511,7 +608,8 @@ def mut_temp(state, rng):
     return "temp %s" % name, (prefix, new_decls, new_groups, suffix)
 
 
-MUTATIONS = {mut_swap_stmt: "swap stmt", mut_swap_decl: "decl swap",
+MUTATIONS = {mut_swap_stmt: "swap stmt", mut_move_stmt: "move stmt",
+             mut_swap_decl: "decl swap",
              mut_rotate_decl: "decl rot", mut_shuffle_decl: "decl shuffle",
              mut_addchain: "chain order",
              mut_split_init: "split init", mut_join_init: "join init",
@@ -578,7 +676,7 @@ def decl_sweep(evaluator, state, max_decls, verbose):
         tried += 1
         if s is None:
             continue
-        if s[0] == 0:
+        if s[0] == 0 and s[1] == 0:
             return text_c, cand, "%d decls, sweep order %d" % (n, tried), tried
         if best[0] is None or s < best[0]:
             best = (s, list(perm), "sweep order %d" % tried)
@@ -674,7 +772,7 @@ def search(evaluator, text, iters, islands, budget, seed, use_temps, batch, verb
                 if s is None:
                     failed += 1
                     continue
-                if s[0] == 0:
+                if s[0] == 0 and s[1] == 0:
                     need = use_temps and "temp tmp" in label
                     print("MATCH after %d tries (%ds): %s"
                           % (tried, time.time() - started, label))
@@ -734,6 +832,8 @@ def main(argv):
     verbose = "--verbose" in flags
 
     text = path.read_text(encoding="utf-8")
+    if "--explain" in flags:
+        return explain(mod, addr, size, text)
     note = fm.wall_note(mod, addr)
     if note:
         print("note: parked - %s" % note)
@@ -780,7 +880,7 @@ def main(argv):
         print("  no improving state found - widen --iters/--islands/--time or add --temps")
     for s, label, _ in frontier[: opt["--top"]]:
         print("  %3d structural  cost %4d  %+d B  %s" % (s[0], s[1], s[2], label))
-    if frontier and frontier[0][0][0] == 0:
+    if frontier and frontier[0][0][0] == 0 and frontier[0][0][1] == 0:
         best = frontier[0]
         out.write_text(best[2])
         print("wrote %s  (%s)" % (out, best[1]))

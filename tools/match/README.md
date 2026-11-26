@@ -16,7 +16,7 @@ output under `build/` (gitignored).
 | `udis.py` | Disassemble retail functions with their sizes |
 | `var3.py` | Compile a candidate and diff it, relocations masked |
 | `probe.py`, `vprobe.py` | Side-by-side listing; `vprobe` runs `1.2/b56` then `1.2/sp2` |
-| `permute.py`, `pragmas.py`, `slots.py` | `permute.py`: permutation search on one candidate with an aligned weighted score (reg 5 / imm 1 / reorder 60 / insert-delete 100, linker fields masked) — exhaustive declaration order, `// P` statement order, and a seeded annealed random search over semantics-preserving rewrites, scored by differing slots (`--install` verifies a winner through `t10.try_unit`). `pragmas.py`, `slots.py`: pragma and register-slot experiments |
+| `permute.py`, `pragmas.py`, `slots.py` | `permute.py`: permutation search on one candidate with an aligned weighted score (reg 5 / imm 1 / reorder 60 / insert-delete 100, linker fields masked) — exhaustive declaration order, `// P` statement order, and a seeded annealed random search over semantics-preserving rewrites, scored by an aligned weighted diff that masks linker-filled fields (`--explain` prints the residue by kind; `--install` verifies a winner through `t10.try_unit`). `pragmas.py`, `slots.py`: pragma and register-slot experiments |
 | `permusweep.py` | Triage every `build/cand` candidate by structural vs weighted difference, then permute the closest ones (`--count`, `--time-each`, `--install`); journal in `build/permusweep.jsonl` |
 | `lint_cand.py` | Check a candidate's extern names against `symbols.txt` |
 | `literal_load.py` | Census matched units whose source spells a pooled load's target as a

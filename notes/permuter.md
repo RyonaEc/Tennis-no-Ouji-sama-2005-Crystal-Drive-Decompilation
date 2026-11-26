@@ -126,3 +126,51 @@ divergence in the prologue. Declaration order, init split/join, statement order,
 exhaustively or near-exhaustively on these; the permuter is not the tool that
 will close them. The next lever worth trying is a per-unit pragma via
 `tools/match/pragma_probe.py`, not more source shapes.
+
+## Scorer fixes: linker targets, padding, and a false "match" (2026-11-26)
+
+`--explain` (new) prints the aligned difference with its penalty kind, and using
+it on the ov002 prologue walls exposed two artifacts in the score:
+
+* **Call targets.** A bare compile leaves a stub offset in `bl #...`; retail has
+  the linked address. Those were being charged as immediate differences - the
+  exact trap BFM-decomp patched out of decomp-permuter. `bl`/`blx`/`b` with an
+  immediate target now align on the mnemonic and are not charged for it.
+* **Trailing padding.** Zero words at the end of a function decode as `andeq` /
+  `andseq` and were counted as a replaced instruction (60). Trailing padding is
+  now trimmed from both sides before alignment.
+
+With those two fixed, the six prologue walls read **structural 0** - pure
+register residue - where they previously looked structural. The residue is
+11-19 register differences (weighted cost 55-95) and a 300 s / 6-island run on
+the closest one did not reduce it.
+
+Also fixed: the search treated `structural == 0` as a match, so a register-only
+difference could be written out as a "match". A match now requires both the
+structural count and the weighted cost to be zero, and `--install` still has the
+final say through `t10.try_unit`.
+
+## Research: why the stride-product register will not move
+
+A web-research pass over CodeWarrior mwccarm projects found one close published
+analogue - SM64DS's mwccarm notes describe a 2004/b56 function where the ROM has
+the table base in `r2` and the stride product in `r1` while every spelling that
+computes the stride first produces the opposite, treated there as a frame-layout
+floor rather than a source-shape problem
+(<https://github.com/tangosdev/sm64ds-decomp/blob/main/notes/mwccarm-codegen.md>).
+That note's levers, in order of promise, were: change the *first-demand order of
+real values* around the multiply (moving genuine loads/captures earlier), type a
+temporary to the element's real type (`short` rather than `int`), and use a
+truthful typed array subscript. It found no case where `&arr[a0]` alone flips this
+base-versus-product assignment.
+
+The repository already tries the first two by hand and the permuter now searches
+statement moves (`mut_move_stmt`) and additive-chain order (`mut_addchain`) as
+well. None of it closes the six, which is consistent with the SM64DS reading that
+this particular register role is fixed by the compiler's allocator once the
+function's live-range shape is what it is.
+
+Next lever, not yet tried: represent the entity table as a real array of a record
+type and index it (`&g->ent[a0]` with an element size of 0x158) so the stride comes
+from the type rather than from an explicit multiply. That changes the expression
+mwcc sees without changing the meaning.

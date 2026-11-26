@@ -12612,3 +12612,15 @@ ov002 prologue class - six walls all at 1 structural pair (2026-11-26)
   and the a0*0x158 stride product land in the opposite registers from retail.
   Conclusion: this is one compiler decision, not six source problems. Try a
   per-unit pragma (tools/match/pragma_probe.py) before writing more variants.
+
+ov002 prologue class - CORRECTION: these are pure register residue, not structural
+  After masking linker-filled branch targets and trimming trailing padding in the
+  permuter's scorer, all six read structural 0 with 11-19 register differences
+  (weighted cost 55-95): 0x020b5d28 cost 55, 0x020c0c70 90, 0x020c82d4 90,
+  0x020f4490 95, 0x020da96c 150, 0x020f466c 210. A 300 s six-island run on the
+  closest (0x020b5d28) did not reduce it, so the register role is not reachable
+  through the axes we have: declaration order, statement order and moves, init
+  split/join, chain order, signedness, 24 pragmas - plus the SM64DS levers
+  (first-demand order, typed temporaries) which are also already covered.
+  Untried idea from the research: express the stride through a typed array index
+  (&g->ent[a0] with element size 0x158) instead of an explicit a0 * 0x158.
