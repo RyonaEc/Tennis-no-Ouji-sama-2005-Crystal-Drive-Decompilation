@@ -1298,3 +1298,24 @@ shapes; the ones worth remembering:
 
 - **A plain `if` chain beats a predicate** (`0x0202cff8`): two early-return
   guards reproduce `addne sp` / `ldmne sp!` / `bxne lr` exactly.
+
+## 2.63 Switch dispatch: give every case an arm (2026-11-26)
+
+`arm9 0x0201a98c` (196 B) is a callback dispatcher. A `switch` over 0..2 with two
+distinct bodies compiles to a compare chain (`cmp r0,#1` / `beq` / `cmp r0,#2`),
+while retail has the jump table:
+
+    cmp r0, #3
+    addls pc, pc, r0, lsl #2
+    b   default
+    b   case0          ; table index 0 is the word after `b default`
+
+Writing the switch with all four values 0..3 present — including `case 3:
+break;` with no body — makes the range contiguous and b56 emits the table. Read
+the table backwards from the `addls`: entry *n* is at `addls + 8 + 4*n`, so the
+first `b` after it is index 0, not the last one.
+
+Also note the two live-pointer reloads in that unit: the callback arguments read
+the global through one dereference and the dispatch guard through two, and both
+reload `data_020475c4` from the pool rather than keeping it in a callee-saved
+register — spelling each access out inline is what reproduces that.
