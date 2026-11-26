@@ -12495,3 +12495,22 @@ arguments, not eleven.
   the split costs one instruction (692 vs 688). y3 is the size-exact candidate; its
   residue is that fold plus register assignment (g in sl where retail uses r8).
   The 608 sibling is at 612 B with the 12-arg fix (one instruction over, retail 608).
+
+0208f38c ov002 608B - UPDATE 3: the cast fork (parked, 3 grids spent)
+  With the correct 12-argument call the argument block and frame match retail, and the
+  whole body lines up except ONE instruction after func_ov002_02053468:
+    retail   bl 02053468 / add r0,r0,#0 / lsl r0,r0,#0x10 / asr rX,r0,#0x10   (3 insns)
+    mine     bl ... / lsl / asr                                            (604 B, 2)
+    mine     bl ... / lsl / lsr / lsl / asr                                 (612 B, 4)
+  So retail's is a one-instruction no-op conversion between the two. Every spelling tried:
+    (s16)call()                    604      (s16)(u16)call()              612
+    (s16)(s32)call()               604      (s16)(u16)(u32)call()         612
+    (short)(unsigned short)call()  612      s32 t=call(); (s16)(u16)t     612
+    s16 ang + (s16)call()          604      s16 ang + (s16)(u16)call()    612
+    ang=call(); ang=(s16)ang       604      ang=call(); ang=(s16)(u16)ang 612
+    ang=(u16)call()                604      call()+0 then (s16)            604
+  None lands on 3 instructions. The 11-argument prototype made this look like a 608-byte
+  match earlier; that was the argument-count bug, not the cast.
+  Decisive but unverified theory: the original may call through a cast function pointer,
+  or read the angle through a struct/union member, either of which makes mwcc emit the
+  extra conversion. Worth one experiment next time; do not pad the body with a no-op.
