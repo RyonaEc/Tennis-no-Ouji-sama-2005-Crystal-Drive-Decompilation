@@ -6666,3 +6666,17 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
   inline (`add r0, r6, r5, lsl #3`) and keeps one counter. Inline offset,
   `((u32*)(base+0xdc))[i*2]` and a `while` + `i++` body all keep the reduction:
   same wall as 0204cc48.
+
+* Three ov004 units matched in one pass once these shapes were right:
+  `020622c4` (188 B, the t-block has to be the *last* construct - with the test
+  as `if (func(7) != 0) { ... return 3; }` followed by the
+  `func_0200fd40()` block, mwcc emits retail's forward `beq` to it instead of
+  inlining it), `02052940` (192 B, `*(u32 *)(p + 0x24) / 20` - retail's
+  `0xcccccccd` + `lsr #4` is /20, not /5, which is `lsr #2` - plus the
+  `if (res == 0) r = 0; else { stores; r = 1; }` form), and `02051348` (200 B,
+  first spelling: two `(*field)++` increments on s16 fields, a `>= 0` guard and
+  a two-case switch on `p[0xa6]`).
+
+* `02052940` also needed `(u32)p` - the frame-pointer argument - passed as the
+  pointer variable rather than the raw stack parameter, or mwcc reloads the
+  incoming argument for every call that takes it and the unit is 8 bytes long.

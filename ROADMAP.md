@@ -11,12 +11,12 @@ criterion that the digest gate decides, not a percentage alone.
 
 | Metric | Matched | Total | Left |
 |---|---:|---:|---:|
-| Functions | 1,905 | 3,806 | **1,901** |
-| Code | 171,708 B | 1,841,700 B | **1,669,992 B** |
+| Functions | 1,908 | 3,806 | **1,898** |
+| Code | 172,288 B | 1,841,700 B | **1,669,412 B** |
 | Data | 630,724 B | 801,936 B | **171,212 B** |
-| Complete units | 4,194 | 4,866 | **672** |
+| Complete units | 4,197 | 4,867 | **670** |
 
-The important asymmetry: **50.05% of functions but 9.32% of code bytes.** What
+The important asymmetry: **50.13% of functions but 9.35% of code bytes.** What
 remains is not a long tail of small leaves - it is a few hundred large functions.
 
 Data is the mirror image: 78.65% matched. Its fully-linked figure is higher

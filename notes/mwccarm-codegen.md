@@ -777,3 +777,24 @@ once in a callee-saved register and pass the copy; retail recomputes
 rematerialisation, which is what frees the register retail uses for something
 else. Same family of mistake as the byte-offset counter: the cast decides the
 codegen, not the arithmetic.
+
+## The shift in a magic division names the divisor
+
+`umull r1, r0, x, 0xcccccccd` followed by `lsr r0, r0, #2` is `/5`; the same
+literal with `lsr r0, r0, #4` is `/20`. Both use 0xcccccccd, so read the shift
+before guessing: one step of shift is a factor of four in the divisor, and
+writing the smaller divisor costs an instruction and breaks the match.
+
+## `if (c) { ...; return 1; } return 0;` vs the `else` assignment
+
+For a call result that both guards a couple of stores and becomes the return
+value, the early-return pair and the if/else assignment are not the same bytes:
+
+- `if (res) { store; store; return 1; } return 0;` emits `movne r0, #1` first,
+  stores predicated on the same flags, then a second `cmp` for the exit;
+- `if (res == 0) r = 0; else { store; store; r = 1; } return r;` emits
+  `moveq r0, #0` then `movne r0, #1` then the predicated stores, with no second
+  `cmp` - the flags of the one comparison are reused.
+
+When retail shows the boolean materialised before the stores and no trailing
+comparison, write the `else` assignment.
