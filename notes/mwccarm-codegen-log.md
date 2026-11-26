@@ -6680,3 +6680,41 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
 * `02052940` also needed `(u32)p` - the frame-pointer argument - passed as the
   pointer variable rather than the raw stack parameter, or mwcc reloads the
   incoming argument for every call that takes it and the unit is 8 bytes long.
+
+## 2026-11-26 - four ov004 units, and the switch/return shapes that decide them
+
+* `02052504` (204 B) matched on the second spelling and only because of the
+  switch: the prologue (a pending-value latch - `*(s16 *)(p + 8) = c`, then
+  `if (*(u32 *)p) *(s16 *)(p + 8) = *(s16 *)(p + 4)`, then commit
+  `*(s16 *)(p + 4) = *(s16 *)(p + 8)`) matched slot for slot on the first try,
+  and the `if (f6 == 0) {...} if (f6 == 1) {...}` tail did not: it emitted
+  `bne` to the case-1 body placed inline. `switch (*(s16 *)(p + 6))` with
+  `case 0:`/`case 1:` each ending in `return` puts both bodies out of line
+  behind a default fall-through and matches.
+* `0205e2b4` (208 B) first spelling: `if (func_ov004_020528c0((u32 *)a0) == 0)
+  return 0;` then two fixed-point stores at `b + *(u32 *)(b + 0x180) * 8 + 0x184`
+  and two `a1[0] + *(s16 *)(...)` sums, `(*(u32 *)(b + 0x180))++`, then
+  `func_020051b8((u32)(b + 0x184), *(u32 *)(b + 0x180))` and `*(u32 *)(b + 4) = -1`.
+  Writing the index expression out in every statement (rather than a local `i`)
+  is what keeps the four reloads of `[r4, #0x180]`.
+* `0205312c` (236 B) first spelling: `s32 a = 0, b = 0;` handed to
+  `func_ov004_02053218(p, &a, &b)`, a mode switch with two `if (flag)` calls per
+  arm. Note `func_ov004_02053218` takes `s32 *`, not `u32 *`.
+* `0205a8cc` (240 B) needed both new shapes at once: the inner `switch` on
+  `g->f8` with `case 0:`/`default:` sharing `func_0200649c(9)` (giving the
+  redundant `beq` to the next instruction) and the shared trailing `return 0`
+  with `if (r != 0) return func_ov004_0204dce4(*(u8 **)(b + 4), N);` in each arm.
+  Writing `if (r == 0) return 0;` twice inside the arms cost 8 bytes and
+  duplicated the epilogue.
+* `0204e8e4` (252 B) and `02055850` (252 B) are parked. The first reproduces
+  every instruction of the 2x4 walk and the 2x0x1c walk but the four induction
+  registers rotate (retail p=r7/q=r6/i=r8/j=sb, mwcc p=sb/q=r8/i=r7/j=r6) across
+  all 24 declaration orders; the second gets the hoisted clamp bounds right but
+  spills the 0xff literal into a fourth frame slot and takes a4 into r7 where
+  retail takes it into r4.
+* Compiler gotcha: calling a prototype that declares its second parameter
+  `s32` with a `u8 *` argument aborts mwcc with
+  `<string not found>`; write `(s32)a1`.
+* Tooling gotcha: `cdiff.py <mod> <name>=<file.c>` writes `src/<mod>/<name>.c`
+  and unlinks it afterwards, so probing with the name of an *already matched*
+  unit deletes its source. Check `git status` after a probe sweep.

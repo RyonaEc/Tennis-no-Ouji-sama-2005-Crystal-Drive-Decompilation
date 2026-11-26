@@ -798,3 +798,67 @@ value, the early-return pair and the if/else assignment are not the same bytes:
 
 When retail shows the boolean materialised before the stores and no trailing
 comparison, write the `else` assignment.
+
+## `case 0: default:` shares a body and leaves a branch to the next instruction
+
+When a switch's default does not get its own body, write the label that shares
+the body explicitly:
+
+```c
+switch (v) {
+case 0:
+default:
+    f(9);
+    break;
+case 1:
+    f(0xa);
+    break;
+}
+```
+
+mwcc then orders the comparisons `cmp #0; beq case0; cmp #1; beq case1;` and
+lets the fall-through reach the shared body, so the first branch targets the
+instruction immediately after it. A plain `case 0:`/`case 1:` switch with an
+empty default instead emits a `b` to the join after the two comparisons, which
+is four bytes the retail body does not have. A `beq` whose target is the next
+instruction is the signature of this shape, not a stray branch.
+
+## One shared `return 0` behind per-branch early returns
+
+Two branches that both fail into `return 0` share one out-of-line
+`mov r0, #0; pop; bx` block in retail, and both guards branch to it. Write it as
+the trailing statement, with the successful path returning early:
+
+```c
+if (mode == 1) {
+    ...
+    if (r != 0) return f(p, 8);
+} else if (r != 0) {
+    return f(p, 2);
+}
+return 0;
+```
+
+`if (r == 0) return 0;` inside each branch inlines the epilogue twice and costs
+8 bytes; `if (r != 0) return ...;` plus one trailing `return 0;` produces the
+shared block, the two `beq`s to it, and the `pop`/`bx` after each call site.
+
+## A loop-body local's constant is hoisted into the frame, not folded
+
+Constants that live in locals declared inside a loop body are loop-invariant to
+mwcc: it stores them in the frame before the loop head and *reloads* them from
+memory at every use instead of using `movmi rX, #0`. So `ldr` from a slot whose
+content the same function just stored is not a sign of a struct - it is a local
+declared inside the loop:
+
+```c
+for (i = 0; i < n; i++) {
+    s32 lo = 0, bot = 0xbf;   /* hoisted: three stores before the loop head */
+    ...
+}
+```
+
+The init block sitting between the loop guard and the loop head, rather than at
+the top of the function, is the confirmation. Literals used only in a
+comparison stay in registers (`mov fp, #0xff`), so the frame holds only the
+ones read as values.
