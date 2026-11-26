@@ -6633,3 +6633,20 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
   digest matched either way because relocations are masked, but `progress.py`
   dropped it to 99.643% and `objcheck.py` named the missing relocation. Check
   `relocs.txt` for the address before writing a table pointer as a number.
+
+* `ov005 020695bc` (4x220 family) transcribed to exactly 220 B with retail's
+  instruction sequence; residue is 5 slots of the family's known `ip`/`lr` tie
+  (the zero constant and `p = base + i*2` trade registers). Two findings:
+  the guarded store is `if (i % 4 == 0)` - the `ror #30` in retail encodes a
+  mask of 3, while `% 2` would be `ror #31` - and the whole body must sit in
+  `if (a0 == 0) { ... }` with one trailing `return 0;`, because the
+  `if (a0 != 0) return 0;` form gets its early return predicated instead of
+  retail's `bne` past the body. Full decode: `notes/ov005-020695bc.md`.
+
+* `ov004 0204fc40` re-attempted with the wall decode: the two-guard form still
+  predicates both `return 1`s (164 B) where retail keeps two `beq`s to one cold
+  epilogue (176 B). Wrapping the body in a `while (g != 0 && *g != 0)` loop
+  rotates it and lands at 172 B, still without retail's two separate guards, and
+  `goto fail` gives 168 B. So the new tail-test lever does not reach this wall:
+  its shape needs two distinct exits that share one epilogue, which is the
+  mirror of `arm9 0203b698`.

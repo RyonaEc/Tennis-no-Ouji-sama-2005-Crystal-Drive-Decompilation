@@ -759,3 +759,11 @@ while (p != 0 && (f = *p) != 0) {
 - gives retail's rotated loop: one `cmp`/`popeq` at the top, `blx` in the body
   and a single shared epilogue. One instruction saved, and the only shape that
   matched on `arm9 0203b698`.
+
+## Reading `% n`: the shift amount is the modulus
+
+mwcc expands `i % n` (unsigned) as
+`lsr rA, i, #31` / `rsb rB, rA, i, lsl #(32-k)` / `adds rC, rA, rB, ror #(32-k)`,
+where the mask is `2^k - 1`. So `lsl #31` / `ror #31` is `% 2` and
+`lsl #30` / `ror #30` is `% 4`. Read the shift before assuming the divisor; one
+step of k is one instruction's worth of difference in the loop body.
