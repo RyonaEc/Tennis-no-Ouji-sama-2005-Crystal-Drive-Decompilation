@@ -1120,3 +1120,58 @@ So when a diff bottoms out at "only the pool registers differ", read which
 statement first touches each global and reorder the source accordingly, then check
 any conditional in the residue for `hi`/`ls` vs `gt`/`le` - a `hi` where retail
 has `gt` means an unsigned local that should be signed.
+
+## 2.57 Three shapes b56 will not reproduce (2026-11-26)
+
+All three were re-attacked with the 2.55/2.56 levers and stayed short of a match.
+They are recorded with their best spelling so the next pass starts from the wall,
+not from the beginning.
+
+**A 0/1 flag reads eq-first in retail, ne-first in b56.**
+`arm9 0x0202a45c` (136 B) ends with `ldr r0,[r5,#0x20]` / `ldr r3,[r5,#8]` /
+`cmp r0,#0` / `moveq r0,#0` / `ldr r1,[r5,#4]` / `movne r0,#1` / `mov r2,r4` /
+`bl`. The winning skeleton is: load `o+0x20` into a local `t`, then `o+8` into a
+local `a3`, then set the flag, then load `o+4` into `a1`, then call
+`func(flag, a1, v, a3)`. That gets the load order, the interleaved `ldr r1`
+**and** all but one slot - `flag = 0; if (t != 0) flag = 1;` emits
+`mov r0,#0` unconditionally. Every other spelling is worse or equal:
+
+| spelling | slots |
+|---|---|
+| `flag = 0; if (t != 0) flag = 1;` | **1** (`mov` vs `moveq`) |
+| `flag = (t != 0) ? 1 : 0;` | 2 (ne before eq) |
+| `flag = (t == 0) ? 0 : 1;` | 2 (still ne before eq) |
+| `if (t != 0) flag = 1; else flag = 0;` | 2 |
+| `if (!t) flag = 0; else flag = 1;` | 2 |
+| `flag = 1; if (t == 0) flag = 0;` | 2 |
+| 0/1 locals with a ternary | 2 |
+| `switch (t != 0) { case 0: ... }` | 7 |
+| `flag = !!t;` / `(u32)(t != 0)` | 4 |
+| inline args, `!= 0`, `== 0?0:1`, separate `f` local | 4 (per the wall) |
+
+b56 canonicalises the predicated pair to ne-first whenever the condition is
+`t != 0`, and to `mov` + `movne` whenever the zero is an unconditional default.
+The remaining idea is a source where the compare consumes something other than a
+loaded word; nothing tried so far does that.
+
+**A hoisted pool base prefers r1 over ip.**
+`arm9 0x0202c430` (24 B) is `while (*(volatile u32 *)0x0204ad00 == 1) {}` - a bare
+spin, retail 24/24 B. The earlier "3-slot" candidate was a *fakematch*: it
+dropped the reload, so `beq` branched two bytes past the load and the loop could
+never see a new value. Spelling the access `volatile` fixes the reload and leaves
+2 slots: retail hoists the pool address into `ip` (`ldr ip,[pc]` / `ldr r0,[ip]`,
+loop target the load), b56 always picks `r1`. Unchanged by a volatile global, a
+`volatile u32 *p` local, `for (;;) if (...) break;`, `do/while`, an assigned `v`,
+a `one` local and `(v = load) == 1`. In a leaf function with r0 taken by the
+result, b56 never chooses ip for a loop-invariant address.
+
+**The head of the size-sorted queue is not quick wins.**
+The five smallest delinked units are not C functions:
+`0x02033cb0` is `udf #0xffff; bx lr` (a literal word inside `.text`),
+`0x0203b2cc` is `cmp r1,#0; bxeq lr` falling into the next function,
+`0x0203aeb8` is `push {r4-r7,fp,ip,lr}; mov r4,#0; b ...` continuing past its 12 B,
+`0x02033bc0` is two `mov r0,#n; b <next function>` entries of a table, and
+`ov003 0x02050f2c` is `cmp r0,#0; moveq r0,#0; movne r0,#0; bx lr`, which b56
+folds to `mov r0,#0; bx lr` (8 B) for `a ? 0 : 0`, `if (a) return 0; return 0;`
+and `(a == 0) ? 0 : 0` alike. Sorting the queue by size therefore reaches shared
+tails and data first; filter to units whose size covers a whole `push`/`pop` pair.
