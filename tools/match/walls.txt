@@ -277,6 +277,8 @@ ov003 0x02053b58 236B func_ov003_02053b58 236B maps the four panel selections at
 
 ov002 0x0208a57c 288B func_ov002_0208a57c 288B builds one 8-byte display-list packet: state = *(u32*)(data_ov002_02102070)+0x4bc4, idx = state[0x49] (post-incremented), entry = func_ov002_02084888() + 0x190 + idx*8; six bytes cleared, word0 = 0x80002000 then (word0 & 0xfe00ffff) | (((a1+1) & 0x1ff) << 16), byte0 = a2+1, then three read-modify-writes on the halfword at entry+4: bits 0-9 = (slot*0x400 + 0x5580) >> 7, bits 12-15 = (a3 == 1 ? 4 : slot) & 0xf, bit 10 set. Fully lifted (build/cand/lift_func_ov002_0208a57c.s); not yet written as C - the packet builder needs the three RMW expressions spelled so mwcc keeps the same registers (r4 holds the halfword across all three). L12661
 
+ov005 0x0204f1c0 236B func_ov005_0204f1c0 236B tile-packet builder: out = *(u8**)(a3+0xc) + a2*8 (retail builds it as (s16*)p + a2*4, i.e. lsl #2 then the element scale in the add), hi half at p+2+the same offset; w = *(u32*)((*(u16*)(a3+0x14)*12 + *(u32*)(a3+0x10)) + 8); stores w.lo and w.hi>>16, calls func_ov005_0204f064(w & 0xcfffcfff) into a3+0x16, then func_ov005_0204f340(out, a0 + ((w>>16)&0x1ff), a1 + (w&0xff), <4-byte pair copied from a3>), then writes those two 9/8-bit fields back to a3+4 and a3+6 and returns out. The fourth argument is a two-u16 struct spilled to the stack and reloaded as one word (strh/strh/ldm). Candidates build/cand/o5_4f1c0_a.c (196B) and _b/_c.c (196B/200B) L12664
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
