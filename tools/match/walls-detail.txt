@@ -12627,3 +12627,6 @@ ov002 prologue class - CORRECTION: these are pure register residue, not structur
 
 ov005 0x02050974 func_ov005_02050974
 308B init: 77/77 slots, 10 diffs all frame slots - retail reuses [sp+4] for four zeroed args, b56 gives each volatile store its own slot (frame 8 vs 0x18)
+
+ov005 0x0204e99c func_ov005_0204e99c
+320B: full transcription at exact size (38 slots); retail has THREE identical cmp/mov blocks (0x45, 0x48, default) but if/else if-converts and switch builds a jump table

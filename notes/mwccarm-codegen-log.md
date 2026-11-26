@@ -6582,3 +6582,11 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
   each volatile temporary in its own `{ }` block - so lifetimes end before the
   next begins - is what makes b56 reuse the slot. Score went 25 -> 10 -> 0 with
   that one change, and `reg.py` kept it; `ninja sha1` prints the retail hash.
+
+* `ov005 0204e99c` (320 B) transcribes to the exact instruction count and size on
+  the first pass, but retail keeps **three separate blocks** that each set the
+  same two constants (`case 0x45`, `case 0x48`, default all `v = 3; flag = 1;`).
+  b56 if-converts the if/else-if chain into `moveq`/`movne` (38 diffs), and a
+  `switch` over the same values builds a jump table instead (+32 B). The source
+  shape that makes mwcc emit three full blocks with identical bodies is unknown;
+  do not read the three blocks as "the cases differ", they compile identically.
