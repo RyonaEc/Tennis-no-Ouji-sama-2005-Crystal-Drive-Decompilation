@@ -12427,3 +12427,38 @@ ov002 0x0209d584 func_ov002_0209d584
   a real a0 local at 0x20 with a copy into the outgoing slot 0x1c, where mwcc keeps a0 in
   0x1c and skips the copy. Those are the allocation class the playbook says resists;
   do not fake it with padding or by reordering after the fact.
+
+0209ab8c ov002 688B - 10-member family, decode + 688/688 candidate (NEW)
+  build/cand/ov2_9ab8c.c compiles to 688 B and 170 instructions, the same count as retail,
+  with the same opcode sequence; only registers and one stack slot differ. Third sibling of
+  the 0x0208f860 family. Its specifics:
+    y   = ((s32)func_ov002_0205bf64() - 0x14) << 16
+    d   = (*(s32 *)(e + 0x128) * 5) / 4        (mwcc emits asr r2,#1 / add bias / asr #2)
+    ang = (s16)(u16)func_ov002_02053468()
+    v   = func_ov002_0205bee4(0x32, e)         (0x32, not 0x14)
+    same four-way angle adjust on e+0x4c & 4 / e+0x50 & 0x10|0x20
+    d   = d * dir;  func_ov002_0204f770(d, (u8)(s16)(dir*((ang<<8)/360)), buf)
+    z   = 0x500000, then a mode block sets 0x600000 / 0x400000:
+          e+0x4c & 4 ? *(u8 *)(q+9) == 0 -> 0x600000, == 2 -> 0x400000
+          : half == 0 ? (e+0x50 & 0x80 -> 0x600000, & 0x40 -> 0x400000)
+                      : (e+0x50 & 0x40 -> 0x600000, & 0x80 -> 0x400000)
+    half == 1 -> z = z * neg;  buf[0] < 0 -> y *= neg;  buf[0]==0 && *(s32*)w < 0 -> y *= neg
+    r = func_ov002_020532e4(y, z, buf, d)
+    buf[2] = func_0203b0c0((0x30000 - *(s32 *)(w+8)) + (r*(r*0x157c))/2, r)
+    func_ov002_020528cc((u8 *)buf, 0x320000, 0)
+    func_ov002_02057068(buf[0], buf[1], buf[2], 0, 0, half, 0, 0x27, *(u8 *)e,
+                        *(u16 *)(e+0x12c), a0)
+    func_ov002_020780f8();  *(u32 *)(g + 0x38) &= ~1;
+  s32 buf[4] again (frame 0x3c with 0x38 spare), dir spilled at [0x24], d at [0x28].
+
+FAMILY-WIDE CLUE (all three angle families: 756, 608, 688)
+  Every member spills the incoming a0 to a REAL local at [sp+0x20] and then copies it into
+  the outgoing argument slot [sp+0x1c] at the final call. mwcc as reconstructed keeps a0 in
+  [sp+0x1c] and passes it directly, so every sp-relative operand shifts by four and no
+  member can match. That single slot is the whole difference in the 688 (170 == 170
+  instructions, 153 differing slots, all sp/register renames).
+  Tried and ruled out: s32 id = a0 (used everywhere), (void)a0 after the call, buf[4] vs
+  buf[3], declaration reordering. The resident theory to test next: the original signature
+  keeps a0 live past the last call - e.g. a returns/if use of a0, or the parameter being
+  used to index something after func_ov002_020780f8 - because a live-across-call a0 cannot
+  share the outgoing slot. Do not fake the split with padding.
