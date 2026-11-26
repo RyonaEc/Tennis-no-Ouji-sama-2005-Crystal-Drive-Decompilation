@@ -6650,3 +6650,19 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
   `goto fail` gives 168 B. So the new tail-test lever does not reach this wall:
   its shape needs two distinct exits that share one epilogue, which is the
   mirror of `arm9 0203b698`.
+
+* `ov004 020541f8` matched 200 B after two changes: the address passed to the
+  four helpers has to be typed (`void *`/`u8 *` + `&c`), not `(u32)&c` - the
+  cast version materialises sp into a callee-saved register and grows the unit
+  to 204 B - and `func_020298e4(&c)` belongs *inside* the guard, so the failed
+  test branches to the return rather than to the cleanup call (`beq` target
+  +0xb0 vs +0xa8). Confirmed: the parse that matters is whether the branch
+  target skips the whole tail or only the body.
+
+* `ov004 0205a57c` parked at 200 B: the second loop is
+  `i < base[0xd0]+base[0xd4] && i < base[0xd4]+4`, both bounds re-read from
+  memory each pass, indexing 8-byte entries at base+0xdc. mwcc strength-reduces
+  `i*8` into an `lsl` accumulator plus a separate counter; retail rescales
+  inline (`add r0, r6, r5, lsl #3`) and keeps one counter. Inline offset,
+  `((u32*)(base+0xdc))[i*2]` and a `while` + `i++` body all keep the reduction:
+  same wall as 0204cc48.

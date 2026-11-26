@@ -267,6 +267,8 @@ ov005 0x0204e99c 320B func_ov005_0204e99c 320B: full transcription at exact size
 
 ov005 0x0205aae0 336B func_ov005_0205aae0 332 of 336 B, one instruction short: the 90..180 quadrant computes (deg-0x5a)-0x5a in retail as two subs (retail 0xac/0xb4), and b56 folds it to deg-0xb4 in every spelling tried - one expression, two statements via s32 d, s16 d (adds the truncation pair, 352 B). The table read wants a struct overlay at rec+0x400 (field at +0x24) to keep 0x400 as an add and 0x24 as the ldrh displacement; plain pointer and flat-offset spellings fold to 0x7b00/+0x70 or 0x424. A permute run (4,986 candidates) found nothing better than 6 structural. L12634
 
+ov004 0x0205a57c 192B func_ov004_0205a57c 196/192 best 200B: drains a queue at base+0x32c (func_02017720/func_0201779c pops and unlinks, func_ov004_020528c8 frees the node field at +8), then scans 8-byte entries at base+0xdc[i] calling func_ov004_02058cb4(1, x) while i < base[0xd0]+base[0xd4] && i < base[0xd4]+4. Residue: mwcc strength-reduces i*8 into an lsl accumulator plus a second counter (200B, push {r4,r5,r6,r7,lr} vs retail's sub sp,#4 frame); retail rescales inline with add r0,r6,r5,lsl #3 each pass. Same wall as 0x0204cc48. Inline offset, ((u32*)(base+0xdc))[i*2] and a while+break shape all keep the reduction. Registers also swap: retail base=r6/node=r7, mwcc base=r7/node=r6. L12637
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

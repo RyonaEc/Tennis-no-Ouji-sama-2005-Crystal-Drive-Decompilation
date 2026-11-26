@@ -767,3 +767,13 @@ mwcc expands `i % n` (unsigned) as
 where the mask is `2^k - 1`. So `lsl #31` / `ror #31` is `% 2` and
 `lsl #30` / `ror #30` is `% 4`. Read the shift before assuming the divisor; one
 step of k is one instruction's worth of difference in the loop body.
+
+## `(u32)&local` is hoisted, a pointer parameter is not
+
+Passing a local's address as `(u32)&c` makes mwcc materialise the frame address
+once in a callee-saved register and pass the copy; retail recomputes
+`add r0, sp, #0` before every call. Declaring the callee's parameter as
+`void *` / `u8 *` and passing `&c` (or the array name) keeps the
+rematerialisation, which is what frees the register retail uses for something
+else. Same family of mistake as the byte-offset counter: the cast decides the
+codegen, not the arithmetic.
