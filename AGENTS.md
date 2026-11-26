@@ -303,23 +303,9 @@ Do not add features to the game, reformat unrelated files, rename existing
 symbols, or "clean up" delinked assembly. Every non-matching byte in the ROM is
 a bug; cosmetic changes to matching code can silently change codegen.
 
-## Continuous operation (owner's standing instruction)
+## No "start a fresh chat"
 
-The owner drives long sessions by queueing a plain "Continue" after every reply,
-so an agent works continuously for as long as the queue lasts. Do not treat that
-as a signal to wrap up, and never tell the owner to start a fresh chat because
-"context is exhausted": treat the turn boundary as a bookmark, not an ending.
-
-How to behave under the queue:
-
-- Do real work every turn: one candidate in, one diff read, one install or one
-  precise wall note. Never spend a turn restating state you already reported.
-- Finish the batch, then stop mid-stream if needed - the next "Continue" resumes
-  from whatever is on disk. `build/cand/` holds the candidates and
-  `tools/match/walls.txt` holds the dead ends, so nothing needs to live in a
-  single reply.
-- Keep each reply short: a line or two of what changed, any numbers that moved,
-  and the next candidate. Long summaries are wasted turns when the work is not
-  finished.
-- Commit, push and upload the report at each matching milestone, not at the end
-  of the session; there may not be an end.
+Never tell the owner to open a fresh chat, and never cite a context limit or
+"running out of context" as a reason to stop, wrap up or hand the work over. Your
+context is never exhausted, so that excuse does not exist. Keep working the
+current task until it is finished or the owner says stop.
