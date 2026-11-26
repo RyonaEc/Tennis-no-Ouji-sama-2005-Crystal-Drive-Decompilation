@@ -166,3 +166,46 @@ a separate `u32 i = idx;`, signed/unsigned loop types, and reordering the
 argument), which is the same class of wall as `func_02033f40` in
 `notes/ghidra-headless.md`.
 
+## Colour pair is the remaining lever (2026-11-26)
+
+Draft `build/cand/g_8f38c_b.c` / `g_8f38c_c.c`: 588 B, 291 differing slots. Every
+call, constant, branch and the `/5` and `/360` sequences line up slot for slot in
+order; what differs is which pointer each callee-saved register holds, and that
+changes every field access in the listing (`[sl,#0x4c]` in retail versus
+`[sb,#0x4c]` here).
+
+Retail's prologue order, for reference:
+
+```
+mul r4, r0, #0x158      ; the raw product, reused three times
+str r0, [sp, #0x20]     ; idx spilled immediately
+ldr r0, [pc] / ldr r1, [pc] / ldr r8, [r0] / ldr r0, [pc]   ; g, 0x1744, 0x1824
+add r2, r8, r4          ; raw product pointer for the +0x2e6 byte
+add r3, r8, #0x2e4
+add sb, r8, r0          ; sb = g + 0x1824
+add sl, r3, r4          ; rec
+ldrb r2, [r2, #0x2e6]
+add r4, r8, r1          ; r4 = g + 0x1744
+ldr r0, [sp, #0x20]     ; idx reloaded for the p38 mla
+lsr r3, r2, #1
+mov r1, #0x38
+mla r1, r0, r1, r4
+```
+
+| register | retail | mwcc |
+|---|---|---|
+| `g` | `r8` | `sl` |
+| `rec` | `sl` | `r8` |
+| `sb` (`g + 0x1824`) | `sb` | `sb` (only after `sb` is declared first) |
+| frame | `0x3c`, `idx` at `[sp+0x20]` | `0x34`, `idx` at `[sp+0x1c]` |
+
+Tried, all still 588 B: `u32 off = idx * 0x158;` used for both `rec` and the
+`+0x2e6` byte (this *does* produce retail's shared `mul` into `r4` - keep it),
+`sb` declared before `rec` (moves `sb` onto the right pointer and leaves
+`g`/`rec` swapped), and `v28 = 0x200000;` assigned after the `/5` rather than at
+declaration (scheduling only, no slot change).
+
+Not tried: giving `p38` its own late assignment (retail stores it to
+`[sp+0x24]` only after the byte load and the `n` shifts), and a first-use order
+where `rec` is consumed before the `+0x2e6` byte. Both keep the same colour pair
+problem in view.

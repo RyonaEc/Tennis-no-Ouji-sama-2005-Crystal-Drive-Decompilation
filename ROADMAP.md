@@ -11,12 +11,12 @@ criterion that the digest gate decides, not a percentage alone.
 
 | Metric | Matched | Total | Left |
 |---|---:|---:|---:|
-| Functions | 1,860 | 3,806 | **1,946** |
-| Code | 163,584 B | 1,841,700 B | **1,678,116 B** |
+| Functions | 1,894 | 3,806 | **1,912** |
+| Code | 169,172 B | 1,841,700 B | **1,672,528 B** |
 | Data | 630,724 B | 801,936 B | **171,212 B** |
-| Complete units | 4,149 | 4,803 | **654** |
+| Complete units | 4,183 | 4,851 | **668** |
 
-The important asymmetry: **48.9% of functions but 8.9% of code bytes.** What
+The important asymmetry: **49.8% of functions but 9.2% of code bytes.** What
 remains is not a long tail of small leaves - it is a few hundred large functions.
 
 Data is the mirror image: 78.65% matched. Its fully-linked figure is higher
@@ -27,33 +27,59 @@ By module, sorted by bytes still unmatched:
 
 | Module | Code matched | Bytes left | Functions left |
 |---|---:|---:|---:|
-| OV002 | 6.09% of 715,724 B | 672,148 | 919 |
-| OV003 | 2.32% of 586,712 B | 573,108 | 421 |
-| ARM9 main | 36.36% of 224,616 B | 142,944 | 299 |
+| OV002 | 6.49% of 715,724 B | 669,296 | 902 |
+| OV003 | 2.51% of 586,712 B | 571,964 | 414 |
+| ARM9 main | 36.81% of 224,616 B | 141,932 | 292 |
 | OV005 | 6.57% of 142,964 B | 133,576 | 104 |
-| OV004 | 7.01% of 89,584 B | 83,308 | 100 |
+| OV004 | 7.21% of 89,584 B | 83,124 | 99 |
 | OV010 | 5.09% of 25,144 B | 23,864 | 23 |
 | OV009 | 15.60% of 24,788 B | 20,920 | 31 |
 | OV001 | 4.60% of 13,904 B | 13,264 | 16 |
-| OV008 | 23.58% of 10,940 B | 8,360 | 22 |
+| OV008 | 27.20% of 10,940 B | 7,964 | 20 |
 | OV006 | 9.56% of 7,324 B | 6,624 | 11 |
 
-OV002 and OV003 together are **75% of the remaining code**. `ov000` and `ov007`
+OV002 and OV003 together are **74% of the remaining code**. `ov000` and `ov007`
 are empty overlays (no `.text`, `start == end` in `delinks.txt`); they have no
 `src/` directory and never will. That is why they are absent from these tables.
 
 ## Phase 1 - the OV002 family spine (highest value)
 
-`famsurvey.py ov002` groups unmatched functions by identical skeleton. Twenty-five
-groups are worth **102 functions and 73,024 bytes**, and the two largest are
-brutal in the good way:
+`famsurvey.py ov002` groups unmatched functions by identical skeleton. The top
+four groups alone are **47 functions and 31,980 bytes**, and they are one shape
+(per-entity 3D placement) at four sizes:
 
 - `13 x 756 B` = 9,828 B - `0x0208f860, 0x0209a5f4, 0x0209c728, 0x0209eb18, ...`
 - `14 x 608 B` = 8,512 B - `0x0208f38c, 0x02096a64, 0x02098aac, 0x020a06e8, ...`
+- `10 x 688 B` = 6,880 B - `0x0209ab8c, ...`
+- `10 x 676 B` = 6,760 B - `0x0208f0e8, ...`
 
 Two cracked skeletons are worth 27 functions and 18 KB. The project has done
 this before: `notes/mwccarm-codegen-solved-families.md` records a 21-function
 per-slot state machine and an 8-function flag-setter family.
+
+### Engine status (measured 2026-11-26)
+
+The unattended re-spell engine is spent, and the numbers say so: the grind
+journal holds 7,351 visited units with **zero** matches, 870 of them marked
+exhausted and 6,458 with no candidate file to re-spell at all. In the same
+period hand decode kept landing units. So the bottleneck is not variant search,
+it is **authoring C for large functions**, and the plan below is ordered that
+way: no work is scheduled against `grind.py` as the primary engine.
+
+Both flagship members have a complete decode on disk and a draft that is short
+only on allocation, not algorithm:
+
+| Member | Draft | Retail | Residue |
+|---|---|--:|---|
+| `0x0208f38c` (14 x 608) | 588 B, 291 slots | 608 B | colouring: retail `g`→r8, `rec`→sl, `sb`→sb, frame 0x3c, `idx` spilled to `[sp+0x20]`; mwcc gives `g`→sl, `rec`→r8, frame 0x34 |
+| `0x0208f860` (13 x 756) | 548 B | 756 B | body order after the direction branch (see `notes/ov002-0208f860.md`) |
+
+Tried on `0x0208f38c` and recorded in its note: `off = idx * 0x158` used twice
+(forces the shared `mul`, 588 B), `sb` declared before `rec` (flips `sb`, leaves
+`g`/`rec` swapped), and `v28` assigned after the `/5` instead of at declaration
+(scheduling only). Declaration order moves *which* pointer gets `sb` but not
+`g`/`rec` - that pair is the remaining lever, and it is a register-colouring
+tie of the kind `notes/mwccarm-codegen.md` documents.
 
 Method, per group: match one member completely (it is a 150-190 instruction
 function, so budget real time), then generate siblings by substituting **only**
@@ -82,7 +108,7 @@ Criterion: as Phase 1. Total here is 31 functions and 11,188 bytes.
 
 ## Phase 3 - wall triage by residue class
 
-`tools/match/walls.txt` holds **427 parked near-misses**. They are not 390
+`tools/match/walls.txt` holds **589 parked near-misses**. They are not 589
 independent problems; they are a handful of classes. Recent evidence:
 
 - The address-macro class (`HI`/`LO` taking `&param`) turned a wall written off as
