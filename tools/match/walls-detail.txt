@@ -12533,3 +12533,55 @@ arguments, not eleven.
   NEXT: this is a permute-class wall, not a spelling wall. The body is correct, so the
   remaining work is a register-assignment permutation, and whichever source shape lands
   the rotation also applies to the 242 other unmatched callers of 02057068.
+
+=== 2026-11-26 turn: add#0 cast closed as unreachable; four new exact-size candidates ===
+
+ADD #0 (the 608/688/676 blocker) - 30+ spellings, none reachable from a cast
+  Probe with `extern u32 g(void)` and return <expr> from a stub, checking for an exact
+  `add r0, r0, #0` before the lsl/asr:
+    (s16)g() (s16)(s32)g() (s16)(u32)g() (s16)(int)g() (short)(int)g()
+    (s16)(g()&0xFFFFFFFF) (s16)(g()&~0) (s16)(g()+0u) (s16)(0+g()) (s16)(g()*1)
+    (s16)(g()/1) (s16)(g()>>0) (s16)(g()<<0) (s16)(g()%65536) (s16)(g()&65535)
+    (s16)(unsigned)g() (s16)(long)g() *(s16*)&(s32){g()}
+    plus earlier: (s16)(u16) 2->4 insns, (short)(unsigned short), s16 temp objects,
+    cast function pointers, union member, struct bitfield, enum cast, u16-returning extern.
+  Every one gives 2 insns (lsl+asr) or 4 (lsl+lsr+lsl+asr). Nothing gives the 3 retail has.
+  CONCLUSION: retail's `add r0, r0, #0` is not produced by converting a call result, so the
+  original is not a cast of that value at all - do not spend more cast spellings on it.
+  The 608/688/676 families stay parked on it until runtime evidence or a permuter says
+  what the expression actually is.
+
+0209d988 / 020c5428 ov002 328B - body byte-identical, register-renaming wall
+  build/cand/ov2_9d988_v6.c: 328 B, 82/82 instructions identical to retail after masking
+  register names, 37 slots. respell.py's `order6` family improves this to 34 slots, still
+  not a match. Mapping: retail z=r4 y=r5 half=r6 g=r7 q=r8 e=sb; mine y=r4 half=r5 e=r6
+  q=r7 g=r8 z=sb. `u8 half = b / 2;` is required (b>>1 gives asr where retail has lsr;
+  u32 b drops the unit to 324 B). 020c5428 is the same function with 0x39 -> 0xb8.
+  Also: retail reuses the a0*0x158 temp register for z, which is why z lands in r4.
+
+020f2970 ov002 84B - exact size, 9 slots, all pure register naming
+  build/cand/ff2970_v2.c: 84 B. Branch polarity tip confirmed: writing the `b == 2` body
+  in the if and the other in the else makes mwcc predicate the !=2 body and fall through
+  for ==2, matching retail's layout. The if/else also keeps the size at 84; the
+  early-`return` form compiles to the opposite predication. Residue: retail computes
+  `g + a0` into r0 (a0 is dead in the predicated branch) where mwcc uses r1. Address
+  spellings g[a0+N] and a named `h = g + a0` both compile worse (152 B / 76 B).
+
+02080ca4 ov002 68B - exact size, 8 slots, real shape difference remains
+  build/cand/f80ca4_v2.c (u32 i) is exactly 68 B but mwcc strength-reduces: it emits
+  `add r1, r0, #0x300 ... add r0, r0, #8 ... blo`, where retail keeps the scaled index
+  (`add r1, r0, ip, lsl #3; add r1, r1, #0x300; add ip, ip, #1; blt`). u32 i also flips
+  the loop compare to unsigned. Address spellings tried and rejected: `base+0x3e6+i*8`
+  (76 B), `base+(0x3e6+i*8)` (72 B), u8* base (76 B), s16* pointer with p[i*4] (84 B).
+
+02068c78 ov002 64B - exact size, 10 slots, all pure register naming
+  build/cand/f68c78_v2.c: 64 B, same 14 instructions; retail keeps `*(u8**)data` in ip
+  where mwcc uses r3/r1. Splitting into g/q/p/b variables does not move it.
+
+NEW: 10x676 family, 0x0208f0e8 (+0x0209a8e8 0x020a1a8c 0x020a1d30 0x020ab2d8 ...)
+  6760 B, untouched. Body decoded this turn: same skeleton as the 688 family plus
+  `add r0,r0,#0` after 02053468, /360 magic (0xb60b60b7) on `ang` for d, mode block
+  giving 0x600000/0x400000 from *(u8*)(q+9) or e+0x50 & 0x80/0x40 selected by
+  `half == 1` invert (`mvneq`;`muleq`), dir spilled at [0x24], 12-arg call
+  func_ov002_02057068(0,0,-0x60000,0,0,0,half,0x3000000,0xc,*e,u16(e+0x12c),a0).
+  Parked behind the same add#0 question; do not build a candidate until it is answered.
