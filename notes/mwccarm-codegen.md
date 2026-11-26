@@ -1068,3 +1068,34 @@ the original source repeated the expression rather than naming it - and for mwcc
 repeating it in the source is how you reproduce the recompute. The remaining
 `0x02053b58` gap is elsewhere: retail keeps `(sel - 1)` as the index and 0xbc as the
 store offset, while every spelling tried folds 0x5e into the index instead.
+
+## 2.55 A `u16` index is what produces `lsl #16` / `lsr #15` (2026-11-26)
+
+`ov003 0x02053b58` (236 B) closed as soon as the destination index was declared
+`u16`, after five spellings stalled at 176-204 B:
+
+```c
+    u8 *st = (u8 *)data_ov003_020eb720[0];
+    u16 k;
+    ...
+    if (*(u16 *)(st + 0x29c)) {
+        k = *(u16 *)(st + 0x29c) - 1;
+        *(u16 *)(st + k * 2 + 0x2bc) = 0;
+    }
+```
+
+Two things fall out of the `u16`:
+
+- the address is built as `add r0, r4, r0, lsr #15` with a preceding `lsl #0x10`
+  (the index zero-extended then doubled), which is the scaling of a 16-bit index,
+  not of a `s32` temporary;
+- the constant `0x2bc` stays split in the address (`add #0x200` plus a `[#0xbc]`
+  store offset) instead of being folded into the index as `0x5d`.
+
+That second half is the same lesson as 2.54 from the other side: a folded constant
+in the index (`+ 0x5e` on a `s32`) is the wrong answer whenever retail keeps the byte
+offset in the load/store. Declaring the index `u16` prevents the fold.
+
+The function came out byte-identical except for the two known diff artifacts (an
+unresolved `bl` printed as a local address and the literal-pool pad word), and the
+digest gate accepted it first time.
