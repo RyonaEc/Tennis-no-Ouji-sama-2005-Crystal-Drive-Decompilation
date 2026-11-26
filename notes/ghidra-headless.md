@@ -141,3 +141,27 @@ of the script's 0x400-byte window; run it with output redirected and poll, do no
 Decompiler output is a reading aid only. In `FUN_0208f860` it renders the retail's fixed-point
 `smull` sequence as `(ulonglong >> 0x20) + iVar8 * 0x100 >> 8` gibberish and invents a `do/while`
 that is an unrolled counter; the bytes still have to be matched by compiling.
+
+## REA MCP trial (dropped, 2026-11-26)
+
+Tried once whether the connected REA MCP server (`rea`) drives
+imports better than this route. It does not:
+
+- The Ghidra provider's session opener (`open_binary`) is **not advertised by this
+  registration**. `list_documents` answers `target_unavailable: No app is open ...
+  call open_binary with its local path`, but calling `open_binary` returns
+  `No such tool on that server`, and `binary_session` is absent too - nothing here
+  can open a program at all.
+- The one opener that is advertised, `open_jeb_project`, fails with
+  `capability_unavailable`: "Start a JEB client serving MCP (default
+  http://127.0.0.1:8425/mcp)". No JEB is running or installed, and JEB would not
+  read a dsd config anyway.
+- REA's own documentation settles the project question regardless: "a Ghidra
+  headless session contains exactly its one imported Program". There is no path
+  from an existing `.gpr`, so an import through REA could not reach ATOJHL's dsd
+  block names, thumb bits or relocation references - it would start from a raw
+  binary and lose all three.
+
+Verdict: **dropped**; `tools/ghidra/sync_headless.bat` stays the route, because it
+builds the blocks by name, applies the config, and leaves the result in a real
+Ghidra project that later runs re-use in place.
