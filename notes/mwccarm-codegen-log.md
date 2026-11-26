@@ -6590,3 +6590,32 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
   `switch` over the same values builds a jump table instead (+32 B). The source
   shape that makes mwcc emit three full blocks with identical bodies is unknown;
   do not read the three blocks as "the cases differ", they compile identically.
+
+* `ov005 020552fc` matched (336 B). Three levers got it there, all visible only
+  as one-slot differences:
+
+  - **Mixed expression trees stop CSE across calls.** `base + 0x100` passed to
+    two consecutive calls makes b56 hoist `add r6, r5, #0x100` and reuse it
+    (one slot short, plus `mov r0, r6` where retail has an `add`). Writing the
+    second argument as `(u16 *)base + 0x80` keeps the two trees distinct and
+    gives retail's two `add r0, r5, #0x100`.
+  - **Declaration order decides which of two symmetric loop counters gets `lr`.**
+    With `i` before `j` the outer counter landed in `r6` and the inner in `lr`;
+    the permuter's declaration shuffle (with initialisers split out of the
+    declarations) swapped them into retail's `j = lr`, `i = r6` and scored
+    `(0, 0, 0)` after 23 tries. `respell.py` alone plateaued at 17 slots.
+  - The same shuffle turned `base + 0xba80` back into a pooled literal (`ldr`
+    plus register add) instead of a folded `add #0xba00` / `[r3, #0x80]`.
+
+  Residue before the shuffle: 27 register-only slots, structural 0 - the
+  familiar regperm tie, but on counters rather than locals, and it did break.
+
+* `ov005 0204e99c` (320 B), second pass. Every spelling of the opening chain was
+  re-tried: nested `else { if }`, reversed compare order, comma-expression arms,
+  arms with the two assignments swapped, and a `switch` with the cases in source
+  order. All of them if-convert identically (`moveq`/`movne`, 38 slots), and the
+  early `return 0` is predicated into `addeq`/`popeq`/`bxeq` in every one of
+  them, while retail branches to the shared `return 0` epilogue. Retail's shape
+  (three full `mov/mov/b` blocks, no predication anywhere) is a whole-function
+  style b56 does not produce from any chain we can spell, so the unit stays
+  parked with that residue rather than a spelling gap.

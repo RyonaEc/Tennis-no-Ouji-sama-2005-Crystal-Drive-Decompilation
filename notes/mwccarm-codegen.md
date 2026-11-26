@@ -717,3 +717,27 @@ was found by respell plus a four-way batch: it took ov002 0x0208f38c from 600 to
 608 of 608 on the instruction stream, and 0x0208f860 from 736 to 744 of 756.
 Reach for it on any `u32`-returning call that is truncated to a small signed
 type.
+
+## CSE across calls: keep the two argument trees different
+
+b56 will fold a repeated address computation in two consecutive call
+arguments, but only when the arguments are the *same* expression tree:
+
+```c
+func_a((u32)(base + 0x100), 0xb980);          /* add r0, r5, #0x100 */
+func_b((u32)((u16 *)base + 0x80), 0x1900, 0xb980);  /* add r0, r5, #0x100 */
+```
+
+Written as `base + 0x100` both times, one of the two is hoisted into a callee
+saved register and reused (`add r6, r5, #0x100`, then `mov r0, r6` twice) - one
+instruction shorter than retail, and the residue looks like a scheduling tie.
+Spelling the second argument through a different type keeps the trees distinct
+and reproduces both adds. Same lesson as the pooled-literal case: an
+`add #imm` that retail repeats is evidence the source recomputed, not that it
+saved.
+
+Two symmetric loop counters (`i`, `j` in a nested pair) are coloured by
+declaration order: whichever is declared first is not automatically the outer
+one. When only `lr`/`r6` are swapped across the whole loop, a declaration
+shuffle with the initialisers split out of the declarations is the lever, and
+`permute.py` finds it in seconds where `respell.py` plateaus.
