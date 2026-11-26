@@ -1302,3 +1302,4 @@ arm9	func_02014d50
 arm9	func_0202e2fc
 arm9	func_02019b68
 arm9	func_020203b8
+ov004	func_ov004_0205a4d0

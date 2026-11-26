@@ -6778,3 +6778,43 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
   4,208 / 4,876 units (86.30 %), up two units and 152 B from the previous commit
   and exactly consistent with it once the two pre-existing units are removed
   from the arithmetic.
+
+## 2026-11-26 retry log: nine parked walls re-attacked, none moved to a match
+
+Ran after the 2.55/2.56 levers (u16 index; statement order plus signedness)
+closed `0x02053b58` and `0x02027784`. Every unit below was already in
+`walls.txt`; these are the spellings that are now known to be exhausted, so a
+future pass starts from the residue rather than the beginning.
+
+| unit | best now | what still differs |
+|---|---|---|
+| arm9 `0x0202a45c` 136B | **1 slot** `build/cand/arm9_2a45c_f.c` | `mov r0,#0` (b56) vs `moveq r0,#0` (retail); the predicated pair is always ne-first in b56 |
+| arm9 `0x02023df8` 96B | 13 slots, 92B | `add rX,r4,#0x6600000` folded vs retail's `mov ip,#0x6600000` + `add rX,ip,r4` |
+| arm9 `0x02032b00` 48B | 3 slots, 20B | b56 folds `((u8*)&a1)[3]`; retail homes all four arg registers and byte-reads sp+7 |
+| ov002 `0x02068c78` 64B | 9 slots | base in r3 (b56) vs ip (retail); byte in r2 vs r3 |
+| ov004 `0x0204e8a4` 64B | **1 instruction** | `add r0,r2,r0` vs `add r0,r0,r2` |
+| ov004 `0x0204cbfc` 76B | 19 slots | b56 adds a frame and puts base in lr; retail is frameless with base r3, i ip |
+| ov004 `0x02050068` 100B | 10 slots | n r3 vs r2, i r2 vs ip, and `i+8` folded vs `i*4 + 0x20` |
+| ov004 `0x0204d980` 60B | 15 slots | retail hoists `r0=1` and selects with `movls r2,r0`; b56 branches |
+| ov003 `0x02082220` 96B | 17 slots, 80B | three identical branch bodies: retail keeps 3 blocks, b56 merges to one predicated pair |
+
+Two things worth carrying forward:
+
+1. **Bare `s32 v = *(s32 *)data_02042370;` is the family idiom** for the
+   `0xffffffff`-sentinel dispatch in arm9 (`src/arm9/func_02023eb8.c`), and its
+   neighbours `func_020237f8.c` / `func_020238b8.c` / `func_02023918.c` use
+   `u32 ip = <call>;` then `ip + a1` in both call sites. Those match. The two
+   unmatched members of the same family want the *constant* `0x06600000` in that
+   same role and b56 refuses to materialise it, so the split is not about the
+   source shape but about constant folding of an encodable immediate.
+2. **`if (a1 < A) {x=1;y=2;} else if (a1 < B) {x=1;y=2;} else {x=1;y=2;}`
+   merges.** If retail kept three blocks, the three bodies are not identical in
+   the original source; writing them identically cannot reproduce the shape, and
+   no reordering of the assignments inside them changes that.
+
+Also confirmed empty this turn: `clone_match.py 40` (0 clone matches),
+`family_fill.py` (0 candidates), `sdkmap.py arm9` (the only exact hit is
+`0x0203b2cc` = `MBi_calc_sendblock` from libmb `mb_parent.o`, and that unit is
+an 8-byte fragment of a 112-byte SDK function, not matchable as source),
+`sdkmap.py ov003` and `sdkmap.py ov004` (0 exact hits), and
+`autorun.py 400 220 ov004 ov003` (1 candidate, miss).
