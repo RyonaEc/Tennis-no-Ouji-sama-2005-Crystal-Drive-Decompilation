@@ -631,3 +631,24 @@ Axes, not matches - every one still needs a compiled byte-diff and `ninja sha1`.
   three `bl`). Only `static inline` is inlined. When a routine shows the same block of
   code three times and no `bl` anywhere, the original used an inline/macro, not a static
   function.
+
+- A conditional sign flip is a statement, not a ternary. `if (c) v *= -1;` emits
+  `mvn{cond} r0, #0; mul{cond} r4, v, r0` (with an unconditional `mov` of the
+  other arm), while `v = c ? v : -v;` and `v = c ? -0x200000 : 0x200000;` collapse
+  the multiply into `movne`/`rsbeq` and come out 12-16 B short. Measured on
+  `ov002 020a038c`: the ternary form is 172 B, the statement form reproduces
+  retail's two-instruction idiom exactly.
+
+- `x % 2` and `x & 1` are different code. On a signed `x`, `x % 2 == 0` emits the
+  four-instruction `lsr #31 / rsb / adds / ror #31` sequence (mwcc's signed
+  modulo); `x & 1` emits a single `ands r0, r0, #1` and loses 12 B. If retail
+  has the rotate sequence, the source wrote `%`. The value can still be built by
+  an unsigned shift — `s32 n = (u32)*(u8 *)(p + 0xe5) >> 1;` keeps `lsr` and
+  only the test is signed.
+
+- A field that is read or written on both sides of a call needs its own pointer
+  local. `*(u32 *)(b + 0x5c) += f();` recomputes `b + 0x5c` after the call and
+  costs a register and the frame pad (180 B); `u32 *q = (u32 *)(b + 0x5c);` held
+  across the call is what produces retail's extra push and `sub sp, #4` (188 B).
+  Declaring it earlier in the block does not change when the scheduler emits the
+  `add` — source order is not the lever there.
