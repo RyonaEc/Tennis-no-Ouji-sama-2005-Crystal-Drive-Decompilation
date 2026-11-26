@@ -6540,3 +6540,17 @@ case first for `x % 2 == 0`, `x % 2 ? 0 : 1`, `(x % 2 == 0) ? 1 : 0`,
   moved a 34-slot, +20 B draft to 31 slots and +4 B; a 200-second permute from
   there reached 25 slots but not the last instruction, so the family still needs
   the body, not the initialisation.
+
+* Do not declare the derived halfword index as `u8`. In the 688 B family member
+  `0209ab8c`, `u8 half = b >> 1;` costs a stray `and rX, rX, #0xff` that retail
+  does not have; `u32 half = b >> 1;` removes it, taking the draft from 24
+  differing slots and +4 B to 21 slots and the exact size. The same `u8` in the
+  756 B draft `0208f860` is not the leak there (+20 -> +24 B when changed), so
+  the type is per-site, but any `u8` holding a shifted byte loaded from a
+  halfword-indexed table is worth flipping.
+* `02082f38` reports one structural slot at its `bl`, and it is not a source
+  problem: `relocs.txt` records that call as `from:0x02082f9c to:0x0208381c`
+  while `udis.py` prints the target as `0x02082fa4`. The draft already matches
+  the reloc record; spelling the other address changes nothing (still one slot,
+  cost 70). Leave it parked - the object carries the relocation, the two
+  readings of the same instruction just disagree.
