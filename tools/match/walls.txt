@@ -562,10 +562,6 @@ ov005 0x0204f340 140B func_ov005_0204f340 -- varargs-shaped coordinate update ta
 ov005 0x0204f8a0 224B func_ov005_0204f8a0 / ov009 0x0204eb14 224B -- same hardware state writer in two ove... L8345
 ov005 0x0205587c 336B func_ov005_0205587c ` (336 B) are the same source L11739
 ov005 0x0205ac30 96B func_ov005_0205ac30 (three copies) -- range test on a1 (< 0x5a L7849
-ov005 0x020614a4 220B func_ov005_020614a4 4x220 family lr/ip tie: 220/220 instruction-exact; retail keeps 0 in... L217
-ov005 0x020656d8 220B func_ov005_020656d8 same 4x220 body as 0x020614a4, same lr/ip tie L223
-ov005 0x020695bc 220B func_ov005_020695bc same 4x220 body as 0x020614a4, same lr/ip tie L229
-ov005 0x0206bfc0 220B func_ov005_0206bfc0 same 4x220 body as 0x020614a4, same lr/ip tie L235
 arm9 0x020040e6 ?B - ..0x020045xx 4-6B Thumb SWI stubs at 2-mod-4 (alignment section above) L9586
 arm9 0x02024af8 ?B - ldr r1,[pc]; bx r1 veneer L9610
 arm9 0x0202612c ?B - two-call wrapper; mwcc pads 4 bytes for AAPCS stack alignment, re... L9634
@@ -612,8 +608,6 @@ ov009 0x0204db84 140B func_ov009_0204db84 -- packed coordinate update family: x 
 ov009 0x0204dc0c ?B - ). `v` is a 4-byte struct passed L5695
 ov009 0x0204e500 336B func_ov009_0204e500 ` (336 B) and `ov005 0x0205587c` (336 B) are the same source L11739
 ov009 0x0204eb14 224B func_ov009_0204eb14 -- same hardware state writer in two overlays, fully L8311
-ov009 0x0204f93c 212B func_ov009_0204f93c ` / `0x02051080` (212 B x2, famsurvey group). Overlay display L11446
-ov009 0x02051080 212B func_ov009_02051080 ` (212 B x2, famsurvey group). Overlay display L11446
 ov010 0x020514c8 172B func_ov010_020514c8 -- two GX-command pushes on a ring buffer: `g = *(u8 **)data_ov0... L6149
 
 # 102 resolved: these now have a source file

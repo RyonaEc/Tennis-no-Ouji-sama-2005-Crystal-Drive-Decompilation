@@ -1175,3 +1175,58 @@ The five smallest delinked units are not C functions:
 folds to `mov r0,#0; bx lr` (8 B) for `a ? 0 : 0`, `if (a) return 0; return 0;`
 and `(a == 0) ? 0 : 0` alike. Sorting the queue by size therefore reaches shared
 tails and data first; filter to units whose size covers a whole `push`/`pop` pair.
+
+## 2.59 Breaking the ip/lr scratch tie (2026-11-26)
+
+Six units fell to one lever. The shape is a `%4` reset loop over a fixed offset,
+or a block of zero stores into a local struct that is later passed by pointer.
+Retail puts the *constant* in `lr` and the pointer in `ip`; b56 swaps them:
+
+    retail                            b56
+    mov  lr, r5        ; zero         mov  ip, r5        ; zero
+    add  ip, r4, r5, lsl #1  ; base+2i add  lr, r4, r5, lsl #1
+
+The tie breaks on **how the pointer is spelled**, not on declaration order. Two
+spellings reproduce retail, and both put the pointer in a `u32` rather than a
+pointer-typed local:
+
+1. **Constant-first address plus a named integer the source assigns itself**
+   (`ov005 0x020614a4`, `0x020656d8`, `0x020695bc`, `0x0206bfc0`, 4 x 220 B):
+
+       u32 ip;
+       u32 base = data_ov005_020c9740[0];     /* integer, not u8 * */
+       u16 i;
+       for (i = 0; i < 0x200; i++) {
+           *(u16 *)(0x4a58 + base + i * 2) = 0;   /* constant first */
+           ip = i * 2 + base;
+           if (i % 4 == 0)
+               *(u32 *)(ip + 0x4a58) = 0x200;
+       }
+
+   `base` must be a `u32`; the first store must lead with the constant (that is
+   what makes b56 split it as `add #0x4a00` + `[#0x58]`); `ip` must be assigned
+   *between* the two stores as its own statement. This is the same source shape
+   as the already-matched `ov003 0x020d72f8` / `0x020d9f2c`, so those two are the
+   reference implementation.
+
+2. **Take the local's address as an integer, then cast back at the call**
+   (`ov009 0x0204f93c`, `0x02051080`, 2 x 212 B):
+
+       u32 ip;
+       ...
+       ip = (u32)&s2;
+       *(u32 *)ip = 0;
+       *(u32 *)(ip + 4) = 0;
+       *(u32 *)(ip + 8) = 0;
+       ...
+       func_02022994(&s1, &s3, (Tri *)ip, 1, 0);
+
+   `Tri *z = &s2;` (pointer typed) keeps the address live and b56 sinks the zero
+   stores below the next copy, giving 208 B. Declaring the three `Tri`s as one
+   `Tri v[3]` array is worse (frame 0x60, 208 B, everything reallocated). The
+   `u32` cast keeps b56's address materialisation where retail has it.
+
+Generalisation: when a tie is "constant in lr vs ip", give the pointer an
+integer home that the source assigns explicitly, and write the addressed
+constant in front of the base. Pointer-typed locals and `&local` spellings let
+b56 rematerialise and lose the tie.

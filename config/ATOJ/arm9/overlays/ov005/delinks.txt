@@ -1027,3 +1027,19 @@ src/ov005/func_ov005_02050974.c:
 src/ov005/func_ov005_020552fc.c:
     complete
     .text       start:0x020552fc end:0x0205544c
+
+src/ov005/func_ov005_020614a4.c:
+    complete
+    .text       start:0x020614a4 end:0x02061580
+
+src/ov005/func_ov005_020656d8.c:
+    complete
+    .text       start:0x020656d8 end:0x020657b4
+
+src/ov005/func_ov005_020695bc.c:
+    complete
+    .text       start:0x020695bc end:0x02069698
+
+src/ov005/func_ov005_0206bfc0.c:
+    complete
+    .text       start:0x0206bfc0 end:0x0206c09c
