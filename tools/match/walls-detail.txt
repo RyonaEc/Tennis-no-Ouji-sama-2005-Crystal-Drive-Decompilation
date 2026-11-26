@@ -12395,3 +12395,20 @@ ov002 0x0209d584 func_ov002_0209d584
   (unreproduced by (s16), (s16)(s32), s32 temp, s16 extern) and one instruction in the
   argument block. Everything else in the body already lines up instruction for
   instruction with only register renaming.
+
+0208f860 ov002 756B - cast UPDATE 5 (744/756)
+  `(s16)(u16)func_ov002_02053468()` gains two instructions over the plain cast
+  (736 -> 744). Remaining 12 B is the `half`/`d` spill pair only.
+
+0208f38c ov002 608B - UPDATE: instruction stream COMPLETE, frame still short (NEW)
+  build/cand/ov2_8f38c_s2.c compiles to exactly 608 B and 150 instructions - the same
+  count as retail, with the same opcodes and operands, after two fixes:
+    * ang = (s16)(u16)func_ov002_02053468();   <- the `add r0,r0,#0` idiom, now solved
+    * the pool-order fix: compute y (the 0205bf64 call) BEFORE d5, so the 0x1824
+      literal is pooled ahead of the /5 magic (0x66666667), as retail has it
+  It still does NOT pass the gate: t10/fastmatch compare says False because the frame
+  is 0x34 against retail's 0x3c. Two more spill slots are needed, and every sp-relative
+  operand therefore differs (138 differing slots, starting at `sub sp, sp, ....`).
+  Parked at four grids; the next pass needs two more simultaneously-live values rather
+  than any expression change. Do not add dead padding: that is a fakematch.
+  sweet spot: retail's locals are 0x20=a0 0x24=q 0x28=z 0x2c..0x34=buf with 0x38 spare.

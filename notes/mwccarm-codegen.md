@@ -706,8 +706,14 @@ Retail both families contain
     lsl  r0, r0, #0x10
     asr  r5, r0, #0x10
 
-after `func_ov002_02053468`. The `add #0` is a real emitted instruction, not a
-disassembler artifact, and `(s16)call()`, `(s16)(s32)call()`, a `s32` temporary
-and declaring the extern as returning `s16` all fail to reproduce it (the last
-one is worse by a whole instruction). Unsolved; whoever closes it gains one
-instruction on every member of both angle families.
+after `func_ov002_02053468`, whose extern returns `u32`. The `add #0` is a real
+emitted instruction, not a disassembler artifact. It is the **`u16` truncation**:
+
+    ang = (s16)(u16)func_ov002_02053468();   /* add r0,r0,#0 then lsl/asr  */
+
+`(s16)call()`, `(s16)(s32)call()`, a `s32` temporary and an `s16` extern all
+fail to reproduce it (the last is worse by a whole instruction). The double cast
+was found by respell plus a four-way batch: it took ov002 0x0208f38c from 600 to
+608 of 608 on the instruction stream, and 0x0208f860 from 736 to 744 of 756.
+Reach for it on any `u32`-returning call that is truncated to a small signed
+type.
