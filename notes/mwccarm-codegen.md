@@ -1708,3 +1708,15 @@ instructions and 16 B short.  Its tail store must be an if/else on the store
 only -- `if (...) *(s16*)(r+6) = 0xf3; else *(s16*)(r+6) = 0xb3;` -- which
 if-converts to `moveq/strheq + movne/strhne`; a ternary collapses to one `strh`,
 and an early `return` turns both into branches.
+
+### 2.78 Two bases 0x300 apart are one base with two offsets
+
+`ov002 0x020894f0` (matched) mutates what `lift.py` reports as
+`*(s16 *)(p + 0x4ec4 + 0x66)` and `*(s32 *)(p + 0x4bc4 + 0x364)`. Written as two
+pointers (`u8 *w = p + 0x4bc4; u8 *t = p + 0x4ec4;`) the function compiles to
+228 B, 12 B over; retail's `add r0, r4, #0x300 / ldrsh r2, [r0, #0x66]` proves it
+uses one base and the raw offset `0x4bc4 + 0x66 = 0x4c2a`... which is 0x366 from
+`p + 0x4bc4`. So when two of a draft's bases differ by a multiple of 0x100 and
+retail materialises the larger one as `add rX, <small base>, #0x300`, collapse
+them into the small base and add the difference to the field offsets. Rewriting
+`*(s16 *)(t + 0x66)` as `*(s16 *)(w + 0x366)` was the whole fix.

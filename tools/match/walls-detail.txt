@@ -12782,3 +12782,24 @@ Two levers already applied here: `u8 m` (not `u32`) gives retail's `ldrb r5,
 [r3, #0x2e6]`, and the `v` pair is `-0x100000 / 0x100000` written as an if/else
 assignment so mwcc emits `movlo r2,#0x100000 / rsblo r3,r2,#0 / movhs r3,#0x100000`
 (the `x * (c ? -1 : 1)` shape of §2.73, here from the +/- constant pair).
+
+== ov002 0x020a56e4 (216 B) ==
+Mode-select byte setter: reject unless a1[0] is set and a 2-argument probe
+succeeds, then pick a word from `p + (t ? 0 : 1)*4 + 0x48` and switch on it
+(0 / 0x2000000 / 0x4000000), writing 2 or 3 to a1[0xb].
+Best spelling `build/cand/ov2_a56e4_b.c` = 220/216; the remaining 4 bytes are a
+shared return.  Retail emits ONE `mov r0, #1 / pop / bx lr` block and sends the
+`case 0x2000000` arm there with `b 0x20a57a0`; mwcc emits a separate
+`mov r0, #1 / pop / bx lr` after every case.  Both the `return 1` in each case
+(220 B) and the shared `s32 r` + `break` form (220 B) duplicate it, so the
+missing instruction is retail's cross-case tail merge.
+Two levers already applied: the `[+2] >> 1` byte must be read ONCE into a local
+and the call argument must be `(u8)` of it (`and r5, r3, #0xff`), and the
+`t == 0 ? 1 : 0` index must be an if/else assignment (`movne/ldr` pair) rather
+than inline arithmetic.
+
+ov002 0x020a56e4 func_ov002_020a56e4
+220/216 B: retail merges the case 0x2000000 arm's 'return 1' into one shared epilogue; every spelling duplicates it
+
+ov002 0x020a82c4 func_ov002_020a82c4
+196/200 B: missing retail's early 'add ip, r4, #0xa8' hoist before the &8 test

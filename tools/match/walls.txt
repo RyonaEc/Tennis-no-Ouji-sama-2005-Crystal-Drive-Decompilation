@@ -322,6 +322,10 @@ ov002 0x0205a670 208B func_ov002_0205a670 entity motion kick: t = e[0], h = (u8)
 
 ov002 0x020f2dc0 208B func_ov002_020f2dc0 gate on p[a0+0x142]==1 then tests the sub-entity's u8 at s+2 against 0x0b/0xf0 and 0/0x20/0xff families, setting e[0xa8]=0/1 and orring 2 into e[0xd4]; 212 vs 208, one instruction long: retail precomputes e+0xa8 into r3 and folds add r3,r0,#0xa8, mwcc folds the 0xa8 immediate instead and spends the instruction elsewhere; register pair lr/ip for p also swapped; 4 spellings L12733
 
+ov002 0x020a56e4 216B func_ov002_020a56e4 220/216 B: retail merges the case 0x2000000 arm's 'return 1' into one shared epilogue; every spelling duplicates it L12801
+
+ov002 0x020a82c4 200B func_ov002_020a82c4 196/200 B: missing retail's early 'add ip, r4, #0xa8' hoist before the &8 test L12804
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

@@ -23,33 +23,33 @@ What changed in this revision, and why:
   register sub-classes (including two found this week) declared bounded instead
   of queued.
 - **Two arithmetic errors corrected**: the finish line's unit count (4,803 was
-  stale; the tree has 4,914) and the cost of crossing 10% code (9,930 B, not
+  stale; the tree has 4,918) and the cost of crossing 10% code (9,930 B, not
   26 KB).
 
 ## Where the work is
 
 | Metric | Matched | Total | Left |
 |---|---:|---:|---:|
-| Functions | 1,961 | 3,806 | **1,845** |
-| Code | 183,148 B | 1,841,700 B | **1,658,552 B** |
+| Functions | 1,964 | 3,806 | **1,842** |
+| Code | 183,796 B | 1,841,700 B | **1,657,904 B** |
 | Data | 630,724 B | 801,936 B | **171,212 B** |
-| Complete units | 4,250 | 4,914 | **664** |
+| Complete units | 4,253 | 4,918 | **665** |
 
-**51.52% of functions but 9.94% of code bytes.** The remaining 1,833 functions
+**51.60% of functions but 9.98% of code bytes.** The remaining 1,830 functions
 are not a tail of small leaves:
 
 | Size | Functions | Bytes |
 |---|---:|---:|
 | 0-63 B | 9 | 244 |
 | 64-127 B | 68 | 6,928 |
-| 128-255 B | 253 | 48,888 |
+| 128-255 B | 250 | 48,240 |
 | 256-511 B | 512 | 183,840 |
 | 512-1023 B | 565 | 403,404 |
 | 1024-2047 B | 248 | 355,988 |
 | 2048 B + | 178 | **659,692** |
-| **total** | **1,833** | **1,658,984** |
+| **total** | **1,830** | **1,658,336** |
 
-(The 432-byte difference from the 1,658,552 B in the headline table is delinked
+(The 432-byte difference from the 1,657,904 B in the headline table is delinked
 pool words that live inside code ranges but are not functions.)
 
 So 182 functions hold 40% of the remaining code and 987 hold 85%. Small-unit
@@ -58,7 +58,7 @@ them closes the byte gap.
 
 | Module | Code matched | Bytes left | Functions left | Largest 10 |
 |---|---:|---:|---:|---:|
-| OV002 | 6.93% of 715,724 B | 666,100 | 887 | 58,752 B |
+| OV002 | 7.02% of 715,724 B | 665,452 | 884 | 58,752 B |
 | OV003 | 3.29% of 586,712 B | 567,436 | 395 | 84,412 B |
 | ARM9 main | 37.90% of 224,616 B | 139,496 | 276 | 39,828 B |
 | OV005 | 7.63% of 142,964 B | 132,052 | 98 | 46,504 B |
@@ -286,7 +286,7 @@ All four together:
    `unlinked=0`, `dupes=0`.
 2. `ninja sha1` prints `9eec3248d3569eba8abcb3244adcbdf01a5ea424` and `OK`.
 3. `PROGRESS.md` shows 3,806 / 3,806 functions, 1,841,700 / 1,841,700 code
-   bytes, 801,936 / 801,936 data bytes and 4,914 / 4,914 complete units, with
+   bytes, 801,936 / 801,936 data bytes and 4,918 / 4,918 complete units, with
    `README.md` carrying the same numbers and `matched_*` equal to `complete_*`.
 4. No `src/` file is a stub, an approximation or a generalised asm block.
 
