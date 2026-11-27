@@ -1981,3 +1981,26 @@ off = (b < 2) ? 0x160000 : -0x160000;
 Moving the *last* statement below the stores does not (`f` variant, still one
 register off).  When a single load temporary is coloured `r0` where retail has
 `r1`, look for a value that retail computed before it, not after.
+
+### 2.94 `u8 x = v / 2` is `lsr` plus the truncation mask; `>> 1` is not
+
+`ov002 0x020b357c` divides a byte field by two.  Retail emits
+
+```
+ldrb r0, [r5, #2]
+lsr  r0, r0, #1        ; logical, not asr
+cmp  r0, r6            ; ...
+and  r6, r0, #0xff     ; on the other one
+```
+
+`u8 tgt = *(u8 *)p >> 1;` gives `asr` (the byte promotes to signed `int`), and
+once the operand is widened to `u32` to force `lsr`, mwcc drops the `and`
+because it can prove the result fits in a byte.  Writing the division instead —
+`u8 tgt = *(u8 *)p / 2;` — produces both: `lsr` (unsigned division by a power of
+two) *and* the `and #0xff` truncation, because the quotient's source type is
+`int`.  So when retail has `lsr` **and** a byte mask on the same value, the
+source divided, it did not shift.
+
+A reminder on stack struct reads: with the two `Vec3` copies at `sp+0` and
+`sp+0xc`, retail's `ldr r0, [sp, #0x10]` is `c[1].y`, not `c[1].x` — index by
+the 12-byte stride before naming the field.

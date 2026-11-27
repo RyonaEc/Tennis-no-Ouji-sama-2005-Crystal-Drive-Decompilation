@@ -12883,3 +12883,6 @@ ov002 0x02070c9c func_ov002_02070c9c
 
 ov003 0x0204c7c0 func_ov003_0204c7c0
 192/224 byte-compare counters: retail keeps the two u16 counters in the frame (predicated ldrhne/addne/strhne) because its allocation stops at r4-r8; b56 reaches for sb/sl and promotes both counters into r5/r4. Tried scalars and u16 c[2]; both promote.
+
+ov003 0x020b89c8 func_ov003_020b89c8
+220/220: prologue (three 4-byte u16\[2\] objects zeroed), both address splits (0x8d00+0xe8 / 0x8000+0xde8) and the u16 modulo-4 test all reproduce; only the loop's two scratch registers are swapped - retail keeps the hoisted zero in lr and the row pointer in ip, b56 gives ip to the zero whichever order they are defined (tried literal 0, u16 v=0 before/after p, u16 v; v=0;).
