@@ -2048,3 +2048,44 @@ short overall).  When retail spends a separate `add #0x100`, the `0x100` was its
 own term in the source expression.  Likewise, a struct whose address escapes
 into a call is re-read from memory in the loop bound — do not cache the count in
 a local.
+
+### 2.97 Struct-by-value parameters: the `push {r0..r3}` + `ldm/stm` pair
+
+`ov002 0x02057f48` opens with
+
+```
+push {r0, r1, r2, r3}      ; homes the register arguments
+push {r4, r5, r6, r7, lr}
+...
+ldm  r0, {r0, r1, r2}      ; from sp+0x1c = the homed arguments
+stm  r3, {r0, r1, r2}
+```
+
+A function whose first instructions spill its own arguments to the stack and
+then copies them out three words at a time is not taking seven scalars - it is
+taking **structs by value**.  The signature here is
+
+```c
+void f(u32 id, Vec3 pos, Vec3 rot, u32 a7);
+```
+
+with `Vec3` three `s32`s: `pos` arrives in r1-r3 and is homed at `sp+0x1c`, and
+`rot` plus `a7` are already on the incoming stack at `sp+0x28`/`sp+0x34`.  Then
+`*(Vec3 *)(ent + 0x90) = pos;` compiles to exactly that `ldm`/`stm` pair, and a
+write back to `sp+0x28` is an assignment to `rot.x`.  Seven scalar parameters
+never produce the homing push; if you see it, look for a by-value struct.
+
+Two smaller levers from the same unit:
+
+```c
+rot.x = rot.x + ((rot.x > 0) ? -0x140000 : 0x140000);
+```
+
+gives retail's `movgt r0,#0x140000 / rsbgt r2,r0,#0` delta then one shared
+`add`; the `if (x > 0) x -= c; else x += c;` spelling predicated the whole
+add/sub twice and came out two instructions short.
+
+And the two difference temporaries must be *computed* in the opposite order to
+the one they are declared in - `dx = ...; dy = ...;` with `dy` passed to the
+first call was the last four bytes: computing `dy` first gave `sub r6, r3, r0`
+with rot.y in r3, retail keeps rot.y in r1.
