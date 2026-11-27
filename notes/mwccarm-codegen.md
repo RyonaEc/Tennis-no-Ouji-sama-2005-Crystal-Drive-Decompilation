@@ -1847,3 +1847,48 @@ Two more shapes from the same batch worth knowing:
 - `arm9 0x02015e64` needed the *opposite* of §2.81: a plain `u32 z; z = 0;`
   inside the loop is what creates retail's `str r5, [sp]` / `ldr r0, [sp]`
   pair, and `volatile u32 z;` reproduces it when b56 keeps it in a register.
+
+### 2.87 A cast on the second reference stops a pooled symbol being cached
+
+`ov009 0x020500d8` passes the same array address to two calls in a row:
+
+```c
+func_02025c94((u32)data_ov009_02052adc, 0x200);
+func_02023e58((u32)data_ov009_02052adc, 0xbb80, 0x200);
+```
+
+b56 kept the address in callee-saved `r5` and emitted `mov r0, r5` at both call
+sites (224 B).  Retail loads it from the pool twice (`ldr r0, [pc, #0x64]` …
+`ldr r0, [pc, #0x58]`), so the value never spanned the first call.  Spelling the
+second reference through a different type does it:
+
+```c
+func_02023e58((u32)(void *)data_ov009_02052adc, 0xbb80, 0x200);
+```
+
+The two expressions no longer CSE, so b56 rematerialises the address at each
+site and the frame drops to retail's 220 B.  Related to the address-
+materialisation note: when retail reloads a pooled word that b56 hoists, make
+the two references not textually identical (a `(void *)` or `(u8 *)` cast is
+enough) before reaching for `volatile`.
+
+### 2.88 A chain of tail-call arms ends with an epilogue and no `return`
+
+`ov003 0x020640ec` is five arms of `return func_02021d98(a0, 0x22, tbl[a1 + k]);`
+for `k = 0, 4, 8, 12, 16`, and retail ends it with
+
+```
+cmp   r2, #4
+addne sp, sp, #4
+ldmne {..}
+bxne  lr
+```
+
+— an inverted epilogue, i.e. the last arm's exit merged with the fall-off-end
+exit, and no `mov r0, #0` anywhere.  That only happens when the source has no
+final `return`: write the five `if (sel == k) return …;` statements and stop.
+A `return 0;` on the end adds the `mov` and breaks the match.
+
+The arms are also emitted as a `cmp`/`bne` chain rather than a jump table, so a
+`switch` is not what the original had (mwcc would density-test it); plain `if`s
+in ascending order reproduce it.
