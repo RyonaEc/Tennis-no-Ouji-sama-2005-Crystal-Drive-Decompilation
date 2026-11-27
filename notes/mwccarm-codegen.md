@@ -1892,3 +1892,37 @@ A `return 0;` on the end adds the `mov` and breaks the match.
 The arms are also emitted as a `cmp`/`bne` chain rather than a jump table, so a
 `switch` is not what the original had (mwcc would density-test it); plain `if`s
 in ascending order reproduce it.
+
+### 2.89 One magic, five divisors: the shift tells you which
+
+`0x88888889` is mwcc's magic for the whole `15 / 30 / 60 / 120 / 240` family.
+The only thing that differs is the shift after `add ip, x, ip`:
+
+| divisor | 15 | 30 | 60 | 120 | 240 |
+|---|---|---|---|---|---|
+| `asr`   | 3  | 4  | 5  | 6   | 7   |
+
+`ov002 0x020e66cc` compares a field against `0x12c` right above the division,
+which invites `/ 300` — and `/ 300` even compiles to a similar `smull`, but
+with a *plain* `asr #5` and no `add` back.  Reading the shift (`#4`) instead
+gave `/ 30`.  When a division's magic is shared by a family, compile the
+members and pick by the shift, not by the neighbouring constants.
+
+### 2.90 `t *= -1` keeps the multiply, `t = t * -1` folds to `rsb`
+
+Same unit: retail materialises the constant (`mvn r2, #0`) and emits
+`mul r2, r1, r2` for a negation inside a one-arm `if`.  `t = t * -1;` folds
+that to a single `rsbgt`.  Writing the compound assignment — or a literal
+`t = t * 0xffffffff;` — keeps retail's three instructions.  A `mul` operand of
+`-1` therefore means the source used `*=` or an unsigned literal, not a plain
+negation.
+
+### 2.91 To get an arm if-converted, negate the condition
+
+The clamp above is `if (f4 >= 0 && f10 <= 0) f4 = -0x10000; else f4 = 0x10000;`
+and retail predicated the *first* arm (`movle/rsble/strle`) with the second
+arm as the fall-through.  Writing the semantically identical
+`if (f4 >= 0 && f10 > 0) f4 = 0x10000; else f4 = -0x10000;` gave the mirror
+image (224 B, predicated `movgt`).  b56 if-converts the `then` of the condition
+as written, so when retail's predicated block is the `else`, invert the
+condition instead of rearranging the bodies.
