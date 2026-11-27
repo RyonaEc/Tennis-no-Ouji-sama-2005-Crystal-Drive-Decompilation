@@ -12886,3 +12886,12 @@ ov003 0x0204c7c0 func_ov003_0204c7c0
 
 ov003 0x020b89c8 func_ov003_020b89c8
 220/220: prologue (three 4-byte u16\[2\] objects zeroed), both address splits (0x8d00+0xe8 / 0x8000+0xde8) and the u16 modulo-4 test all reproduce; only the loop's two scratch registers are swapped - retail keeps the hoisted zero in lr and the row pointer in ip, b56 gives ip to the zero whichever order they are defined (tried literal 0, u16 v=0 before/after p, u16 v; v=0;).
+
+arm9 0x0200e57c func_0200e57c
+228/228: filter+shuffle fully reproduces except the swap's two scratch regs; retail keeps b (u8* = out + k*2) in r2 and the u8 temp t in r3, b56 always gives b r3 / t r2. Tried decl order a,b / b,a, temp first/middle/last, assignment order b-before-a, u16* pointers with a[1]/b[1], u16 and s32 temps with explicit (u8) truncation, and do-while vs for for the outer check - the whole rest of the unit (both loops, the mla record read, the s32 count local for the <=0 exit) is byte-exact.
+
+ov002 0x02058f1c func_ov002_02058f1c
+228/228 shape known: switch(sel) over 3 u16 tables (0x020fc788 base, +2 = case2, +4 = case1, stride 0x1e from ent[0], index v[0]/v[1]/v[2]*2), then if (val) func_020064c0(ent[2]>>1, val). Blocked on b56 constant-folding the zeroed s32 v[3]: retail keeps mov lr,#0 + 3 str and the three ldr index loads; b56 deletes them (168B). volatile keeps them but is inauthentic; pointer alias, chained assign, u8-cast stores and u8-cast reads all still fold (164-220B).
+
+ov002 0x02072ccc func_ov002_02072ccc
+224/228: full body decoded - hdr = data_ov002_02102074 + id*0x20; tab = [hdr+0x1c]; cnt = u16 [hdr+0x18]; ent = [hdr+0x14] + tab[sub]*0x20; if (sub >= cnt) return 0 (s32 sub gives retail's addge); p = func_ov002_02077974(func_ov002_02072a6c,0x14,1,1,ent); if (p) { if (p->flags & 4) func_ov002_0204f3cc(ent, 0x160 + p->unk4*0x20, 0x20); flags|=2; bytes 6=id 7=sub 5=a5; +0x10..+0x20 = a2,a3,a4,0,a6 } return p - the if(p) return p shape is what makes retail share the epilogue (beq to mov r0,r5). Gap: retail keeps 0x160 in r4 across the bl (mov r4,#0x160 before the call, add r1,r4,r1,lsl #5 after) so it needs 8 saved regs/frame 8; b56 always rematerialises the constant after the call (lsl+add imm), giving 7 saved regs/frame 4 and 4 bytes short. Tried literal 0x160 first/last, (unk4+0xb)*0x20, u32 off local, u32 base local (gives mov r2,#0x160 remat), statement-split off=0x160;off+=...; no spelling keeps the constant live across the call.
