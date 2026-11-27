@@ -2089,3 +2089,59 @@ And the two difference temporaries must be *computed* in the opposite order to
 the one they are declared in - `dx = ...; dy = ...;` with `dy` passed to the
 first call was the last four bytes: computing `dy` first gave `sub r6, r3, r0`
 with rot.y in r3, retail keeps rot.y in r1.
+
+### 2.98 A 12-byte aggregate assignment is retail's byte-pair copy loop
+
+`ov002 0x020854dc` copies twelve bytes with
+
+```
+mov  r3, #6
+ldrb r2, [r0], #1
+ldrb r1, [r0], #1
+subs r3, r3, #1
+strb r2, [ip], #1
+strb r1, [ip], #1
+bne  ...
+```
+
+That is not `memcpy` (b56 emits a real `bl memcpy` for `memcpy(d, s, 12)`, and a
+hand-written `for (j = 0; j < 12; j++) *d++ = *p++;` gives a 12-trip single-byte
+loop).  It is an **aggregate assignment of a 12-byte struct**:
+
+```c
+typedef struct { u8 b[12]; } B12;
+*(B12 *)(o + 0x156) = *(B12 *)(q + 0x186);
+```
+
+which mwcc expands into a word-pair-at-a-time byte copy with a trip count of
+`size / 2`.  If a unit copies a small, oddly-sized block and no `memcpy` call is
+visible in retail, look for a struct type of exactly that size.
+
+### 2.99 Register colouring for a loop's callee-saved set follows declaration order in reverse
+
+The same unit matched only once the declarations were ordered to suit the
+allocator.  b56 hands out `r4, r5, r6, r7, r8, sb, sl, fp` to the live values of
+the loop in *reverse declaration order* (the last declared longest-lived pointer
+gets `r4`), so retail's
+
+```
+r4 = o    r5 = s    r6 = q    r7 = flag   r8 = i    sb = e   sl = ent   fp = dst
+```
+
+needs the declarations written as
+
+```c
+u8 *ent = ...;   /* sl */      u8 *e = ...;    /* sb */
+s32 i;                         u32 flag = 0;
+u8 *q = ...;                   u8 *s = ...;
+u8 *o = ...;                   u8 *dst = ...;
+```
+
+(earlier pointer declarations still get `sl`/`fp`, the 0xc/0x158 cursors land in
+`r4`-`r8`).  The instruction stream was byte-identical modulo register names for
+three tries before this ordering closed it, so when a diff shows only register
+substitutions, permute declarations instead of respelling the code.
+
+Loop-tail statement order is emitted verbatim: retail's `add r6,#0xc` (q),
+`add r5,#0xc` (s), `add sb,#0x158` (e) needs `q += 0xc; s += 0xc; e += 0x158;`
+in that order, not the reading order of the arrays.
