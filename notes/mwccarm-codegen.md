@@ -1765,3 +1765,45 @@ and a frame 8 bytes larger than the call's own stack arguments need.  A plain
 assigning `z = 0;` reproduces the pair exactly.  The cost is ordering: mwcc
 hoists the volatile store above neighbouring non-volatile stores, so this only
 closes a unit whose retail listing has the spill at the top of the block.
+
+### 2.82 `x += 1` on a struct field is a *second* load, `x = x + 1` is not
+
+A digit/fill loop that reads a counter and then bumps it usually wants the
+retail pattern `ldrb r1, [r5]` / `ldrb r7, [sl, #4]` / `add ip, r1, #1` /
+`strb ip, [r5]` — two loads of the same byte, then one store.
+`i = s->count; s->count = s->count + 1;` CSEs to a single load.  Writing the
+bump as `s->count += 1;` makes b56 read the byte again for the compound
+assignment, which is exactly retail's pair (`arm9 0x02037590`).
+
+The same unit's tail needed a separate temporary for the end pointer: with
+`q = p + s->count - 1;` mwcc folds `p = s->digits` (`s+5`) and the `- 1` into
+`(s+4) + count`, giving `add r1, sl, #4 / add r2, r1, r0`.  Retail keeps
+`add r0, r3, r0` then `sub r2, r0, #1`, which you get by spelling the
+intermediate: `e = p + s->count; q = e - 1;`.
+
+### 2.83 Declare the register that must survive a call *last*
+
+Retail's callee-saved registers are handed out in declaration order, so the
+order of the locals decides the prologue.  `ov002 0x02076a58` was
+instruction-for-instruction identical except that the four parameters came out
+in `sb, r8, r7, r6` instead of retail's `r8, r7, r6, r5`.  Everything above,
+including the whole body, already matched; declaring the one local that is live
+across the `bl` (`u8 *sb;`) *after* the others moved the parameters down a slot
+and the unit matched with no other change.
+
+Generalisation: when a 200-odd-byte unit has the exact right instruction
+inventory but the whole listing is shifted by a fixed register rotation, permute
+the declaration order before changing any expression.
+
+### 2.84 A switch whose every case is empty still gets its jump table
+
+`ov003 0x02066f48` dispatches on `sel < 10` with `addls pc, pc, sel, lsl #2` and
+ten words that all branch to the epilogue except one.  `switch (sel) { case 7:
+…body…; }` collapses to a single compare (176 B vs 216 B); the table only
+appears when every case 0..9 is written out, grouped, with `break;`.
+
+Watch the case number: because `add pc, pc, sel, lsl #2` reads PC as
+`insn + 8`, the first table word is dead and `sel == 0` lands on the *second*
+word.  The body therefore sits at whichever case number is one less than the
+naive `(target - table_start) / 4`.  Retail's body was at table word 7 but at
+`case 6:`.
