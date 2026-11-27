@@ -1720,3 +1720,24 @@ uses one base and the raw offset `0x4bc4 + 0x66 = 0x4c2a`... which is 0x366 from
 retail materialises the larger one as `add rX, <small base>, #0x300`, collapse
 them into the small base and add the difference to the field offsets. Rewriting
 `*(s16 *)(t + 0x66)` as `*(s16 *)(w + 0x366)` was the whole fix.
+
+### 2.79 Re-materialise a pool-derived pointer per call site
+
+`ov002 0x02089210` (matched) loads four pointers out of the module struct
+(`p + 0x4fec`, `0x4ff0`, `0x4ff4`, `0x4fe8`) and makes two 8-argument calls that
+differ only in a constant and in one index.  Hoisting the four pointers into
+locals is the natural way to write it and comes out **208 B against retail's
+236**: mwcc keeps them in r4-r8 across the call and pushes five registers.
+Retail instead re-loads `data_ov002_02102070` *and* each field for the second
+call, so the source spelled the whole expression twice.  Writing the four field
+loads inline in both argument lists — repetitive to read, one word shorter per
+use in the object — reproduces retail exactly.
+
+The rule: when retail's second call in a pair contains a fresh `ldr rX, [pc]` of
+the module pointer, the original source did not hoist anything, and a testable
+signal is that a hoisted spelling comes out *under* the retail size because the
+callee-saved push count drops.
+
+`ov002 0x020857ec` and `ov002 0x020b9c38` are the same lesson in reverse: both
+need their `0x38`-scaled bases and their `0x158`-scaled entity offsets spelled
+per use, and their remaining gap is colouring only (see walls-detail).

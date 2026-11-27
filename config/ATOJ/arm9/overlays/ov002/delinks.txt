@@ -3575,3 +3575,7 @@ src/ov002/func_ov002_020852e0.c:
 src/ov002/func_ov002_020894f0.c:
     complete
     .text       start:0x020894f0 end:0x020895c8
+
+src/ov002/func_ov002_02089210.c:
+    complete
+    .text       start:0x02089210 end:0x020892fc

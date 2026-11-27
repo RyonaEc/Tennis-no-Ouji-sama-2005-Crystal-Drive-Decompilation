@@ -326,6 +326,10 @@ ov002 0x020a56e4 216B func_ov002_020a56e4 220/216 B: retail merges the case 0x20
 
 ov002 0x020a82c4 200B func_ov002_020a82c4 196/200 B: missing retail's early 'add ip, r4, #0xa8' hoist before the &8 test L12804
 
+ov002 0x020857ec 224B func_ov002_020857ec 224/224 B, 50+ slots of colouring; needs per-use 0x38 base re-materialisation (no mla, no shared sub pointer) L12834
+
+ov002 0x020b9c38 216B func_ov002_020b9c38 216/216 B, 42 slots; retail pushes r4-r6 with the flag in r1 and hoists p+0x4bbc, mwcc spills a 4-byte slot instead L12837
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

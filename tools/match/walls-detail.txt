@@ -12803,3 +12803,36 @@ ov002 0x020a56e4 func_ov002_020a56e4
 
 ov002 0x020a82c4 func_ov002_020a82c4
 196/200 B: missing retail's early 'add ip, r4, #0xa8' hoist before the &8 test
+
+== ov002 0x020857ec (224 B) ==
+Entity velocity setter: picks a base speed from a 0x38-byte sub-table row chosen
+by two bytes of the type table, halves it for type 0xa, then fills 0xf8/0xfc/
+0x100 with `speed / 0x40 * a` and `speed / 0x10 * b` through func_0203b0c0.
+Best spellings reach 224/224 B but never below 50 differing slots:
+`build/cand/ov2_857ec_e.c` (0x38 scale in a named `s32 o`) and the respell
+`base+stmt2` variant.  Getting the size right needed three separate levers and
+the residue after that is pure colouring:
+- no single `sub` pointer: retail re-materialises `mov r1,#0x38 / mul / add r2,
+  r5, r4` per use, so the base must be spelled inline or through a named scale;
+- a named scale must be a fresh variable per call site, or mwcc folds
+  `base + reg*0x38` into one `mla` and the unit comes out 8 B short;
+- the two table bytes (0x24 and 0x25) stay in locals, their bases do not.
+Everything after that is r4/r5/r6 versus r5/r6/lr plus a 4-byte spill slot.
+
+== ov002 0x020b9c38 (216 B) ==
+Partner-entity swap: when `e[0xd8] & 4`, clear e[0x66], set 0x8c = 0x1c on both
+entities, copy the 4/8 position pair into 0x90/0x94 and the partner's into
+0x9c/0xa0 both ways, fire two 3-argument setters and mark e[0xd1] = 3.
+Size-exact at 216 B with 42 slots for `build/cand/ov2_b9c38_d.c` (no `off`
+local, `a0 * 0x158` spelled inline twice).  The residue is a register/order tie:
+retail is `push {r4, r5, r6, lr}` with the return flag in r1 (`mov r1, #1 / mov
+r0, r1`) and `p + 0x4bbc` hoisted before the `& 4` test; mwcc takes
+`push {r4, r5, lr} / sub sp, sp, #4` with the flag in r1 as well but a stack
+slot instead of the third callee register.  `u8 m` read at the top is required
+(reading it inline at the call gives 204 B).
+
+ov002 0x020857ec func_ov002_020857ec
+224/224 B, 50+ slots of colouring; needs per-use 0x38 base re-materialisation (no mla, no shared sub pointer)
+
+ov002 0x020b9c38 func_ov002_020b9c38
+216/216 B, 42 slots; retail pushes r4-r6 with the flag in r1 and hoists p+0x4bbc, mwcc spills a 4-byte slot instead
