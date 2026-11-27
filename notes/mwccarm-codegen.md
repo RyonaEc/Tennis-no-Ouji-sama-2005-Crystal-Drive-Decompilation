@@ -1638,3 +1638,29 @@ repeating here because they stack: `s16 ang = 0; ang = ang + f();` produces the
 `add r0, r0, #0` that retail has after `func_ov002_02053468`, and
 `u8 half = (u32)b >> 1` is the `lsr` retail uses where plain `b >> 1` gives an
 `asr`.
+
+### 2.75 A masked call argument needs a `u8` parameter AND a wider local
+
+`ov002 0x020a82c4` passes a mode byte chosen between 0x2d and 0x2e, and retail
+masks it right before the call:
+
+```
+ldrb r1, [r4, #1]
+mov  r0, r2
+and  r2, r3, #0xff
+bl   0x204d270
+```
+
+Writing `u8 flag` as the local and `u32` as the parameter gives no mask at all
+(192 of 200 B): mwcc knows both constants fit, so the truncation is dead.
+The pair that emits it is a **wider local with a `u8` parameter**:
+
+```c
+extern void func_ov002_0204d270(u32 a0, u32 a1, u8 a2);
+...
+s32 flag;           /* the local must be wider than the parameter */
+```
+
+That is worth 4 bytes here. When retail truncates an argument before a call,
+check the parameter width first — if it is already narrow the local has to be
+wider, and a `u8` local silently removes the instruction.

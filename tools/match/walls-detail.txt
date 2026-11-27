@@ -12750,3 +12750,16 @@ gate on p[a0+0x142]==1 then tests the sub-entity's u8 at s+2 against 0x0b/0xf0 a
   build/cand/ov2_8f860_j.c = 744 of 756, 317 slots of register and scheduling
   order left. Next lever per the earlier note: force retail's spills of `half`
   [0x28] and `dd` [0x2c] by keeping more values live across 0204f6ac/0203b0c0.
+
+020a82c4 ov002 200B - 196/200 (NEW)
+  Entity withdraw: gate on *(u32*)(e+0xd8) & 8, clear e[0xa8] and e[0x66],
+  clear bit a0 in w[0x108], pick 0x2d/0x2e from (e[4] < p[0x1a64]) and
+  (m = *(u8*)(p+0x2e6+off) < 2), call 0204d270(m, e[1], flag), e[0xd1] = 4,
+  return 1 else 0.
+  Levers found: the third argument must be a `u8` parameter with an `s32`
+  local (192 -> 196) to get retail's `and r2, r3, #0xff` before the call.
+  Missing: retail computes `add ip, r4, #0xa8` BEFORE the &8 test and stores
+  through [ip] (two instructions where mwcc folds the immediate into the str).
+  Naming the pointer explicitly costs a register and drops to 192, so this is
+  an early-address hoist, not a pointer variable.
+  Best state: build/cand/ov2_a82c4_e.c (196, 95 slots), also ov2_a82c4_h.c.
