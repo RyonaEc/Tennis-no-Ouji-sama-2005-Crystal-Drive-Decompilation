@@ -314,6 +314,14 @@ ov003 0x020ad360 208B func_ov003_020ad360 palette/VRAM clear then a 9x32 halfwor
 
 ov002 0x0204d53c 208B func_ov002_0204d53c sprite/palette upload: 0202216c, two 02022048/02022084 terms off a0[8..0x13], then func_0201fd00 fills a local pair from data_0203d908[((u16)a0[0xc]>>4)*2] which is then overwritten with 0x1000/0 and passed to 020220c0; 208 vs 208 with only the bss-pointer/offset register pair swapped (retail r2=&bss+r1=0x1a89a4, mwcc r1=&bss+r2=0x1a89a4); frame 0x28 needs the local declared s32 v[10]; respell.py tried 54 variants, none closed it; 8 spellings L12721
 
+ov002 0x020815b0 192B func_ov002_020815b0 spawns two sub-entities from a 4-byte-stride table pair at p+0x4f60..0x4f6c: v = b[*(u16)(q+0x24)].f, e = &a[v], sb = e->f*0x14 + p[0x4f60], then 2 calls to 02081b10 with data_020fdc98[0..1]; 192 vs 192 size-exact but the whole head is reordered - retail loads the two data bytes first, defers their strb to sp+0x10/0x11 until after the four field loads, and holds a0 in r6; mwcc stores them immediately and picks r5; 5 spellings + 191 respell variants L12724
+
+ov002 0x02088718 204B func_ov002_02088718 sibling of 0x020815b0 with data_020fdcdc as an s32 pair at sp+0x10/0x14 read as (u16)v[i]; 204 vs 204 size-exact but ~60 slots of scheduling/register order differ (retail r8 = mode, r7 = counter, moveq r8,#0xc deferred to 0x80); got the frame 0x1c and the (u16)v[i] lsl/lsr truncation; 6 spellings + 154 respell variants L12727
+
+ov002 0x0205a670 208B func_ov002_0205a670 entity motion kick: t = e[0], h = (u8)(m>>1), dx = 0xa0000*(h?1:-1) when t==0x33, then 02057c4c(e[4]+dx, e[8], tab[t*0x34+8], h==0, a0) and the 8-arg 02057a9c; 208 vs 208 with 40 slots left (retail keeps a0 in r6 and off in r5, mwcc r5/r3); the dx multiply needs the ternary form else mwcc emits rsbeq and loses 8 bytes; 10 spellings L12730
+
+ov002 0x020f2dc0 208B func_ov002_020f2dc0 gate on p[a0+0x142]==1 then tests the sub-entity's u8 at s+2 against 0x0b/0xf0 and 0/0x20/0xff families, setting e[0xa8]=0/1 and orring 2 into e[0xd4]; 212 vs 208, one instruction long: retail precomputes e+0xa8 into r3 and folds add r3,r0,#0xa8, mwcc folds the 0xa8 immediate instead and spends the instruction elsewhere; register pair lr/ip for p also swapped; 4 spellings L12733
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

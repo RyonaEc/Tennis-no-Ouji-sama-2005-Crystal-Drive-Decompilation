@@ -1582,3 +1582,29 @@ m = *(u8 *)(p + off + 0x2e6);
 The tell is an `mla` in your output where retail has a bare `mul`: retail's
 source named the scaled index as a variable, so the compiler had no reason to
 fuse the add.
+
+### 2.73 `x * (c ? -1 : 1)` emits `mvn` + `mul`, `x * -1` emits `rsb`
+
+A constant negation is peepholed away, which can hide the original source and
+cost instructions. `ov002 0x0205a670` picks a horizontal kick direction:
+
+```
+cmp  r2, #0                ; h == 0 ?
+mov  ip, #0xa0000
+mvneq r1, #0               ; -1
+muleq r1, ip, r1           ; 0xa0000 * -1
+moveq ip, r1
+```
+
+Writing `dx = 0xa0000 * -1` or `dx = -0xa0000` gives a single `rsbeq r0, r0, #0`
+and the unit lands 8 bytes short. The form that matches is a ternary whose other
+arm is the value itself:
+
+```c
+dx = 0xa0000 * (h ? 1 : -1);
+```
+
+Because `0xa0000 * 1` needs no work, the `h != 0` arm costs nothing, and the
+`h == 0` arm materialises `-1` in a register for a real `mul`. Whenever retail
+has `mvn` feeding a `mul`, look for a multiply whose second operand is chosen by
+a condition rather than being a literal.
