@@ -1434,3 +1434,28 @@ in the equal branch (`mvn r1, #0` + `mul`), where every ternary spelling of the
 same thing compiles to `mov` + `rsb` inside the branch.
 
 Leave these parked — the fold decision is not reachable from C spelling here.
+
+## 2.68 Break a repeated subexpression to stop mwcc holding a pointer (2026-11-27)
+
+When the same `base + offset` appears in several statements, b56 folds it into
+one register and keeps the *base* alive in another. Retail usually recomputes
+it at each use, which costs one instruction more per site but frees a
+callee-saved register — and the freed register is what the function's frame
+shape depends on.
+
+`ov002 0x020870fc` would not come in at its 196 bytes: retail pushes `{r4, lr}`
+and recomputes `q + 0x1ec` three times, while every straightforward spelling
+pushed `{r4, r5, lr}` with a 4-byte spill, because mwcc held `q + 0x1ec` in r4
+and `q` in r5. Spelling the three uses slightly differently made mwcc treat them
+as three separate trees:
+
+    func_0203447c((u32)((u8 *)q + 0x1ec), 0, 0x200);
+    func_02034494(q + 0x1ec, (u8 *)((u32)q + 0x18), 0x1d4);
+    switch (func_02005958(3u, (u32)q + 0x1ec)) {
+
+That is the match. The same trick fixed the tail of `ov003 0x0209a354`
+(`(u32)((u8 *)p + 0x8de8)` then `(u32)p + 0x8de8`).
+
+The tell is a frame that is one register too large or one stack slot too big
+with no other structural difference: look for a subexpression used two or three
+times and spell each occurrence differently.

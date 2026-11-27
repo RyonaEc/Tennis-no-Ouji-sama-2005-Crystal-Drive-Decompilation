@@ -12696,3 +12696,12 @@ fourth sibling of 0x020b5088: exact 196 B; retail negates the 0xa0000 stride wit
 
 arm9 0x02014780 func_02014780
 loop over the 0x02042a68+0x14 table with bitfield guards; exact 204 B, bitfield spelling works, but mwcc hoists the table pointer and keeps 2 extra callee-saved registers where retail reloads *(u8**)(g+0x14) every iteration and needs only r4/r5; 2 spellings
+
+ov003 0x02081f78 func_ov003_02081f78
+344B time-of-day remap: retail computes -(s16)((k/12)*(a-b)) with an explicit rsb then adds (s16)((j/12)*c) as a shifted operand; every spelling of the negation is reassociated by mwcc into 'sub r0, r1, r0, asr #16', 4 B short at 340. Everything else matches, including the s32 %360 magic and the three dead-equal helper(0,0xb4) calls. 9 spellings + respell 63 variants
+
+ov002 0x02074cf0 func_ov002_02074cf0
+sibling of parked 0x02073e14 (0x14/0x160/0x80 variant): structure and compare now match, but mwcc keeps 6 callee-saved registers and an 8-byte frame where retail hoists the 0x160 constant into r4 and uses sb for a0 (7 registers, 4-byte frame)
+
+ov003 0x0209a354 func_ov003_0209a354
+a0==0 reinit of the 0x8de8 ring (u16 zero + u32 0x200 every 4th); exact 204 B, tail matched after breaking the CSE on p+0x8de8, only ip/lr swapped for the zero and the element pointer; respell 40 variants + 4 spellings
