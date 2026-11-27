@@ -310,6 +310,10 @@ ov006 0x0204ded0 204B func_ov006_0204ded0 digit scanner over a C string (switch 
 
 ov002 0x020eb188 208B func_ov002_020eb188 pixel-clock select: (a2<<16)/a3 against 0x2000/0xe000/0x6000/0xa000, then a 0..4 remap switch and a -1 sentinel path; 204 vs 208 because retail keeps 'if (q==1) return 2' as an out-of-line block at the function end (cmp/beq) where mwcc if-converts it to addeq/moveq/popeq/bxeq; 3 spellings L12715
 
+ov003 0x020ad360 208B func_ov003_020ad360 palette/VRAM clear then a 9x32 halfword fill (j + (i<<5) + 0xd001 into base + (j + ((i+5)<<5) + 1)*2), then two 0x800-range calls; 200 vs 208 because retail spills the u16 zero arg to [sp] and reloads it (strh/ldrh) and defers the base add to the call site, while every spelling folds the zero to a constant and hoists the add; tried plain u16, u16 in an anonymous struct, struct field; 6 spellings L12718
+
+ov002 0x0204d53c 208B func_ov002_0204d53c sprite/palette upload: 0202216c, two 02022048/02022084 terms off a0[8..0x13], then func_0201fd00 fills a local pair from data_0203d908[((u16)a0[0xc]>>4)*2] which is then overwritten with 0x1000/0 and passed to 020220c0; 208 vs 208 with only the bss-pointer/offset register pair swapped (retail r2=&bss+r1=0x1a89a4, mwcc r1=&bss+r2=0x1a89a4); frame 0x28 needs the local declared s32 v[10]; respell.py tried 54 variants, none closed it; 8 spellings L12721
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

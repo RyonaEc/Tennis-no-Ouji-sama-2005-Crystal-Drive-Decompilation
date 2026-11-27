@@ -1546,3 +1546,39 @@ test as `a[8]`, reproduces it:
 if (a[8] >= 0xc)
     a[8] = 0;
 ```
+
+### 2.72 Keep the byte offset in its own variable when it is reused
+
+`ov002 0x020b5b74` indexes a 0x158-byte array twice, once as `p + 0x2e4 + n*0x158`
+and once as `p + n*0x158 + 0x2e6`. Folding the multiply into each address lets
+mwcc emit `mla` for the first and an `add` for the second, and the function
+lands 4 bytes short with a different register layout:
+
+```
+mla  r4, r0, r2, r4       <- mine
+add  r3, r0, r3
+```
+
+Retail keeps the scaled offset as its own value and multiplies once:
+
+```
+mov  r1, #0x158
+mul  r3, r0, r1
+add  r2, r1, #0x2e4
+add  r5, r2, r3           <- e = p + 0x2e4 + off
+add  r3, r1, r3           <- p + off
+ldrb r0, [r3, #0x2e6]     <- m
+```
+
+So write:
+
+```c
+s32 off = a0 * 0x158;
+u8 *e = p + 0x2e4 + off;
+
+m = *(u8 *)(p + off + 0x2e6);
+```
+
+The tell is an `mla` in your output where retail has a bare `mul`: retail's
+source named the scaled index as a variable, so the compiler had no reason to
+fuse the add.
