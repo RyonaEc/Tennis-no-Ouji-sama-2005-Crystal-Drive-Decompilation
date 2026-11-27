@@ -361,6 +361,8 @@ ov002 0x02072ccc 228B func_ov002_02072ccc 224/228: full body decoded - hdr = dat
 
 ov002 0x0208d540 228B func_ov002_0208d540 228/228 size exact, body decoded: base = *(u8**)data_ov002_02102070; hdr = base + 0x4f4c; func_02029768(data_ov002_021009f0); blk = hdr + 0x16e5c; func_ov002_0208efac(data_ov002_020fd338[idx], blk, 0x10000); rec = (Rec*)(blk+4); 4x { dst[4i] = blk + rec[i].b; dst[0x1c+4i] = rec[i].a; } if (*(u32*)blk >= 5) 2 more. Only delta: retail stores the first word as str r0,[r6,#0xe4]! and then uses small offsets 0x1c/4/0x20/8/0x24/0xc/0x28 from the advanced r6, i.e. mwcc coalesced dst = hdr+0xe4 into hdr's own register; b56 keeps hdr and uses the wide offsets 0xe4/0x100/0xe8/0x104/... instead. Both are 228B, so this is a pure base-register/addressing tie - a Dst* local, hdr += 0xe4 reassignment, and late-bound pointers all give add rX,hdr,#0xe4 + str [rX] (232B) rather than the writeback. L12899
 
+ov003 0x0205ebf0 228B func_ov003_0205ebf0 228/228 exact size, instruction stream identical; only base colouring differs: retail keeps base in r0 (ldr r0,[pc]; ldr r0,[r0]; add r3,r0,#0xad00) while b56 puts it in r1 (ldr r1,[r0]; add r0,r1,#0xad00). Best candidate build/cand/ov3_5ebf0_v1.c: u32 base; d=base+0xad00; p8=base+0xadf8; p4 declared in the if block and assigned base+0xadf4 immediately before the second display store (late assignment is what blocks the ldrh [base,reg]! fold into d+0xf4 and keeps the separate add lr,r0,lr); p8[0]=(u16)(p8[0]*0xffffffffu) is the mvn+mul form (plain *-1 gives rsb). Swapped every declaration order of d/p8/p4 and u32/u8* base; base stayed in r1. L12902
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

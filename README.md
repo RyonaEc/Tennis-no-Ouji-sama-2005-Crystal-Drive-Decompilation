@@ -36,13 +36,13 @@ tennis_ATOJ.nds: OK
 
 | | Matching C | Total | Share |
 |---|---:|---:|---:|
-| Functions | 1,982 | 3,806 | 52.08% |
-| Code | 187,768 B | 1,841,700 B | 10.20% |
+| Functions | 1,983 | 3,806 | 52.10% |
+| Code | 188,000 B | 1,841,700 B | 10.21% |
 | Data | 630,724 B | 801,936 B | 78.65% |
-| Units | 4,271 | 4,938 | 86.49% |
+| Units | 4,272 | 4,938 | 86.51% |
 
 The badges above use objdiff's stricter pair, `matched_functions` and `matched_code`, which
-now agree with the complete counts exactly: every one of the 4,271 units scores 100%, so a
+now agree with the complete counts exactly: every one of the 4,272 units scores 100%, so a
 complete unit and a matched unit are the same thing today.
 
 Data is now matched through the same pipeline as code: a delinks entry with a `.data`
@@ -51,7 +51,7 @@ digest unchanged, and objdiff scores it (`data_02042240`, 36 B). Adding a source
 `python tools/configure.py ATOJ` re-run because `build.ninja` only lists sources known at
 configure time.
 
-The remaining 1,812 functions are still delinked assembly. Complete units compile with
+The remaining 1,811 functions are still delinked assembly. Complete units compile with
 `mwccarm` 1.2/b56 - build 56, `Runtime Built: Sep 16 2004`, the single build retail used -
 link at the original addresses, and leave the ROM digest unchanged. [PROGRESS.md](PROGRESS.md) has the fuller breakdown - code,
 functions, fuzzy match, data and a per-module table - and `python tools/match/progress.py`
