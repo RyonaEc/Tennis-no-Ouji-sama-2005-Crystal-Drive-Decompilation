@@ -1741,3 +1741,27 @@ callee-saved push count drops.
 `ov002 0x020857ec` and `ov002 0x020b9c38` are the same lesson in reverse: both
 need their `0x38`-scaled bases and their `0x158`-scaled entity offsets spelled
 per use, and their remaining gap is colouring only (see walls-detail).
+
+### 2.80 `include/types.h` does not define `NULL`
+
+`types.h` is 20 lines of typedefs.  A candidate that writes `if (p != NULL)`
+compiles to **nothing** at all — `var3` prints `got 0 want N` with no
+diagnostic, because the harness only surfaces the missing object, not mwcc's
+"undefined identifier".  Use a plain `0` for pointers.  `arm9 0x0201f2b0`
+matched on the first try once the four `NULL`s became `0`.
+
+When `var3` reports `got 0`, suspect a compile error rather than a shape
+problem, and get the diagnostic by compiling the body by hand with the harness
+flags (`./tools/sjiswrap.exe tools/mwccarm/1.2/b56/mwccarm.exe -c <file> -o
+<obj>` plus the include path), not by guessing at the C.
+
+### 2.81 `volatile` on a local forces the store-then-reload pair
+
+Retail sometimes contains `str r3, [sp, #8]` immediately followed by
+`ldr r0, [sp, #8]` — a store dictating a live local that then feeds an argument,
+and a frame 8 bytes larger than the call's own stack arguments need.  A plain
+`s32 z = 0;` folds to `mov r0, #0` and the unit comes out 8 B short
+(`arm9 0x0202ccec`: 212 vs 220).  Declaring the local `volatile s32 z;` and
+assigning `z = 0;` reproduces the pair exactly.  The cost is ordering: mwcc
+hoists the volatile store above neighbouring non-volatile stores, so this only
+closes a unit whose retail listing has the spill at the top of the block.

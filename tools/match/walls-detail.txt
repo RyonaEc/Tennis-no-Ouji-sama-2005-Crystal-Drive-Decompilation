@@ -12836,3 +12836,20 @@ ov002 0x020857ec func_ov002_020857ec
 
 ov002 0x020b9c38 func_ov002_020b9c38
 216/216 B, 42 slots; retail pushes r4-r6 with the flag in r1 and hoists p+0x4bbc, mwcc spills a 4-byte slot instead
+
+== arm9 0x0202ccec (220 B) ==
+Frame/engine init: sets -3 and zeros in a bss control block, clears two 0x20
+buffers, copies a 0x160-byte block from 0x023FE940 (DS mode) or 0x027FFE00, then
+starts a 0x400-byte task with a callback and registers tag 0xb.
+Size-exact at 220/220 with 42 slots for `build/cand/a9_2ccec_g.c`.  Retail
+stores a zeroed word to `[sp, #8]` and immediately re-loads it as the first
+argument (`str r3, [sp, #8] / ldr r0, [sp, #8]`), which is why the frame is 0x10
+rather than 8.  A `volatile s32 z` reproduces that pair (plain `s32 z = 0` is
+212 B, `s32 tmp[2]` 212 B with 106 slots), but mwcc then HOISTS the volatile
+store above `*(s32 *)(b + 8) = -3` and `*(s32 *)(b + 0xc) = 0`, where retail's
+order is b+8, b+0xc, then the spill, then the argument setup, then b+0x14 and
+*b.  Rewriting statement order does not move it; the residue is that hoist plus
+register choice (retail keeps the zero in r3, mwcc in ip).
+
+arm9 0x0202ccec func_0202ccec
+220/220 B, 42 slots: retail spills a zeroed word to [sp,#8] and reloads it as arg 0; volatile s32 gives the pair but mwcc hoists it above the b+8/b+0xc stores

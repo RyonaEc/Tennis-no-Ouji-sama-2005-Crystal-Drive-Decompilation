@@ -330,6 +330,8 @@ ov002 0x020857ec 224B func_ov002_020857ec 224/224 B, 50+ slots of colouring; nee
 
 ov002 0x020b9c38 216B func_ov002_020b9c38 216/216 B, 42 slots; retail pushes r4-r6 with the flag in r1 and hoists p+0x4bbc, mwcc spills a 4-byte slot instead L12837
 
+arm9 0x0202ccec 220B func_0202ccec 220/220 B, 42 slots: retail spills a zeroed word to [sp,#8] and reloads it as arg 0; volatile s32 gives the pair but mwcc hoists it above the b+8/b+0xc stores L12854
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
