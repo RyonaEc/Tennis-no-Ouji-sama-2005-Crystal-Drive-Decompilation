@@ -1926,3 +1926,58 @@ arm as the fall-through.  Writing the semantically identical
 image (224 B, predicated `movgt`).  b56 if-converts the `then` of the condition
 as written, so when retail's predicated block is the `else`, invert the
 condition instead of rearranging the bodies.
+
+### 2.92 Declaring the scalar before the pointer flips the r4/r5 colouring
+
+Three overlay-002 entity units (`0x02092988`, `0x020d1234`, `0x020d2e00`) are the
+same shape: a base pointer, an entity pointer `base + 0x2e4 + id*0x158`, and one
+byte `b` read from `base + id*0x158 + 0x2e6`.  With
+
+```c
+u8 *ent = base + 0x2e4 + id * 0x158;
+u8 *g   = base + 0x1824;
+u8  b   = *(u8 *)(base + id * 0x158 + 0x2e6);
+```
+
+b56 puts the entity pointer in `r5` and the byte in `r4`, while retail has the
+entity in `r4` and the byte in `r5` (in one unit the base pointer itself takes
+`r5` and the byte reuses it).  The swap looks like an unbreakable colouring tie
+and was parked as one.  It is not: declaring the byte **first**, before the two
+pointers, makes b56 reproduce retail exactly —
+
+```c
+u8 *base = data_ov002_02102070;
+u8  b    = *(u8 *)(base + id * 0x158 + 0x2e6);
+u8 *ent  = base + 0x2e4 + id * 0x158;
+u8 *g    = base + 0x1824;
+```
+
+`0x02092988` matched on that change alone; `0x020d1234` had the same swap and
+matched once §2.93 was applied too.  So before parking a swap of exactly two
+saved registers, try moving the *scalar* (non-pointer) definition above the
+pointer definitions.
+
+### 2.93 Compute a conditional value before the pair of stores that use it
+
+`ov002 0x020d1234` stores `g->fac` into two entity halves with a conditional
+`off` computed between them:
+
+```c
+*(u16 *)(ent + 0x8e) = *(u16 *)(g + 0xac);
+off = (b < 2) ? 0x160000 : -0x160000;
+*(u16 *)(ent + 0x8c) = *(u16 *)(g + 0xac);
+```
+
+That compiles to the same size but takes `r0` for the first load where retail
+uses `r1`, and the diff is a single register name.  Hoisting the `off`
+assignment above both stores fixes it:
+
+```c
+off = (b < 2) ? 0x160000 : -0x160000;
+*(u16 *)(ent + 0x8e) = *(u16 *)(g + 0xac);
+*(u16 *)(ent + 0x8c) = *(u16 *)(g + 0xac);
+```
+
+Moving the *last* statement below the stores does not (`f` variant, still one
+register off).  When a single load temporary is coloured `r0` where retail has
+`r1`, look for a value that retail computed before it, not after.
