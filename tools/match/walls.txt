@@ -304,6 +304,10 @@ ov002 0x02074cf0 200B func_ov002_02074cf0 sibling of parked 0x02073e14 (0x14/0x1
 
 ov003 0x0209a354 204B func_ov003_0209a354 a0==0 reinit of the 0x8de8 ring (u16 zero + u32 0x200 every 4th); exact 204 B, tail matched after breaking the CSE on p+0x8de8, only ip/lr swapped for the zero and the element pointer; respell 40 variants + 4 spellings L12706
 
+ov003 0x0204f2b0 212B func_ov003_0204f2b0 C0..C7 flyer spawn loop (famsurvey twin 0x0204c914 in ov005, same skeleton, 0x56/0x8de8 vs 0x70/0x4a58): exact 212 B, single 0x18 struct initialised twice gives retail's duplicated stores, everything matches except where mwcc schedules 'add fp, sp, #0' (retail after mov sb,#0x56, mwcc before the stores); 5 spellings L12709
+
+ov006 0x0204ded0 204B func_ov006_0204ded0 digit scanner over a C string (switch 0/1/0xa return, '0'..'9' set a flag, else skip a char): 19-slot residue, exact 204 B except mwcc emits a 12-byte unreachable epilogue that retail does not, and ip/lr are swapped for the counter; for(;;), while(1), do-while and goto spellings all give 216 L12712
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
