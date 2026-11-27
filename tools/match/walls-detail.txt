@@ -12711,3 +12711,6 @@ C0..C7 flyer spawn loop (famsurvey twin 0x0204c914 in ov005, same skeleton, 0x56
 
 ov006 0x0204ded0 func_ov006_0204ded0
 digit scanner over a C string (switch 0/1/0xa return, '0'..'9' set a flag, else skip a char): 19-slot residue, exact 204 B except mwcc emits a 12-byte unreachable epilogue that retail does not, and ip/lr are swapped for the counter; for(;;), while(1), do-while and goto spellings all give 216
+
+ov002 0x020eb188 func_ov002_020eb188
+pixel-clock select: (a2<<16)/a3 against 0x2000/0xe000/0x6000/0xa000, then a 0..4 remap switch and a -1 sentinel path; 204 vs 208 because retail keeps 'if (q==1) return 2' as an out-of-line block at the function end (cmp/beq) where mwcc if-converts it to addeq/moveq/popeq/bxeq; 3 spellings
