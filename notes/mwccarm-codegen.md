@@ -1608,3 +1608,33 @@ Because `0xa0000 * 1` needs no work, the `h != 0` arm costs nothing, and the
 `h == 0` arm materialises `-1` in a register for a real `mul`. Whenever retail
 has `mvn` feeding a `mul`, look for a multiply whose second operand is chosen by
 a condition rather than being a literal.
+
+### 2.74 The UPDATE families call `func_ov002_02057068` with twelve arguments
+
+Every 0x158/0x1744/0x1824 UPDATE family member (756 B, 688 B, 676 B, 608 B)
+ends in the same call, and it takes **twelve** arguments, not the eleven the
+m2c lift suggests. Retail stores eight words to the outgoing area:
+
+```
+mov  r3, #0
+str  r3, [sp]              ; a4  = 0
+str  r0, [sp, #4]          ; a5  = -0x4074 (or the member's constant)
+str  r0, [sp, #8]          ; a6  = half
+str  r0, [sp, #0xc]        ; a7  = 0x42000000
+str  r0, [sp, #0x10]       ; a8  = 9
+str  r1, [sp, #0x14]       ; a9  = *e
+str  r0, [sp, #0x18]       ; a10 = e->u16
+str  r0, [sp, #0x1c]       ; a11 = a0
+```
+
+Four register arguments plus eight stack words means `a3` and `a4` are both
+zero. Writing the call with one zero instead of two leaves the unit one
+instruction short (604 of 608 on `0x0208f38c`, 740 of 756 on `0x0208f860`),
+and adding it makes both size-exact. The extern must be declared with twelve
+parameters or mwcc drops the argument.
+
+Two companions from the same function, both already in the table but worth
+repeating here because they stack: `s16 ang = 0; ang = ang + f();` produces the
+`add r0, r0, #0` that retail has after `func_ov002_02053468`, and
+`u8 half = (u32)b >> 1` is the `lsr` retail uses where plain `b >> 1` gives an
+`asr`.
