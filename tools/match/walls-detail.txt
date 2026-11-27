@@ -12732,3 +12732,21 @@ entity motion kick: t = e[0], h = (u8)(m>>1), dx = 0xa0000*(h?1:-1) when t==0x33
 
 ov002 0x020f2dc0 func_ov002_020f2dc0
 gate on p[a0+0x142]==1 then tests the sub-entity's u8 at s+2 against 0x0b/0xf0 and 0/0x20/0xff families, setting e[0xa8]=0/1 and orring 2 into e[0xd4]; 212 vs 208, one instruction long: retail precomputes e+0xa8 into r3 and folds add r3,r0,#0xa8, mwcc folds the 0xa8 immediate instead and spends the instruction elsewhere; register pair lr/ip for p also swapped; 4 spellings
+
+0208f38c ov002 608B - TWELVE-ARG CALL (608/608, NEW)
+  func_ov002_02057068 takes twelve arguments, not eleven. Retail stores EIGHT
+  words to the outgoing area ([sp]..[sp+0x1c]), so a3 and a4 are both zero:
+    (buf0, buf1, buf2, 0, 0, 0, half, 0x8000000, 0xb, *e, e_u16, a0)
+  Declaring the extern with eleven parameters makes mwcc drop the argument and
+  the unit lands 604 of 608. With twelve it is size-exact.
+  Also needed: s16 ang = 0; ang = ang + func_ov002_02053468(); for the
+  `add r0, r0, #0` retail has, and half = (u32)b >> 1 for the `lsr`.
+  Residual: 128 slots, pure register allocation. Retail holds g in r8 and
+  derives e/w/q from it there; mwcc keeps g in sl and swaps sl/sb. Retail also
+  masks half after computing dir. Best state: build/cand/ov2_8f38c_d.c.
+
+0208f860 ov002 756B - 744/756 (NEW BEST, was 736)
+  Same twelve-argument fix as 0x0208f38c plus the s16 ang accumulator.
+  build/cand/ov2_8f860_j.c = 744 of 756, 317 slots of register and scheduling
+  order left. Next lever per the earlier note: force retail's spills of `half`
+  [0x28] and `dd` [0x2c] by keeping more values live across 0204f6ac/0203b0c0.
