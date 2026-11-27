@@ -2004,3 +2004,47 @@ source divided, it did not shift.
 A reminder on stack struct reads: with the two `Vec3` copies at `sp+0` and
 `sp+0xc`, retail's `ldr r0, [sp, #0x10]` is `c[1].y`, not `c[1].x` — index by
 the 12-byte stride before naming the field.
+
+### 2.95 Conditional decrement, unconditional store
+
+`ov003 0x020c7c38` ends with
+
+```
+cmp  r4, #0
+subne r0, r4, #1
+lslne r0, r0, #0x10
+lsrne r4, r0, #0x10
+strh r4, [r6]          ; unconditional
+```
+
+`if (n != 0) *p = n - 1;` gives a *predicated* `strhne` and no truncation, which
+is 8 bytes short.  Retail updates the `u16` variable and then stores it — so the
+source is
+
+```c
+if (n != 0)
+    n = n - 1;
+*p = n;
+```
+
+The unconditional store is the tell: when retail stores a value outside the
+`if` but decrements inside it, the decrement was an assignment to the variable,
+not a modification of the stored expression.  The `lsl/lsr` pair is that `u16`
+assignment's truncation, and it only appears when the variable survives the
+store.
+
+### 2.96 Keep the source's own split of a big offset
+
+Three shapes in the same unit:
+
+| retail | source |
+|---|---|
+| `add r0, g, #0x100` … `ldrh [r0, #0xa8]` | `g + 0x100 + 0xa8` |
+| `add r0, g+idx*2` … `add r0, #0x100` … `ldrh [r0, #0x1e]` | `g + 0x100 + idx*2 + 0x1e` |
+| `ldrh [sp]` every iteration | loop bound `buf[0]` read from memory, not a cached local |
+
+`g + 0x11e + idx*2` folds to one `add` plus a `0x11e` load offset (12 bytes
+short overall).  When retail spends a separate `add #0x100`, the `0x100` was its
+own term in the source expression.  Likewise, a struct whose address escapes
+into a call is re-read from memory in the loop bound — do not cache the count in
+a local.
