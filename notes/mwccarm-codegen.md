@@ -1664,3 +1664,23 @@ s32 flag;           /* the local must be wider than the parameter */
 That is worth 4 bytes here. When retail truncates an argument before a call,
 check the parameter width first — if it is already narrow the local has to be
 wider, and a `u8` local silently removes the instruction.
+
+### 2.76 `var3` cannot catch a wrong data symbol, only the link can
+
+`ov002 0x0205a060` reported `MATCH` from `var3` with `extern u8
+data_020fb544[]`, and `reg.py` refused it: the build died with
+
+```
+mwldarm.exe: Undefined : "data_020fb544"
+```
+
+The symbol is `data_ov002_020fb544` — overlay symbols carry the `_ov00N_`
+infix. `var3` masks relocation bytes, so it cannot tell a resolvable symbol from
+an undefined one; a name that does not exist in `symbols.txt` still compares
+byte-identical. `annotate.py` prints the right name next to each pooled literal
+(`= 0x020fb544  data_ov002_020fb544 (data)`), so copy it from there rather than
+guessing between the `data_<addr>` and `data_<mod>_<addr>` forms.
+
+The same trap applies to a spelled-out literal: `*(u32 *)0x020fb544` links to
+the right bytes and passes both `var3` and the digest, but scores below 100% in
+objdiff. Use the symbol name from `annotate.py`.
