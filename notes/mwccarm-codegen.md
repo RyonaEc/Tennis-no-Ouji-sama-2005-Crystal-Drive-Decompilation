@@ -1807,3 +1807,43 @@ Watch the case number: because `add pc, pc, sel, lsl #2` reads PC as
 word.  The body therefore sits at whichever case number is one less than the
 naive `(target - table_start) / 4`.  Retail's body was at table word 7 but at
 `case 6:`.
+
+### 2.85 A missing `mov r0, <local>` means the source passes the previous call's result
+
+`ov005 0x0204c914` fills a stack struct, calls `func_ov005_0204f1c0(0, 0xc0, i, &b)`,
+stores the result, and then calls `func_ov005_0204f2ac(...)`.  Writing
+`func_ov005_0204f2ac((u8 *)&b, 0xd, 0, 0x320)` puts an extra `mov r0, fp` in
+front of the second call (216 B against retail's 212).  Retail has no such
+instruction: r0 still holds the first call's return value, so the original
+source passes that value, not `&b`:
+
+```c
+v = func_ov005_0204f1c0(0, 0xc0, i, &b);
+*(u32 *)(e + 0x5c68) = v;
+...
+func_ov005_0204f2ac((u8 *)v, 0xd, 0, 0x320);
+```
+
+Generalisation: before adding a cast or a temporary to make an argument
+"obvious", count the moves retail spends on each argument.  A missing move is
+evidence about what the original expression was.
+
+### 2.86 `ldrb` + `blt`/`ble` means a signed counter, not a `u8` comparison
+
+The same unit's loops reload a byte (`ldrb r2, [r0]`) and then branch with
+`blt`, and the counters step with `add rX, rX, #1` right before `cmp`/`blo` on
+`u16` counters but `blt` on the byte bounds.  Spelling the counters `s32 i,
+j;` turned b56's `blo` into retail's `blt`; `u32` gave `blo`, and an `s8`
+pointer gave `ldrsb` where retail has a plain `ldrb`.  So the mix is: `u8 *`
+for the byte data, signed counters for the comparisons.
+
+Two more shapes from the same batch worth knowing:
+
+- `e->buf[j] = s[j + 1];` with a `u8 *` source produced
+  `add r4, r1, #1 / ldrb r3, [r0, r4]`; writing `u8 *q = s + j; e->buf[j] =
+  q[1];` produced retail's `add r2, r0, r1 / ldrb r3, [r2, #1]`.  When retail
+  builds a base pointer and then uses a small offset, give the base its own
+  local.
+- `arm9 0x02015e64` needed the *opposite* of §2.81: a plain `u32 z; z = 0;`
+  inside the loop is what creates retail's `str r5, [sp]` / `ldr r0, [sp]`
+  pair, and `volatile u32 z;` reproduces it when b56 keeps it in a register.
