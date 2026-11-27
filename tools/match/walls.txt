@@ -278,6 +278,10 @@ ov005 0x0204f1c0 236B func_ov005_0204f1c0 236B tile-packet builder: out = *(u8**
 
 ov002 0x020759d4 192B func_ov002_020759d4 192B object spawner: entry = data_ov002_02102074 + a0*32; n = *(u16*)(entry+0x18); idx = *(u8*)(*(u32*)(entry+0x1c) + a1); base = *(u32*)(entry+0x14); if (a1 >= n) return 0; obj = func_ov002_02077974(func_ov002_0207513c, 1, 1, 1, base + idx*32); if (obj) { arg = 0x160 + *(u8*)(obj+4)*32; if (*(u16*)obj & 4) func_ov002_0204f3cc(base + idx*32, arg, 0x20); obj->flags |= 2; obj[6]=a0; obj[7]=a1; obj[5]=a2; obj[0x10]=0; } return obj. Four spellings all land at exactly 192B; residue is pure register allocation (retail keeps a0 in sb and the record base in r6 across the call, mwcc picks r4/r5), 34-40 differing slots. respell.py 169 variants best 34. Candidates build/cand/o2_759d4_a.c.._d.c L12667
 
+ov003 0x020844c4 496B func_ov003_020844c4 switch(2)|3d copy loop: retail keeps the hoisted source pointer in ip and the inner loop counter in r2; every spelling (s32/u32 counters, swapped loop names, while/for/do, out alias, dst as u16*, register, extra locals) gives src in r2 and the counter in ip - 6 real slots out of 15, exact 496 B, 20 spellings plus 753 permuter variants L12670
+
+ov003 0x020d8654 496B func_ov003_020d8654 twin of 0x020844c4 with 0x1f10/0x1d90 masks, 0x1e820/0x1e840/0x1eba0 buffers and a 0x380 byte copy; identical illegal-tie: src in ip vs r2 L12673
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
