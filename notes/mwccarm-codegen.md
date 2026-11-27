@@ -1459,3 +1459,61 @@ That is the match. The same trick fixed the tail of `ov003 0x0209a354`
 The tell is a frame that is one register too large or one stack slot too big
 with no other structural difference: look for a subexpression used two or three
 times and spell each occurrence differently.
+
+### 2.69 A redundant re-test means a nested `if`, not `else if`
+
+`ov003 0x02051b30` has a two-arm dispatch on a state word, and retail tests the
+state *twice* in the non-zero arm:
+
+```
+cmp r0, #0
+beq end
+cmp r0, #1
+bne skip
+```
+
+The second `cmp r0, #0` is dead by construction, so it is not something the
+compiler adds — it is in the source. Written as `if (st == 0) {...} else
+{ ... }` mwcc emits one test and lands 8 bytes short. Written as two sibling
+`if`s it emits both tests but forces the pointer to stay live across the arm
+that contains calls, which costs a callee-saved register and 4 bytes of frame.
+
+The spelling that matches is the nested one:
+
+```c
+if (st == 0) {
+    ...arm with calls...
+} else {
+    if (st != 0) {          /* "redundant" by hand, and retail has it */
+        if (st == 1)
+            clear();
+        st--;
+    }
+}
+```
+
+Rule: a dead compare in retail is written by the original author, not produced
+by mwcc. Keep the `if/else` join and put the redundant test *inside* the else.
+
+### 2.70 Clearing a local vector through a pointer fixes the spill order
+
+`ov003 0x0205e228` builds three 12-byte vectors on the stack. Assigning the
+three fields directly makes mwcc store with `str r0, [sp, #0x44]`-style
+addressing and hoist the later data load above the clear, which reorders the
+whole tail. Clearing through a pointer to the same object keeps the base
+address in a register and stores through it, and that reproduces retail exactly:
+
+```c
+{
+    s32 *tp = (s32 *)&target;
+
+    tp[0] = 0;
+    tp[1] = 0;
+    tp[2] = 0;
+}
+```
+
+Two companions from the same function, both worth trying first on stack-heavy
+units: write a mask as `& ~0x3000` (gives `bic r2, r2, #0x3000`) rather than
+`& 0xcfff` (gives a pooled `and`); and give a `u16` + `u8[]` pair an explicit
+`u16` pad field to reproduce a frame slot at `+4` with the array at `+8`.
