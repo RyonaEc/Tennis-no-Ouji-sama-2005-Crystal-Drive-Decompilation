@@ -334,6 +334,8 @@ arm9 0x0202ccec 220B func_0202ccec 220/220 B, 42 slots: retail spills a zeroed w
 
 arm9 0x0201d900 216B func_0201d900 216B func_0201d900 list-walk: 212/212 at best (build/cand/a9_1d900_b.c, identical instruction inventory, whole listing shifted 4B): retail materialises the loop-invariant zero in the prologue (mov r4,#0 at +0x10, before the if (n == 0) branch) and keeps the prev node in r4, so its first func_02017770 call copies it (mov r7,r4); b56 proves the variable is 0 at that point and emits mov r6,#0 inside the loop instead. Tried: assignment before the if, declaration initialiser, single reused variable (folds to 200B), Node* vs u8* typing, two-variable split. L12857
 
+ov002 0x020700c8 224B func_ov002_020700c8 224B func_ov002_020700c8 packet alloc: build/cand/ov2_700c8_b.c is 224/224 with the exact instruction inventory, the same registers (sb=a, r8=b, r7=base+0x1824), and only the *hoisting* left: retail loads e->f14 (ldr r3,[r3,#0x14]) and materialises the 0x160 base register (mov r4,#0x160) BEFORE the 'if (b >= e->f18) return 0' branch, then computes src = f14 + f1c[b]*0x20 and off + (p->f4<<5) from them; b56 sinks both below the branch and re-materialises 0x160 as lsl+add, which shifts everything after 0x028 by 4B. b is the closest (224B, first 0x28 bytes identical). Tried: src before the if, an idx temporary, an f14 temporary, d=&p->f10 moved after p->f7 - the first two lose sb (back to push 6 regs). L12860
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
