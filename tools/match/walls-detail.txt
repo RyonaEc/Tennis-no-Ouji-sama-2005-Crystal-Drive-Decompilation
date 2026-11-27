@@ -12868,3 +12868,15 @@ ov005 0x0204c914 func_ov005_0204c914
 
 ov002 0x020679f8 func_ov002_020679f8
 212B func_ov002_020679f8: 212/212 at 4-5 slots with build/cand/ov2_679f8_b.c (u16 outer+inner counters, ents[i].f0 = b[i], ents[i].f1c = 0 then the tbl+j*0x158 search, 4-byte tmp[] copied from data_ov002_020fdc00). Shape is settled: the duplicate store order retail has (tmp[1] before tmp[0]) is reproduced by writing the tmp[1] assignment first, and the break sets ents[i].f1c = base + 0x2e4 + j*0x158. What is left is b56 scheduling the four tmp byte stores as one group after both pool loads, where retail interleaves them (strb [sp,#1] at 0x020 before ldr r4,[r4]; strb [sp] at 0x030) and colours the array-address/zero pair lr/ip the other way round (retail lr=&tmp, ip=0). Tried: v==c[j] vs c[j]==v (cmp operand order stays reversed), 'u8 *t = tmp;' alias, tmp[0] before tmp[1].
+
+ov002 0x02092988 func_ov002_02092988
+212/212 register colouring tie: retail keeps entity ptr in r4 and the base pointer in r5; b56 always swaps (tried separate locals, no base local, row+0x2e4 split, uninitialized-then-assign decls, g-declared-first - all identical modulo the swap). Same tie as sibling 0x020d2e00.
+
+ov002 0x020d2e00 func_ov002_020d2e00
+220/220 family tie with 0x02092988: same r4/r5 swap plus retail's early-exit sets an unconditional mov r0,#0 shared with strh r0,[ent+0x66] where b56 emits moveq r0,#0 (tried a shared s32 z=0 local).
+
+ov002 0x02050d80 func_ov002_02050d80
+216/224 polar-move: retail keeps a1 in r4 and the sign in r5, b56 always swaps (tried declaration order sign-first); retail also hoists ip=r0<<8 right after the sqrt call where b56 schedules it with the second mul. Same r4/r5 colouring class as 0x02092988.
+
+ov002 0x02070c9c func_ov002_02070c9c
+224/224 packet alloc: retail holds a0 in sb and a1 in r8 (7 saved regs, frame 4) and computes entry before the count guard; b56 uses r8/r7 (6 saved regs, frame 8). Tried guard-first, entry-first, both with an explicit g=base+0x1824 local (232 in the entry-first spelling).
