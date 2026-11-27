@@ -1684,3 +1684,27 @@ guessing between the `data_<addr>` and `data_<mod>_<addr>` forms.
 The same trap applies to a spelled-out literal: `*(u32 *)0x020fb544` links to
 the right bytes and passes both `var3` and the digest, but scores below 100% in
 objdiff. Use the symbol name from `annotate.py`.
+
+### 2.77 Two levers for the `0x158`-stride entity setters
+
+`ov002 0x02092988` and its neighbours are built from the same ingredients, and
+two spellings decide whether the instructions appear at all:
+
+- The byte fetched at `p + idx*0x158 + 0x2e6` must be a `u8` local, not `u32`.
+  `ldrb` zero-extends, so `u8 m = *(u8 *)(p + off + 0x2e6);` feeds
+  `mov r0, m` with no extra `and`; a `u32` local makes mwcc re-load or mask.
+- A `+/-` constant pair chosen by a compare wants the if/else *assignment* form
+  `if (c) v = -A; else v = A;`, which gives retail's
+  `movlo r2, #0x100000 / rsblo r3, r2, #0 / movhs r3, #0x100000`.  Building it
+  as `v = (c ? -1 : 1) * 0x100000` still folds, but putting the pair inline in
+  the arithmetic hides it from the scheduler.
+
+`ov002 0x02088b0c` (matched) also confirmed §2.71 from the other direction: the
+guard reads the counter with the field form `*(u8 *)(a + 0x37a)` and the body
+re-reads it through a named pointer (`u8 *c = a + 0x37a; *c = *c + 1;`), which is
+what produces retail's pool-loaded `0x37a` and the five-instruction RMW.  The
+same statement written as one `*(u8*)(a+0x37a) = *(u8*)(a+0x37a) + 1` is three
+instructions and 16 B short.  Its tail store must be an if/else on the store
+only -- `if (...) *(s16*)(r+6) = 0xf3; else *(s16*)(r+6) = 0xb3;` -- which
+if-converts to `moveq/strheq + movne/strhne`; a ternary collapses to one `strh`,
+and an early `return` turns both into branches.

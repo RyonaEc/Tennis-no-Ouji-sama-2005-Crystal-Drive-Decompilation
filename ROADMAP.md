@@ -30,26 +30,26 @@ What changed in this revision, and why:
 
 | Metric | Matched | Total | Left |
 |---|---:|---:|---:|
-| Functions | 1,960 | 3,806 | **1,846** |
-| Code | 182,936 B | 1,841,700 B | **1,658,764 B** |
+| Functions | 1,961 | 3,806 | **1,845** |
+| Code | 183,148 B | 1,841,700 B | **1,658,552 B** |
 | Data | 630,724 B | 801,936 B | **171,212 B** |
-| Complete units | 4,249 | 4,914 | **665** |
+| Complete units | 4,250 | 4,914 | **664** |
 
-**51.50% of functions but 9.93% of code bytes.** The remaining 1,834 functions
+**51.52% of functions but 9.94% of code bytes.** The remaining 1,833 functions
 are not a tail of small leaves:
 
 | Size | Functions | Bytes |
 |---|---:|---:|
 | 0-63 B | 9 | 244 |
 | 64-127 B | 68 | 6,928 |
-| 128-255 B | 254 | 49,100 |
+| 128-255 B | 253 | 48,888 |
 | 256-511 B | 512 | 183,840 |
 | 512-1023 B | 565 | 403,404 |
 | 1024-2047 B | 248 | 355,988 |
 | 2048 B + | 178 | **659,692** |
-| **total** | **1,834** | **1,659,196** |
+| **total** | **1,833** | **1,658,984** |
 
-(The 432-byte difference from the 1,658,764 B in the headline table is delinked
+(The 432-byte difference from the 1,658,552 B in the headline table is delinked
 pool words that live inside code ranges but are not functions.)
 
 So 182 functions hold 40% of the remaining code and 987 hold 85%. Small-unit
@@ -58,7 +58,7 @@ them closes the byte gap.
 
 | Module | Code matched | Bytes left | Functions left | Largest 10 |
 |---|---:|---:|---:|---:|
-| OV002 | 6.90% of 715,724 B | 666,312 | 888 | 58,752 B |
+| OV002 | 6.93% of 715,724 B | 666,100 | 887 | 58,752 B |
 | OV003 | 3.29% of 586,712 B | 567,436 | 395 | 84,412 B |
 | ARM9 main | 37.90% of 224,616 B | 139,496 | 276 | 39,828 B |
 | OV005 | 7.63% of 142,964 B | 132,052 | 98 | 46,504 B |

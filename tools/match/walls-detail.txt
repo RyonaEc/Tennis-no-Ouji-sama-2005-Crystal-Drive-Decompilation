@@ -12763,3 +12763,22 @@ gate on p[a0+0x142]==1 then tests the sub-entity's u8 at s+2 against 0x0b/0xf0 a
   Naming the pointer explicitly costs a register and drops to 192, so this is
   an early-address hoist, not a pointer variable.
   Best state: build/cand/ov2_a82c4_e.c (196, 95 slots), also ov2_a82c4_h.c.
+
+== ov002 0x02092988 (212 B) ==
+Parked register-colouring + return-shape wall.  Best spelling `build/cand/ov2_92988_a.c`
+is 216/212; `respell.py` (84 variants) found 212/212 at 46 slots ("order3+split"),
+so the size is reachable and only allocation differs.
+
+Missing instruction vs retail: retail keeps the return flag in `ip` and has ONE
+epilogue -- `mov ip, #0` early, `mov ip, #1` at the end of the if body, then
+`mov r0, ip / add sp, sp, #4 / pop {r4, r5, lr} / bx lr`.  mwcc instead puts the
+flag in `r0` and if-converts the zero path, emitting `addeq sp, sp, #4 /
+popeq {r4, r5, lr} / bxeq lr` (3 instructions where retail's single `beq` jumps
+to the shared epilogue), which is the 4-byte surplus.  `s32 r = 0; ... r = 1;
+return r;` does not reproduce it; neither does the early-`return 0` form (220 B),
+`r |= 1`, nor a split `r = 0;` statement.
+
+Two levers already applied here: `u8 m` (not `u32`) gives retail's `ldrb r5,
+[r3, #0x2e6]`, and the `v` pair is `-0x100000 / 0x100000` written as an if/else
+assignment so mwcc emits `movlo r2,#0x100000 / rsblo r3,r2,#0 / movhs r3,#0x100000`
+(the `x * (c ? -1 : 1)` shape of §2.73, here from the +/- constant pair).
