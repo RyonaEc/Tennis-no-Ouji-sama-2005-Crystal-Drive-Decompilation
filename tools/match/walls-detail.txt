@@ -12675,3 +12675,6 @@ twin of 0x020844c4 with 0x1f10/0x1d90 masks, 0x1e820/0x1e840/0x1eba0 buffers and
 
 ov002 0x020b5088 func_ov002_020b5088
 0x158-stride entry with a 0x34 table: exact 192 B but retail keeps (p+0x2e4)[idx] and (p+idx)[0x2e6] as two separate base adds while mwcc hoists p+idx into one temp and folds both offsets; 3 spellings, 17 slots
+
+ov003 0x0205e2f8 func_ov003_0205e2f8
+two masked copies from a 16-byte table (0x020dc714/718/71c/720); exact 200 B but retail keeps the index in callee-saved r6 and the first length in r8 while mwcc puts the index in r4, spills 4 bytes and never uses r8; 4 spellings (explicit index copy, base-only, split loads), 50 slots
