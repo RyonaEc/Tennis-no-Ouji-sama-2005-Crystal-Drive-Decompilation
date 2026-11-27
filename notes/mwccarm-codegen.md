@@ -1354,3 +1354,34 @@ The twin differs only in its table symbol (`data_ov003_020eb0f4` rather than
 `data_ov003_020eb124`) and in the two pooled loads; everything else, including
 the four unrolled corner blocks reading `q.b, q.a, q.c, q.d` from a struct copy
 that b56 emits as `ldm`/`stm`, is shared.
+
+## 2.65 Give a read-modify-write its own pointer variable (2026-11-27)
+
+Two units from the same file family, `ov003 0x020b6d94` (200 B) and
+`0x020b7e14` (188 B), turned on the same shape. Retail materialises the address
+of an incrementing counter as a pooled constant plus an add:
+
+    ldr   r1, [pc] = 0x0000b636
+    add   r2, r4, r1
+    ldrh  r1, [r2]
+    add   r1, r1, #1
+    strh  r1, [r2]
+
+Written as one expression — `*(u16 *)(p + 0xb636) = *(u16 *)(p + 0xb636) + 1;` —
+b56 folds it the other way into `add r1, r4, #0xb600` plus `[r1, #0x36]`, four
+instructions where retail has five. Giving the address a variable of its own
+reproduces retail exactly:
+
+    {
+        u16 *v = (u16 *)(p + 0xb636);
+        *v = *v + 1;
+    }
+
+The same split also fixes the *condition* form: the compare in these units keeps
+the folded base (`add r0, r4, #0x8800` + `[r0, #8]`), so the folded spelling
+belongs in the `if` and the pointer spelling in the body. A signed counter needs
+the pointer typed `s16 *` to get `ldrsh`, while its store stays `strh`.
+
+This undid a wall: `0x020b7e14` had been parked as an unreachable address-
+materialisation residue at 24 bytes short, and with the pointer spelling it came
+in at its exact size with only relocations left.
