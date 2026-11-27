@@ -1517,3 +1517,32 @@ Two companions from the same function, both worth trying first on stack-heavy
 units: write a mask as `& ~0x3000` (gives `bic r2, r2, #0x3000`) rather than
 `& 0xcfff` (gives a pooled `and`); and give a `u16` + `u8[]` pair an explicit
 `u16` pad field to reproduce a frame slot at `+4` with the array at `+8`.
+
+### 2.71 A byte counter read twice needs two spellings
+
+`ov002 0x02081cfc` ends with a saturating 0..11 frame counter. Retail addresses
+it through a computed base for the increment and sp/field-relative for the
+compare:
+
+```
+add r1, r4, #8
+ldrb r0, [r1]
+add r0, r0, #1
+strb r0, [r1]
+ldrb r0, [r4, #8]     <- re-addressed, not [r1]
+cmp r0, #0xc
+```
+
+Writing the increment and the wrap test the same way gives one CSE'd base and
+lands 4 bytes short. Taking the address for the increment only, and coding the
+test as `a[8]`, reproduces it:
+
+```c
+{
+    u8 *cnt = a + 8;
+
+    *cnt = *cnt + 1;
+}
+if (a[8] >= 0xc)
+    a[8] = 0;
+```
