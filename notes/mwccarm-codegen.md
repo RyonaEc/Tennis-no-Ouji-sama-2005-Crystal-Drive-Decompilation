@@ -1385,3 +1385,52 @@ the pointer typed `s16 *` to get `ldrsh`, while its store stays `strh`.
 This undid a wall: `0x020b7e14` had been parked as an unreachable address-
 materialisation residue at 24 bytes short, and with the pointer spelling it came
 in at its exact size with only relocations left.
+
+## 2.66 A one-bit bitfield for `lsl`/`lsr` flag tests (2026-11-27)
+
+Retail sometimes tests a single bit of a word with a shift pair rather than a
+mask:
+
+    ldr   r0, [r6]
+    lsl   r1, r0, #0x1f
+    lsrs  r1, r1, #0x1f
+    beq   ...
+
+Every mask spelling of the test — `(v & 1) != 0`, `((v << 31) >> 31) != 0` —
+is simplified by b56 back to `ands r1, r1, #1`, which is one instruction short
+and pushes everything after it out of place. A one-bit bitfield gives the shift
+pair:
+
+    typedef struct { u32 f0 : 1; } Bits;
+    ...
+    if (!((Bits *)v)->f0)
+        return;
+
+Two adjacent bits (`lsl #0x1e` / `lsr #0x1f`) need two fields, `f0 : 1; f1 : 1;`.
+This is how `arm9 0x0200800c` and `0x02014780` got from 40 and 47 differing
+slots down to 11 and 44 with the size right; it also fixed the first instruction
+of the function, so it is worth checking before any register work.
+
+## 2.67 The four 0x158-entry siblings share one fold wall (2026-11-27)
+
+`ov002 0x020b5088`, `0x020dbfd0`, `0x020ef334` and `0x0209ea50` are four
+functions over the same table: `p = *(u8 **)data_ov002_02102070`, an index of
+`a0 * 0x158`, a byte at `p + idx + 0x2e6`, another at `p + idx + 0x2e4 + 2`, a
+`data_ov002_020fb544 + f*0x34` row, and two calls into `0x02057c4c` /
+`0x02057a9c`. All four compile to their exact retail size, and all four carry
+the same residue: retail keeps *two* bases alive — `p + 0x2e4` used as an
+indexed load `[base, idx]` and `p + idx` used with constant offsets — while b56
+folds both reads onto whichever one it picked.
+
+Spellings tried on the family: array subscript vs pointer arithmetic, the two
+reads in either order, a separate `q = p + idx`, `e += idx` after the reads, and
+declaration-order permutations (the permuter found no better order). In
+`0x0209ea50` retail even materialises `e + idx` explicitly, so the split is not
+"indexed always wins" — it follows how many constant-offset users each base has.
+
+The offsets themselves are one more small wall: retail builds the `0xa0000`
+stride offset as `rsb ip, r1, #0` unconditionally and then multiplies it by `-1`
+in the equal branch (`mvn r1, #0` + `mul`), where every ternary spelling of the
+same thing compiles to `mov` + `rsb` inside the branch.
+
+Leave these parked — the fold decision is not reachable from C spelling here.

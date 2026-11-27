@@ -286,6 +286,18 @@ ov002 0x020b5088 192B func_ov002_020b5088 0x158-stride entry with a 0x34 table: 
 
 ov003 0x0205e2f8 200B func_ov003_0205e2f8 two masked copies from a 16-byte table (0x020dc714/718/71c/720); exact 200 B but retail keeps the index in callee-saved r6 and the first length in r8 while mwcc puts the index in r4, spills 4 bytes and never uses r8; 4 spellings (explicit index copy, base-only, split loads), 50 slots L12679
 
+ov002 0x020dbfd0 192B func_ov002_020dbfd0 sibling of 0x020b5088 (0x25555/0x60000): exact 192 B, mwcc folds both entry reads onto one p+idx base where retail keeps p+0x2e4 with an indexed load and p+idx separately; 3 spellings L12682
+
+arm9 0x0200800c 196B func_0200800c bitfield flag (1-bit field gives retail's lsl/lsr) plus a 4x2-byte loop; exact 196 B, 11 slots, only the loop's addressing form differs (retail post-increments src and dst, mwcc uses base+index and an extra add); 7 spellings including descending count and parameter-as-destination L12685
+
+ov002 0x02073e14 196B func_ov002_02073e14 8-byte-stride entry fill: exact 196 B but mwcc keeps only 6 callee-saved registers and spills a3 where retail uses sl for a0 (7 callee-saved, no spill); permuter declaration sweep found no better state, 4 spellings L12688
+
+ov002 0x020ef334 196B func_ov002_020ef334 third sibling of 0x020b5088 (0x1aaaa/0xa0000): exact 196 B, same p+0x2e4 vs p+idx fold conflict, plus retail builds the offset as an unconditional rsb of 0xa0000 multiplied by -1 in the eq branch; 4 spellings L12691
+
+ov002 0x0209ea50 200B func_ov002_0209ea50 fourth sibling of 0x020b5088: exact 196 B; retail negates the 0xa0000 stride with mvn -1 + mul where mwcc emits mov+rsb (4 spellings all canonicalised), 45 slots L12694
+
+arm9 0x02014780 204B func_02014780 loop over the 0x02042a68+0x14 table with bitfield guards; exact 204 B, bitfield spelling works, but mwcc hoists the table pointer and keeps 2 extra callee-saved registers where retail reloads *(u8**)(g+0x14) every iteration and needs only r4/r5; 2 spellings L12697
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
