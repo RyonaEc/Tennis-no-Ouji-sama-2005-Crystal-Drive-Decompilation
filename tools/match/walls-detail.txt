@@ -12880,3 +12880,6 @@ ov002 0x02050d80 func_ov002_02050d80
 
 ov002 0x02070c9c func_ov002_02070c9c
 224/224 packet alloc: retail holds a0 in sb and a1 in r8 (7 saved regs, frame 4) and computes entry before the count guard; b56 uses r8/r7 (6 saved regs, frame 8). Tried guard-first, entry-first, both with an explicit g=base+0x1824 local (232 in the entry-first spelling).
+
+ov003 0x0204c7c0 func_ov003_0204c7c0
+192/224 byte-compare counters: retail keeps the two u16 counters in the frame (predicated ldrhne/addne/strhne) because its allocation stops at r4-r8; b56 reaches for sb/sl and promotes both counters into r5/r4. Tried scalars and u16 c[2]; both promote.
