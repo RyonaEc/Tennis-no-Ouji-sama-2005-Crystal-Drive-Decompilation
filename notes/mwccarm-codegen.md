@@ -2225,3 +2225,22 @@ what b56 if-converts into `movlt`/`movge`/`rsbge`.
 Also: a struct copy `q = *(Vec3 *)(g + 0x24);` written as a *declaration*
 initialiser is hoisted above the guard; assigning it inside the block keeps
 retail's `add r0, r3, #0x24` / `ldm` / `stm` after the early-out.
+
+### 2.106 A cast pointer subscript is what selects the scaled-index addressing form
+
+ov002 `0x02080d90` compares and clamps a `s32` pair in a loop.  Written as
+`*(s32 *)(g + i * 4)` twice, b56 folded the address into a register
+(`add r2, r4, r3, lsl #2` then `str [r2]`); retail keeps
+`lsl r2, r3, #2` + `str [r4, r2]`.  Spelling the *read* as `((s32 *)g)[i]`
+(array subscript on the cast pointer) gives retail's indexed store, and the
+whole unit closes.  Same family as 2.100: what matters is the lvalue form, not
+the arithmetic.
+
+### 2.107 A type pun on a small array's address keeps it in memory
+
+ov002 `0x0205083c` fills a local `u16 a[3]` and passes elements as `s16`.
+`(s16)a[0]` lets b56 promote the array into registers and the frame disappears;
+`*(s16 *)&a[0]` takes the address, so the array stays on the stack and the
+`strh` / `ldrsh` mix (and the 0x10-byte frame) comes back.  When retail reads
+back a halfword it has just stored, the original source used a punning cast,
+not a scalar conversion.
