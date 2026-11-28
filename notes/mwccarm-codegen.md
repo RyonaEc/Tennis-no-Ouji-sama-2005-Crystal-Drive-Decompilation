@@ -2566,3 +2566,16 @@ directly makes b56 CSE the address into `r1` and reload just the halfword,
 which is retail's form.  The reload also falls out of the loop header
 `for (i = data_020422f4; i < 0xe; i = data_020422f4)` — the increment form
 `i = *c = i + 1` in the body would keep `i` in the register instead.
+
+### 2.136 A constant still live at a `bl` is an argument, not a leftover
+
+arm9 `0x02016dd4` ends with `mov r1,#0x18` / `mla r0,r2,r1,r0` / `bl
+func_02025c94`.  Declaring `func_02025c94(u32)` and passing only the computed
+pointer gave retail's instruction sequence with a rotated register assignment
+(`ldrh r1,...` / `mov r0,#0x18` / `mla r0,r1,r0,r2`) that no declaration order or
+expression reshaping changed.  `r1` is untouched between the `mov` and the call,
+so `0x18` is the callee's *second* argument and the callee's real prototype is
+`(u32, u32)`.  Passing both hands b56 the extra live value, and the block matched
+immediately.  When one block refuses to share a register assignment that
+everything around it accepts, check every register still holding a value at the
+`bl`; a live constant that is not an operand is usually a missing argument.
