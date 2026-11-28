@@ -2276,3 +2276,31 @@ store (`*(s32 *)(e + 0x9c) = v.x + (c < 2 ? 0x140000 : -0x140000);`) makes b56
 finish the two copies first; retail starts the compare at the top of the block.
 Assigning the delta to a local right after the preceding `strh` stores, then
 using it in the final `add`, reproduces retail's interleaving.
+
+### 2.111 A two-case `switch` flips the allocation that `||` gives
+
+ov002 `0x02064d58` came out 244 B and instruction-for-instruction right except one
+swap: retail keeps the loaded `base` in `ip` and the status word `k` in `r3`, while
+`if (k == 0xa4 || k == 0x151)` produces the opposite assignment (`base` in `r3`, `k`
+in `ip`).  Re-spelling the same test as
+
+    switch (k) {
+    case 0xa4:
+    case 0x151:
+        ...
+        return;
+    }
+
+reproduces retail's allocation with no other change.  A disjunction of two equality
+tests and a two-case switch share a body but not a register map, so when a unit is
+otherwise exact and only two temporaries are transposed, rewrite `||` as a `switch`
+(or the reverse) before parking it as a tie.
+
+### 2.112 A switch decision tree follows the parameter's signedness
+
+arm9 `0x02020c50` dispatches `a0` over `0x10`..`0x70`.  Declaring `u32 a0` makes b56
+emit the balanced `bhi`/`bhs` tree; retail's `bgt`/`bge` pairs mean the parameter is
+`s32`.  The signed-counter rule that governs `u16` loop increments applies to switch
+lowering too, and the two trees differ only in branch mnemonics, so check signedness
+first when a switch unit's tree shape (the `cmp`/`bgt`/`bge` nesting and the case
+block order) is otherwise right.

@@ -12928,3 +12928,9 @@ arm9 0x02028db8 func_02028db8
 
 ov003 0x020d59f0 func_ov003_020d59f0
 240B switch on a1 (0..9) with a jump table; only case 6 has a body. full decode + 232/240 candidate: retail table is cmp r1,#9 / addls pc,pc,r1,lsl #2 with all 11 entries -> tail 0x020d5ac0 except index 6 -> 0x020d5a58, body = 020243e0, 02025c94(h+0xf0000,0x200), 0202436c(same, 02055744(0,g+0xb7dc),0x200), 02024314, 020245f4, 02025c94(h+0xf0200,0x6000), 02024498(same, 0205578c(0,g+0xb6dc),0x6000), 02024428; plus if(a1!=0) *(u16*)(g+0xc8dc+4)=0x10 before the switch. any case layout (empty cases before/after case 6, default) still gives 232 B: b56 folds two of the 11 table branches. build/cand/ov3_d59f0_{a,b,c}.c
+
+arm9 0x02020c50 func_02020c50
+244 B. Best candidate build/cand/arm9_20c50_c.c is right in size and instruction shapes; only a register-allocation tie remains: retail emits 'mvn ip, r0' / 'ldrh r3, [r1]' / 'orr r2, r3, r2' / 'and r2, ip, r2' where the candidate emits 'mvn r3, r0' / 'ldrh ip, [r1]' / 'orr r2, ip, r2' / 'and r2, r3, r2' (same slots, ~a0 and the base-mask temp swapped between r3 and ip). | -> 'mvn ip, r0' + 'and r2, ip, r2'
+
+ov002 0x02083e14 func_ov002_02083e14
+248 B. Shape is understood (two 10000-capped counters indexed by a0 and its complement, then a small state machine on t+0x14); retail keeps only lr saved, with t in r1, &cnt[a0] CSE'd into lr and &cnt[i] into ip, and rematerialises 'add r2, r1, #0xc' twice. Every candidate (build/cand/ov2_83e14_a..d.c) instead pushes r4/r5 because mwcc CSEs 't + 0xc' into a register (a: arr variable, b: cast subscript, c: pointer arithmetic, d: inline ternary index). | -> no 'push {r4, r5, lr}' prologue; keep 'add r2, r1, #0xc' duplicated
