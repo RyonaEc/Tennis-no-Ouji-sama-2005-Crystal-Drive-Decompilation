@@ -1043,3 +1043,7 @@ src/ov005/func_ov005_020695bc.c:
 src/ov005/func_ov005_0206bfc0.c:
     complete
     .text       start:0x0206bfc0 end:0x0206c09c
+
+src/ov005/func_ov005_0205a7ec.c:
+    complete
+    .text       start:0x0205a7ec end:0x0205a8dc

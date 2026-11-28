@@ -2381,3 +2381,22 @@ not come back is `a0` itself: taking its address makes b56 reload it from the
 home slot, where retail still has it in `r0` (`mov r5, r0`).  Park any unit whose
 only residue is that reload.  This repo has no `stdarg.h`, so the naming below is
 `(s32 *)&a0` and every call must stay on one line (§2.117).
+
+### 2.119 Indexing a `u16` buffer: write the base, then index it
+
+ov005 `0x0205a7ec` copies `buf[1..n]` out of a stack array.  With `buf[i + 1]`
+b56 folds the `+1` into the byte offset and emits `add r2, sp, #2` / `lsl r0, r3,
+#1` / `ldrh r1, [r2, r0]`.  Retail instead builds `&buf[i]` and loads one element
+on: `add r2, sp, #0` / `add r0, r2, r3, lsl #1` / `ldrh r1, [r0, #2]`.  Spelling
+the access as `((u16 *)((u8 *)buf + i * 2))[1]` reproduces retail exactly.
+Whenever an array read differs only in where the constant lands, write the base
+pointer plus a separate `[1]` (or `[k]`) subscript instead of folding the
+constant into the index.
+
+### 2.120 A reloaded table word means the source kept it in a variable
+
+ov003 `0x020b13d8` stores `*(u32 *)(table + 8)` into a struct field right after
+passing it as an argument.  Writing the load twice makes b56 emit two loads
+(`ldr r3, [r0]` … `ldr r1, [r1, #8]`); retail loads once into `r6` and reuses it.
+Give the value a `u32 n;` local, assign it before the call, and use `n` in both
+places — that also reclaims the `r6` the register set needs.
