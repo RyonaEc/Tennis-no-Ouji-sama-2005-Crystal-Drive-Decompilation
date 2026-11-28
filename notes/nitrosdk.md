@@ -369,3 +369,29 @@ The conversions are 64-bit: `(u16)(((u64)(raw->x << 2) - cal->x0) * cal->xDotSiz
 where the `(u64)` cast is what gives the `subs/sbc` sign-extended subtract and the
 `umull + two mla` 64-bit multiply. `TP_SetCalibrateParam` (0x0202b43c) has the same
 shape but is still a register-colouring tie: see its wall note.
+
+## asm blocks and relocations
+
+`asm void` blocks accept `ldr rX, =literal` (that is how `func_02025e48`
+materialises its pool), but the literal has to be *spelled as the symbol* when
+retail relocates the pool word, and a symbol reference inside the block only
+compiles if the symbol is declared with an `extern` above it:
+
+    extern u8 data_027c0000[];      /* dtcm symbol */
+    ...
+    ldr r0, =data_027c0000          /* reloc, objdiff 100% */
+
+`ldr r0, =0x027c0000` links to the same bytes and passes `ninja sha1`, but
+objdiff reports the unit as 99.884% and `objcheck` says "no relocation in .text
+at +0x94 where retail relocates data_027c0000; spell the symbol, not the
+number". An undeclared name in the block fails with the misleading
+`<string not found>` diagnostic rather than an unknown-symbol error.
+
+`OS_GetInitArenaHi` (`0x02025e48`) is the first unit in arm9 whose *source* is
+SDK C but whose codegen is unreachable from C in this tree: the DTCM case
+branches on `OSi_SYS_STACKSIZE`, which the SDK defines as
+`((int)SDK_SYS_STACKSIZE)` - a linker symbol that the game's LCF resolved to 0.
+Retail keeps both arms and the literal 0; a plain 0 folds the branch away and an
+`extern` turns it into a symbol load. Its remaining pool words (`0x400`,
+`0x027c0020`, `0x027ff800`, `0x037f8000`) are absolute LCF values with no
+relocation record, so those stay numeric.
