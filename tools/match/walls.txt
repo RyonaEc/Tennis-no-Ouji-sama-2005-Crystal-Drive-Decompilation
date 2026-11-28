@@ -637,7 +637,6 @@ ov002 0x020c2ba8 136B func_ov002_020c2ba8 ` / `0x020f78c0` (136 B, 3x). Size and
 ov002 0x020c583c 168B func_ov002_020c583c ` (168 B, 2x). Two-call spawner with a 4-word L11364
 ov002 0x020e198c 128B func_ov002_020e198c -- frameless HUD init on a pointer argument: `*(u32 *)(o + 0xb8)... L7061
 ov002 0x020e9658 140B func_ov002_020e9658 ) -- clears two 3-byte runs and then reclassifies L11064
-ov002 0x020f2970 84B func_ov002_020f2970 (84B, best 84/84 with 9 diffs) L6305
 ov002 0x020f6258 252B func_ov002_020f6258 ` (252 B, 2x). Body recovered in full: flag test on L11357
 ov002 0x020f78c0 136B func_ov002_020f78c0 ` (136 B, 3x). Size and every other slot L11340
 ov002 0x020fc68c ?B - see-detail L9184

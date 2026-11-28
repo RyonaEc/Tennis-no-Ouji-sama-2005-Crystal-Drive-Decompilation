@@ -203,6 +203,7 @@ ov002 0x0204f98c frame regression: mwcc uses lr as the base pointer and emits pu
 
 
 ov002 0x02068c78 register-shift cascade: retail base in ip, record in r2, target in r1; mwcc shifts the whole chain down one (r3/r2/r1). (((u32)e[0x2e6] >> 1) fixes asr->lsr but not the allocation)
+UPDATE: two more shapes (constant-first `(u8 *)(0x1e6c + g)`, and dropping the q local so the mla is inline) both stay at 64 B with the same shift, and permute.py over 766 candidates (declaration sweep + annealed, 6 jobs, 3 islands) cannot beat cost 65. The wall is a pure colouring cascade: retail loads g into ip because r1 holds the symbol address and r2 the 0x158 scale; b56 always takes r3 for that value.
 
 
 
@@ -4065,6 +4066,7 @@ arm9 0x02017880 104B -- list insert: p[0], (u16*)((u8*)p+10) offset, count at (u
 
 
 arm9 0x02023df8 / 0x02023e58 96B -- open-handle dispatch on data_02042370 (-1 = unopened).
+UPDATE (best shape, 92/96): void f(const void *src, u32 offset, u32 size) { u32 bank = data_02042370; if (bank != (u32)-1) func_020268e0(bank, (u32)src, BASE + offset, size); else func_020269ec(src, (void *)(BASE + offset), size); } with BASE = 0x06600000 (0x02023df8) / 0x06400000 (0x02023e58). This reproduces the whole prologue including the odd `mov r3,r2` argument copies and the two separate epilogues; the only residue is that retail hoists the base constant into ip before the `beq` and adds it from the register (`add r2,ip,r4`), while b56 keeps two immediate adds (`add r2,r4,#0x6600000`) - one instruction, 4 B. Six spellings tried (u32 base local, void *dest local, u8* arithmetic, inverted condition, ternary), all still fold the constant into the immediate.
 
 
 

@@ -2579,3 +2579,16 @@ so `0x18` is the callee's *second* argument and the callee's real prototype is
 immediately.  When one block refuses to share a register assignment that
 everything around it accepts, check every register still holding a value at the
 `bl`; a live constant that is not an operand is usually a missing argument.
+
+### 2.137 `0x142 + g + a0` - put the constant first in a chained add
+
+ov002 `0x020f2970` (84 B) sat parked as "9 differing slots, all pure register
+naming" with `*(u8 *)(g + a0 + 0x142)`.  Writing the same address as
+`*(u8 *)(0x142 + g + a0)` - the constant *first* in the chain - and declaring
+`u8 *e;` / `s32 *p;` before `u8 *g = *(u8 **)data_...;` with `e` and `p` assigned
+in later statements matched on the first permuter pass (`chain rot 2`, discovered
+by `tools/match/permute.py` in 2 s from 9 slots).  b56 builds a chained add
+left-to-right into the destination register, so operand order decides which
+`add` lands in `r0` and where each temporary is allowed to live; when retail
+computes `g + a0` into a register you would otherwise fill with the base, flip
+the chain rather than moving declarations.
