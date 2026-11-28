@@ -2440,3 +2440,29 @@ ov002 `0x0207bd24` sets a byte to 1 or 2 by a flag test.  `s[0x10] = (v == 0x40)
 makes b56 pick the value into `r0` with `moveq`/`movne` and then store once.  Retail
 stores inside each arm (`moveq r0,#1 / strbeq / movne r0,#2 / strbne`), which only
 comes from `if (v == 0x40) s[0x10] = 1; else s[0x10] = 2;`.  Four bytes per site.
+
+### 2.125 A read-modify-write at a non-encodable offset needs `+=`, not `= x + 1`
+
+ov003 `0x020c0fbc` ends with `*(u16 *)(b + 0x8736)` incremented by one.  `0x8736`
+is not encodable as an `add` immediate, but `0x8700` is, so b56 has two ways to
+form the address: `add r1, r6, #0x8700` plus a `#0x36` memory offset (4 bytes of
+code, no pool word), or `ldr r1, [pc] = 0x8736` plus `add r2, r6, r1` (8 bytes
+because the literal joins the pool).  Written `*(u16 *)(b + 0x8736) = *(u16 *)(b + 0x8736) + 1;`
+b56 picks the split form and the unit is 256 bytes; retail is 264 and used the
+pool form.  `*(u16 *)(b + 0x8736) += 1;` (equally `++`) gives retail's shape and
+the function matches.  Same rule at the top of that unit, where the `+0xadf2`
+decrement loop only matched once the address was taken through a `u16 *` local.
+Note the plain read `*(u16 *)(b + 0x8736) < 0x20` in the same function keeps the
+split form in retail too, so the split is the normal path for a lone load.
+
+### 2.126 Bit tests: `& 1` versus a 1-bit bitfield, and the polarity of `||`
+
+arm9 `0x020051e8` tests two flag bits of a word loaded through a pointer.
+`(f & 1) == 0 || (f & 2) == 0` makes b56 emit `ands r0, r1, #1` / `beq ...` /
+`ands r0, r1, #2` / `beq ...`; retail instead emits `lsl r1, r0, #0x1f` /
+`lsrs r1, r1, #0x1f` for the low bit and `lsl #0x1e` / `lsr #0x1f` for the next,
+which is the extraction b56 generates for a one-bit **bitfield** member
+(`u32 a : 1; u32 b : 1;`).  Two more traps in the same tail: the held-buttons
+counter is `s32` (`addlt`, not `addlo`), and the guard is `f->a == 0 || f->b == 0`
+— writing `|| f->b != 0` inverts the second branch and silently changes the
+meaning while the size stays the same.
