@@ -2592,3 +2592,19 @@ left-to-right into the destination register, so operand order decides which
 `add` lands in `r0` and where each temporary is allowed to live; when retail
 computes `g + a0` into a register you would otherwise fill with the base, flip
 the chain rather than moving declarations.
+
+## 2.138 Identical `if`/`else` arms are merged after constant propagation
+
+Four units in this tree share one shape -- a three-arm range test whose arms assign
+the *same* pair of constants for the two values used by the tail expression
+(`ov003 0x02082220`, `ov003 0x020c806c`, `ov005 0x0205ac30`, and the else chain of
+`ov003 0x02050e18`).  b56 always folds such a chain to one arm pair and the unit
+lands 16 B (or more) short.  Nothing written at source level prevents it: the merge
+runs on the optimized tree, so comma expressions, extra braces, `do/while(0)`,
+`switch(0)`, `if (1)`, dead reads like `c + (x - x)` and copy temporaries all merge
+away.  Two spellings keep the arms distinct but change the code: nesting the middle
+condition re-emits its `cmp`, and reversing the assignment order emits the
+predicated moves in the other order.  Before spending more spellings on a unit with
+this shape, look for a per-function `#pragma` (optimization level) that reproduces
+retail's separate `movlt`/`movge` pairs, or park it - the values are provably equal,
+so no source-level difference can survive to the instruction stream.

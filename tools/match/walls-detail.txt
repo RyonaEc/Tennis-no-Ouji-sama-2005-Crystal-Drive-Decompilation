@@ -7910,6 +7910,21 @@ ov003 0x02082220 / 0x020c806c / ov005 0x0205ac30 96B (three copies) -- range tes
 
   arms non-mergeable, and no spelling found so far preserves them.
 
+  UPDATE 2026-11-28: the merge is not a frontend statement-identity check - it survives
+  constant propagation, so anything that folds to the same tree is merged. Exhausted in this
+  pass (all merge, 80 B): comma expression `x = 0x1e, y = 0x3c;`, extra braces, `do { } while (0)`,
+  `switch (0) { default: }`, `if (1) { }`, dead reads (`0x3c + (x - x)`, `0x3c + (a1 - a1)`),
+  and both block-scope and function-scope copy temporaries (`x = xa; y = ya;` with
+  `xa = 0x1e; ya = 0x3c;`). The two spellings that DO break the merge both cost instructions:
+  a nested `if (a1 < 0xb4) { ... }` inside the middle arm re-emits the compare (108 B) and
+  assigning y before x keeps the arms apart but emits `movlt r2` before `movlt r3` (96 B,
+  one predicated pair swapped - that is `build/cand/ov5_5ac30_a.c` / `ov3_82220_c.c`).
+  A 3-arm chain cannot merge non-adjacent arms (arm 1 always stays), so only the middle-vs-else
+  pair needs a distinction; the values are provably equal, so the original must have differed in
+  something the optimizer removes after the merge ran. Next lever to try: a `#pragma`
+  optimization level on this one function only (`tools/match/pragmas.py` / `pragma_probe.py`
+  exist for this), if a pragma reproduces retail's unmerged pairs at the same size.
+
 
 
 
