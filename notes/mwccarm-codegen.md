@@ -2327,3 +2327,13 @@ computes `add r0, r5, r1, lsl #1` from the *old* count and stores with a `#2`
 offset, which only comes back when the address is spelled explicitly from `n`:
 `*(u16 *)((u8 *)a1 + n * 2 + 2) = i;`.  When a post-increment chain leaves the
 index arithmetic on the wrong value, re-spell the store address.
+
+### 2.115 Declare a loop counter before a value that lives across the loop
+
+ov003 `0x020af6d4` keeps the `func_0200fd40` result for use after the `i < 0x1b`
+loop and counts with a `u16 i`.  With `s32 rv = ...; u16 i;` b56 hands `r5` to
+the counter and `r6` to `rv`; retail has the opposite.  Swapping the two
+declarations (`u16 i;` first, then `s32 rv = ...;`) reproduces
+`mov r5, r0` / `mov r6, #0`.  When a unit differs only in which of two
+callee-saved registers holds the loop counter and which holds the across-loop
+value, swap their declaration order before trying anything else.
