@@ -2531,3 +2531,38 @@ with one register and no reload.  The same applies to the surrounding guards:
 `if (fn == 1) return 0; if (fn == 0 && a0 == 1) return 0;` duplicated the return-0
 epilogue, while the short-circuit form `if (fn == 1 || (fn == 0 && a0 == 1))
 return 0;` produced retail's single shared exit block.
+
+### 2.133 `% 2` on a known non-negative value
+
+ov002 `0x020820f0` tests `b[0x10b] % 2 != 1` on an `u8` load.  `& 1` gives
+`ands` + conditional branch; `% 2` gives retail's three-instruction trio
+`lsr r2,r1,#0x1f` / `rsb r1,r2,r1,lsl #31` / `add r1,r2,r1,ror #31`, which
+evaluates to `v & 1` because b56 knows the promoted `u8` is non-negative and
+picks `lsr` for the sign extract in its signed-modulo sequence.  Reach for `%`
+whenever a one-bit test shows up as that ror/rsb dance.
+
+### 2.134 `if (!(a && b)) { ... }` shares the fallthrough label
+
+Same unit.  The source shape is "if the first condition pair is satisfied jump
+to the body, otherwise re-test for the second pair":
+
+    if (!(h == 0 && b[0x100] == 3)) {
+        if (h != 1) return;
+        if (b[0x100] != 2) return;
+    }
+
+b56 emits `cmp h,#0 / bne C1` then the `b[0x100]` test with `beq L`, and C1 is
+the `cmp h,#1` test that the `bne` also targets — exactly retail's shared label.
+Writing it as an `if/else` chain instead duplicates the second test and costs
+instructions; an explicit `goto` is not needed.
+
+### 2.135 Deref the global inline, not through a local pointer, when retail keeps the address in r1
+
+arm9 `0x020170d0` walks a `u16` counter that lives in a bss global and reloads
+it after each increment.  With `u16 *c = data_020422f4;` b56 parks the address
+in `ip` and uses `r1` for the shift temporary; declaring the symbol as a scalar
+(`extern u16 data_020422f4;`) and writing `data_020422f4` / `data_020422f4++`
+directly makes b56 CSE the address into `r1` and reload just the halfword,
+which is retail's form.  The reload also falls out of the loop header
+`for (i = data_020422f4; i < 0xe; i = data_020422f4)` — the increment form
+`i = *c = i + 1` in the body would keep `i` in the register instead.
