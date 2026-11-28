@@ -2244,3 +2244,14 @@ ov002 `0x0205083c` fills a local `u16 a[3]` and passes elements as `s16`.
 `strh` / `ldrsh` mix (and the 0x10-byte frame) comes back.  When retail reads
 back a halfword it has just stored, the original source used a punning cast,
 not a scalar conversion.
+
+### 2.108 Retail's `ls` early-out comes from the for loop, not a hand-written guard
+
+arm9 `0x0201abfc` opens with `cmp r1, #0` / `addls` / `popls` / `bxls`.  Writing
+`if (*(u16 *)(a1 + 0) <= 0) return;` before the loop makes b56 fold the unsigned
+`<= 0` to `== 0` and emit `addeq`/`popeq`/`bxeq`; `<= 0`, `!(x > 0)`, a `u32`
+local and a signed cast all fold the same way.  Dropping the explicit guard and
+writing only `for (i = 0; i < *(u16 *)(a1 + 0); i++)` reproduces the `ls`
+predicated epilogue exactly (the loop-bound guard b56 generates keeps the
+unsigned `<=` form).  Prefer the loop over a redundant guard when the predicate
+is `ls`/`hi`.
