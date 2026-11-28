@@ -2180,3 +2180,25 @@ halfword from the sums.  Spell the sum out:
 
 Same value, 12 bytes shorter, byte-identical for ov002 `0x02062e80`.  Check any
 "nice" constant multiply against retail before trusting `mul`.
+
+### 2.102 A value retail re-reads is not a local
+
+ov002 `0x0206a030` reads its table index twice (`ldr r0,[r5,#4]` in the prologue
+and again after four calls).  Declaring `u32 i = *(u32 *)(g + 4);` makes b56 keep
+it live and the second read disappears; writing the field reference out at each
+use reproduces both reads, and the extra `sub sp, sp, #4` that comes with the
+re-read shape.  Same rule as 2.99: the instruction stream shows which values the
+original source kept in variables.
+
+Also: `(u16)x` truncates with `lsl #16` / `lsr #16` (or a fold), while `x & 0xffff`
+gives `and rX, rX, #0xffff` with the mask pooled.  retail had `and r1, r1, r0,
+asr #8`, so that halfword store's value is spelled as a mask, not a cast.
+
+### 2.103 Sum operands are evaluated right to left
+
+`if (dy * dy + dx * dx < 0x100)` computes `dx * dx` first in b56; retail's
+`sub r1, r7, #0x92` (the y term) came first, so the source has the y term on the
+right: `if (dx * dx + dy * dy < 0x100)`.  With `dy`/`dx` as locals the whole
+sequence then closes byte for byte (ov008 `0x0204df5c`).  When two symmetric terms
+land in the "wrong" order, swap them in the expression instead of permuting
+declarations.
