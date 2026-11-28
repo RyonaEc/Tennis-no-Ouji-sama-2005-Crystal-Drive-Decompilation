@@ -385,6 +385,8 @@ arm9 0x02020c50 244B func_02020c50 244 B. Best candidate build/cand/arm9_20c50_c
 
 ov002 0x02083e14 248B func_ov002_02083e14 248 B. Shape is understood (two 10000-capped counters indexed by a0 and its complement, then a small state machine on t+0x14); retail keeps only lr saved, with t in r1, &cnt[a0] CSE'd into lr and &cnt[i] into ip, and rematerialises 'add r2, r1, #0xc' twice. Every candidate (build/cand/ov2_83e14_a..d.c) instead pushes r4/r5 because mwcc CSEs 't + 0xc' into a register (a: arr variable, b: cast subscript, c: pointer arithmetic, d: inline ternary index). | -> no 'push {r4, r5, lr}' prologue; keep 'add r2, r1, #0xc' duplicated L12935
 
+ov002 0x020d4e68 248B func_ov002_020d4e68 248 B. Body is understood: gates on (*(u32 *)(e+0xd8) & 2), copies a 12-byte Vec3 out of h + (*(u16 *)(g+0xaa)+2)*0x14 + 4 into a stack local, writes the three halfwords and the two position words, adds (e[2] < 2 ? -0x180000 : 0x180000) to v.x into e+0x9c, then calls func_ov002_02078208 and func_ov002_0204d270(idx, e[1], 0x2f). Retail saves a0 in ip and the return value in r3, giving 5 saved registers and a 0xc frame; every candidate (build/cand/ov2_d4e68_a..c.c) puts a0 in r3 and the return in r0 instead, which drops to 4 saved registers, a 0x10 frame and 256 B. | -> 'mov ip, r0' for the saved a0 plus 'mov r3, #0' / 'mov r3, #1' for the return value, so the prologue is 'push {r4, r5, r6, r7, lr}' + 'sub sp, sp, #0xc' L12938
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
