@@ -2466,3 +2466,34 @@ which is the extraction b56 generates for a one-bit **bitfield** member
 counter is `s32` (`addlt`, not `addlo`), and the guard is `f->a == 0 || f->b == 0`
 — writing `|| f->b != 0` inverts the second branch and silently changes the
 meaning while the size stays the same.
+
+### 2.127 A `str rX,[sp]` / `ldr rX,[sp]` pair around a constant is a `volatile` local
+
+ov003 `0x02097bb0` passes 0 to `func_02026a04` and retail does it the long way:
+`mov r0,#0` / `str r0,[sp]` / `ldr r0,[sp]` / `mov r1,#0x6800000` / ...  That
+store-then-reload of the same register through the frame slot is what b56 emits
+for a `volatile` local (`volatile u32 z = 0;` then `f(z, ...)`).  Written as a
+plain local, or with the literal inline, the pair disappears and the unit is 8
+bytes short.  Treat any redundant frame round-trip of a freshly materialised
+constant as evidence of `volatile`, not as a scheduling quirk to work around.
+
+### 2.128 `<string not found>` on a call line is a hidden type error
+
+mwcc's diagnostic table is incomplete, so a real semantic error inside a call
+prints only `<string not found>` and the compile aborts — identical to the
+multi-line-argument bug, which makes it easy to misdiagnose.  In ov003
+`0x02097bb0` and ov002 `0x020887e4` every failing line was a call passing a
+pointer where the `extern` said `u32` (or `u32` where it said `void *`).  When a
+call line fails this way, suspect the prototype before the formatting: match the
+parameter types to the arguments, or declare them all `u32` and cast at the call
+site.  `sdk`-style `register` prototypes in annotator output are guesses too.
+
+### 2.129 Two locals of the same type: declaration order picks the register pair
+
+ov002 `0x020650f0` computes two limits (`0xe0`/`0x80` and `0x20`/`0x80`) and
+compares each against the same value in two arms.  Size and every instruction
+matched except which limit lived in `r1` and which in `r2`; swapping only the
+declaration order of the two `s32` locals (`s32 off; s32 on;` instead of
+`s32 on; s32 off;`, leaving the assignment order untouched) flipped them into
+retail's registers and the unit matched.  When a tie is exactly one swapped pair
+of same-typed locals, permute their declarations before reformulating anything.
