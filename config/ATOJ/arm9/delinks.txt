@@ -4903,3 +4903,11 @@ src/arm9/func_020124e0.c:
 src/arm9/func_02033bc0.c:
     complete
     .text       start:0x02033bc0 end:0x02033bd0
+
+src/arm9/func_02029444.c:
+    complete
+    .text       start:0x02029444 end:0x0202963c
+
+src/arm9/func_0202dc14.c:
+    complete
+    .text       start:0x0202dc14 end:0x0202dd60
