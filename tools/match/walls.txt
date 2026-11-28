@@ -363,6 +363,10 @@ ov002 0x0208d540 228B func_ov002_0208d540 228/228 size exact, body decoded: base
 
 ov003 0x0205ebf0 228B func_ov003_0205ebf0 228/228 exact size, instruction stream identical; only base colouring differs: retail keeps base in r0 (ldr r0,[pc]; ldr r0,[r0]; add r3,r0,#0xad00) while b56 puts it in r1 (ldr r1,[r0]; add r0,r1,#0xad00). Best candidate build/cand/ov3_5ebf0_v1.c: u32 base; d=base+0xad00; p8=base+0xadf8; p4 declared in the if block and assigned base+0xadf4 immediately before the second display store (late assignment is what blocks the ldrh [base,reg]! fold into d+0xf4 and keeps the separate add lr,r0,lr); p8[0]=(u16)(p8[0]*0xffffffffu) is the mvn+mul form (plain *-1 gives rsb). Swapped every declaration order of d/p8/p4 and u32/u8* base; base stayed in r1. L12902
 
+ov002 0x02058294 232B func_ov002_02058294 232B. Only the 4f70c argument pair differs: retail 'ldr r0,[sp,#0x10]; ldr r1,[sp,#0xc]; lsl/asr in place' vs b56 'ldr r1,[sp,#0x10]; ldr r0,[sp,#0xc]; lsl r2,r1,#8; lsl r1,r0,#8; asr r0,r2,#16' (extra temp r2 - wrong evaluation order of the two args). Body otherwise byte-identical incl. switch layout, Vec3 struct params, and (s32)(r<<8)/0x10000 angle scale. Tried: (s32)/(no-cast)/(s16) forms, temps, inline-call, respell 36 variants, permute 3994 candidates (best 5 slots). L12905
+
+ov002 0x020cdb5c 232B func_ov002_020cdb5c 232B. Prologue/frame tie: retail push{r4,r5,r6,r7,lr}+sub#0xc keeps e=r4,idx=r5,st=r6,tbl=r7; b56 push{r4,r5,r6,lr}+sub#0x10 spills one value, and stores e->0x90/0x94 before the 'subs v.x-e->x' that retail emits first, so e->x is loaded twice (8B). Shape confirmed: mul id*0x158 (separate off variable), e=base+0x2e4+off, idx=*(u8*)(base+off+0x2e6), Vec3 copy from base+0x1934+(cnt+8)*0x14+4, dir 0x2d/0x2e. Tried: off/p split, dx local, px/py locals, inline dir, decl orders. L12908
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

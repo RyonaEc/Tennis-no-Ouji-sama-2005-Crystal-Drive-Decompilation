@@ -2145,3 +2145,38 @@ substitutions, permute declarations instead of respelling the code.
 Loop-tail statement order is emitted verbatim: retail's `add r6,#0xc` (q),
 `add r5,#0xc` (s), `add sb,#0x158` (e) needs `q += 0xc; s += 0xc; e += 0x158;`
 in that order, not the reading order of the arrays.
+
+### 2.100 Struct-array indexing keeps retail's scaled addressing
+
+`*(s32 *)(dst + i * 0x20 + 0x1c)` makes b56 strength-reduce the address into a
+running byte offset (`lsl r8, i, #5` once, `add r8, r8, #0x20` at the tail) and
+keep the cursor in a callee-saved register.  Retail used the scaled-index form
+(`ldr r1, [r5, r8, lsl #5]`, re-materialised per statement) and spent the register
+on the table pointer instead.  Writing the same bytes as a struct array closes it:
+
+```c
+typedef struct { s32 w0, w1, w2, w3, w4, w5, w6, w7; } Dst;   /* 0x20 */
+typedef struct { s32 w0, w1, w2, w3, w4; } Src;               /* 0x14 */
+
+dst[i].w7 = dst[i].w2 - src->w3 + tbl[2] / 2;
+dst[i].w4 = func_02034148(dst[i].w0 - src->w1);
+...
+src++;
+i++;
+```
+
+`dst[i]` forces the scaled index and no live cursor; `dst + i * 0x20` does not.
+ov002 `0x0205a260` went from 240 B / 7 pushed registers to a byte match.
+
+### 2.101 `* 0x1111` must be written as the shift-add sum
+
+`v * 0x1111` compiles to `mul r0, r1, r0` with `0x1111` in the pool; retail
+expanded it (`lsl #0xc`, `add ... lsl #8`, `add ... lsl #4`, `add`) and stores the
+halfword from the sums.  Spell the sum out:
+
+```c
+*(u16 *)(g + 4) = (v << 12) + (v << 8) + (v << 4) + v;
+```
+
+Same value, 12 bytes shorter, byte-identical for ov002 `0x02062e80`.  Check any
+"nice" constant multiply against retail before trusting `mul`.
