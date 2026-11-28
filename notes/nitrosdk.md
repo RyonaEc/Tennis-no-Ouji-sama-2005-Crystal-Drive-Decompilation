@@ -289,3 +289,26 @@ SDK work list is the 72 arm9 rows. A third match from it, `PM_GetBackLight`
 is `PMi_ReadRegister(REG_PMIC_CTL_ADDR, &reg)`, and the two out-parameters are
 `PMBackLightSwitch*`, so the 32-bit stores and the `? 1 : 0` spelling both come
 straight from the SDK source.
+
+### `Entry` (arm9 `0x02004800`) is crt0's `_start`
+
+`sdk.py` flags it against `crt0.o`, and the SDK source is
+`build/libraries/init/ARM9/src/crt0.c` (`asm void _start(void)`) in both
+releases. The retail unit is that function written as an `asm void` block
+(`src/arm9/Entry.c`), with three differences from the 2.0 RC3 source worth
+remembering:
+
+- the BSS-clear loop (`cmp/strcc/bcc` over `_start_ModuleParams[12..16]`) is
+  **not** in retail — the game's crt0 skips it;
+- `_start_ModuleParams` is the arm9 `.data` symbol `BuildInfo`, but retail's
+  object bakes the *number* `0x02004b00` into the pool (objcheck requires the
+  number, not the symbol);
+- `HW_REG_BASE`, `HW_PLTT`, `HW_OAM`, `HW_RESET_VECTOR` and
+  `0x027fff9c` are plain numbers, while `INITi_HW_DTCM` is the dtcm symbol
+  `data_027c0000` and `OS_IrqHandler` is the itcm symbol `func_01ff8000` — those
+  two *do* carry retail relocations.
+
+The unit's symbol name is `Entry` (not `func_02004800`), because the linker
+line passes `-m Entry`; the source file and delinks entry must use `Entry`.
+Nineteen of the 232 bytes are the trailing pool, so the literal order has to
+follow first use exactly as the block is written.

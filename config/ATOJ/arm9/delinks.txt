@@ -4867,3 +4867,11 @@ src/arm9/func_02008a90.c:
 src/arm9/func_02016dd4.c:
     complete
     .text       start:0x02016dd4 end:0x02016ee8
+
+src/arm9/func_02014d50.c:
+    complete
+    .text       start:0x02014d50 end:0x02014e64
+
+src/arm9/Entry.c:
+    complete
+    .text       start:0x02004800 end:0x020048e8
