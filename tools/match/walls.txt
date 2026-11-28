@@ -436,6 +436,8 @@ ov002 0x02082e2c 268B func_ov002_02082e2c 268B per-slot 'digit pair' emitter, FU
 
 ov003 0x02050e18 276B func_ov003_02050e18 276B 'angle from clock' helper, decoded and 260/276 in build/cand/ov3_50e18_b.c: b=*(u8**)data_ov003_020eb720; v=*(u16*)(b+0x352); if (v==2 || ((v==3)|(v==4))) { 8-arm if-ladder 'if (a0==N) { x=0x1e; y=0x14; } else if ...'} else { if (a0==0) {x=0x64;y=0x1f4;} else if (a0==1) {...} else {...} } then if (x==0) return 0; return (y*a1)/x. The (v==3)|(v==4) bitwise-or spelling is what reproduces retail's moveq/movne+materialsed 0/1 OR (a plain || becomes a range test). Residue: mwcc merges the two identical arms of the else chain into one compare where retail keeps cmp #0 and cmp #1, so got is 16B short. L13016
 
+arm9 0x0202bb44 556B func_0202bb44 556 build/cand/arm9_2bb44_a.c L13035
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
@@ -757,3 +759,5 @@ ov010 0x020514c8 172B func_ov010_020514c8 -- two GX-command pushes on a ring buf
 
 # 102 resolved: these now have a source file
 ov002 0x0208f38c 608B func_ov002_0208f38c 14-member 608B family, full decode + 600/608 candidate L12373
+arm9 0x02023df8 96B func_02023df8 96 build/cand/arm9_23df8_a.c
+arm9 0x02023e58 96B func_02023e58 96 build/cand/arm9_23df8_b.c

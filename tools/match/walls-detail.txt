@@ -13031,3 +13031,37 @@ ov002 0x02082e2c func_ov002_02082e2c
 
 ov003 0x02050e18 func_ov003_02050e18
 276B 'angle from clock' helper, decoded and 260/276 in build/cand/ov3_50e18_b.c: b=*(u8**)data_ov003_020eb720; v=*(u16*)(b+0x352); if (v==2 || ((v==3)|(v==4))) { 8-arm if-ladder 'if (a0==N) { x=0x1e; y=0x14; } else if ...'} else { if (a0==0) {x=0x64;y=0x1f4;} else if (a0==1) {...} else {...} } then if (x==0) return 0; return (y*a1)/x. The (v==3)|(v==4) bitwise-or spelling is what reproduces retail's moveq/movne+materialsed 0/1 OR (a plain || becomes a range test). Residue: mwcc merges the two identical arms of the else chain into one compare where retail keeps cmp #0 and cmp #1, so got is 16B short.
+
+arm9 0x0202bb44 func_0202bb44
+556 build/cand/arm9_2bb44_a.c
+  NOTE (2026-11-28): the SDK transcription of PM_GoSleepMode is source-exact
+  and 556/556 bytes, but mwcc allocates differently. Retail spends all eight
+  callee-saved registers on trigger/logic/key (sl/sb/fp), prepIrq (r4),
+  `param` (r5), preGX/preGXS (r7/r6) and powerOffFlag (r8), which forces
+  prepIntrMode, prepIntrMask, isGXDisp, preTop/preBottom and the `vu32 vcount`
+  onto the stack (frame 0x1c). Our build promotes prepIntrMode into fp and
+  keeps `param` in a temporary instead, giving frame 0x14 and a different
+  register colour throughout. Declaring prepIrq/powerOffFlag/isGXDisp as BOOL
+  (the SDK's own types) changes nothing; `volatile u32 prepIntrMode` shrinks
+  the unit to 552 B; respell's best over 165 variants is 65 differing slots.
+  What is needed: a spelling that makes mwcc spill prepIntrMode rather than
+  promote it, so `param` can take r5. Two structural facts already confirmed
+  and worth keeping: `PMi_PreSleepCallbackList`/`PMi_PostSleepCallbackList`
+  are pointer *variables* (two instructions: address then load), and the
+  duplicated `ldrh REG_IME` before each `strh` is real -- write the discarded
+  volatile read explicitly.
+
+arm9 0x02023df8 func_02023df8
+96 build/cand/arm9_23df8_a.c
+  NOTE (2026-11-28): body is decoded and exact except for one instruction.
+  Retail materialises the destination base once into the ip scratch
+  (`mov ip, #0x6600000` at 0x02023e1c, reusing the ip that held the -1
+  constant) and then emits `add r2, ip, r4` / `add r1, ip, r4`; our build
+  folds each arm to `add r2, r4, #0x6600000` and comes out 92 B against 96.
+  The constant is ARM-immediate encodable, so mwcc never needs the register.
+  Tried and rejected: `u32 base = 0x6600000;` local, pointer arithmetic
+  `(u8 *)0x6600000 + off`, `(u8 *)off + 0x6600000`, `off | 0x6600000`,
+  `off + 0x6000000 + 0x600000` (all 92 B), and `s32 off` (92 B). Everything
+  else -- the `mvn ip, #0` compare against 0xffffffff, the argument order
+  (h, src, base+off, size) and the memcpy sibling call -- matches byte for
+  byte. Sibling 0x02023e58 is the same code with 0x6400000.
