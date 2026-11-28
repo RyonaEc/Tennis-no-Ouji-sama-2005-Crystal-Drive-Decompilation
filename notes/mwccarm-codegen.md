@@ -2433,3 +2433,10 @@ per arm and one `ret 0` shared by both arms.  That layout comes from a single
 conditions, not as `return <bool expr>`, because a boolean returned to the caller
 is materialised into a register (`moveq rX,#1` / `cmp rX,#0`) instead of
 branching.
+
+### 2.124 A two-way constant store is `if`/`else`, never a ternary
+
+ov002 `0x0207bd24` sets a byte to 1 or 2 by a flag test.  `s[0x10] = (v == 0x40) ? 1 : 2;`
+makes b56 pick the value into `r0` with `moveq`/`movne` and then store once.  Retail
+stores inside each arm (`moveq r0,#1 / strbeq / movne r0,#2 / strbne`), which only
+comes from `if (v == 0x40) s[0x10] = 1; else s[0x10] = 2;`.  Four bytes per site.
