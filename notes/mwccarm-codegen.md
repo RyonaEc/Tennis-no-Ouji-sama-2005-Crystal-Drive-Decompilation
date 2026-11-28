@@ -2255,3 +2255,24 @@ writing only `for (i = 0; i < *(u16 *)(a1 + 0); i++)` reproduces the `ls`
 predicated epilogue exactly (the loop-bound guard b56 generates keeps the
 unsigned `<=` form).  Prefer the loop over a redundant guard when the predicate
 is `ls`/`hi`.
+
+### 2.109 An inline cast-pointer subscript keeps the `lsl` inside the addressing `add`
+
+arm9 `0x0201e014` loops `ldrh` over four halfwords at `q + 4`.  With a byte
+pointer (`*(u16 *)(q + 4 + i * 2)`) b56 promotes the byte offset to its own
+induction variable and either bumps it (`add r4, r4, #2`) or hoists a separate
+base (`add sb, r7, #4`), both one instruction short of retail's
+`add r0, q, i, lsl #1` / `ldrh r0, [r0, #4]`.  Writing the source as
+`u32 t = ((u16 *)(q + 4))[i];` -- an index expression on the cast pointer with
+the offset folded into it, not a `tp` variable and not a `for`-loop strength
+reduction -- yields retail's scaled `add` and the whole unit closes.  Same rule
+as 2.106, one step further: the subscript must sit on the punning cast.
+
+### 2.110 Scheduler-sensitive siblings: compute the ternary before the copies
+
+ov002 `0x020d7f74` (sibling of `0x020d149c`) mixes two plain word copies with a
+`+/-0x140000` delta on the last store.  Interleaving the delta into the final
+store (`*(s32 *)(e + 0x9c) = v.x + (c < 2 ? 0x140000 : -0x140000);`) makes b56
+finish the two copies first; retail starts the compare at the top of the block.
+Assigning the delta to a local right after the preceding `strh` stores, then
+using it in the final `add`, reproduces retail's interleaving.
