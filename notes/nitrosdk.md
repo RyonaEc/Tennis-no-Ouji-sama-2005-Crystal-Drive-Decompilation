@@ -355,3 +355,17 @@ body intact - dropping the ERR_MASK (`0x4000`) read-modify-write from
 20 bytes, and using an `enabled` that was never assigned makes b56 reuse a stale
 register for `OS_RestoreInterrupts`. With both restored the unit matched on the
 first try at 292 B.
+
+### Touch-panel port (arm9 0x0202aea8, TP_GetCalibratedPoint, 304 B)
+
+`tp.c` from NitroSDK 2.0 RC3 compiles to the retail bytes once the struct layouts
+come from the SDK headers rather than from the instruction order guessing:
+`TPData` is `{ u16 x; u16 y; u16 touch; u16 validity; }` (touch is at +4, not +0,
+which is why the calibrated path copies +4/+6 first), `TPiCalibrateParam` is six
+`s32` (`x0, xDotSize, xDotSizeInv, y0, yDotSize, yDotSizeInv`) living at
+`tpState+0x18` as its own symbol `data_0204ac80` with the flag at `data_0204ac68+0x30`,
+and the clamps are `GX_LCD_SIZE_X-1 = 0xff` for X but `GX_LCD_SIZE_Y-1 = 0xbf` for Y.
+The conversions are 64-bit: `(u16)(((u64)(raw->x << 2) - cal->x0) * cal->xDotSizeInv >> 22)`,
+where the `(u64)` cast is what gives the `subs/sbc` sign-extended subtract and the
+`umull + two mla` 64-bit multiply. `TP_SetCalibrateParam` (0x0202b43c) has the same
+shape but is still a register-colouring tie: see its wall note.
