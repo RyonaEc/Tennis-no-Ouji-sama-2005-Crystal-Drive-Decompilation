@@ -2400,3 +2400,12 @@ passing it as an argument.  Writing the load twice makes b56 emit two loads
 (`ldr r3, [r0]` … `ldr r1, [r1, #8]`); retail loads once into `r6` and reuses it.
 Give the value a `u32 n;` local, assign it before the call, and use `n` in both
 places — that also reclaims the `r6` the register set needs.
+
+### 2.121 `& ~0x8000` is `bic`, `& 0x7fff` is a pooled `and`
+
+ov008 `0x0204e658` clears bit 15 of `0x04000304`.  Written as `& 0x7fff` b56
+materialises 0x7fff from the literal pool and emits `and r3, r3, r2`, adding one
+instruction and one pool word (and shifting every pc-relative displacement in the
+function).  Retail is `bic r3, r3, #0x8000`, which only comes from the complement
+form `& ~0x8000`.  When a mask happens to be the complement of an encodable
+immediate, always write `~`-of-the-cleared-bit rather than the pre-computed mask.
