@@ -36,14 +36,12 @@ arm9 0x02024498 348B func_02024498 VRAM block copy: full 348B body from the SDK'
 arm9 0x020236f4 260B func_020236f4 GX_BeginLoadBGExtPltt: 260B reproduces exactly (switch tree, s32 selector for the bgt/bge predicates, three cases + empty NONE case) except the register naming inside each case body - retail materialises the value in r3 and the offset in r2 before the first store, mwcc uses r2/r1 and schedules the immediate after it. Tried: store swap, per-case locals, braced locals, volatile stores, dropping case 0 (24B short). Candidate build/cand/bgext_020236f4.c L11915
 
 
-arm9 0x0202b43c 260B func_0202b43c TP_SetCalibrateParam: the body is exact at 260 B with the SDK's own source, but mwcc colours the divider's divisor into r5 and the 0x10000000 numerator into ip/lr where retail keeps the divisor in lr, 0 in ip and 0x10000000 in r5; nine spellings (bare expression, u32/s32/u16 locals, function-scope local, implicit conversion, shared constant variable) and respell.py all give the same rotation, so it is a register-allocation tie. Candidate: build/cand/setcal_b.c L11921
 
 arm9 0x0202d3f0 204B func_0202d3f0 CARDi_ReadBackupSyncCore: exact 204 B with the SDK source and a volatile retry local, but the prologue comes out as mov/str (retry) then add r8 / mov r7 / mov fp where retail emits the loop-constant setup first and the retry spill last, and retail keeps p+0x20 in a register while mwcc rematerialises it. Four orderings of the const/volatile locals give the same 204 B with a different prologue order. Candidate: build/cand/cardread_0202d3f0.c L11924
 
 arm9 0x02025710 212B func_02025710 OSi_GetDeviceType: the body is exact at 212 B from the SDK's os_emulator.c, but mwcc colours lockId/enabled/ret into r6/r7/r8 where retail uses r8/r6/r7. Declaring ret and enabled inside the loop (as the SDK does), moving lockId after result, and respell.py's 34 variants all keep the same rotation, so it is a register-colouring tie. Candidate: build/cand/devtype_c.c L11927
 
 
-arm9 0x0202b248 212B func_0202b248 TP_RequestSetStabilityAsync: the function reaches the exact 212 B and every non-scheduling slot matches, including the two inline PXI sends (tag 6, 0x02000300|retry and 0x01010000|range), the TPi_ErrorAtPxi path (err_flg +0x34 |= 8, callback(3,4,0)) and the success path. The only residue is statement scheduling: retail keeps each u16 RMW contiguous (ldrh 0x36, orr, strh, ldrh 0x34, bic, strh) while mwcc batches both loads first (ldrh 0x36, ldrh 0x34, orr, bic, strh, strh). Reversing the statement order, adding (u16) casts and 252 respell variants all keep the batched form. Candidate: build/cand/tpstability_b.c L11933
 
 arm9 0x02020a44 172B func_02020a44 switch-dispatch shape: 3 sparse cases (4/0x80/0x180) plus a fallthrough; retail emits a binary tree (cmp #0x80 first, range check 0..4) and is 20 B longer than every switch/if spelling tried. Body match (f12 store, f0 = (f0|f12) & ~a0, func_02021538(f0)) is unaffected; only the case-dispatch skeleton differs. Tried: switch with and without fallthrough, duplicated 0x180 store, if/else chains in both orders. L11936
 
@@ -64,7 +62,6 @@ arm9 0x0202ce70 160B func_0202ce70 160B best 164B: single tie - retail loads s->
 
 arm9 0x02028ea8 192B func_02028ea8 192B best 6 slots: the suspended-flag path needs a volatile f10 field (plain field reuses r1 from the flag test and loses the argument reload), the second call needs two arguments and both f10 updates go through a pointer local to get retail's add/ldr/str; only the argument setup order differs (retail mov r0,r5 then ldr r1,[r5,#0x10], mwcc hoists the volatile load first) - respell's 284 variants all stay at 6 slots L11963
 
-arm9 0x0202c104 184B func_0202c104 184B best 188B: one instruction - retail keeps &data_0204aca4 in r1 out of the wait loop (ldr r1,[pc] / ldr r0,[r1] / cmp / beq) and reuses r1 for the following store, while mwcc loads the address into r0 for the loop and then re-loads the pool into lr before the store; also note func_0202ba54 takes (0, 2, 0, 0), sw=0 and led=2, not (2,0,0,0) L11966
 
 arm9 0x0200f140 200B func_0200f140 200B best 208B: mwcc hoists the shared zero constant into r4 above the func_02010358 call (push {r4,lr} instead of retail's stmdb {lr} + sub sp,#4) and then spends mov r0/r1/r2/r3 materialising the loop's values, where retail recomputes ip=0 after the call and keeps the base in r0, the zero in r3 and the 0xc4653601 literal in r2; respell's variants only move it further off L11969
 
@@ -460,17 +457,13 @@ arm9 0x0201c0c4 124B func_0201c0c4 -- look the node up in data_020475f0, else in
 arm9 0x0201c17c 96B func_0201c17c (twin 0x0201c2d4) -- hash-bucket walk: `p = func_02017784(data_02... L7955
 arm9 0x0201d7c0 124B func_0201d7c0 -- reset an object: zero +0x84/+0x7c/+0x80, func_02029a5c(&p->f74) L10909
 arm9 0x020209c8 124B func_020209c8 -- update the display window and key mask: read the u16 at L10917
-arm9 0x02023df8 96B func_02023df8 / 0x02023e58 96B -- open-handle dispatch on data_02042370 (-1 = unope... L4067
-arm9 0x02023e58 96B func_02023e58 -- open-handle dispatch on data_02042370 (-1 = unopened). L4033
 arm9 0x02024674 184B func_02024674 arm9 184B - alignment-padding cascade; 176-180B/184B, 15 diff. L943
 arm9 0x0202497c 76B func_0202497c on b56: everything reproduces except that mwcc hoists the `data_0... L3497
 arm9 0x02027ffb ?B - 0, allocating the set bit in the first word (id 0x40+n) or second (0x... L8737
 arm9 0x02029704 100B func_02029704 -- packs up to four characters into a u32, lowercasing A-Z: guards L7913
 arm9 0x0202a3a0 188B func_0202a3a0 -- slot fetch: `base = (a1 == 0) ? 0x0204ac04 : 0x0204ac0c;` the... L10955
-arm9 0x0202c018 120B func_0202c018 -- slot setup: `func_0202c3e0(a0)` guard, `*(u16 *)(data_0204acd... L10675
 arm9 0x0202cfa4 84B func_0202cfa4 -- 92B. Main-thread loop: `s = func_02026350(); while (!(*(u32*)(... L8977
 arm9 0x0202d9f4 88B func_0202d9f4 -- `func_02026e2c(*(u32 *)(g + 0x24), 0x04100010, *(u32 *)(g + 0x1c) L10657
-arm9 0x0202daec 132B func_0202daec -- shutdown half of the 0x0202d4f0 teardown, reading data_0204aec0 L10933
 arm9 0x0202f28c 312B func_0202f28c -- match guards (`func_0202e1cc(2, 7, 8)`, `func_02025c5c(p + 0x... L10681
 arm9 0x02032aa8 88B func_02032aa8 (2 unaligned L1315
 arm9 0x02032b00 48B func_02032b00 is a fragment). Those are unmatchable until symbols.txt is cleaned up... L397
@@ -758,5 +751,3 @@ ov010 0x020514c8 172B func_ov010_020514c8 -- two GX-command pushes on a ring buf
 
 # 102 resolved: these now have a source file
 ov002 0x0208f38c 608B func_ov002_0208f38c 14-member 608B family, full decode + 600/608 candidate L12373
-arm9 0x02023df8 96B func_02023df8 96 build/cand/arm9_23df8_a.c
-arm9 0x02023e58 96B func_02023e58 96 build/cand/arm9_23df8_b.c
