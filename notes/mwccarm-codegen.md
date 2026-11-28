@@ -2304,3 +2304,26 @@ emit the balanced `bhi`/`bhs` tree; retail's `bgt`/`bge` pairs mean the paramete
 lowering too, and the two trees differ only in branch mnemonics, so check signedness
 first when a switch unit's tree shape (the `cmp`/`bgt`/`bge` nesting and the case
 block order) is otherwise right.
+
+### 2.113 Copy a two-word header with a struct assignment, and name a rotated sum
+
+arm9 `0x02017bfc` starts by copying `bounds[0]` / `bounds[1]` into an 8-byte
+stack local.  Two separate stores (`r[0] = bounds[0]; r[1] = bounds[1];`) make
+b56 interleave load/store (`ldr`/`str`/`ldr`/`str`), and hoisting both into
+`u32 b0, b1` temporaries batches them but swaps which register holds which.
+Declaring a two-word struct and copying it whole -- `typedef struct { u32 a, b; }
+Range; ... r = *bounds;` -- gives retail's `ldr r2, [r5]` / `ldr r1, [r5, #4]`
+/ `str r2, [sp]` / `str r1, [sp, #4]` in one step.  The same unit's trailing
+`*(u32 *)(prev + 4) + (u32)(prev + 0x10) == bounds->a` came out with the three
+temporaries rotated (`r1`/`r0`/`r2` instead of `r2`/`r1`/`r0`); naming the sum
+(`u32 t = ...; if (t == bounds->a)`) reproduces retail's assignment.
+
+### 2.114 A bumped counter's element store must index with the old count
+
+arm9 `0x0200880c` appends `i` to a counted list: `n = *a1; *a1 = n + 1;
+a1[n + 1] = i;`.  Written that way b56 forwards `n + 1` into the index and emits
+`lsl r0, r0, #1` / `strh r4, [r5, r0]` on the already-incremented value.  Retail
+computes `add r0, r5, r1, lsl #1` from the *old* count and stores with a `#2`
+offset, which only comes back when the address is spelled explicitly from `n`:
+`*(u16 *)((u8 *)a1 + n * 2 + 2) = i;`.  When a post-increment chain leaves the
+index arithmetic on the wrong value, re-spell the store address.
