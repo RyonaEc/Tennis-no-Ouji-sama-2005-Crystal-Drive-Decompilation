@@ -5310,6 +5310,7 @@ ov003 0x020d72f8 / 0x020d9f2c 164B each (famsurvey pair, 328B total) -- module r
 
 
 ov003 0x02082220 / 0x020c806c 96B each (famsurvey pair) -- DEGENERATE, no source expresses it.
+UPDATE 2026-11-28: not degenerate any more. build/cand/ov3_82220_c.c compiles to exactly 96 B and differs from retail in ONE pair of predicated moves. Body: `if (a1 < 0x5a) { x = 0x1e; y = 0x3c; } else if (a1 < 0xb4) { y = 0x3c; x = 0x1e; } else { x = 0x1e; y = 0x3c; }` then `if (x == 0) return 0; return (s16)((y * a1) / x);` with x in r3 and y in r2. The merge behaviour is the whole story: when all three arms are written identically b56 MERGES the middle and else arms and the unit comes out 80 B; the reversed-order middle arm is the only spelling that keeps them apart, but it then emits `movlt r2,#0x3c` before `movlt r3,#0x1e` where retail has r3 first. Tried and merged anyway: separate statements, comma expression, extra braces, `y = 0x1e + 0x1e`, a trailing empty statement, and a nested `else { if }`. So the original middle arm differs from its siblings in something invisible to codegen (a macro, a differently-typed temporary, or an expression mwcc folds before the merge pass).
 
 
 
@@ -13012,3 +13013,6 @@ ov002 0x02063cb0 func_ov002_02063cb0
 
 ov002 0x02082e2c func_ov002_02082e2c
 268B per-slot 'digit pair' emitter, FULL body decoded, exact size at 268/268 with 27 differing slots (build/cand/ov2_82e2c_e.c): g=*(u8**)data_ov002_02102070; b=g+0x4000; t1=*(u16**)(b+0xf6c); t2=*(E**)(b+0xf68); t0=*(E**)(b+0xf64); tbl=*(u8**)(b+0xf60); base=a1*0x12+0xd3; ten=10; zero=0; x=a0; if (x>0x63) x=0x63; for (i=0;i<2;i++) { v3=*(u16*)((u8*)t1+(u8)(x%10)*4+0x40); v=t2[v3].v; x=x/10; func_ov002_0208381c(t0+v, tbl+t0[v].v*0x14, (u16)((1-i)*6+base), ten, zero, 0x6400000, zero, zero); } - residue is (a) b56 hoists the loop-invariant 'a1*0x12+0xd3' to the function top where retail has it after the four pointer loads (0x02c), (b) the clamp cmp is hoisted next to it, (c) v lands in r0 where retail keeps r1 and the x/10 sign temp takes r1 where retail has r0. respell.py 172 variants and permute.py 1299 candidates both stop at this state; expr spellings tried: base inline in the call, base as u16 cast, v as u32, v as byte-offset deref, split-init declarations in three orders.
+
+ov003 0x02050e18 func_ov003_02050e18
+276B 'angle from clock' helper, decoded and 260/276 in build/cand/ov3_50e18_b.c: b=*(u8**)data_ov003_020eb720; v=*(u16*)(b+0x352); if (v==2 || ((v==3)|(v==4))) { 8-arm if-ladder 'if (a0==N) { x=0x1e; y=0x14; } else if ...'} else { if (a0==0) {x=0x64;y=0x1f4;} else if (a0==1) {...} else {...} } then if (x==0) return 0; return (y*a1)/x. The (v==3)|(v==4) bitwise-or spelling is what reproduces retail's moveq/movne+materialsed 0/1 OR (a plain || becomes a range test). Residue: mwcc merges the two identical arms of the else chain into one compare where retail keeps cmp #0 and cmp #1, so got is 16B short.

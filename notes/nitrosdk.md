@@ -340,3 +340,18 @@ renamed (`OSi_ExceptionHandler` at arm9 `0x020260b8` matched on the first try,
 as did `RtcWaitBusy` at `0x0202c430`, a 24-byte spin on a bss lock). Script the
 check: collect every `asm\s+void\s+(\w+)\s*\(` in `build/cand/sdk/SDK20` and
 intersect it with the unmatched rows of `build/sdkmap-<mod>-near.tsv`.
+
+### PXIi_HandlerRecvFifoNotEmpty ported from pxi_fifo.c (arm9 0x02027d74, 292 B)
+
+Try these before writing any C by hand: PXI register access is a `volatile`
+macro pair (`REG_PXI_FIFO_CNT` = `*(volatile u16 *)0x04000184`,
+`REG_PXI_RECV_FIFO` = `*(volatile u32 *)0x04100000`, `REG_PXI_SEND_FIFO` =
+`*(volatile u32 *)0x04000188`), the message is
+`union { struct { u32 tag:5; u32 err:1; u32 data:26; } e; u32 raw; }`, and the
+two FIFO helpers are `static inline` so `-inline on,noauto` expands them at the
+call site exactly as retail has them. One trap: every inline helper keeps the SDK
+body intact - dropping the ERR_MASK (`0x4000`) read-modify-write from
+`PXIi_SetToFifo` because the caller ignores its result loses six instructions and
+20 bytes, and using an `enabled` that was never assigned makes b56 reuse a stale
+register for `OS_RestoreInterrupts`. With both restored the unit matched on the
+first try at 292 B.
