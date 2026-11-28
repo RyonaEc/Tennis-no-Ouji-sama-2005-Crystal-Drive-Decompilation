@@ -2202,3 +2202,26 @@ right: `if (dx * dx + dy * dy < 0x100)`.  With `dy`/`dx` as locals the whole
 sequence then closes byte for byte (ov008 `0x0204df5c`).  When two symmetric terms
 land in the "wrong" order, swap them in the expression instead of permuting
 declarations.
+
+### 2.104 Declaration order fixes two-variable colouring swaps
+
+ov002 `0x02092a5c` has three pointers where the short-lived base and the later
+byte value share one register (their live ranges do not overlap): retail keeps
+them in r5 and the long-lived record pointer in r4.  b56 produced the mirror
+image no matter how the expressions were spelled.  The lever is declaration
+order: `base`, `off`, `g`, `t`, `e`, `r` closed it, while `base`, `off`, `e`,
+`g`, `t`, `r` gave the exact swap.  When a diff is a pure two-register
+transposition across the whole function, permute the declaration list before
+touching the expressions.
+
+### 2.105 `(u8)` on a wide variable is what asks for `and #0xff`
+
+ov002 `0x020d149c` passes `0x2f`/`0x2e` as a mode argument.  With `u8 mode;`
+b56 knows both constants fit and passes them unmasked; retail has
+`and r2, r4, #0xff`.  Declaring `s32 mode;` (or `u32`) and passing `(u8)mode`
+produces the mask, and the two-arm `if` that sets both `delta` and `mode` is
+what b56 if-converts into `movlt`/`movge`/`rsbge`.
+
+Also: a struct copy `q = *(Vec3 *)(g + 0x24);` written as a *declaration*
+initialiser is hoisted above the guard; assigning it inside the block keeps
+retail's `add r0, r3, #0x24` / `ldm` / `stm` after the early-out.
