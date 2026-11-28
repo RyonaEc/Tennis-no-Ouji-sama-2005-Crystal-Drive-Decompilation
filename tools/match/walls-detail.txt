@@ -13065,3 +13065,32 @@ arm9 0x02023df8 func_02023df8
   else -- the `mvn ip, #0` compare against 0xffffffff, the argument order
   (h, src, base+off, size) and the memcpy sibling call -- matches byte for
   byte. Sibling 0x02023e58 is the same code with 0x6400000.
+
+arm9 0x0202e4a4 func_0202e4a4
+464 build/cand/arm9_2e4a4_best.c
+arm9 0x0202e4a4 func_0202e4a4
+464 build/cand/arm9_2e4a4_best.c
+  NOTE (2026-11-28): WM_Init, transcribed from wm/ARM9/src/wm_system.c. The
+  body is complete and the unit is exactly 464 bytes with retail's frame
+  (`sub sp, #4`, five callee-saved registers) and retail's six pool entries in
+  retail's order (wmInitialized, wm9buf, bufMsgQ, bufMsg, fifoBuf,
+  WmReceiveFifo). Two facts were needed to get there: `fifoBuf` must be a 2-D
+  array (`u32 fifoBuf[][0x40]`, stride 0x100) or mwcc computes
+  `base + i*0x100` instead of the pointer increments retail emits, and
+  `wm9buf->dmaNo` sits at +0x960 only as a *nested* field (a sub-block at
+  +0x900 with the u16 at +0x60) -- that is what produces retail's
+  `add r0, r0, #0x900` + `strh r5, [r0, #0x60]` pair. ENUM constants that the
+  body needs: WM_SYSTEM_BUF_SIZE 0x1700, WM_ARM9WM_BUF_SIZE 0xa00,
+  WM_ARM7WM_BUF_SIZE 0x100, WM_STATUS_BUF_SIZE 0xa00, WM_FIFO_BUF_SIZE 0x100,
+  WM_NUM_OF_PORT 0x10, WM_BUF_MSG_NUM 0xa, MI_DMA_MAX_NUM 3; error codes
+  ILLEGAL_STATE 3, WM_DISABLE 4, INVALID_PARAM 6, SUCCESS 0.
+  Residual is ONE scheduler slot. Retail emits at 0x0202e610
+  `ldr r6, =fifoBuf` / `mov r7, #0` / `ldr r5, =bufMsgQ` / `mov r4, #1`;
+  our build always puts both address loads first, then `mov r7, #0`
+  (`ldr r6` / `ldr r5` / `mov r7`). Tried: plain `for (i = 0; ...)` with
+  `fifoBuf[i]`, an explicit `u32 *p` incremented by 0x40, `q = &bufMsgQ` as a
+  local, declarations in the orders (i,p,q), (p,q,i), (p,i,q), separate init
+  statements instead of initialisers, a `while` loop, and a comma-expression
+  for-init `for (p = ..., i = 0, q = ...)`; respell.py over its variants also
+  lands on 17 differing slots. Everything else in the unit matches byte for
+  byte, so the missing piece is only this scheduling decision.

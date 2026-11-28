@@ -438,6 +438,8 @@ ov003 0x02050e18 276B func_ov003_02050e18 276B 'angle from clock' helper, decode
 
 arm9 0x0202bb44 556B func_0202bb44 556 build/cand/arm9_2bb44_a.c L13035
 
+arm9 0x0202e4a4 464B func_0202e4a4 464 build/cand/arm9_2e4a4_best.c L13069
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
