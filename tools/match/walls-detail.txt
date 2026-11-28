@@ -204,6 +204,7 @@ ov002 0x0204f98c frame regression: mwcc uses lr as the base pointer and emits pu
 
 ov002 0x02068c78 register-shift cascade: retail base in ip, record in r2, target in r1; mwcc shifts the whole chain down one (r3/r2/r1). (((u32)e[0x2e6] >> 1) fixes asr->lsr but not the allocation)
 UPDATE: two more shapes (constant-first `(u8 *)(0x1e6c + g)`, and dropping the q local so the mla is inline) both stay at 64 B with the same shift, and permute.py over 766 candidates (declaration sweep + annealed, 6 jobs, 3 islands) cannot beat cost 65. The wall is a pure colouring cascade: retail loads g into ip because r1 holds the symbol address and r2 the 0x158 scale; b56 always takes r3 for that value.
+LATER: the same constant-first chain lever as 2.137 halves the residue. `build/cand/f68c78_c1.c` (64 B, 22 diff lines vs the old 65-cost state) writes the record byte as `*(u8 *)(0x2e6 + g + a0 * 0x158)` and the target as `(u8 *)(0x1e6c + g)` with `u8 *p` assigned at its declaration; the remaining difference is a single choice - retail loads the module base into ip, b56 loads it into r3 - and every other register follows from it (retail: r2 = mla product, r3 = byte, r1 = target; b56: r2 = byte, r3 = base, r1 = 1). Forcing ip has not worked: neither a fourth local nor re-reading data_ov002_02102070 twice moves it.
 
 
 
