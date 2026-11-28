@@ -379,6 +379,8 @@ ov002 0x0205083c 240B func_ov002_0205083c 240B. Shape solved: k=func_ov002_02062
 
 arm9 0x02028db8 240B func_02028db8 240B. Shape solved except the size expression: r5 = (*(u32*)(a0+0x24) + *(u32*)(a0+0x2c) + 0x20 + 0x1f) & ~0x1f, early bhi to a shared 'mov r0,r5' epilogue when r5 > a2, then off=(a1+0x1f)&~0x1f, 02029c8c(f), 02029a00(f,a0,a0[0x20],a0[0x20]+a0[0x24],-1), 02029828(f,off,a0[0x24]), 020298e4(f), a0[0x20]=off, off+=a0[0x24], the same trio for the 0x28/0x2c block, a0[0x28]=off, a0[0x38]=a1, a0[0x44]=func_0202968c, a0[0x10]|=4, return r5. Everything matches except that retail emits TWO adds (add r0,r0,#0x20 then add r0,r0,#0x1f) where b56 folds them into one add #0x3f; retail also branches to a shared epilogue instead of b56's predicated addhi/pophi/bxhi copy. Tried: one expression, separate statements, an intermediate u32 local, explicit parens, pointer-cast spelling - all fold to #0x3f. Best candidate build/cand/arm9_28db8_a.c 248B. L12926
 
+ov003 0x020d59f0 240B func_ov003_020d59f0 240B switch on a1 (0..9) with a jump table; only case 6 has a body. full decode + 232/240 candidate: retail table is cmp r1,#9 / addls pc,pc,r1,lsl #2 with all 11 entries -> tail 0x020d5ac0 except index 6 -> 0x020d5a58, body = 020243e0, 02025c94(h+0xf0000,0x200), 0202436c(same, 02055744(0,g+0xb7dc),0x200), 02024314, 020245f4, 02025c94(h+0xf0200,0x6000), 02024498(same, 0205578c(0,g+0xb6dc),0x6000), 02024428; plus if(a1!=0) *(u16*)(g+0xc8dc+4)=0x10 before the switch. any case layout (empty cases before/after case 6, default) still gives 232 B: b56 folds two of the 11 table branches. build/cand/ov3_d59f0_{a,b,c}.c L12929
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
