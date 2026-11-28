@@ -330,3 +330,13 @@ the stored field, and the two `volatile u32 zero` uses (the value handed to
 Recipe for the next one: read the SDK source, keep its statement order, replace
 SDK headers with plain numbers for `#define` constants and with byte offsets for
 struct fields, and keep the local-variable types the SDK declares.
+
+### Some near-hits are `asm void` blocks - copy the SDK body verbatim
+
+`sdkmap` rank alone does not say whether a near-hit is compiled C or hand-written
+asm. Check the SDK source before writing any C: a function declared `asm void`
+in the SDK assembles byte for byte from the SDK's own body once the symbols are
+renamed (`OSi_ExceptionHandler` at arm9 `0x020260b8` matched on the first try,
+as did `RtcWaitBusy` at `0x0202c430`, a 24-byte spin on a bss lock). Script the
+check: collect every `asm\s+void\s+(\w+)\s*\(` in `build/cand/sdk/SDK20` and
+intersect it with the unmatched rows of `build/sdkmap-<mod>-near.tsv`.

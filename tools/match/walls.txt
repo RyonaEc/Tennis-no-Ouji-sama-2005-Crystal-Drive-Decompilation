@@ -460,12 +460,10 @@ arm9 0x02024674 184B func_02024674 arm9 184B - alignment-padding cascade; 176-18
 arm9 0x0202497c 76B func_0202497c on b56: everything reproduces except that mwcc hoists the `data_0... L3497
 arm9 0x02025b88 148B func_02025b88 scout: **140/148.** `func_02026350()` / `func_02026364(r)` bracket an... L181
 arm9 0x02025e48 172B func_02025e48 -- switch on 0..6 returning constants, with a case that loads a... L11220
-arm9 0x020260b8 116B func_020260b8 -- hand-written dispatcher (`mrs r1, apsr`, `teq`, banked `sp` L10664
 arm9 0x02027ffb ?B - 0, allocating the set bit in the first word (id 0x40+n) or second (0x... L8737
 arm9 0x02029704 100B func_02029704 -- packs up to four characters into a u32, lowercasing A-Z: guards L7913
 arm9 0x0202a3a0 188B func_0202a3a0 -- slot fetch: `base = (a1 == 0) ? 0x0204ac04 : 0x0204ac0c;` the... L10955
 arm9 0x0202c018 120B func_0202c018 -- slot setup: `func_0202c3e0(a0)` guard, `*(u16 *)(data_0204acd... L10675
-arm9 0x0202c430 24B func_0202c430 var3 matches, ROM digest rejects: best is 3 slots, retail keeps the global address in ip where mwcc uses r1 for every spelling tried (plain/volatile global, volatile u32 *p, do/while, with and without a returned value) L127
 arm9 0x0202cc90 92B func_0202cc90 -- spin-wait wrapper: `g = data_0204aec0; s = func_02026350(); while L10646
 arm9 0x0202cfa4 84B func_0202cfa4 -- 92B. Main-thread loop: `s = func_02026350(); while (!(*(u32*)(... L8977
 arm9 0x0202d9f4 88B func_0202d9f4 -- `func_02026e2c(*(u32 *)(g + 0x24), 0x04100010, *(u32 *)(g + 0x1c) L10657
