@@ -2409,3 +2409,14 @@ instruction and one pool word (and shifting every pc-relative displacement in th
 function).  Retail is `bic r3, r3, #0x8000`, which only comes from the complement
 form `& ~0x8000`.  When a mask happens to be the complement of an encodable
 immediate, always write `~`-of-the-cleared-bit rather than the pre-computed mask.
+
+### 2.122 A register `mov #N / rsb` mask is an SDK alignment macro
+
+arm9 `0x0202d738` clears the low 9 bits of a card address with
+`mov r0, #0x200 / rsb r4, r0, #0 / and r1, r0, r4` — never `bic`.  That form only
+appears when the source writes the mask through a *negation*: the NitroSDK's
+`CARD_ALIGN_HI_BIT(n)` is `((u32)(n)) & ~ALIGN_MASK(CARD_ROM_PAGE_SIZE)`, and b56
+canonicalises `~0x1ff` to `-0x200` and materialises it as `mov` + `rsb`.  Writing
+`x & ~0x200` by hand gives `bic`; writing `x & -len` with a `u32 len = 0x200`
+local gives the `mov`/`rsb` pair.  If a mask looks like `-(2^k)` in a register,
+suspect an `ALIGN_MASK`-style macro rather than anything unusual.
