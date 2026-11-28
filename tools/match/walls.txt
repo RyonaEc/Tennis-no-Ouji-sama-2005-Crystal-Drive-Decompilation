@@ -263,7 +263,6 @@ arm9 0x02034560 52B func_02034560 52B varargs thunk: push {r0-r3} to expose the 
 
 ov002 0x0204d60c 192B func_ov002_0204d60c 192B matrix-stage update: func_0202216c(m) then func_02022048(m, (p[8] - q[2]) << 5, (p[0xa] - q[4]) << 5, 0) with m = data_ov002_02102070+0x1a89a4 and q = the same base +0x1e34, then MTX_RotZ33_ (func_0201fd00, a Thumb asm block in the SDK) with sin/cos from the s16 table at data_0203d908 indexed by (p[0xc] >> 4) * 2, func_020220c0(m, mtx), and func_02022084(m, p[0x10], p[0x14], 0x1000). Every instruction matches except two: (1) retail calls the thumb routine with BLX immediate (0xfaff499b) while mwcc emits BL for an ARM caller - declaring the extern inside #pragma thumb on/off, #pragma arm on, a function-pointer cast and __declspec(thumb) all fail (the pragma pair leaves the function ARM but the call BL); (2) the two pool literals come out in the other registers (retail data -> r2 / 0x1a89a4 -> r1, mwcc the reverse). Candidate: build/cand/o2_4d60c_b.c L12649
 
-arm9 0x02024e30 240B func_02024e30 OS_InitLock (240B) is os_spinlock.c's main-processor half and every constant, call and order matches, but retail's extension-wait loop keeps the 0x027ffff0 address in caller-saved r1 across 'bl OSi_WaitByLoop' (ldrh r0,[r1,#6] after the call) with no push at all; mwcc b56 puts the address in r4 and pushes it, so the frame, the loop and the 16-byte tail never line up whatever the spelling L12652
 
 ov002 0x02084cec 196B func_ov002_02084cec five-byte record compaction at *(u32*)(data_ov002_02102070)+0x47ac: zero a 5-byte buffer, bail if rec[4] != 0, move the non-zero bytes of rec[4..8] up, write all five back, then base[a0] = rec[4]. Best spelling is 196 B with the right frame and callee-saved set (build/cand/o2_84cec_e.c, `a0 * 5` written inline at each use) and 45 register slots of residue: retail loads the global and lays down the five zero bytes before the mul, mwcc b56 hoists `mov #5 / mul` above both and picks r1 for the product where retail uses ip. Eight spellings (off local, rec pointer before/after the init, buf pointer, inline multiply); respell.py gives 46 slots. L12655
 
@@ -433,9 +432,7 @@ ov002 0x02082e2c 268B func_ov002_02082e2c 268B per-slot 'digit pair' emitter, FU
 
 ov003 0x02050e18 276B func_ov003_02050e18 276B 'angle from clock' helper, decoded and 260/276 in build/cand/ov3_50e18_b.c: b=*(u8**)data_ov003_020eb720; v=*(u16*)(b+0x352); if (v==2 || ((v==3)|(v==4))) { 8-arm if-ladder 'if (a0==N) { x=0x1e; y=0x14; } else if ...'} else { if (a0==0) {x=0x64;y=0x1f4;} else if (a0==1) {...} else {...} } then if (x==0) return 0; return (y*a1)/x. The (v==3)|(v==4) bitwise-or spelling is what reproduces retail's moveq/movne+materialsed 0/1 OR (a plain || becomes a range test). Residue: mwcc merges the two identical arms of the else chain into one compare where retail keeps cmp #0 and cmp #1, so got is 16B short. L13016
 
-arm9 0x0202bb44 556B func_0202bb44 556 build/cand/arm9_2bb44_a.c L13035
 
-arm9 0x0202e4a4 464B func_0202e4a4 464 build/cand/arm9_2e4a4_best.c L13069
 
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
