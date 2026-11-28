@@ -312,3 +312,21 @@ The unit's symbol name is `Entry` (not `func_02004800`), because the linker
 line passes `-m Entry`; the source file and delinks entry must use `Entry`.
 Nineteen of the 232 bytes are the trailing pool, so the literal order has to
 follow first use exactly as the block is written.
+
+### Porting an SDK C function works best as a struct, not byte offsets
+
+arm9 `0x02025280` is `OS_CreateThread` (`libos.a`, `os_thread.o`, SDK20, ratio
+0.92 in `sdkmap`). A first hand-written candidate that addressed the thread
+block with `*(u32 *)(t + 0x88)` style offsets was 240 B against retail's 264:
+six instructions short, with a different register assignment. Writing the SDK
+source almost literally — an `OSThread` struct with named fields
+(`state`/`id`/`priority`/`profiler`/`mutex`/`mutexQueue*`/`stackTop`/
+`stackBottom`/`stackWarningOffset` plus `context` as `u8[0x64]`) — matched first
+try. The field *types* drive the codegen: `stackBottom`/`stackTop` must be
+`u32` so `*(u32 *)(thread->stackBottom - 4) = OSi_STACK_CHECKNUM_BOTTOM` reuses
+the stored field, and the two `volatile u32 zero` uses (the value handed to
+`MI_CpuClear32`) are what keep retail's redundant `str`/`ldr` pair on the stack.
+
+Recipe for the next one: read the SDK source, keep its statement order, replace
+SDK headers with plain numbers for `#define` constants and with byte offsets for
+struct fields, and keep the local-variable types the SDK declares.
