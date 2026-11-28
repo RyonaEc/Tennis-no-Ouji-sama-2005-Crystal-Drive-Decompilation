@@ -393,6 +393,8 @@ ov002 0x020708f8 256B func_ov002_020708f8 Canonical sibling of ov002 0x02076258 
 
 ov006 0x0204da24 252B func_ov006_0204da24 252B, 260B candidate one induction variable short of retail. Retail keeps fp=0, r6=1, r7=0x30, r8=&data_02076024, sl=i, sb=i*0x20 and fuses the field read as S+(i<<2)/+0x1000/[+0x16c]; b56 instead spends a callee-saved register on i*4 and spills the 0 argument to [sp], which cascades to r6=0x30/r7=0x30 swaps. Every attempt (build/cand/ov6_4da24_a..f.c) keeps the extra induction variable. Missing: the source form that lets b56 rematerialise S+i*4 instead of hoisting it. L12947
 
+ov002 0x0205837c 244B func_ov002_0205837c 244B, exact size reached but a0 is wrong: retail keeps it in r0 (mov r5, r0) and reads a1/a2/a4/a5 as direct sp-relative loads from the varargs home area; b56 reloads a0 from the home slot (ldr r5, [sp, #0x10]) as soon as its address is taken. Prologue push {r0,r1,r2,r3} proves the source is variadic. Body otherwise fully reproduced in build/cand/ov2_5837c_d.c: e=base+0x2e4+a0*0x158, if(AP[4]==0) d2b4(e[2],e[1],0x29) else ...0x2a; v=f70c((AP[2]<<8)>>16,(AP[1]<<8)>>16); d=(v<<8)/65536; e[0x144]=d; e[0x148]=0x40000; e[0x14c]=0; e[0x166]=0; 882b8(0x11,0); if(e[0]==0x3a) 020064c0(e[2]>>1,0x2af); if(AP[5]==1) 02060498(a0). Missing: a variadic spelling that leaves a0 in r0. L12950
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 

@@ -2366,3 +2366,18 @@ Splitting a call's argument list across two source lines makes b56 fail with
 `<string not found>` at that line and abort, even though the same call compiles
 when it is on one line.  Keep every call on a single line, however long.  The
 same file with the arguments rejoined (ov006 `0x0204da24`) compiles normally.
+
+### 2.118 `push {r0, r1, r2, r3}` at entry means the function is variadic
+
+b56 emits that four-word home area only for a `...` function; a plain six-argument
+function keeps its parameters in registers.  ov002 `0x0205837c` is proof: with
+six named parameters the prologue is `push {r4, r5, r6, r7, lr}`, and only
+`void f(u32 a0, ...)` produces `push {r0,r1,r2,r3}` followed by the real frame.
+
+Inside such a function `((s32 *)&a0)[n]` reads the home area, and constant `n`
+folds into direct `sp`-relative loads exactly like retail
+(`ldr r1, [sp, #0x14]` for a1, `[sp, #0x20]` for a4).  The one thing that does
+not come back is `a0` itself: taking its address makes b56 reload it from the
+home slot, where retail still has it in `r0` (`mov r5, r0`).  Park any unit whose
+only residue is that reload.  This repo has no `stdarg.h`, so the naming below is
+`(s32 *)&a0` and every call must stay on one line (§2.117).
