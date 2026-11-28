@@ -2497,3 +2497,37 @@ declaration order of the two `s32` locals (`s32 off; s32 on;` instead of
 `s32 on; s32 off;`, leaving the assignment order untouched) flipped them into
 retail's registers and the unit matched.  When a tie is exactly one swapped pair
 of same-typed locals, permute their declarations before reformulating anything.
+
+### 2.130 Index an array instead of casting a byte offset
+
+arm9 `0x02036500` reads and rewrites a word at `+0x1c` of a global.  Written
+`*(u32 *)(data_0204c39c + 0x1c) += 1;` b56 puts the *whole address* in a pooled
+literal and does `ldr r1,[pc]` / `ldr r0,[r1]`; objdiff then also reports the
+reloc as a spelled-out number.  Declaring the global `u32 data_0204c39c[]` and
+indexing it (`data_0204c39c[7] += 1;`) makes b56 keep the base and use the
+`[r0,#0x1c]` addressing mode, which is what retail has, and the unit matched
+(336 B) once every `+0x1c` field was written that way.  So when a
+`base + small_const` access materialises a fresh literal, try an array/index
+form (or a struct member) before touching anything else.
+
+### 2.131 A type difference between two identical arguments stops the CSE
+
+ov003 `0x020d63a0` copies two 0x400 blocks, and each source address is used by
+two calls in a row.  With every parameter declared `u32`, b56 caches
+`b + 0x89e8` in `r6` across the first call (frame 0xc, extra push, 272 B but
+wrong); retail reloads the pooled constant and re-adds the base each time.
+Declaring the destination parameter of one call `const void *` and passing
+`b + 0x89e8` uncast — while the other call keeps `(u32)` — gives the two call
+arguments different expression trees, the CSE no longer fires, and the unit
+matched.  Use the parameter's real pointer-ness as the lever rather than
+inserting dummy reloads.
+
+### 2.132 Put the decrement in the condition
+
+arm9 `0x02036500` decrements a global counter and tests it.  Two statements
+(`x = x - 1; if (x == 0) f();`) make b56 store and then reload the counter to
+test it; `if (--x == 0) f();` produces retail's `subs r1,r1,#1` / `str` / `bne`
+with one register and no reload.  The same applies to the surrounding guards:
+`if (fn == 1) return 0; if (fn == 0 && a0 == 1) return 0;` duplicated the return-0
+epilogue, while the short-circuit form `if (fn == 1 || (fn == 0 && a0 == 1))
+return 0;` produced retail's single shared exit block.
