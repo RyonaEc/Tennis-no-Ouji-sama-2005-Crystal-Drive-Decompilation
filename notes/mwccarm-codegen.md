@@ -2420,3 +2420,16 @@ canonicalises `~0x1ff` to `-0x200` and materialises it as `mov` + `rsb`.  Writin
 `x & ~0x200` by hand gives `bic`; writing `x & -len` with a `u32 len = 0x200`
 local gives the `mov`/`rsb` pair.  If a mask looks like `-(2^k)` in a register,
 suspect an `ALIGN_MASK`-style macro rather than anything unusual.
+
+### 2.123 `if (x == c) return 1; return 0;` predicated? move the second arm into `else if`
+
+ov003 `0x02071714` returns a predicate over three fields.  Written with early
+returns, b56 if-converted each `return 1`/`return 0` into a predicated
+`addeq sp / moveq r0,#1 / popeq / bxeq` epilogue and the unit grew from 264 to
+320 bytes across four separate exit blocks.  Retail has exactly two: one `ret 1`
+per arm and one `ret 0` shared by both arms.  That layout comes from a single
+`return 0` at the end with the two success paths in `if (expr) return 1;` and
+`else if (expr) return 1;` — and the expressions must be written as branch
+conditions, not as `return <bool expr>`, because a boolean returned to the caller
+is materialised into a register (`moveq rX,#1` / `cmp rX,#0`) instead of
+branching.
