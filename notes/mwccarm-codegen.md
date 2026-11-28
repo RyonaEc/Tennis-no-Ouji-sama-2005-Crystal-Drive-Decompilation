@@ -2337,3 +2337,32 @@ declarations (`u16 i;` first, then `s32 rv = ...;`) reproduces
 `mov r5, r0` / `mov r6, #0`.  When a unit differs only in which of two
 callee-saved registers holds the loop counter and which holds the across-loop
 value, swap their declaration order before trying anything else.
+
+### 2.116 Declaration position, not first use, steers callee-saved allocation
+
+ov002 `0x020c26a8` was byte-identical except that `base`, `e` and `r` came out in
+`sb`/`r8`/`r7` instead of retail's `r7`/`sb`/`r8`.  The three pointers are first
+defined in the same order either way, so only the declarations differed: b56
+hands the free callee-saved registers out in *declaration position* order, and
+here that was `1st -> sb, 2nd -> r8, 3rd -> r7`.  Retail wanted `base` in `r7`,
+so `base` had to be declared last:
+
+```c
+    u8 *e;
+    u8 *r;
+    u8 *base;      /* declared last, defines first */
+    ...
+    base = B;
+    e = base + 0x2e4 + off;
+```
+
+Free the initialisers from the declarations when you do this; with
+`u8 *base = B;` first the allocator follows the definition order instead.  Two
+`u32`/`s32` flags in the same function can be swapped the same way (§2.115).
+
+### 2.117 mwccarm aborts with "<string not found>" on a multi-line call
+
+Splitting a call's argument list across two source lines makes b56 fail with
+`<string not found>` at that line and abort, even though the same call compiles
+when it is on one line.  Keep every call on a single line, however long.  The
+same file with the arguments rejoined (ov006 `0x0204da24`) compiles normally.

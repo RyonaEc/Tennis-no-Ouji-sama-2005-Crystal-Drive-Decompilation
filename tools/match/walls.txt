@@ -391,6 +391,8 @@ ov002 0x02076258 256B func_ov002_02076258 248 B of code + 8 B pool (256 B unit).
 
 ov002 0x020708f8 256B func_ov002_020708f8 Canonical sibling of ov002 0x02076258 (func_ov002_020706e0, stride 0x18, no func_ov002_0204f7c4, extra q[0x10]=0x2000 and q[0x14]=0x1f0000). build/cand/ov2_708f8_a.c already matches the total 256 B and every instruction shape; only the register map differs (54 slots): retail uses r4=a3 r5=a2 r6=a1 r7=a0, sl=p, sb=sb with 'mov r8, #0x160' hoisted into the entry block and r8 reused for q=sb+0x10, while the candidate uses sb/r8/r7/r6 for the args and r4/r5 for p/q. | -> 'push {r4, r5, r6, r7, r8, sb, sl, lr}' + 'sub sp, sp, #0x10' and 'add r1, r8, r1, lsl #5' L12944
 
+ov006 0x0204da24 252B func_ov006_0204da24 252B, 260B candidate one induction variable short of retail. Retail keeps fp=0, r6=1, r7=0x30, r8=&data_02076024, sl=i, sb=i*0x20 and fuses the field read as S+(i<<2)/+0x1000/[+0x16c]; b56 instead spends a callee-saved register on i*4 and spills the 0 argument to [sp], which cascades to r6=0x30/r7=0x30 swaps. Every attempt (build/cand/ov6_4da24_a..f.c) keeps the extra induction variable. Missing: the source form that lets b56 rematerialise S+i*4 instead of hoisting it. L12947
+
 # re-probes the live ones; resolved units stay listed so the roster still
 # recognises their address, and git keeps the history of why.
 
